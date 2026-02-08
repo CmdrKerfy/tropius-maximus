@@ -164,6 +164,13 @@ export default function CardDetail({ cardId, attributes, onClose }) {
                   {card.artist && ` · Artist: ${card.artist}`}
                 </div>
 
+                {/* Species genus (e.g., "Seed Pokémon") */}
+                {card.genus && (
+                  <p className="mt-2 text-sm text-gray-600 italic">
+                    {card.genus}
+                  </p>
+                )}
+
                 {/* Evolution info */}
                 {card.evolves_from && (
                   <p className="mt-2 text-sm text-gray-600">

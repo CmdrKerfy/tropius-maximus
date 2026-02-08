@@ -123,6 +123,9 @@ def initialize_database() -> None:
             region         VARCHAR,
             generation     INTEGER,
             color          VARCHAR,
+            shape          VARCHAR,
+            genus          VARCHAR,
+            encounter_location VARCHAR,
             evolution_chain VARCHAR
         )
     """)
@@ -281,6 +284,22 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None) -> int:
 # ── Pokemon metadata ingestion ──────────────────────────────────────────
 
 
+def fetch_first_encounter_location(pokedex_num: int) -> str:
+    """Fetch first encounter location from PokeAPI."""
+    try:
+        resp = httpx.get(
+            f"{POKEAPI_BASE}/pokemon/{pokedex_num}/encounters",
+            timeout=REQUEST_TIMEOUT
+        )
+        resp.raise_for_status()
+        encounters = resp.json()
+        if encounters:
+            return encounters[0]["location_area"]["name"].replace("-", " ").title()
+        return ""
+    except Exception:
+        return ""
+
+
 def fetch_evolution_chain(chain_url: str) -> list:
     """Fetch and flatten an evolution chain from PokeAPI."""
     try:
@@ -354,9 +373,20 @@ def ingest_pokemon_metadata() -> int:
             pokedex_num = species["id"]
             name = species["name"]
             color = species.get("color", {}).get("name", "")
+            shape = species.get("shape", {}).get("name", "") if species.get("shape") else ""
+
+            # Get genus (English entry)
+            genus = ""
+            for g in species.get("genera", []):
+                if g.get("language", {}).get("name") == "en":
+                    genus = g.get("genus", "")
+                    break
 
             # Get region and generation from Pokedex number
             generation, region = get_region_generation(pokedex_num)
+
+            # Fetch first encounter location
+            encounter_location = fetch_first_encounter_location(pokedex_num)
 
             # Fetch evolution chain (with caching)
             evo_chain_url = species.get("evolution_chain", {}).get("url", "")
@@ -370,14 +400,17 @@ def ingest_pokemon_metadata() -> int:
             # Store in database
             conn.execute("""
                 INSERT OR REPLACE INTO pokemon_metadata
-                    (pokedex_number, name, region, generation, color, evolution_chain)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (pokedex_number, name, region, generation, color, shape, genus, encounter_location, evolution_chain)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [
                 pokedex_num,
                 name,
                 region,
                 generation,
                 color,
+                shape,
+                genus,
+                encounter_location,
                 json.dumps(evo_chain),
             ])
 

@@ -60,9 +60,10 @@ export default function AnnotationEditor({ cardId, annotations, attributes }) {
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
   // Filter out unique_id and evolution_line - they're now displayed read-only in CardDetail
-  const editableAttrs = attributes.filter(
-    (a) => !["unique_id", "evolution_line"].includes(a.key)
-  );
+  // Sort by sort_order to ensure consistent ordering
+  const editableAttrs = attributes
+    .filter((a) => !["unique_id", "evolution_line"].includes(a.key))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   return (
     <div className="space-y-3">

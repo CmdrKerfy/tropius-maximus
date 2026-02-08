@@ -43,7 +43,7 @@ def export():
     try:
         pokemon_path = os.path.join(OUTPUT_DIR, "pokemon_metadata.parquet")
         conn.execute(f"""
-            COPY (SELECT * FROM pokemon_metadata)
+            COPY (SELECT pokedex_number, name, region, generation, color, shape, genus, encounter_location, evolution_chain FROM pokemon_metadata)
             TO '{pokemon_path}'
             (FORMAT PARQUET, COMPRESSION ZSTD)
         """)

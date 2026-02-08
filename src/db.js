@@ -147,6 +147,10 @@ export async function initDB() {
     await conn.query(
       "CREATE OR REPLACE TABLE pokemon_metadata AS SELECT * FROM 'pokemon_metadata.parquet'"
     );
+    // Add new columns if they don't exist (for older parquet files)
+    await conn.query("ALTER TABLE pokemon_metadata ADD COLUMN IF NOT EXISTS shape VARCHAR");
+    await conn.query("ALTER TABLE pokemon_metadata ADD COLUMN IF NOT EXISTS genus VARCHAR");
+    await conn.query("ALTER TABLE pokemon_metadata ADD COLUMN IF NOT EXISTS encounter_location VARCHAR");
   } else {
     await conn.query(`
       CREATE OR REPLACE TABLE pokemon_metadata (
@@ -155,6 +159,9 @@ export async function initDB() {
         region         VARCHAR,
         generation     INTEGER,
         color          VARCHAR,
+        shape          VARCHAR,
+        genus          VARCHAR,
+        encounter_location VARCHAR,
         evolution_chain VARCHAR
       )
     `);
@@ -183,21 +190,28 @@ export async function initDB() {
     "Legends Arceus", "Scarlet/Violet", "Other"
   ]);
 
+  // Shape options from PokeAPI
+  const shapeOptions = JSON.stringify([
+    "ball", "squiggle", "fish", "arms", "blob", "upright", "legs",
+    "quadruped", "wings", "tentacles", "heads", "humanoid", "bug-wings", "armor"
+  ]);
+
   await conn.query(`
     INSERT INTO attribute_definitions VALUES
-      ('notes',            'Notes',              'text',    'null', '""',      TRUE, 0),
-      ('owned',            'Owned',              'boolean', 'null', 'false',   TRUE, 3),
-      ('evolution_line',   'Evolution Line',     'text',    'null', '""',      TRUE, 4),
+      ('owned',            'Owned',              'boolean', 'null', 'false',   TRUE, 0),
+      ('notes',            'Notes',              'text',    'null', '""',      TRUE, 1),
+      ('pokemon_main',     'Pokemon [Main]',     'text',    'null', '""',      TRUE, 2),
+      ('pokemon_bg',       'Pokemon [Background]', 'text',  'null', '""',      TRUE, 3),
       ('color',            'Color',              'select',  '["black","blue","brown","gray","green","pink","purple","red","white","yellow"]', 'null', TRUE, 5),
-      ('video_appearance', 'Video Appearance',   'boolean', 'null', 'false',   TRUE, 10),
-      ('pokemon_main',     'Pokemon [Main]',     'text',    'null', '""',      TRUE, 11),
-      ('pokemon_bg',       'Pokemon [Background]', 'text',  'null', '""',      TRUE, 12),
-      ('video_game',       'Video Game',         'select',  ${escapeStr(videoGameOptions)}, 'null', TRUE, 13),
-      ('location',         'Location',           'text',    'null', '""',      TRUE, 14),
-      ('unique_id',        'Unique ID',          'text',    'null', '""',      TRUE, 15),
-      ('video_url',        'Video URL',          'text',    'null', '""',      TRUE, 16),
-      ('video_title',      'Video Title',        'text',    'null', '""',      TRUE, 17),
-      ('thumbnail_used',   'Thumbnail Used',     'boolean', 'null', 'false',   TRUE, 18)
+      ('shape',            'Shape',              'select',  ${escapeStr(shapeOptions)}, 'null', TRUE, 6),
+      ('location',         'Location',           'text',    'null', '""',      TRUE, 10),
+      ('video_game',       'Video Game',         'select',  ${escapeStr(videoGameOptions)}, 'null', TRUE, 11),
+      ('video_appearance', 'Video Appearance',   'boolean', 'null', 'false',   TRUE, 12),
+      ('thumbnail_used',   'Thumbnail Used',     'boolean', 'null', 'false',   TRUE, 13),
+      ('video_url',        'Video URL',          'text',    'null', '""',      TRUE, 14),
+      ('video_title',      'Video Title',        'text',    'null', '""',      TRUE, 15),
+      ('unique_id',        'Unique ID',          'text',    'null', '""',      TRUE, 16),
+      ('evolution_line',   'Evolution Line',     'text',    'null', '""',      TRUE, 20)
   `);
 
   // 6. Hydrate from IndexedDB
@@ -427,7 +441,7 @@ export async function fetchCard(id) {
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.evolves_from,
            c.rarity, c.artist, c.set_id, c.set_name, c.set_series, c.number,
            c.regulation_mark, c.image_small, c.image_large, c.raw_data, c.annotations, c.prices,
-           pm.evolution_chain
+           pm.evolution_chain, pm.genus, pm.shape, pm.color AS pm_color, pm.encounter_location
     FROM cards c
     LEFT JOIN pokemon_metadata pm
       ON pm.pokedex_number = TRY_CAST(
@@ -473,11 +487,32 @@ export async function fetchCard(id) {
     }
   }
 
+  // Auto-populate color from PokeAPI if not set
+  if (!annotations.color && r.pm_color) {
+    annotations.color = r.pm_color;
+    needsPatch = true;
+  }
+
+  // Auto-populate shape from PokeAPI if not set
+  if (!annotations.shape && r.shape) {
+    annotations.shape = r.shape;
+    needsPatch = true;
+  }
+
+  // Auto-populate location from PokeAPI encounter_location if not set
+  if (!annotations.location && r.encounter_location) {
+    annotations.location = r.encounter_location;
+    needsPatch = true;
+  }
+
   // Persist auto-populated values to IndexedDB
   if (needsPatch) {
     const patchData = {};
     if (annotations.unique_id) patchData.unique_id = annotations.unique_id;
     if (annotations.evolution_line) patchData.evolution_line = annotations.evolution_line;
+    if (annotations.color) patchData.color = annotations.color;
+    if (annotations.shape) patchData.shape = annotations.shape;
+    if (annotations.location) patchData.location = annotations.location;
     await patchAnnotations(r.id, patchData);
   }
 
@@ -505,6 +540,7 @@ export async function fetchCard(id) {
     annotations,
     prices,
     pokedex_numbers,
+    genus: r.genus || null,
   };
 }
 

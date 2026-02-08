@@ -35,12 +35,25 @@ const EXAMPLES = [
     query:
       "SELECT id, name, set_name, number, image_small FROM cards WHERE types ILIKE '%Fire%' LIMIT 50",
   },
+  {
+    label: "Pokemon by location (grid)",
+    query: `SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small
+FROM cards c
+JOIN pokemon_metadata pm
+  ON pm.pokedex_number = TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)
+WHERE pm.encounter_location = 'Stark Mountain Area'
+LIMIT 100`,
+  },
 ];
 
 function isGridCompatible(res) {
   if (!res || !res.columns) return false;
   const cols = res.columns.map((c) => c.toLowerCase());
-  return cols.includes("id") && cols.includes("image_small");
+  // Direct grid: has id + image_small
+  if (cols.includes("id") && cols.includes("image_small")) return "direct";
+  // Needs auto-join: has pokedex_number
+  if (cols.includes("pokedex_number")) return "pokedex";
+  return false;
 }
 
 function rowsToObjects(res) {
@@ -166,7 +179,32 @@ export default function SqlConsole({ onShowInGrid, onDataChanged }) {
             </span>
             {onShowInGrid && isGridCompatible(result) && (
               <button
-                onClick={() => onShowInGrid(rowsToObjects(result))}
+                onClick={async () => {
+                  const mode = isGridCompatible(result);
+                  if (mode === "direct") {
+                    onShowInGrid(rowsToObjects(result));
+                  } else if (mode === "pokedex") {
+                    // Extract pokedex_numbers from results
+                    const colIdx = result.columns.findIndex(
+                      (c) => c.toLowerCase() === "pokedex_number"
+                    );
+                    const pokedexNums = [
+                      ...new Set(
+                        result.rows.map((r) => r[colIdx]).filter((n) => n != null)
+                      ),
+                    ];
+                    if (pokedexNums.length === 0) return;
+                    // Fetch cards matching these pokedex numbers
+                    const cardsResult = await executeSql(`
+                      SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small
+                      FROM cards c
+                      WHERE TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)
+                            IN (${pokedexNums.join(",")})
+                      LIMIT 200
+                    `);
+                    onShowInGrid(rowsToObjects(cardsResult));
+                  }
+                }}
                 className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded hover:bg-green-100 transition-colors"
               >
                 Show in Grid
