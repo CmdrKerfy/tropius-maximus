@@ -37,7 +37,7 @@ export default function App() {
     supertype: "",
     types: "",
     rarity: "",
-    set_id: "",
+    set_id: "base1",
     hp_min: 0,
     hp_max: 0,
     region: "",
@@ -45,7 +45,7 @@ export default function App() {
     color: "",
     artist: "",
     evolution_line: "",
-    sort_by: "name",
+    sort_by: "pokedex",
     sort_dir: "asc",
   });
   const [filtersExpanded, setFiltersExpanded] = useState(true);
