@@ -365,7 +365,13 @@ def fetch_evolution_chain(chain_url: str) -> list:
         return []
 
 
-def ingest_pokemon_metadata() -> int:
+def get_existing_pokemon_count(conn) -> int:
+    """Check how many Pokemon are already in the metadata table."""
+    result = conn.execute("SELECT COUNT(*) FROM pokemon_metadata").fetchone()
+    return result[0] if result else 0
+
+
+def ingest_pokemon_metadata(force: bool = False) -> int:
     """Fetch all Pokemon species from PokeAPI and store metadata."""
     print("Fetching Pokemon metadata from PokeAPI...")
 
@@ -380,6 +386,14 @@ def ingest_pokemon_metadata() -> int:
     resp.raise_for_status()
     total_count = resp.json()["count"]
     print(f"  Found {total_count} Pokemon species")
+
+    # Check if we already have all species (resume logic)
+    if not force:
+        existing = get_existing_pokemon_count(conn)
+        if existing >= total_count:
+            print(f"  Skipped (already have {existing} species)")
+            conn.close()
+            return existing
 
     # Fetch all species in batches
     all_species = []
@@ -478,7 +492,7 @@ def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, forc
 
     # Ingest Pokemon metadata first (unless skipped)
     if not skip_pokemon:
-        ingest_pokemon_metadata()
+        ingest_pokemon_metadata(force=force)
 
     set_lookup = ingest_sets()
     total = ingest_cards(set_lookup, set_id=set_id, force=force)
