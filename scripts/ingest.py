@@ -16,6 +16,11 @@ Usage:
     python ingest.py              # Fetch ALL cards (~15k) + Pokemon metadata
     python ingest.py --set sv1    # Fetch only set "sv1" (good for testing)
     python ingest.py --skip-pokemon  # Skip PokeAPI fetch (use existing data)
+    python ingest.py --force      # Re-download all sets even if already present
+
+Features:
+    - Resume: Automatically skips sets that are already fully ingested
+    - Retry: Retries failed API requests up to 3 times with backoff
 
 Environment:
     POKEMON_TCG_API_KEY    Optional API key for higher rate limits (free to register)
@@ -47,7 +52,9 @@ POKEMON_TCG_API = "https://api.pokemontcg.io/v2"
 # PokeAPI for Pokemon metadata (species, color, evolution chains).
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
-REQUEST_TIMEOUT = 60
+REQUEST_TIMEOUT = 120  # Increased for large sets
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds
 
 # Region/generation mapping by Pokedex number ranges.
 REGION_GEN_RANGES = [
@@ -176,7 +183,7 @@ def get_set_file_list() -> list:
 
 
 def fetch_cards_from_api(set_id: str) -> list:
-    """Fetch all cards for a set from the pokemontcg.io API (with pagination)."""
+    """Fetch all cards for a set from the pokemontcg.io API (with pagination and retry)."""
     api_key = os.environ.get("POKEMON_TCG_API_KEY", "")
     headers = {"X-Api-Key": api_key} if api_key else {}
 
@@ -185,14 +192,26 @@ def fetch_cards_from_api(set_id: str) -> list:
     page_size = 250
 
     while True:
-        resp = httpx.get(
-            f"{POKEMON_TCG_API}/cards",
-            params={"q": f"set.id:{set_id}", "page": page, "pageSize": page_size},
-            headers=headers,
-            timeout=REQUEST_TIMEOUT,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+        # Retry logic for each page
+        last_error = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                resp = httpx.get(
+                    f"{POKEMON_TCG_API}/cards",
+                    params={"q": f"set.id:{set_id}", "page": page, "pageSize": page_size},
+                    headers=headers,
+                    timeout=REQUEST_TIMEOUT,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                break  # Success, exit retry loop
+            except (httpx.HTTPError, httpx.TimeoutException) as e:
+                last_error = e
+                if attempt < MAX_RETRIES - 1:
+                    wait_time = RETRY_DELAY * (attempt + 1)  # Exponential-ish backoff
+                    time.sleep(wait_time)
+                    continue
+                raise last_error  # All retries exhausted
 
         cards = data.get("data", [])
         all_cards.extend(cards)
@@ -207,8 +226,19 @@ def fetch_cards_from_api(set_id: str) -> list:
     return all_cards
 
 
-def ingest_cards(set_lookup: dict, set_id: Optional[str] = None) -> int:
-    """Download cards from the pokemontcg.io API and upsert into the cards table."""
+def get_existing_card_count(conn, set_id: str) -> int:
+    """Check how many cards already exist for a set in the database."""
+    result = conn.execute(
+        "SELECT COUNT(*) FROM cards WHERE set_id = ?", [set_id]
+    ).fetchone()
+    return result[0] if result else 0
+
+
+def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = False) -> int:
+    """Download cards from the pokemontcg.io API and upsert into the cards table.
+
+    If force=False (default), skips sets that already have cards in the database.
+    """
     if set_id:
         set_ids = [set_id]
         print(f"Fetching cards for set '{set_id}'...")
@@ -219,14 +249,24 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None) -> int:
 
     conn = get_connection()
     total_ingested = 0
+    skipped_count = 0
 
     for i, sid in enumerate(set_ids, 1):
+        # Check if set already has cards (resume logic)
+        if not force:
+            existing = get_existing_card_count(conn, sid)
+            expected = set_lookup.get(sid, {}).get("total", 0)
+            if existing > 0 and (expected == 0 or existing >= expected):
+                print(f"  [{i}/{len(set_ids)}] {sid}... skipped (already have {existing} cards)")
+                skipped_count += 1
+                continue
+
         print(f"  [{i}/{len(set_ids)}] {sid}...", end=" ", flush=True)
 
         try:
             cards = fetch_cards_from_api(sid)
-        except httpx.HTTPError as e:
-            print(f"skipped ({e})")
+        except (httpx.HTTPError, httpx.TimeoutException) as e:
+            print(f"failed after {MAX_RETRIES} retries ({e})")
             continue
 
         set_info = set_lookup.get(sid, {})
@@ -277,7 +317,10 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None) -> int:
             time.sleep(0.5)
 
     conn.close()
-    print(f"Done! Ingested {total_ingested} cards total.")
+    if skipped_count > 0:
+        print(f"Done! Ingested {total_ingested} cards total ({skipped_count} sets skipped - already complete).")
+    else:
+        print(f"Done! Ingested {total_ingested} cards total.")
     return total_ingested
 
 
@@ -429,7 +472,7 @@ def ingest_pokemon_metadata() -> int:
     return ingested
 
 
-def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False) -> int:
+def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, force: bool = False) -> int:
     """Run the full ingestion pipeline."""
     initialize_database()
 
@@ -438,7 +481,7 @@ def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False) -> i
         ingest_pokemon_metadata()
 
     set_lookup = ingest_sets()
-    total = ingest_cards(set_lookup, set_id=set_id)
+    total = ingest_cards(set_lookup, set_id=set_id, force=force)
     return total
 
 
@@ -456,8 +499,14 @@ def main():
         action="store_true",
         help="Skip fetching Pokemon metadata from PokeAPI (use existing data).",
     )
+    parser.add_argument(
+        "--force",
+        dest="force",
+        action="store_true",
+        help="Force re-download of all sets, even if already in database.",
+    )
     args = parser.parse_args()
-    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon)
+    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, force=args.force)
 
 
 if __name__ == "__main__":

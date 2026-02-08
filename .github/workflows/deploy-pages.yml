@@ -34,12 +34,21 @@ jobs:
       - name: Install Python dependencies
         run: pip install duckdb httpx
 
+      - name: Cache card data
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: public/data/
+          key: card-data-${{ hashFiles('scripts/ingest.py', 'scripts/export_parquet.py') }}
+
       - name: Ingest card data
+        if: steps.cache-data.outputs.cache-hit != 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
         run: python scripts/ingest.py
 
       - name: Export to Parquet
+        if: steps.cache-data.outputs.cache-hit != 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/export_parquet.py
 
       - name: Setup Node
