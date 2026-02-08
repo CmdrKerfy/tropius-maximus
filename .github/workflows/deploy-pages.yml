@@ -41,18 +41,18 @@ jobs:
           path: |
             public/data/
             scripts/pokemon.duckdb
-          key: card-data-${{ hashFiles('scripts/ingest.py', 'scripts/export_parquet.py') }}
+          key: card-data-${{ github.run_id }}
           restore-keys: |
             card-data-
 
       - name: Ingest card data
-        if: steps.cache-data.outputs.cache-hit != 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
         run: python scripts/ingest.py
 
       - name: Export to Parquet
-        if: steps.cache-data.outputs.cache-hit != 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/export_parquet.py
 
       - name: Setup Node
