@@ -18,9 +18,11 @@ let initialized = false;
 // ── IndexedDB helpers ──────────────────────────────────────────────────
 
 const IDB_NAME = "pokemon-tcg";
-const IDB_VERSION = 1;
+const IDB_VERSION = 2;
 const STORE_ANNOTATIONS = "annotations";
 const STORE_ATTRIBUTES = "attributes";
+const STORE_CUSTOM_CARDS = "custom_cards";
+const STORE_CUSTOM_SETS = "custom_sets";
 
 function openIDB() {
   return new Promise((resolve, reject) => {
@@ -32,6 +34,12 @@ function openIDB() {
       }
       if (!idb.objectStoreNames.contains(STORE_ATTRIBUTES)) {
         idb.createObjectStore(STORE_ATTRIBUTES, { keyPath: "key" });
+      }
+      if (!idb.objectStoreNames.contains(STORE_CUSTOM_CARDS)) {
+        idb.createObjectStore(STORE_CUSTOM_CARDS, { keyPath: "id" });
+      }
+      if (!idb.objectStoreNames.contains(STORE_CUSTOM_SETS)) {
+        idb.createObjectStore(STORE_CUSTOM_SETS, { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -248,6 +256,57 @@ async function hydrateFromIndexedDB() {
           ${escapeStr(JSON.stringify(attr.default_value))},
           FALSE,
           ${parseInt(attr.sort_order) || 100}
+        )
+      `);
+    }
+  }
+
+  // Hydrate custom sets
+  const customSets = await idbGetAll(STORE_CUSTOM_SETS);
+  for (const set of customSets) {
+    const existing = await conn.query(
+      `SELECT id FROM sets WHERE id = ${escapeStr(set.id)}`
+    );
+    if (existing.numRows === 0) {
+      await conn.query(`
+        INSERT INTO sets (id, name, series, release_date)
+        VALUES (
+          ${escapeStr(set.id)},
+          ${escapeStr(set.name)},
+          ${escapeStr(set.series || "Custom")},
+          ${escapeStr(set.release_date || new Date().toISOString().split("T")[0])}
+        )
+      `);
+    }
+  }
+
+  // Hydrate custom cards
+  const customCards = await idbGetAll(STORE_CUSTOM_CARDS);
+  for (const card of customCards) {
+    const existing = await conn.query(
+      `SELECT id FROM cards WHERE id = ${escapeStr(card.id)}`
+    );
+    if (existing.numRows === 0) {
+      await conn.query(`
+        INSERT INTO cards (
+          id, name, supertype, subtypes, hp, types, rarity, artist,
+          set_id, set_name, number, image_small, image_large, raw_data, annotations
+        ) VALUES (
+          ${escapeStr(card.id)},
+          ${escapeStr(card.name)},
+          ${escapeStr(card.supertype || "")},
+          ${escapeStr(card.subtypes || "[]")},
+          ${escapeStr(card.hp || "")},
+          ${escapeStr(card.types || "[]")},
+          ${escapeStr(card.rarity || "")},
+          ${escapeStr(card.artist || "")},
+          ${escapeStr(card.set_id)},
+          ${escapeStr(card.set_name || "")},
+          ${escapeStr(card.number || "")},
+          ${escapeStr(card.image_small || "")},
+          ${escapeStr(card.image_large || card.image_small || "")},
+          ${escapeStr(JSON.stringify(card.raw_data || {}))},
+          ${escapeStr(JSON.stringify(card.annotations || {}))}
         )
       `);
     }
@@ -798,4 +857,172 @@ export async function triggerIngest() {
   throw new Error(
     "Data updates are handled via GitHub Actions, not available in the browser."
   );
+}
+
+// ── Custom Cards ───────────────────────────────────────────────────────
+
+/**
+ * Add a custom set (if it doesn't already exist).
+ * Custom sets use IDs prefixed with "custom-".
+ */
+export async function addCustomSet(set) {
+  if (!set.id.startsWith("custom-")) {
+    throw new Error("Custom set ID must start with 'custom-'");
+  }
+
+  // Check if set already exists
+  const existing = await conn.query(
+    `SELECT id FROM sets WHERE id = ${escapeStr(set.id)}`
+  );
+  if (existing.numRows > 0) {
+    return; // Set already exists
+  }
+
+  const setData = {
+    id: set.id,
+    name: set.name || set.id,
+    series: set.series || "Custom",
+    release_date: set.release_date || new Date().toISOString().split("T")[0],
+  };
+
+  // Insert into DuckDB
+  await conn.query(`
+    INSERT INTO sets (id, name, series, release_date)
+    VALUES (
+      ${escapeStr(setData.id)},
+      ${escapeStr(setData.name)},
+      ${escapeStr(setData.series)},
+      ${escapeStr(setData.release_date)}
+    )
+  `);
+
+  // Write-through to IndexedDB
+  await idbPut(STORE_CUSTOM_SETS, setData);
+}
+
+/**
+ * Add a custom card to the database.
+ * Custom cards must have a set_id that starts with "custom-".
+ */
+export async function addCustomCard(card) {
+  if (!card.set_id.startsWith("custom-")) {
+    throw new Error("Custom card set_id must start with 'custom-'");
+  }
+
+  // Build full card ID
+  const fullId = `${card.set_id}-${card.card_id}`;
+
+  // Check if card already exists
+  const existing = await conn.query(
+    `SELECT id FROM cards WHERE id = ${escapeStr(fullId)}`
+  );
+  if (existing.numRows > 0) {
+    throw new Error(`Card with ID '${fullId}' already exists`);
+  }
+
+  // Ensure the set exists
+  await addCustomSet({
+    id: card.set_id,
+    name: card.set_name || card.set_id.replace("custom-", "").replace(/-/g, " "),
+  });
+
+  const cardData = {
+    id: fullId,
+    name: card.name,
+    supertype: card.supertype || "",
+    subtypes: card.subtypes || "[]",
+    hp: card.hp || "",
+    types: card.types ? JSON.stringify([card.types]) : "[]",
+    rarity: card.rarity || "",
+    artist: card.artist || "",
+    set_id: card.set_id,
+    set_name: card.set_name || card.set_id.replace("custom-", "").replace(/-/g, " "),
+    number: card.number || "",
+    image_small: card.image_url || "",
+    image_large: card.image_url || "",
+    raw_data: {},
+    annotations: {},
+  };
+
+  // Insert into DuckDB
+  await conn.query(`
+    INSERT INTO cards (
+      id, name, supertype, subtypes, hp, types, rarity, artist,
+      set_id, set_name, number, image_small, image_large, raw_data, annotations
+    ) VALUES (
+      ${escapeStr(cardData.id)},
+      ${escapeStr(cardData.name)},
+      ${escapeStr(cardData.supertype)},
+      ${escapeStr(cardData.subtypes)},
+      ${escapeStr(cardData.hp)},
+      ${escapeStr(cardData.types)},
+      ${escapeStr(cardData.rarity)},
+      ${escapeStr(cardData.artist)},
+      ${escapeStr(cardData.set_id)},
+      ${escapeStr(cardData.set_name)},
+      ${escapeStr(cardData.number)},
+      ${escapeStr(cardData.image_small)},
+      ${escapeStr(cardData.image_large)},
+      ${escapeStr(JSON.stringify(cardData.raw_data))},
+      ${escapeStr(JSON.stringify(cardData.annotations))}
+    )
+  `);
+
+  // Write-through to IndexedDB for persistence
+  await idbPut(STORE_CUSTOM_CARDS, cardData);
+
+  return cardData;
+}
+
+/**
+ * Delete a custom card. Only cards with set_id starting with "custom-" can be deleted.
+ */
+export async function deleteCustomCard(cardId) {
+  // Check if the card exists and is a custom card
+  const result = await conn.query(
+    `SELECT set_id FROM cards WHERE id = ${escapeStr(cardId)}`
+  );
+  const rows = result.toArray();
+
+  if (rows.length === 0) {
+    throw new Error(`Card '${cardId}' not found`);
+  }
+
+  if (!rows[0].set_id.startsWith("custom-")) {
+    throw new Error("Only custom cards can be deleted");
+  }
+
+  // Delete from DuckDB
+  await conn.query(`DELETE FROM cards WHERE id = ${escapeStr(cardId)}`);
+
+  // Delete from IndexedDB
+  await idbDelete(STORE_CUSTOM_CARDS, cardId);
+
+  // Also delete any annotations for this card
+  await idbDelete(STORE_ANNOTATIONS, cardId);
+}
+
+/**
+ * Fetch all custom cards.
+ */
+export async function fetchCustomCards() {
+  const result = await conn.query(`
+    SELECT id, name, supertype, hp, types, rarity, set_id, set_name, number, image_small
+    FROM cards
+    WHERE set_id LIKE 'custom-%'
+    ORDER BY set_id, name
+  `);
+
+  return result.toArray().map((r) => ({
+    id: r.id,
+    name: r.name,
+    supertype: r.supertype,
+    hp: r.hp,
+    types: r.types,
+    rarity: r.rarity,
+    set_id: r.set_id,
+    set_name: r.set_name,
+    number: r.number,
+    image_small: r.image_small,
+  }));
 }

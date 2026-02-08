@@ -16,6 +16,7 @@ import FilterPanel from "./components/FilterPanel";
 import CardGrid from "./components/CardGrid";
 import CardDetail from "./components/CardDetail";
 import AttributeManager from "./components/AttributeManager";
+import CustomCardForm from "./components/CustomCardForm";
 import Pagination from "./components/Pagination";
 import SqlConsole from "./components/SqlConsole";
 
@@ -60,6 +61,7 @@ export default function App() {
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showSqlConsole, setShowSqlConsole] = useState(false);
+  const [showCustomCardForm, setShowCustomCardForm] = useState(false);
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
@@ -130,6 +132,12 @@ export default function App() {
     }
   };
 
+  // Refresh cards and filters after adding a custom card.
+  const handleCustomCardAdded = () => {
+    loadCards();
+    fetchFilterOptions().then(setFilterOptions).catch(console.error);
+  };
+
   // ── Render ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -187,7 +195,22 @@ export default function App() {
               <p className="text-xs text-gray-400 mt-1">
                 Last build: {typeof __BUILD_DATE__ !== "undefined" ? new Date(__BUILD_DATE__).toLocaleDateString() : "unknown"}
               </p>
+              <button
+                onClick={() => setShowCustomCardForm(!showCustomCardForm)}
+                className="mt-3 px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium
+                           hover:bg-green-700 transition-colors"
+              >
+                {showCustomCardForm ? "Hide Form" : "+ Add Custom Card"}
+              </button>
             </div>
+
+            {/* Custom Card Form */}
+            {showCustomCardForm && (
+              <CustomCardForm
+                onCardAdded={handleCustomCardAdded}
+                onClose={() => setShowCustomCardForm(false)}
+              />
+            )}
 
             <AttributeManager
               attributes={attributes}
