@@ -38,8 +38,12 @@ jobs:
         id: cache-data
         uses: actions/cache@v4
         with:
-          path: public/data/
+          path: |
+            public/data/
+            scripts/pokemon.duckdb
           key: card-data-${{ hashFiles('scripts/ingest.py', 'scripts/export_parquet.py') }}
+          restore-keys: |
+            card-data-
 
       - name: Ingest card data
         if: steps.cache-data.outputs.cache-hit != 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
