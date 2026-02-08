@@ -462,6 +462,7 @@ export async function fetchCards(params = {}) {
   const dataResult = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
            c.set_id, c.set_name, c.number, c.image_small, c.image_large,
+           c.annotations,
            pm.region, pm.generation, pm.color
     FROM cards c
     ${joinClause}
@@ -471,23 +472,30 @@ export async function fetchCards(params = {}) {
   `);
 
   const rows = dataResult.toArray();
-  const cards = rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    supertype: r.supertype,
-    subtypes: r.subtypes,
-    hp: r.hp,
-    types: r.types,
-    rarity: r.rarity,
-    set_id: r.set_id,
-    set_name: r.set_name,
-    number: r.number,
-    image_small: r.image_small,
-    image_large: r.image_large,
-    region: r.region,
-    generation: typeof r.generation === "bigint" ? Number(r.generation) : r.generation,
-    color: r.color,
-  }));
+  const cards = rows.map((r) => {
+    const annotations =
+      typeof r.annotations === "string"
+        ? JSON.parse(r.annotations)
+        : r.annotations || {};
+    return {
+      id: r.id,
+      name: r.name,
+      supertype: r.supertype,
+      subtypes: r.subtypes,
+      hp: r.hp,
+      types: r.types,
+      rarity: r.rarity,
+      set_id: r.set_id,
+      set_name: r.set_name,
+      number: r.number,
+      image_small: r.image_small,
+      image_large: r.image_large,
+      annotations,
+      region: r.region,
+      generation: typeof r.generation === "bigint" ? Number(r.generation) : r.generation,
+      color: r.color,
+    };
+  });
 
   return { cards, total, page: pageInt, page_size: pageSizeInt };
 }

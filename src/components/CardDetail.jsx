@@ -9,13 +9,16 @@
  */
 
 import { useState, useEffect } from "react";
-import { fetchCard } from "../db";
+import { fetchCard, patchAnnotations } from "../db";
 import AnnotationEditor from "./AnnotationEditor";
 
 export default function CardDetail({ cardId, attributes, onClose }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingImage, setEditingImage] = useState(false);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [savingImage, setSavingImage] = useState(false);
 
   // Fetch full card details when the modal opens.
   useEffect(() => {
@@ -116,11 +119,146 @@ export default function CardDetail({ cardId, attributes, onClose }) {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Left: large card image */}
               <div className="flex-shrink-0">
-                <img
-                  src={card.image_large}
-                  alt={card.name}
-                  className="w-full md:w-72 rounded-lg shadow-md"
-                />
+                {(() => {
+                  const displayImage = card.annotations?.image_override || card.image_large;
+
+                  // Image editing mode
+                  if (editingImage) {
+                    return (
+                      <div className="w-full md:w-72 space-y-3">
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Image URL
+                          </label>
+                          <input
+                            type="url"
+                            value={newImageUrl}
+                            onChange={(e) => setNewImageUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            autoFocus
+                          />
+                        </div>
+
+                        {/* Preview */}
+                        {newImageUrl && (
+                          <div className="space-y-1">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Preview
+                            </label>
+                            <img
+                              src={newImageUrl}
+                              alt="Preview"
+                              className="w-full rounded-lg shadow-md bg-gray-100"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                              }}
+                              onLoad={(e) => {
+                                e.target.style.display = "block";
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!newImageUrl.trim()) return;
+                              setSavingImage(true);
+                              try {
+                                const updated = await patchAnnotations(cardId, {
+                                  image_override: newImageUrl.trim(),
+                                });
+                                setCard((prev) => ({
+                                  ...prev,
+                                  annotations: updated,
+                                }));
+                                setEditingImage(false);
+                                setNewImageUrl("");
+                              } catch (err) {
+                                console.error("Failed to save image:", err);
+                              } finally {
+                                setSavingImage(false);
+                              }
+                            }}
+                            disabled={!newImageUrl.trim() || savingImage}
+                            className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium
+                                     rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed
+                                     transition-colors"
+                          >
+                            {savingImage ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingImage(false);
+                              setNewImageUrl("");
+                            }}
+                            className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium
+                                     rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Display image or placeholder
+                  return displayImage ? (
+                    <div className="relative group">
+                      <img
+                        src={displayImage}
+                        alt={card.name}
+                        className="w-full md:w-72 rounded-lg shadow-md"
+                      />
+                      {/* Edit button overlay */}
+                      <button
+                        onClick={() => {
+                          setNewImageUrl(card.annotations?.image_override || "");
+                          setEditingImage(true);
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full
+                                 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                        title="Change image"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full md:w-72 aspect-[2.5/3.5] bg-gray-100 rounded-lg shadow-md
+                                  flex flex-col items-center justify-center gap-3">
+                      <svg
+                        className="w-16 h-16 text-gray-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="text-gray-400 text-sm">No Image</span>
+                      <button
+                        onClick={() => setEditingImage(true)}
+                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg
+                                 hover:bg-green-700 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Image
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Right: card info */}
