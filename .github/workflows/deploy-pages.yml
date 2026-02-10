@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -55,9 +55,15 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/export_parquet.py
 
-      - name: Copy DuckDB for download
+      - name: Commit DuckDB to repo
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        run: cp scripts/pokemon.duckdb public/data/pokemon.duckdb
+        run: |
+          cp scripts/pokemon.duckdb public/data/pokemon.duckdb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/pokemon.duckdb
+          git diff --staged --quiet || git commit -m "Update pokemon.duckdb [skip ci]"
+          git push
 
       - name: Setup Node
         uses: actions/setup-node@v4
