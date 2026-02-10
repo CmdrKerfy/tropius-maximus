@@ -44,6 +44,10 @@ JOIN pokemon_metadata pm
 WHERE pm.encounter_location = 'Stark Mountain Area'
 LIMIT 100`,
   },
+  {
+    label: "Selected cards",
+    query: "SELECT id, name, set_name FROM cards WHERE id IN {{selected}}",
+  },
 ];
 
 function isGridCompatible(res) {
@@ -62,23 +66,54 @@ function rowsToObjects(res) {
   );
 }
 
-export default function SqlConsole({ onShowInGrid, onDataChanged }) {
+export default function SqlConsole({
+  onShowInGrid,
+  onDataChanged,
+  selectedCardIds = new Set(),
+}) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [running, setRunning] = useState(false);
   const textareaRef = useRef(null);
 
+  // Expand {{selected}} template variable with actual card IDs
+  const expandTemplate = useCallback(
+    (sql) => {
+      if (!sql.includes("{{selected}}")) return sql;
+      if (selectedCardIds.size === 0) {
+        // Return a subquery that matches nothing (preserves SQL validity)
+        return sql.replace(/\{\{selected\}\}/g, "(SELECT NULL WHERE FALSE)");
+      }
+      const idList = Array.from(selectedCardIds)
+        .map((id) => `'${id.replace(/'/g, "''")}'`)
+        .join(", ");
+      return sql.replace(/\{\{selected\}\}/g, `(${idList})`);
+    },
+    [selectedCardIds]
+  );
+
   const runQuery = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
+
+    // Check for empty selection when using {{selected}}
+    if (trimmed.includes("{{selected}}") && selectedCardIds.size === 0) {
+      setError(
+        "No cards selected. Select cards in the grid first, then use {{selected}} in your query."
+      );
+      return;
+    }
 
     setRunning(true);
     setError(null);
     setResult(null);
 
+    // Expand template before execution
+    const expandedQuery = expandTemplate(trimmed);
+
     try {
-      const data = await executeSql(trimmed);
+      const data = await executeSql(expandedQuery);
       setResult(data);
 
       if (data.message && onDataChanged) {
@@ -94,7 +129,7 @@ export default function SqlConsole({ onShowInGrid, onDataChanged }) {
     } finally {
       setRunning(false);
     }
-  }, [query, onDataChanged]);
+  }, [query, onDataChanged, selectedCardIds, expandTemplate]);
 
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -127,6 +162,16 @@ export default function SqlConsole({ onShowInGrid, onDataChanged }) {
           </button>
         ))}
       </div>
+
+      {/* Selection indicator */}
+      {selectedCardIds.size > 0 && (
+        <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded">
+          <span className="font-medium">{selectedCardIds.size}</span> card
+          {selectedCardIds.size !== 1 ? "s" : ""} selected. Use{" "}
+          <code className="bg-green-100 px-1 rounded">{"{{selected}}"}</code> in
+          your query.
+        </div>
+      )}
 
       {/* Query input */}
       <textarea

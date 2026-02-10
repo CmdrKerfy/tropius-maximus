@@ -32,6 +32,9 @@ export default function App() {
   // ── SQL grid overlay state ────────────────────────────────────────
   const [sqlCards, setSqlCards] = useState(null);
 
+  // ── Multi-select state for bulk SQL operations ───────────────────
+  const [selectedCardIds, setSelectedCardIds] = useState(new Set());
+
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
@@ -123,6 +126,21 @@ export default function App() {
 
   const handleShowInGrid = (cards) => setSqlCards(cards);
 
+  // ── Card selection handlers ──────────────────────────────────────
+  const handleToggleCardSelection = (cardId) => {
+    setSelectedCardIds((prev) => {
+      const next = new Set(prev);
+      next.has(cardId) ? next.delete(cardId) : next.add(cardId);
+      return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    setSelectedCardIds(new Set((sqlCards || cards).map((c) => c.id)));
+  };
+
+  const handleClearSelection = () => setSelectedCardIds(new Set());
+
   const handleSqlDataChanged = (changed) => {
     if (changed.attributes)
       fetchAttributes().then(setAttributes).catch(console.error);
@@ -177,6 +195,7 @@ export default function App() {
             <SqlConsole
               onShowInGrid={handleShowInGrid}
               onDataChanged={handleSqlDataChanged}
+              selectedCardIds={selectedCardIds}
             />
           </div>
         )}
@@ -257,10 +276,36 @@ export default function App() {
               from SQL query
             </span>
             <button
-              onClick={() => setSqlCards(null)}
+              onClick={() => {
+                setSqlCards(null);
+                setSelectedCardIds(new Set());
+              }}
               className="text-sm text-amber-700 hover:text-amber-900 font-medium underline"
             >
               Back to Browse
+            </button>
+          </div>
+        )}
+
+        {/* Selection toolbar */}
+        {(showSqlConsole || selectedCardIds.size > 0) && (
+          <div className="mt-4 mb-2 bg-gray-100 border border-gray-200 rounded px-4 py-2 flex items-center gap-4">
+            <span className="text-sm text-gray-700">
+              <span className="font-medium">{selectedCardIds.size}</span> card
+              {selectedCardIds.size !== 1 ? "s" : ""} selected
+            </span>
+            <button
+              onClick={handleSelectAllVisible}
+              className="text-sm text-green-600 hover:text-green-800 font-medium"
+            >
+              Select All Visible
+            </button>
+            <button
+              onClick={handleClearSelection}
+              disabled={selectedCardIds.size === 0}
+              className="text-sm text-gray-600 hover:text-gray-800 font-medium disabled:text-gray-400"
+            >
+              Clear Selection
             </button>
           </div>
         )}
@@ -271,6 +316,8 @@ export default function App() {
             cards={sqlCards || cards}
             loading={sqlCards ? false : loading}
             onCardClick={(id) => setSelectedCardId(id)}
+            selectedCardIds={selectedCardIds}
+            onToggleSelection={showSqlConsole ? handleToggleCardSelection : null}
           />
         )}
 
