@@ -12,6 +12,38 @@ import { useState, useEffect } from "react";
 import { fetchCard, patchAnnotations } from "../db";
 import AnnotationEditor from "./AnnotationEditor";
 
+/**
+ * CollapsibleSection — A reusable component for collapsible content areas.
+ */
+function CollapsibleSection({ title, defaultOpen = true, children }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <svg
+          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-90" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+        <h3 className="font-semibold text-gray-700">{title}</h3>
+      </button>
+      {isOpen && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
+
 export default function CardDetail({ cardId, attributes, onClose }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -502,18 +534,17 @@ export default function CardDetail({ cardId, attributes, onClose }) {
 
             {/* Annotation editor — below the card info */}
             <div className="mt-6 border-t pt-6">
-              <h3 className="font-semibold text-gray-700 mb-3">
-                Your Annotations
-              </h3>
-              <AnnotationEditor
-                cardId={card.id}
-                annotations={
-                  typeof card.annotations === "string"
-                    ? JSON.parse(card.annotations)
-                    : card.annotations || {}
-                }
-                attributes={attributes}
-              />
+              <CollapsibleSection title="Custom Attributes" defaultOpen={false}>
+                <AnnotationEditor
+                  cardId={card.id}
+                  annotations={
+                    typeof card.annotations === "string"
+                      ? JSON.parse(card.annotations)
+                      : card.annotations || {}
+                  }
+                  attributes={attributes}
+                />
+              </CollapsibleSection>
             </div>
           </div>
         )}
