@@ -384,12 +384,12 @@ export async function fetchCards(params = {}) {
 
   // Trainer Type filter (subtypes for Trainer cards)
   if (trainer_type) {
-    conditions.push(`c.subtypes ILIKE ${escapeStr('%"' + trainer_type + '"%')}`);
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + trainer_type + '%')}`);
   }
 
   // Specialty filter (specific subtypes like Ace Spec, Tool, Technical Machine)
   if (specialty) {
-    conditions.push(`c.subtypes ILIKE ${escapeStr('%"' + specialty + '"%')}`);
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + specialty + '%')}`);
   }
 
   // Pokemon metadata filters (using JOIN)
