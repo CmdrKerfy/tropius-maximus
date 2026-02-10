@@ -44,32 +44,48 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
   );
 }
 
-export default function CardDetail({ cardId, attributes, onClose }) {
+export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNext, onPrev, onNext }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingImage, setEditingImage] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [savingImage, setSavingImage] = useState(false);
+  const [imageEnlarged, setImageEnlarged] = useState(false);
 
-  // Fetch full card details when the modal opens.
+  // Fetch full card details when the modal opens or card changes.
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setImageEnlarged(false);
+    setEditingImage(false);
     fetchCard(cardId)
       .then(setCard)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [cardId]);
 
-  // Close on Escape key.
+  // Keyboard navigation: Escape, ArrowLeft, ArrowRight.
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (imageEnlarged) {
+          setImageEnlarged(false);
+        } else {
+          onClose();
+        }
+      }
+      if (!imageEnlarged && !editingImage) {
+        if (e.key === "ArrowLeft" && hasPrev) {
+          onPrev();
+        } else if (e.key === "ArrowRight" && hasNext) {
+          onNext();
+        }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, imageEnlarged, editingImage, hasPrev, hasNext, onPrev, onNext]);
 
   // Prevent body scroll while modal is open.
   useEffect(() => {
@@ -111,8 +127,30 @@ export default function CardDetail({ cardId, attributes, onClose }) {
       }}
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden">
-        {/* Close button */}
-        <div className="flex justify-end p-3">
+        {/* Top bar: navigation arrows + close button */}
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onPrev}
+              disabled={!hasPrev}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Previous card"
+            >
+              <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={onNext}
+              disabled={!hasNext}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Next card"
+            >
+              <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -243,7 +281,8 @@ export default function CardDetail({ cardId, attributes, onClose }) {
                       <img
                         src={displayImage}
                         alt={card.name}
-                        className="w-full md:w-72 rounded-lg shadow-md"
+                        className="w-full md:w-72 rounded-lg shadow-md cursor-pointer"
+                        onClick={() => setImageEnlarged(true)}
                       />
                       {/* Edit button overlay */}
                       <button
@@ -549,6 +588,21 @@ export default function CardDetail({ cardId, attributes, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Enlarged image overlay */}
+      {imageEnlarged && card && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center cursor-pointer"
+          onClick={() => setImageEnlarged(false)}
+        >
+          <img
+            src={card.annotations?.image_override || card.image_large}
+            alt={card.name}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -331,13 +331,22 @@ export default function App() {
         )}
 
         {/* Card detail modal */}
-        {selectedCardId && (
-          <CardDetail
-            cardId={selectedCardId}
-            attributes={attributes}
-            onClose={() => setSelectedCardId(null)}
-          />
-        )}
+        {selectedCardId && (() => {
+          const displayedCards = sqlCards || cards;
+          const cardIds = displayedCards.map(c => c.id);
+          const currentIndex = cardIds.indexOf(selectedCardId);
+          return (
+            <CardDetail
+              cardId={selectedCardId}
+              attributes={attributes}
+              onClose={() => setSelectedCardId(null)}
+              hasPrev={currentIndex > 0}
+              hasNext={currentIndex < cardIds.length - 1}
+              onPrev={() => setSelectedCardId(cardIds[currentIndex - 1])}
+              onNext={() => setSelectedCardId(cardIds[currentIndex + 1])}
+            />
+          );
+        })()}
       </main>
     </div>
   );
