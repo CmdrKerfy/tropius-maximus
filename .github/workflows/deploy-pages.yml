@@ -55,6 +55,10 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/export_parquet.py
 
+      - name: Copy DuckDB for download
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: cp scripts/pokemon.duckdb public/data/pokemon.duckdb
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

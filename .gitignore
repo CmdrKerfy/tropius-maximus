@@ -5,3 +5,6 @@ dist/
 # DuckDB database files (generated at build time)
 *.duckdb
 *.duckdb.wal
+
+# Exception: allow the distributable database
+!public/data/pokemon.duckdb
