@@ -13,39 +13,37 @@ import { useState, useRef, useCallback } from "react";
 import { executeSql } from "../db";
 
 const EXAMPLES = [
-  { label: "First 10 cards", query: "SELECT * FROM cards LIMIT 10" },
+  { label: "All Columns (cards)", query: "SELECT * FROM cards LIMIT 5" },
   {
-    label: "All columns (preview)",
-    query: "SELECT * FROM cards LIMIT 5",
+    label: "All Columns (pokemon_metadata)",
+    query: "SELECT * FROM pokemon_metadata LIMIT 5",
   },
+  { label: "All Columns (sets)", query: "SELECT * FROM sets LIMIT 5" },
   {
-    label: "All rarities",
-    query: "SELECT DISTINCT rarity FROM cards ORDER BY rarity",
-  },
-  {
-    label: "Cards with HP > 200",
-    query: "SELECT name, hp, types FROM cards WHERE TRY_CAST(hp AS INT) > 200",
-  },
-  {
-    label: "Attribute definitions",
+    label: "Custom Fields Definitions",
     query: "SELECT * FROM attribute_definitions",
   },
   {
-    label: "Fire cards (grid)",
+    label: "Pokemon Type",
     query:
       "SELECT id, name, set_name, number, image_small FROM cards WHERE types ILIKE '%Fire%' LIMIT 50",
   },
   {
-    label: "Pokemon by location (grid)",
-    query: `SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small
+    label: "Pokemon Locations",
+    query: `SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small, pm.encounter_location
 FROM cards c
 JOIN pokemon_metadata pm
   ON pm.pokedex_number = TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)
-WHERE pm.encounter_location = 'Stark Mountain Area'
-LIMIT 100`,
+WHERE pm.encounter_location IN ('Sinnoh Route 225 Area', 'Mt Coronet 1F Route 207')
+LIMIT 50`,
   },
   {
-    label: "Selected cards",
+    label: "Card Artists",
+    query:
+      "SELECT id, name, set_name, artist FROM cards WHERE artist ILIKE 'Sachiko Adachi'",
+  },
+  {
+    label: "Selected Cards",
     query: "SELECT id, name, set_name FROM cards WHERE id IN {{selected}}",
   },
 ];
