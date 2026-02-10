@@ -55,6 +55,8 @@ function isGridCompatible(res) {
   const cols = res.columns.map((c) => c.toLowerCase());
   // Direct grid: has id + image_small
   if (cols.includes("id") && cols.includes("image_small")) return "direct";
+  // Needs auto-fetch: has id but no image_small
+  if (cols.includes("id")) return "id_only";
   // Needs auto-join: has pokedex_number
   if (cols.includes("pokedex_number")) return "pokedex";
   return false;
@@ -228,6 +230,25 @@ export default function SqlConsole({
                   const mode = isGridCompatible(result);
                   if (mode === "direct") {
                     onShowInGrid(rowsToObjects(result));
+                  } else if (mode === "id_only") {
+                    // Extract IDs and fetch full card data with images
+                    const colIdx = result.columns.findIndex(
+                      (c) => c.toLowerCase() === "id"
+                    );
+                    const ids = [
+                      ...new Set(
+                        result.rows.map((r) => r[colIdx]).filter((id) => id != null)
+                      ),
+                    ];
+                    if (ids.length === 0) return;
+                    const idList = ids.map((id) => `'${String(id).replace(/'/g, "''")}'`).join(", ");
+                    const cardsResult = await executeSql(`
+                      SELECT id, name, set_name, number, image_small
+                      FROM cards
+                      WHERE id IN (${idList})
+                      LIMIT 200
+                    `);
+                    onShowInGrid(rowsToObjects(cardsResult));
                   } else if (mode === "pokedex") {
                     // Extract pokedex_numbers from results
                     const colIdx = result.columns.findIndex(
