@@ -15,6 +15,14 @@ let db = null;
 let conn = null;
 let initialized = false;
 
+// ── Unicode helpers ─────────────────────────────────────────────────────
+
+function encodeUnicode(str) {
+  return str.replace(/[^\x00-\x7F]/g, (c) =>
+    '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')
+  );
+}
+
 // ── IndexedDB helpers ──────────────────────────────────────────────────
 
 const IDB_NAME = "pokemon-tcg";
@@ -384,12 +392,12 @@ export async function fetchCards(params = {}) {
 
   // Trainer Type filter (subtypes for Trainer cards)
   if (trainer_type) {
-    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + trainer_type + '%')}`);
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
   }
 
   // Specialty filter (specific subtypes like Ace Spec, Tool, Technical Machine)
   if (specialty) {
-    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + specialty + '%')}`);
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
   }
 
   // Pokemon metadata filters (using JOIN)
