@@ -330,7 +330,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             onChange({
               supertype: "",
               rarity: "",
-              set_id: "base1",
+              set_id: "",
               region: "",
               generation: "",
               color: "",
