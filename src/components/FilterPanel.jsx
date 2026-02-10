@@ -1,19 +1,15 @@
 /**
  * FilterPanel — Dropdowns and controls for filtering the card list.
  *
- * Includes: supertype dropdown, type dropdown (with variant grouping),
- * rarity dropdown, set dropdown (grouped by series), HP range,
+ * Includes: supertype dropdown, rarity dropdown, set dropdown (grouped by series),
  * artist filter, evolution line filter, region/generation/color filters,
- * and sort controls.
+ * trainer type filter, specialty filter, and sort controls.
  * All filter values are lifted to App.jsx via the onChange callback.
  *
  * Features:
- * - Collapsible filter section with toggle button
- * - Type variants (e.g., "Darkness" vs quoted variants) grouped in optgroups
+ * - Collapsible filter section with toggle button (collapsed by default)
  * - Sort controls in separate row (always visible)
  */
-
-import { useMemo } from "react";
 
 export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand }) {
   // Group sets by series for the dropdown optgroups.
@@ -23,40 +19,23 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     setsBySeries[s.series].push(s);
   }
 
-  // Group types with their quoted variants
-  const groupedTypes = useMemo(() => {
-    const groups = {};
-    for (const t of options.types) {
-      // Strip quotes to get base type name
-      const base = t.replace(/^"|"$/g, "");
-      if (!groups[base]) groups[base] = [];
-      groups[base].push(t);
-    }
-    return groups;
-  }, [options.types]);
-
   // Shared styling for all dropdowns.
   const selectClass =
     "px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
-  const inputClass =
-    "w-20 px-2 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
-    "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
-
   // Check if any filter is active (for highlight)
   const hasActiveFilters =
     filters.supertype ||
-    filters.types ||
     filters.rarity ||
     filters.set_id ||
-    filters.hp_min > 0 ||
-    filters.hp_max > 0 ||
     filters.region ||
     filters.generation ||
     filters.color ||
     filters.artist ||
-    filters.evolution_line;
+    filters.evolution_line ||
+    filters.trainer_type ||
+    filters.specialty;
 
   return (
     <div className="mt-4">
@@ -109,34 +88,47 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             </select>
           </div>
 
-          {/* Type filter with grouping */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Type
-            </label>
-            <select
-              value={filters.types}
-              onChange={(e) => onChange({ types: e.target.value })}
-              className={selectClass}
-            >
-              <option value="">All</option>
-              {Object.entries(groupedTypes).map(([base, variants]) =>
-                variants.length === 1 ? (
-                  <option key={base} value={variants[0]}>
-                    {base}
+          {/* Trainer Type filter */}
+          {options.trainer_types && options.trainer_types.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Trainer Type
+              </label>
+              <select
+                value={filters.trainer_type || ""}
+                onChange={(e) => onChange({ trainer_type: e.target.value })}
+                className={selectClass}
+              >
+                <option value="">All</option>
+                {options.trainer_types.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
-                ) : (
-                  <optgroup key={base} label={base}>
-                    {variants.map((v) => (
-                      <option key={v} value={v}>
-                        {v === base ? base : `${base} (alt)`}
-                      </option>
-                    ))}
-                  </optgroup>
-                )
-              )}
-            </select>
-          </div>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Specialty filter */}
+          {options.specialties && options.specialties.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Specialty
+              </label>
+              <select
+                value={filters.specialty || ""}
+                onChange={(e) => onChange({ specialty: e.target.value })}
+                className={selectClass}
+              >
+                <option value="">All</option>
+                {options.specialties.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Rarity filter */}
           <div>
@@ -178,41 +170,6 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 </optgroup>
               ))}
             </select>
-          </div>
-
-          {/* HP range */}
-          <div className="flex items-end gap-1">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                HP Min
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={filters.hp_min || ""}
-                onChange={(e) =>
-                  onChange({ hp_min: parseInt(e.target.value) || 0 })
-                }
-                placeholder="0"
-                className={inputClass}
-              />
-            </div>
-            <span className="pb-2 text-gray-400">–</span>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                HP Max
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={filters.hp_max || ""}
-                onChange={(e) =>
-                  onChange({ hp_max: parseInt(e.target.value) || 0 })
-                }
-                placeholder="Any"
-                className={inputClass}
-              />
-            </div>
           </div>
 
           {/* Artist filter */}
@@ -372,16 +329,15 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           onClick={() =>
             onChange({
               supertype: "",
-              types: "",
               rarity: "",
               set_id: "base1",
-              hp_min: 0,
-              hp_max: 0,
               region: "",
               generation: "",
               color: "",
               artist: "",
               evolution_line: "",
+              trainer_type: "",
+              specialty: "",
               sort_by: "pokedex",
               sort_dir: "asc",
             })

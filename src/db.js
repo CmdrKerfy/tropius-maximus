@@ -347,16 +347,15 @@ export async function fetchCards(params = {}) {
   const {
     q = "",
     supertype = "",
-    types = "",
     rarity = "",
     set_id = "",
-    hp_min = 0,
-    hp_max = 0,
     region = "",
     generation = "",
     color = "",
     artist = "",
     evolution_line = "",
+    trainer_type = "",
+    specialty = "",
     sort_by = "name",
     sort_dir = "asc",
     page = 1,
@@ -371,9 +370,6 @@ export async function fetchCards(params = {}) {
   if (supertype) {
     conditions.push(`c.supertype = ${escapeStr(supertype)}`);
   }
-  if (types) {
-    conditions.push(`c.types ILIKE ${escapeStr('%"' + types + '"%')}`);
-  }
   if (rarity) {
     conditions.push(`c.rarity = ${escapeStr(rarity)}`);
   }
@@ -381,18 +377,19 @@ export async function fetchCards(params = {}) {
     conditions.push(`c.set_id = ${escapeStr(set_id)}`);
   }
 
-  const hpMin = parseInt(hp_min) || 0;
-  const hpMax = parseInt(hp_max) || 0;
-  if (hpMin > 0) {
-    conditions.push(`TRY_CAST(c.hp AS INTEGER) >= ${hpMin}`);
-  }
-  if (hpMax > 0) {
-    conditions.push(`TRY_CAST(c.hp AS INTEGER) <= ${hpMax}`);
-  }
-
   // Artist filter
   if (artist) {
     conditions.push(`c.artist = ${escapeStr(artist)}`);
+  }
+
+  // Trainer Type filter (subtypes for Trainer cards)
+  if (trainer_type) {
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%"' + trainer_type + '"%')}`);
+  }
+
+  // Specialty filter (specific subtypes like Ace Spec, Tool, Technical Machine)
+  if (specialty) {
+    conditions.push(`c.subtypes ILIKE ${escapeStr('%"' + specialty + '"%')}`);
   }
 
   // Pokemon metadata filters (using JOIN)
@@ -615,23 +612,11 @@ export async function fetchCard(id) {
  * Fetch distinct values for all filter dropdowns.
  */
 export async function fetchFilterOptions() {
-  const [stResult, typesResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult] =
+  const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult] =
     await Promise.all([
       conn.query(
         "SELECT DISTINCT supertype FROM cards WHERE supertype != '' ORDER BY supertype"
       ),
-      conn.query(`
-        SELECT DISTINCT trimmed
-        FROM (
-          SELECT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
-            REPLACE(REPLACE(types, '[', ''), ']', ''), ','
-          )))) AS trimmed
-          FROM cards
-          WHERE types != '[]' AND types != ''
-        )
-        WHERE trimmed != ''
-        ORDER BY trimmed
-      `),
       conn.query(
         "SELECT DISTINCT rarity FROM cards WHERE rarity IS NOT NULL AND rarity != '' ORDER BY rarity"
       ),
@@ -653,10 +638,29 @@ export async function fetchFilterOptions() {
       conn.query(
         "SELECT DISTINCT evolution_chain FROM pokemon_metadata WHERE evolution_chain IS NOT NULL ORDER BY evolution_chain"
       ),
+      // Trainer Type: subtypes for Trainer cards (Item, Supporter, Stadium, Tool, etc.)
+      conn.query(`
+        SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+          REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
+        )))) AS trainer_type
+        FROM cards
+        WHERE supertype = 'Trainer' AND subtypes != '[]' AND subtypes != ''
+        ORDER BY trainer_type
+      `),
+      // Specialty: specific subtypes like Ace Spec, Pokémon Tool, Technical Machine
+      conn.query(`
+        SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+          REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
+        )))) AS specialty
+        FROM cards
+        WHERE subtypes ILIKE '%Ace Spec%'
+           OR subtypes ILIKE '%Tool%'
+           OR subtypes ILIKE '%Technical%'
+        ORDER BY specialty
+      `),
     ]);
 
   const supertypes = stResult.toArray().map((r) => r.supertype);
-  const types = typesResult.toArray().map((r) => r.trimmed);
   const rarities = raritiesResult.toArray().map((r) => r.rarity);
   const sets = setsResult.toArray().map((r) => ({
     id: r.id,
@@ -670,8 +674,18 @@ export async function fetchFilterOptions() {
   const colors = colorsResult.toArray().map((r) => r.color);
   const artists = artistsResult.toArray().map((r) => r.artist);
   const evolution_lines = evolutionLinesResult.toArray().map((r) => r.evolution_chain);
+  // Decode Unicode escape sequences (e.g., \u00e9 -> é)
+  const decodeUnicode = (str) => {
+    try {
+      return JSON.parse(`"${str}"`);
+    } catch {
+      return str;
+    }
+  };
+  const trainer_types = trainerTypesResult.toArray().map((r) => decodeUnicode(r.trainer_type)).filter(t => t);
+  const specialties = specialtiesResult.toArray().map((r) => decodeUnicode(r.specialty)).filter(s => s);
 
-  return { supertypes, types, rarities, sets, regions, generations, colors, artists, evolution_lines };
+  return { supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties };
 }
 
 // ── Annotations ────────────────────────────────────────────────────────

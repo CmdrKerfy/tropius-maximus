@@ -39,20 +39,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     supertype: "",
-    types: "",
     rarity: "",
     set_id: "base1",
-    hp_min: 0,
-    hp_max: 0,
     region: "",
     generation: "",
     color: "",
     artist: "",
     evolution_line: "",
+    trainer_type: "",
+    specialty: "",
     sort_by: "pokedex",
     sort_dir: "asc",
   });
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // ── Filter dropdown options (fetched once on mount) ─────────────────
   const [filterOptions, setFilterOptions] = useState(null);
