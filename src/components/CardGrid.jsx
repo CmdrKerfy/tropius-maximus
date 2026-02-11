@@ -97,6 +97,11 @@ export default function CardGrid({
                   alt={card.name}
                   className="w-full h-auto"
                   loading="lazy"
+                  onError={(e) => {
+                    if (card.image_fallback && e.target.src !== card.image_fallback) {
+                      e.target.src = card.image_fallback;
+                    }
+                  }}
                 />
               ) : (
                 <div className="aspect-[2.5/3.5] bg-gray-100 flex items-center justify-center">

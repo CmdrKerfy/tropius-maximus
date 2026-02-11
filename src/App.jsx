@@ -38,6 +38,7 @@ export default function App() {
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
+    source: "TCG",
     supertype: "",
     rarity: "",
     set_id: "base1",
@@ -48,6 +49,9 @@ export default function App() {
     evolution_line: "",
     trainer_type: "",
     specialty: "",
+    element: "",
+    card_type: "",
+    stage: "",
     sort_by: "pokedex",
     sort_dir: "asc",
   });
@@ -67,14 +71,14 @@ export default function App() {
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
-    fetchFilterOptions()
+    fetchFilterOptions(filters.source)
       .then(setFilterOptions)
       .catch((err) => console.error("Failed to load filter options:", err));
 
     fetchAttributes()
       .then(setAttributes)
       .catch((err) => console.error("Failed to load attributes:", err));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch cards whenever search, filters, or page changes ──────────
   const loadCards = useCallback(async () => {
@@ -112,8 +116,35 @@ export default function App() {
   };
 
   // When any filter changes, reset to page 1.
+  // When source changes, reset all filters and re-fetch filter options.
   const handleFilterChange = (newFilters) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
+    if (newFilters.source && newFilters.source !== filters.source) {
+      const newSource = newFilters.source;
+      setFilters({
+        source: newSource,
+        supertype: "",
+        rarity: "",
+        set_id: "",
+        region: "",
+        generation: "",
+        color: "",
+        artist: "",
+        evolution_line: "",
+        trainer_type: "",
+        specialty: "",
+        element: "",
+        card_type: "",
+        stage: "",
+        sort_by: "name",
+        sort_dir: "asc",
+      });
+      setSearchQuery("");
+      fetchFilterOptions(newSource)
+        .then(setFilterOptions)
+        .catch((err) => console.error("Failed to load filter options:", err));
+    } else {
+      setFilters((prev) => ({ ...prev, ...newFilters }));
+    }
     setPage(1);
     setSqlCards(null);
   };
@@ -339,6 +370,7 @@ export default function App() {
             <CardDetail
               cardId={selectedCardId}
               attributes={attributes}
+              source={filters.source}
               onClose={() => setSelectedCardId(null)}
               hasPrev={currentIndex > 0}
               hasNext={currentIndex < cardIds.length - 1}

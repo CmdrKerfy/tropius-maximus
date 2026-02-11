@@ -44,7 +44,7 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
   );
 }
 
-export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNext, onPrev, onNext }) {
+export default function CardDetail({ cardId, attributes, source = "TCG", onClose, hasPrev, hasNext, onPrev, onNext }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,11 +59,11 @@ export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNe
     setError(null);
     setImageEnlarged(false);
     setEditingImage(false);
-    fetchCard(cardId)
+    fetchCard(cardId, source)
       .then(setCard)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [cardId]);
+  }, [cardId, source]);
 
   // Keyboard navigation: Escape, ArrowLeft, ArrowRight.
   useEffect(() => {
@@ -283,6 +283,11 @@ export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNe
                         alt={card.name}
                         className="w-full md:w-72 rounded-lg shadow-md cursor-pointer"
                         onClick={() => setImageEnlarged(true)}
+                        onError={(e) => {
+                          if (card.image_fallback && e.target.src !== card.image_fallback) {
+                            e.target.src = card.image_fallback;
+                          }
+                        }}
                       />
                       {/* Edit button overlay */}
                       <button
@@ -384,6 +389,23 @@ export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNe
                 {card.evolves_from && (
                   <p className="mt-2 text-sm text-gray-600">
                     Evolves from: <strong>{card.evolves_from}</strong>
+                  </p>
+                )}
+
+                {/* Pocket-specific fields */}
+                {card.stage && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Stage: <strong>{card.stage}</strong>
+                  </p>
+                )}
+                {card.packs && card.packs.length > 0 && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Packs: <strong>{card.packs.join(", ")}</strong>
+                  </p>
+                )}
+                {card.retreat_cost != null && card.retreat_cost > 0 && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Retreat Cost: <strong>{card.retreat_cost}</strong>
                   </p>
                 )}
 
@@ -600,6 +622,11 @@ export default function CardDetail({ cardId, attributes, onClose, hasPrev, hasNe
             alt={card.name}
             className="max-h-[90vh] max-w-[90vw] object-contain"
             onClick={(e) => e.stopPropagation()}
+            onError={(e) => {
+              if (card.image_fallback && e.target.src !== card.image_fallback) {
+                e.target.src = card.image_fallback;
+              }
+            }}
           />
         </div>
       )}

@@ -100,6 +100,17 @@ function escapeStr(s) {
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
 
+// ── TCGdex image URL helpers ──────────────────────────────────────────
+
+// SQL CASE expression to map our set_id to TCGdex set IDs
+const TCGDEX_SET_EXPR = `(CASE WHEN pc.set_id = 'PROMO-A' THEN 'P-A'
+       WHEN pc.set_id = 'PROMO-B' THEN 'P-B'
+       ELSE pc.set_id END)`;
+
+const TCGDEX_IMG_BASE = `'https://assets.tcgdex.net/en/tcgp/' || ${TCGDEX_SET_EXPR} || '/' || LPAD(CAST(pc.number AS VARCHAR), 3, '0')`;
+const TCGDEX_IMG_SMALL = `${TCGDEX_IMG_BASE} || '/low.webp'`;
+const TCGDEX_IMG_LARGE = `${TCGDEX_IMG_BASE} || '/high.webp'`;
+
 // ── Initialization ─────────────────────────────────────────────────────
 
 /**
@@ -129,10 +140,12 @@ export async function initDB() {
 
   // 2. Fetch Parquet files and register them
   const base = import.meta.env.BASE_URL || "/";
-  const [cardsResp, setsResp, pokemonMetaResp] = await Promise.all([
+  const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp] = await Promise.all([
     fetch(`${base}data/cards.parquet`),
     fetch(`${base}data/sets.parquet`),
     fetch(`${base}data/pokemon_metadata.parquet`),
+    fetch(`${base}data/pocket_cards.parquet`),
+    fetch(`${base}data/pocket_sets.parquet`),
   ]);
 
   if (!cardsResp.ok) throw new Error("Failed to fetch cards.parquet");
@@ -179,6 +192,58 @@ export async function initDB() {
         genus          VARCHAR,
         encounter_location VARCHAR,
         evolution_chain VARCHAR
+      )
+    `);
+  }
+
+  // Create pocket_cards table
+  if (pocketCardsResp.ok) {
+    const pocketCardsBuf = new Uint8Array(await pocketCardsResp.arrayBuffer());
+    await db.registerFileBuffer("pocket_cards.parquet", pocketCardsBuf);
+    await conn.query(
+      "CREATE OR REPLACE TABLE pocket_cards AS SELECT *, '{}'::JSON AS annotations FROM 'pocket_cards.parquet'"
+    );
+  } else {
+    await conn.query(`
+      CREATE OR REPLACE TABLE pocket_cards (
+        id              VARCHAR PRIMARY KEY,
+        name            VARCHAR,
+        set_id          VARCHAR,
+        number          INTEGER,
+        rarity          VARCHAR,
+        card_type       VARCHAR,
+        element         VARCHAR,
+        hp              INTEGER,
+        stage           VARCHAR,
+        retreat_cost    INTEGER,
+        weakness        VARCHAR,
+        evolves_from    VARCHAR,
+        packs           JSON,
+        image_url       VARCHAR,
+        image_filename  VARCHAR,
+        raw_data        JSON,
+        annotations     JSON DEFAULT '{}'
+      )
+    `);
+  }
+
+  // Create pocket_sets table
+  if (pocketSetsResp.ok) {
+    const pocketSetsBuf = new Uint8Array(await pocketSetsResp.arrayBuffer());
+    await db.registerFileBuffer("pocket_sets.parquet", pocketSetsBuf);
+    await conn.query(
+      "CREATE OR REPLACE TABLE pocket_sets AS SELECT * FROM 'pocket_sets.parquet'"
+    );
+  } else {
+    await conn.query(`
+      CREATE OR REPLACE TABLE pocket_sets (
+        id            VARCHAR PRIMARY KEY,
+        name          VARCHAR,
+        series        VARCHAR,
+        release_date  VARCHAR,
+        card_count    INTEGER,
+        packs         JSON,
+        logo_url      VARCHAR
       )
     `);
   }
@@ -237,11 +302,16 @@ export async function initDB() {
 }
 
 async function hydrateFromIndexedDB() {
-  // Hydrate annotations
+  // Hydrate annotations (update both tables — only one will match per ID)
   const annotations = await idbGetAll(STORE_ANNOTATIONS);
   for (const row of annotations) {
+    const escaped = escapeStr(JSON.stringify(row.data));
+    const escapedId = escapeStr(row.id);
     await conn.query(
-      `UPDATE cards SET annotations = ${escapeStr(JSON.stringify(row.data))} WHERE id = ${escapeStr(row.id)}`
+      `UPDATE cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+    );
+    await conn.query(
+      `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
     );
   }
 
@@ -348,6 +418,10 @@ const ALLOWED_SORT = new Set([
   "generation", "region", "pokedex",
 ]);
 
+const POCKET_ALLOWED_SORT = new Set([
+  "name", "hp", "set_name", "rarity", "number", "id",
+]);
+
 /**
  * Fetch a paginated list of cards with optional search/filter params.
  */
@@ -364,12 +438,98 @@ export async function fetchCards(params = {}) {
     evolution_line = "",
     trainer_type = "",
     specialty = "",
+    element = "",
+    card_type = "",
+    stage = "",
+    source = "TCG",
     sort_by = "name",
     sort_dir = "asc",
     page = 1,
     page_size = 40,
   } = params;
 
+  const pageInt = parseInt(page) || 1;
+  const pageSizeInt = parseInt(page_size) || 40;
+  const offset = (pageInt - 1) * pageSizeInt;
+  const safeSortDir = sort_dir === "desc" ? "DESC" : "ASC";
+
+  // ── Pocket source ──────────────────────────────────────────────────
+  if (source === "Pocket") {
+    const conditions = [];
+    if (q) conditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (rarity) conditions.push(`pc.rarity = ${escapeStr(rarity)}`);
+    if (set_id) conditions.push(`pc.set_id = ${escapeStr(set_id)}`);
+    if (card_type) conditions.push(`pc.card_type = ${escapeStr(card_type)}`);
+    if (element) conditions.push(`pc.element = ${escapeStr(element)}`);
+    if (stage) conditions.push(`pc.stage = ${escapeStr(stage)}`);
+
+    const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+    const safeSortBy = POCKET_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
+    let sortExpr;
+    if (safeSortBy === "number") {
+      sortExpr = "pc.number";
+    } else if (safeSortBy === "set_name") {
+      sortExpr = "ps.name";
+    } else {
+      sortExpr = `pc.${safeSortBy}`;
+    }
+
+    const joinClause = "LEFT JOIN pocket_sets ps ON ps.id = pc.set_id";
+
+    const countResult = await conn.query(
+      `SELECT COUNT(*)::INTEGER AS cnt FROM pocket_cards pc ${joinClause} ${where}`
+    );
+    const total = countResult.toArray()[0].cnt;
+
+    const dataResult = await conn.query(`
+      SELECT pc.id, pc.name,
+             pc.card_type AS supertype,
+             pc.hp,
+             CASE WHEN pc.element IS NOT NULL AND pc.element != '' THEN '["' || pc.element || '"]' ELSE '[]' END AS types,
+             pc.rarity,
+             pc.set_id,
+             ps.name AS set_name,
+             CAST(pc.number AS VARCHAR) AS number,
+             ${TCGDEX_IMG_SMALL} AS image_small,
+             ${TCGDEX_IMG_LARGE} AS image_large,
+             pc.image_url AS image_fallback,
+             pc.annotations
+      FROM pocket_cards pc
+      ${joinClause}
+      ${where}
+      ORDER BY ${sortExpr} ${safeSortDir}
+      LIMIT ${pageSizeInt} OFFSET ${offset}
+    `);
+
+    const rows = dataResult.toArray();
+    const cards = rows.map((r) => {
+      const annotations =
+        typeof r.annotations === "string"
+          ? JSON.parse(r.annotations)
+          : r.annotations || {};
+      return {
+        id: r.id,
+        name: r.name,
+        supertype: r.supertype,
+        subtypes: "[]",
+        hp: r.hp,
+        types: r.types,
+        rarity: r.rarity,
+        set_id: r.set_id,
+        set_name: r.set_name,
+        number: r.number,
+        image_small: r.image_small,
+        image_large: r.image_large,
+        image_fallback: r.image_fallback,
+        annotations,
+      };
+    });
+
+    return { cards, total, page: pageInt, page_size: pageSizeInt };
+  }
+
+  // ── TCG source (default) ───────────────────────────────────────────
   const conditions = [];
 
   if (q) {
@@ -424,7 +584,6 @@ export async function fetchCards(params = {}) {
 
   // Validate sort
   const safeSortBy = ALLOWED_SORT.has(sort_by) ? sort_by : "name";
-  const safeSortDir = sort_dir === "desc" ? "DESC" : "ASC";
   let sortExpr;
   if (safeSortBy === "number") {
     sortExpr = "TRY_CAST(c.number AS INTEGER)";
@@ -459,10 +618,6 @@ export async function fetchCards(params = {}) {
     `SELECT COUNT(*)::INTEGER AS cnt FROM cards c ${joinClause} ${where}`
   );
   const total = countResult.toArray()[0].cnt;
-
-  const pageInt = parseInt(page) || 1;
-  const pageSizeInt = parseInt(page_size) || 40;
-  const offset = (pageInt - 1) * pageSizeInt;
 
   const dataResult = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
@@ -508,7 +663,86 @@ export async function fetchCards(params = {}) {
 /**
  * Fetch full details for a single card.
  */
-export async function fetchCard(id) {
+export async function fetchCard(id, source = "TCG") {
+  // ── Pocket source ──────────────────────────────────────────────────
+  if (source === "Pocket") {
+    const result = await conn.query(`
+      SELECT pc.id, pc.name, pc.card_type, pc.hp, pc.element, pc.rarity,
+             pc.stage, pc.retreat_cost, pc.weakness, pc.evolves_from,
+             pc.packs, pc.raw_data, pc.annotations,
+             pc.set_id, pc.number,
+             ${TCGDEX_IMG_SMALL} AS image_small,
+             ${TCGDEX_IMG_LARGE} AS image_large,
+             pc.image_url AS image_fallback,
+             ps.name AS set_name, ps.series AS set_series
+      FROM pocket_cards pc
+      LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
+      WHERE pc.id = ${escapeStr(id)}
+    `);
+
+    const rows = result.toArray();
+    if (rows.length === 0) throw new Error("Card not found");
+
+    const r = rows[0];
+    const raw_data =
+      typeof r.raw_data === "string" ? JSON.parse(r.raw_data) : r.raw_data || {};
+    let annotations =
+      typeof r.annotations === "string"
+        ? JSON.parse(r.annotations)
+        : r.annotations || {};
+    const packs =
+      typeof r.packs === "string" ? JSON.parse(r.packs) : r.packs || [];
+
+    // Auto-populate unique_id if empty
+    let needsPatch = false;
+    if (!annotations.unique_id) {
+      annotations.unique_id = r.id;
+      needsPatch = true;
+    }
+    if (needsPatch) {
+      await patchAnnotations(r.id, { unique_id: annotations.unique_id });
+    }
+
+    // Build weaknesses array for CardDetail compatibility
+    const weaknesses = r.weakness
+      ? [{ type: r.weakness, value: "" }]
+      : [];
+
+    // Build types array from element
+    const types = r.element ? JSON.stringify([r.element]) : "[]";
+
+    return {
+      id: r.id,
+      name: r.name,
+      supertype: r.card_type || "",
+      subtypes: "[]",
+      hp: r.hp,
+      types,
+      evolves_from: r.evolves_from || null,
+      rarity: r.rarity,
+      artist: null,
+      set_id: r.set_id,
+      set_name: r.set_name,
+      set_series: r.set_series,
+      number: String(r.number),
+      regulation_mark: null,
+      image_small: r.image_small,
+      image_large: r.image_large,
+      image_fallback: r.image_fallback,
+      raw_data: { ...raw_data, weaknesses },
+      annotations,
+      prices: null,
+      pokedex_numbers: [],
+      genus: null,
+      // Pocket-specific fields
+      stage: r.stage || null,
+      packs: Array.isArray(packs) ? packs : [],
+      retreat_cost: typeof r.retreat_cost === "bigint" ? Number(r.retreat_cost) : r.retreat_cost,
+      element: r.element || null,
+    };
+  }
+
+  // ── TCG source (default) ───────────────────────────────────────────
   const result = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.evolves_from,
            c.rarity, c.artist, c.set_id, c.set_name, c.set_series, c.number,
@@ -619,7 +853,47 @@ export async function fetchCard(id) {
 /**
  * Fetch distinct values for all filter dropdowns.
  */
-export async function fetchFilterOptions() {
+export async function fetchFilterOptions(source = "TCG") {
+  // ── Pocket source ──────────────────────────────────────────────────
+  if (source === "Pocket") {
+    const [cardTypesResult, raritiesResult, setsResult, elementsResult, stagesResult] =
+      await Promise.all([
+        conn.query(
+          "SELECT DISTINCT card_type FROM pocket_cards WHERE card_type IS NOT NULL AND card_type != '' ORDER BY card_type"
+        ),
+        conn.query(
+          "SELECT DISTINCT rarity FROM pocket_cards WHERE rarity IS NOT NULL AND rarity != '' ORDER BY rarity"
+        ),
+        conn.query(
+          "SELECT id, name, series FROM pocket_sets ORDER BY series, release_date"
+        ),
+        conn.query(
+          "SELECT DISTINCT element FROM pocket_cards WHERE element IS NOT NULL AND element != '' ORDER BY element"
+        ),
+        conn.query(
+          "SELECT DISTINCT stage FROM pocket_cards WHERE stage IS NOT NULL AND stage != '' ORDER BY stage"
+        ),
+      ]);
+
+    return {
+      supertypes: [],
+      rarities: raritiesResult.toArray().map((r) => r.rarity),
+      sets: setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series })),
+      regions: [],
+      generations: [],
+      colors: [],
+      artists: [],
+      evolution_lines: [],
+      trainer_types: [],
+      specialties: [],
+      // Pocket-specific
+      card_types: cardTypesResult.toArray().map((r) => r.card_type),
+      elements: elementsResult.toArray().map((r) => r.element),
+      stages: stagesResult.toArray().map((r) => r.stage),
+    };
+  }
+
+  // ── TCG source (default) ───────────────────────────────────────────
   const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult] =
     await Promise.all([
       conn.query(
@@ -693,7 +967,11 @@ export async function fetchFilterOptions() {
   const trainer_types = trainerTypesResult.toArray().map((r) => decodeUnicode(r.trainer_type)).filter(t => t);
   const specialties = specialtiesResult.toArray().map((r) => decodeUnicode(r.specialty)).filter(s => s);
 
-  return { supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties };
+  return {
+    supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties,
+    // Empty Pocket-only fields
+    card_types: [], elements: [], stages: [],
+  };
 }
 
 // ── Annotations ────────────────────────────────────────────────────────
@@ -702,10 +980,16 @@ export async function fetchFilterOptions() {
  * Get annotations for a card.
  */
 export async function fetchAnnotations(cardId) {
-  const result = await conn.query(
+  let result = await conn.query(
     `SELECT annotations FROM cards WHERE id = ${escapeStr(cardId)}`
   );
-  const rows = result.toArray();
+  let rows = result.toArray();
+  if (rows.length === 0) {
+    result = await conn.query(
+      `SELECT annotations FROM pocket_cards WHERE id = ${escapeStr(cardId)}`
+    );
+    rows = result.toArray();
+  }
   if (rows.length === 0) throw new Error("Card not found");
 
   const val = rows[0].annotations;
@@ -729,9 +1013,14 @@ export async function patchAnnotations(cardId, annotations) {
     }
   }
 
-  // Write to DuckDB
+  // Write to DuckDB (both tables — only one will match)
+  const escaped = escapeStr(JSON.stringify(current));
+  const escapedId = escapeStr(cardId);
   await conn.query(
-    `UPDATE cards SET annotations = ${escapeStr(JSON.stringify(current))} WHERE id = ${escapeStr(cardId)}`
+    `UPDATE cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+  );
+  await conn.query(
+    `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
   );
 
   // Write-through to IndexedDB

@@ -52,6 +52,32 @@ def export():
     except Exception as e:
         print(f"  pokemon_metadata.parquet: skipped (table not found)")
 
+    # Export pocket_sets if it exists
+    try:
+        pocket_sets_path = os.path.join(OUTPUT_DIR, "pocket_sets.parquet")
+        conn.execute(f"""
+            COPY (SELECT * FROM pocket_sets)
+            TO '{pocket_sets_path}'
+            (FORMAT PARQUET, COMPRESSION ZSTD)
+        """)
+        pocket_sets_size = os.path.getsize(pocket_sets_path)
+        print(f"  pocket_sets.parquet: {pocket_sets_size / 1024:.0f} KB")
+    except Exception:
+        print(f"  pocket_sets.parquet: skipped (table not found)")
+
+    # Export pocket_cards if it exists
+    try:
+        pocket_cards_path = os.path.join(OUTPUT_DIR, "pocket_cards.parquet")
+        conn.execute(f"""
+            COPY (SELECT * FROM pocket_cards)
+            TO '{pocket_cards_path}'
+            (FORMAT PARQUET, COMPRESSION ZSTD)
+        """)
+        pocket_cards_size = os.path.getsize(pocket_cards_path)
+        print(f"  pocket_cards.parquet: {pocket_cards_size / 1024:.1f} KB")
+    except Exception:
+        print(f"  pocket_cards.parquet: skipped (table not found)")
+
     conn.close()
     print("Done!")
 

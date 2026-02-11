@@ -24,6 +24,8 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     "px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
+  const isPocket = filters.source === "Pocket";
+
   // Check if any filter is active (for highlight)
   const hasActiveFilters =
     filters.supertype ||
@@ -35,7 +37,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     filters.artist ||
     filters.evolution_line ||
     filters.trainer_type ||
-    filters.specialty;
+    filters.specialty ||
+    filters.element ||
+    filters.card_type ||
+    filters.stage;
 
   return (
     <div className="mt-4">
@@ -69,68 +74,156 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
         }`}
       >
         <div className="flex flex-wrap gap-3 items-end pb-3">
-          {/* Supertype filter */}
+          {/* Source filter */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Supertype
+              Source
             </label>
             <select
-              value={filters.supertype}
-              onChange={(e) => onChange({ supertype: e.target.value })}
+              value={filters.source || "TCG"}
+              onChange={(e) => onChange({ source: e.target.value })}
               className={selectClass}
             >
-              <option value="">All</option>
-              {options.supertypes.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="TCG">TCG</option>
+              <option value="Pocket">Pocket</option>
             </select>
           </div>
 
-          {/* Trainer Type filter */}
-          {options.trainer_types && options.trainer_types.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Trainer Type
-              </label>
-              <select
-                value={filters.trainer_type || ""}
-                onChange={(e) => onChange({ trainer_type: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.trainer_types.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* ── TCG-only filters ─────────────────────────────────── */}
+          {!isPocket && (
+            <>
+              {/* Supertype filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Supertype
+                </label>
+                <select
+                  value={filters.supertype}
+                  onChange={(e) => onChange({ supertype: e.target.value })}
+                  className={selectClass}
+                >
+                  <option value="">All</option>
+                  {options.supertypes.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Trainer Type filter */}
+              {options.trainer_types && options.trainer_types.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Trainer Type
+                  </label>
+                  <select
+                    value={filters.trainer_type || ""}
+                    onChange={(e) => onChange({ trainer_type: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.trainer_types.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Specialty filter */}
+              {options.specialties && options.specialties.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Specialty
+                  </label>
+                  <select
+                    value={filters.specialty || ""}
+                    onChange={(e) => onChange({ specialty: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.specialties.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Specialty filter */}
-          {options.specialties && options.specialties.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Specialty
-              </label>
-              <select
-                value={filters.specialty || ""}
-                onChange={(e) => onChange({ specialty: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.specialties.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* ── Pocket-only filters ──────────────────────────────── */}
+          {isPocket && (
+            <>
+              {/* Card Type filter */}
+              {options.card_types && options.card_types.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Card Type
+                  </label>
+                  <select
+                    value={filters.card_type || ""}
+                    onChange={(e) => onChange({ card_type: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.card_types.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Element filter */}
+              {options.elements && options.elements.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Element
+                  </label>
+                  <select
+                    value={filters.element || ""}
+                    onChange={(e) => onChange({ element: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.elements.map((el) => (
+                      <option key={el} value={el}>
+                        {el}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Stage filter */}
+              {options.stages && options.stages.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Stage
+                  </label>
+                  <select
+                    value={filters.stage || ""}
+                    onChange={(e) => onChange({ stage: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.stages.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Rarity filter */}
+          {/* Rarity filter (shared) */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
               Rarity
@@ -149,7 +242,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             </select>
           </div>
 
-          {/* Set filter — grouped by series using optgroups */}
+          {/* Set filter — grouped by series using optgroups (shared) */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
               Set
@@ -172,116 +265,121 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             </select>
           </div>
 
-          {/* Artist filter */}
-          {options.artists && options.artists.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Artist
-              </label>
-              <select
-                value={filters.artist || ""}
-                onChange={(e) => onChange({ artist: e.target.value })}
-                className={selectClass + " max-w-[200px]"}
-              >
-                <option value="">All</option>
-                {options.artists.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* ── TCG-only filters (continued) ─────────────────────── */}
+          {!isPocket && (
+            <>
+              {/* Artist filter */}
+              {options.artists && options.artists.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Artist
+                  </label>
+                  <select
+                    value={filters.artist || ""}
+                    onChange={(e) => onChange({ artist: e.target.value })}
+                    className={selectClass + " max-w-[200px]"}
+                  >
+                    <option value="">All</option>
+                    {options.artists.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {/* Evolution Line filter */}
-          {options.evolution_lines && options.evolution_lines.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Evolution Line
-              </label>
-              <select
-                value={filters.evolution_line || ""}
-                onChange={(e) => onChange({ evolution_line: e.target.value })}
-                className={selectClass + " max-w-[250px]"}
-              >
-                <option value="">All</option>
-                {options.evolution_lines.map((evo) => {
-                  // Parse JSON array and format as "A -> B -> C"
-                  try {
-                    const arr = JSON.parse(evo);
-                    const display = arr.join(" -> ");
-                    return (
-                      <option key={evo} value={evo}>{display}</option>
-                    );
-                  } catch {
-                    return (
-                      <option key={evo} value={evo}>{evo}</option>
-                    );
-                  }
-                })}
-              </select>
-            </div>
-          )}
+              {/* Evolution Line filter */}
+              {options.evolution_lines && options.evolution_lines.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Evolution Line
+                  </label>
+                  <select
+                    value={filters.evolution_line || ""}
+                    onChange={(e) => onChange({ evolution_line: e.target.value })}
+                    className={selectClass + " max-w-[250px]"}
+                  >
+                    <option value="">All</option>
+                    {options.evolution_lines.map((evo) => {
+                      // Parse JSON array and format as "A -> B -> C"
+                      try {
+                        const arr = JSON.parse(evo);
+                        const display = arr.join(" -> ");
+                        return (
+                          <option key={evo} value={evo}>{display}</option>
+                        );
+                      } catch {
+                        return (
+                          <option key={evo} value={evo}>{evo}</option>
+                        );
+                      }
+                    })}
+                  </select>
+                </div>
+              )}
 
-          {/* Region filter */}
-          {options.regions && options.regions.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Region
-              </label>
-              <select
-                value={filters.region || ""}
-                onChange={(e) => onChange({ region: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.regions.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+              {/* Region filter */}
+              {options.regions && options.regions.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Region
+                  </label>
+                  <select
+                    value={filters.region || ""}
+                    onChange={(e) => onChange({ region: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.regions.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {/* Generation filter */}
-          {options.generations && options.generations.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Generation
-              </label>
-              <select
-                value={filters.generation || ""}
-                onChange={(e) => onChange({ generation: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.generations.map((g) => (
-                  <option key={g} value={g}>
-                    Gen {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+              {/* Generation filter */}
+              {options.generations && options.generations.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Generation
+                  </label>
+                  <select
+                    value={filters.generation || ""}
+                    onChange={(e) => onChange({ generation: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.generations.map((g) => (
+                      <option key={g} value={g}>
+                        Gen {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {/* Color filter */}
-          {options.colors && options.colors.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Color
-              </label>
-              <select
-                value={filters.color || ""}
-                onChange={(e) => onChange({ color: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.colors.map((c) => (
-                  <option key={c} value={c}>
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Color filter */}
+              {options.colors && options.colors.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Color
+                  </label>
+                  <select
+                    value={filters.color || ""}
+                    onChange={(e) => onChange({ color: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.colors.map((c) => (
+                      <option key={c} value={c}>
+                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -300,13 +398,13 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           >
             <option value="name">Name</option>
             <option value="number">Number</option>
-            <option value="pokedex">Pokedex #</option>
+            {!isPocket && <option value="pokedex">Pokedex #</option>}
             <option value="hp">HP</option>
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
-            <option value="price">Price</option>
-            <option value="generation">Generation</option>
-            <option value="region">Region</option>
+            {!isPocket && <option value="price">Price</option>}
+            {!isPocket && <option value="generation">Generation</option>}
+            {!isPocket && <option value="region">Region</option>}
           </select>
         </div>
 
@@ -338,7 +436,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               evolution_line: "",
               trainer_type: "",
               specialty: "",
-              sort_by: "pokedex",
+              element: "",
+              card_type: "",
+              stage: "",
+              sort_by: isPocket ? "name" : "pokedex",
               sort_dir: "asc",
             })
           }

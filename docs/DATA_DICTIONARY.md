@@ -4,10 +4,12 @@ This document describes the database schema for the Pokemon TCG Database.
 
 ## Overview
 
-The database contains three tables:
-- **cards** — All Pokemon Trading Card Game cards
-- **sets** — Card set metadata
+The database contains five tables:
+- **cards** — All Pokemon Trading Card Game cards (from pokemontcg.io)
+- **sets** — TCG card set metadata
 - **pokemon_metadata** — Pokemon species data from PokeAPI
+- **pocket_cards** — Pokemon TCG Pocket cards (from flibustier GitHub DB)
+- **pocket_sets** — Pokemon TCG Pocket set metadata
 
 Data is stored as Parquet files and loaded into DuckDB-WASM at runtime.
 
@@ -113,12 +115,57 @@ Pokemon species data from PokeAPI for enriching card information.
 
 ---
 
+### pocket_sets
+
+Lookup table for Pokemon TCG Pocket sets, sourced from the [flibustier/pokemon-tcg-pocket-database](https://github.com/flibustier/pokemon-tcg-pocket-database) GitHub repo.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | VARCHAR (PK) | Set code (e.g., "A1", "A1a", "PROMO-A") |
+| `name` | VARCHAR | English set name (e.g., "Genetic Apex") |
+| `series` | VARCHAR | Series identifier ("A" or "B") |
+| `release_date` | VARCHAR | Release date (YYYY-MM-DD) |
+| `card_count` | INTEGER | Number of cards in the set |
+| `packs` | JSON | Array of pack names (e.g., `["Charizard", "Mewtwo", "Pikachu"]`) |
+| `logo_url` | VARCHAR | URL to set logo image |
+
+---
+
+### pocket_cards
+
+All Pokemon TCG Pocket cards, with enrichment data from `cards.extra.json` where available.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | VARCHAR (PK) | Constructed ID: `{set}-{number:03d}` (e.g., "A1-001") |
+| `name` | VARCHAR | Card name |
+| `set_id` | VARCHAR | Foreign key to pocket_sets.id |
+| `number` | INTEGER | Card number within set |
+| `rarity` | VARCHAR | Rarity code (C, U, R, RR, AR, SR, SAR, IM, UR) |
+| `card_type` | VARCHAR | Card type from enrichment (e.g., "pokemon", "supporter", "Fossil") |
+| `element` | VARCHAR | Element/energy type from enrichment (e.g., "grass", "fire") |
+| `hp` | INTEGER | Hit points from enrichment |
+| `stage` | VARCHAR | Evolution stage, normalized (e.g., "basic", "stage 1", "stage 2") |
+| `retreat_cost` | INTEGER | Retreat cost from enrichment |
+| `weakness` | VARCHAR | Weakness type from enrichment (e.g., "Fire") |
+| `evolves_from` | VARCHAR | Name of Pokemon this evolves from (enrichment) |
+| `packs` | JSON | Array of pack names this card appears in |
+| `image_url` | VARCHAR | Full constructed image URL |
+| `image_filename` | VARCHAR | Original image filename from source |
+| `raw_data` | JSON | Merged data from cards.json + cards.extra.json |
+| `annotations` | JSON | User metadata (same format as cards table, runtime only) |
+
+**Note:** Columns marked "from enrichment" are nullable — enrichment data currently only covers some sets.
+
+---
+
 ## Data Pipeline
 
 1. **Ingest** (`scripts/ingest.py`)
-   - Fetches card data from Pokemon TCG API
+   - Fetches card data from Pokemon TCG API (pokemontcg.io)
    - Fetches Pokemon metadata from PokeAPI
-   - Stores in local SQLite/DuckDB for processing
+   - Fetches Pokemon TCG Pocket data from flibustier GitHub DB
+   - Stores in local DuckDB for processing
 
 2. **Export** (`scripts/export_parquet.py`)
    - Exports tables to Parquet files with ZSTD compression
