@@ -8,12 +8,25 @@
  */
 
 import * as duckdb from "@duckdb/duckdb-wasm";
+// Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
+import duckdb_wasm_mvp from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
+import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
+import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
+import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
 
 // ── Module-level state ─────────────────────────────────────────────────
 
 let db = null;
 let conn = null;
 let initialized = false;
+
+/** Turn relative path/URL into absolute URL so the worker can fetch WASM (Request requires valid URL). */
+function toAbsoluteUrl(url) {
+  if (typeof url !== "string") return url;
+  if (/^(https?:|blob:)/.test(url)) return url;
+  const base = typeof location !== "undefined" ? location.origin + (import.meta.env.BASE_URL || "/") : "";
+  return new URL(url, base).href;
+}
 
 // ── Unicode helpers ─────────────────────────────────────────────────────
 
@@ -111,6 +124,19 @@ const TCGDEX_IMG_BASE = `'https://assets.tcgdex.net/en/tcgp/' || ${TCGDEX_SET_EX
 const TCGDEX_IMG_SMALL = `${TCGDEX_IMG_BASE} || '/low.webp'`;
 const TCGDEX_IMG_LARGE = `${TCGDEX_IMG_BASE} || '/high.webp'`;
 
+// ── Exclusive source mapping ────────────────────────────────────────────
+
+const EXCLUSIVE_SOURCES = {
+  "Japan Exclusive": "ja",
+  "China Exclusive": "zh-cn",
+  "Indonesian Exclusive": "id",
+  "Thai Exclusive": "th",
+};
+
+function isExclusiveSource(source) {
+  return source in EXCLUSIVE_SOURCES;
+}
+
 // ── Initialization ─────────────────────────────────────────────────────
 
 /**
@@ -120,32 +146,72 @@ const TCGDEX_IMG_LARGE = `${TCGDEX_IMG_BASE} || '/high.webp'`;
 export async function initDB() {
   if (initialized) return;
 
-  // 1. Load DuckDB-WASM bundles from jsDelivr CDN
-  const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
-  const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+  const MANUAL_BUNDLES = {
+    mvp: { mainModule: duckdb_wasm_mvp, mainWorker: mvp_worker },
+    eh: { mainModule: duckdb_wasm_eh, mainWorker: eh_worker },
+  };
+  const bundles = import.meta.env.DEV ? { mvp: MANUAL_BUNDLES.mvp } : MANUAL_BUNDLES;
+  const bundle = await duckdb.selectBundle(bundles);
 
-  const worker_url = URL.createObjectURL(
-    new Blob([`importScripts("${bundle.mainWorker}");`], {
-      type: "text/javascript",
-    })
-  );
+  const wasmUrl = toAbsoluteUrl(bundle.mainModule);
+  let wasmBlobUrl;
+  try {
+    const wasmBuf = await fetch(wasmUrl).then((r) => r.arrayBuffer());
+    wasmBlobUrl = URL.createObjectURL(new Blob([wasmBuf], { type: "application/wasm" }));
+  } catch (e) {
+    throw new Error("DuckDB init: failed to fetch WASM — " + (e?.message || e));
+  }
 
-  const worker = new Worker(worker_url);
+  let workerBlobUrl;
+  if (import.meta.env.DEV) {
+    const cdnWorkerUrl = duckdb.getJsDelivrBundles().mvp.mainWorker;
+    workerBlobUrl = URL.createObjectURL(
+      new Blob([`importScripts("${cdnWorkerUrl}");`], { type: "text/javascript" })
+    );
+  } else {
+    const mainWorkerUrl = toAbsoluteUrl(bundle.mainWorker);
+    let workerScript;
+    try {
+      workerScript = await fetch(mainWorkerUrl).then((r) => r.text());
+    } catch (e) {
+      URL.revokeObjectURL(wasmBlobUrl);
+      throw new Error("DuckDB init: failed to fetch worker script — " + (e?.message || e));
+    }
+    const scriptWithoutSourcemap = workerScript.replace(/\n?\/\/# sourceMappingURL=.*$/m, "");
+    workerBlobUrl = URL.createObjectURL(
+      new Blob([scriptWithoutSourcemap], { type: "application/javascript" })
+    );
+  }
+  const worker = new Worker(workerBlobUrl, { type: "classic" });
+  URL.revokeObjectURL(workerBlobUrl);
+
   const logger = new duckdb.ConsoleLogger();
   db = new duckdb.AsyncDuckDB(logger, worker);
-  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-  URL.revokeObjectURL(worker_url);
+  try {
+    await db.instantiate(wasmBlobUrl, null);
+  } catch (e) {
+    URL.revokeObjectURL(wasmBlobUrl);
+    throw new Error("DuckDB init: " + (e?.message || e));
+  }
+  URL.revokeObjectURL(wasmBlobUrl);
 
-  conn = await db.connect();
+  try {
+    conn = await db.connect();
+  } catch (e) {
+    throw new Error("DuckDB init: connect failed — " + (e?.message || e));
+  }
 
-  // 2. Fetch Parquet files and register them
-  const base = import.meta.env.BASE_URL || "/";
-  const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp] = await Promise.all([
+  try {
+    // 2. Fetch Parquet files and register them
+    const base = import.meta.env.BASE_URL || "/";
+  const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp, exclCardsResp, exclSetsResp] = await Promise.all([
     fetch(`${base}data/cards.parquet`),
     fetch(`${base}data/sets.parquet`),
     fetch(`${base}data/pokemon_metadata.parquet`),
     fetch(`${base}data/pocket_cards.parquet`),
     fetch(`${base}data/pocket_sets.parquet`),
+    fetch(`${base}data/exclusive_cards.parquet`),
+    fetch(`${base}data/exclusive_sets.parquet`),
   ]);
 
   if (!cardsResp.ok) throw new Error("Failed to fetch cards.parquet");
@@ -248,6 +314,71 @@ export async function initDB() {
     `);
   }
 
+  // Create exclusive_cards table (try parquet, fall back to empty)
+  let exclCardsLoaded = false;
+  if (exclCardsResp.ok) {
+    try {
+      const exclCardsBuf = new Uint8Array(await exclCardsResp.arrayBuffer());
+      await db.registerFileBuffer("exclusive_cards.parquet", exclCardsBuf);
+      await conn.query(
+        "CREATE OR REPLACE TABLE exclusive_cards AS SELECT *, '{}'::JSON AS annotations FROM 'exclusive_cards.parquet'"
+      );
+      exclCardsLoaded = true;
+    } catch (e) {
+      console.warn("Could not load exclusive_cards.parquet, creating empty table:", e.message);
+    }
+  }
+  if (!exclCardsLoaded) {
+    await conn.query(`
+      CREATE OR REPLACE TABLE exclusive_cards (
+        id            VARCHAR PRIMARY KEY,
+        name          VARCHAR,
+        language      VARCHAR,
+        set_id        VARCHAR,
+        local_id      VARCHAR,
+        category      VARCHAR,
+        hp            INTEGER,
+        types         VARCHAR,
+        rarity        VARCHAR,
+        illustrator   VARCHAR,
+        stage         VARCHAR,
+        image_small   VARCHAR,
+        image_large   VARCHAR,
+        raw_data      JSON,
+        annotations   JSON DEFAULT '{}'
+      )
+    `);
+  }
+
+  // Create exclusive_sets table (try parquet, fall back to empty)
+  let exclSetsLoaded = false;
+  if (exclSetsResp.ok) {
+    try {
+      const exclSetsBuf = new Uint8Array(await exclSetsResp.arrayBuffer());
+      await db.registerFileBuffer("exclusive_sets.parquet", exclSetsBuf);
+      await conn.query(
+        "CREATE OR REPLACE TABLE exclusive_sets AS SELECT * FROM 'exclusive_sets.parquet'"
+      );
+      exclSetsLoaded = true;
+    } catch (e) {
+      console.warn("Could not load exclusive_sets.parquet, creating empty table:", e.message);
+    }
+  }
+  if (!exclSetsLoaded) {
+    await conn.query(`
+      CREATE OR REPLACE TABLE exclusive_sets (
+        id            VARCHAR PRIMARY KEY,
+        name          VARCHAR,
+        language      VARCHAR,
+        series_id     VARCHAR,
+        series_name   VARCHAR,
+        release_date  VARCHAR,
+        card_count    INTEGER,
+        logo_url      VARCHAR
+      )
+    `);
+  }
+
   // 5. Create attribute_definitions table with built-in seeds
   await conn.query(`
     CREATE OR REPLACE TABLE attribute_definitions (
@@ -297,12 +428,15 @@ export async function initDB() {
 
   // 6. Hydrate from IndexedDB
   await hydrateFromIndexedDB();
+  } catch (e) {
+    throw new Error("Loading card data: " + (e?.message || e));
+  }
 
   initialized = true;
 }
 
 async function hydrateFromIndexedDB() {
-  // Hydrate annotations (update both tables — only one will match per ID)
+  // Hydrate annotations (update all card tables — only one will match per ID)
   const annotations = await idbGetAll(STORE_ANNOTATIONS);
   for (const row of annotations) {
     const escaped = escapeStr(JSON.stringify(row.data));
@@ -312,6 +446,9 @@ async function hydrateFromIndexedDB() {
     );
     await conn.query(
       `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+    );
+    await conn.query(
+      `UPDATE exclusive_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
     );
   }
 
@@ -522,6 +659,85 @@ export async function fetchCards(params = {}) {
         image_small: r.image_small,
         image_large: r.image_large,
         image_fallback: r.image_fallback,
+        annotations,
+      };
+    });
+
+    return { cards, total, page: pageInt, page_size: pageSizeInt };
+  }
+
+  // ── Exclusive source (language-exclusive cards) ────────────────────
+  if (isExclusiveSource(source)) {
+    const lang = EXCLUSIVE_SOURCES[source];
+    const conditions = [];
+    conditions.push(`ec.language = ${escapeStr(lang)}`);
+    if (q) conditions.push(`ec.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (rarity) conditions.push(`ec.rarity = ${escapeStr(rarity)}`);
+    if (set_id) conditions.push(`ec.set_id = ${escapeStr(set_id)}`);
+    if (supertype) conditions.push(`ec.category = ${escapeStr(supertype)}`);
+    if (stage) conditions.push(`ec.stage = ${escapeStr(stage)}`);
+
+    const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+    const EXCL_ALLOWED_SORT = new Set(["name", "hp", "set_name", "rarity", "number", "id"]);
+    const safeSortBy = EXCL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
+    let sortExpr;
+    if (safeSortBy === "number") {
+      sortExpr = "ec.local_id";
+    } else if (safeSortBy === "set_name") {
+      sortExpr = "es.name";
+    } else {
+      sortExpr = `ec.${safeSortBy}`;
+    }
+
+    const joinClause = "LEFT JOIN exclusive_sets es ON es.id = ec.set_id";
+
+    const countResult = await conn.query(
+      `SELECT COUNT(*)::INTEGER AS cnt FROM exclusive_cards ec ${joinClause} ${where}`
+    );
+    const total = countResult.toArray()[0].cnt;
+
+    const dataResult = await conn.query(`
+      SELECT ec.id, ec.name,
+             ec.category AS supertype,
+             ec.hp,
+             ec.types,
+             ec.rarity,
+             ec.set_id,
+             es.name AS set_name,
+             ec.local_id AS number,
+             ec.image_small,
+             ec.image_large,
+             ec.illustrator,
+             ec.stage,
+             ec.annotations
+      FROM exclusive_cards ec
+      ${joinClause}
+      ${where}
+      ORDER BY ${sortExpr} ${safeSortDir}
+      LIMIT ${pageSizeInt} OFFSET ${offset}
+    `);
+
+    const rows = dataResult.toArray();
+    const cards = rows.map((r) => {
+      const annotations =
+        typeof r.annotations === "string"
+          ? JSON.parse(r.annotations)
+          : r.annotations || {};
+      return {
+        id: r.id,
+        name: r.name,
+        supertype: r.supertype || "",
+        subtypes: "[]",
+        hp: r.hp,
+        types: r.types || "[]",
+        rarity: r.rarity,
+        set_id: r.set_id,
+        set_name: r.set_name,
+        number: r.number,
+        image_small: r.image_small || r.image_large,
+        image_large: r.image_large,
+        image_fallback: r.image_large || r.image_small || undefined,
         annotations,
       };
     });
@@ -742,6 +958,68 @@ export async function fetchCard(id, source = "TCG") {
     };
   }
 
+  // ── Exclusive source (language-exclusive cards) ────────────────────
+  if (isExclusiveSource(source)) {
+    const result = await conn.query(`
+      SELECT ec.id, ec.name, ec.category, ec.hp, ec.types, ec.rarity,
+             ec.stage, ec.illustrator, ec.language,
+             ec.raw_data, ec.annotations,
+             ec.set_id, ec.local_id,
+             ec.image_small, ec.image_large,
+             es.name AS set_name, es.series_name AS set_series
+      FROM exclusive_cards ec
+      LEFT JOIN exclusive_sets es ON es.id = ec.set_id
+      WHERE ec.id = ${escapeStr(id)}
+    `);
+
+    const rows = result.toArray();
+    if (rows.length === 0) throw new Error("Card not found");
+
+    const r = rows[0];
+    const raw_data =
+      typeof r.raw_data === "string" ? JSON.parse(r.raw_data) : r.raw_data || {};
+    let annotations =
+      typeof r.annotations === "string"
+        ? JSON.parse(r.annotations)
+        : r.annotations || {};
+
+    // Auto-populate unique_id if empty
+    if (!annotations.unique_id) {
+      annotations.unique_id = r.id;
+      await patchAnnotations(r.id, { unique_id: annotations.unique_id });
+    }
+
+    // Build weaknesses from raw_data if available
+    const weaknesses = raw_data?.weaknesses || [];
+
+    return {
+      id: r.id,
+      name: r.name,
+      supertype: r.category || "",
+      subtypes: "[]",
+      hp: r.hp,
+      types: r.types || "[]",
+      evolves_from: raw_data?.evolveFrom || null,
+      rarity: r.rarity,
+      artist: r.illustrator,
+      set_id: r.set_id,
+      set_name: r.set_name,
+      set_series: r.set_series,
+      number: r.local_id,
+      regulation_mark: raw_data?.regulationMark || null,
+      image_small: r.image_small || r.image_large,
+      image_large: r.image_large,
+      image_fallback: r.image_large || r.image_small || undefined,
+      raw_data: { ...raw_data, weaknesses },
+      annotations,
+      prices: raw_data?.pricing || null,
+      pokedex_numbers: raw_data?.dexId || [],
+      genus: null,
+      stage: r.stage || null,
+      language: r.language,
+    };
+  }
+
   // ── TCG source (default) ───────────────────────────────────────────
   const result = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.evolves_from,
@@ -893,6 +1171,44 @@ export async function fetchFilterOptions(source = "TCG") {
     };
   }
 
+  // ── Exclusive source (language-exclusive cards) ────────────────────
+  if (isExclusiveSource(source)) {
+    const lang = EXCLUSIVE_SOURCES[source];
+    const langFilter = `language = ${escapeStr(lang)}`;
+
+    const [categoriesResult, raritiesResult, setsResult, stagesResult] =
+      await Promise.all([
+        conn.query(
+          `SELECT DISTINCT category FROM exclusive_cards WHERE ${langFilter} AND category IS NOT NULL AND category != '' ORDER BY category`
+        ),
+        conn.query(
+          `SELECT DISTINCT rarity FROM exclusive_cards WHERE ${langFilter} AND rarity IS NOT NULL AND rarity != '' ORDER BY rarity`
+        ),
+        conn.query(
+          `SELECT es.id, es.name, es.series_name AS series FROM exclusive_sets es WHERE es.language = ${escapeStr(lang)} ORDER BY es.series_name, es.release_date`
+        ),
+        conn.query(
+          `SELECT DISTINCT stage FROM exclusive_cards WHERE ${langFilter} AND stage IS NOT NULL AND stage != '' ORDER BY stage`
+        ),
+      ]);
+
+    return {
+      supertypes: categoriesResult.toArray().map((r) => r.category),
+      rarities: raritiesResult.toArray().map((r) => r.rarity),
+      sets: setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series })),
+      regions: [],
+      generations: [],
+      colors: [],
+      artists: [],
+      evolution_lines: [],
+      trainer_types: [],
+      specialties: [],
+      card_types: [],
+      elements: [],
+      stages: stagesResult.toArray().map((r) => r.stage),
+    };
+  }
+
   // ── TCG source (default) ───────────────────────────────────────────
   const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult] =
     await Promise.all([
@@ -990,6 +1306,12 @@ export async function fetchAnnotations(cardId) {
     );
     rows = result.toArray();
   }
+  if (rows.length === 0) {
+    result = await conn.query(
+      `SELECT annotations FROM exclusive_cards WHERE id = ${escapeStr(cardId)}`
+    );
+    rows = result.toArray();
+  }
   if (rows.length === 0) throw new Error("Card not found");
 
   const val = rows[0].annotations;
@@ -1013,7 +1335,7 @@ export async function patchAnnotations(cardId, annotations) {
     }
   }
 
-  // Write to DuckDB (both tables — only one will match)
+  // Write to DuckDB (all card tables — only one will match)
   const escaped = escapeStr(JSON.stringify(current));
   const escapedId = escapeStr(cardId);
   await conn.query(
@@ -1021,6 +1343,9 @@ export async function patchAnnotations(cardId, annotations) {
   );
   await conn.query(
     `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+  );
+  await conn.query(
+    `UPDATE exclusive_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
   );
 
   // Write-through to IndexedDB
@@ -1159,11 +1484,64 @@ export async function executeSql(query) {
   }
 
   // Non-select (INSERT, UPDATE, DELETE, CREATE, etc.)
+  // Detect annotation UPDATEs and sync affected rows to IndexedDB
+  const annotationTables = [];
+    if (/\bupdate\b/i.test(trimmed) && /\bannotations\b/i.test(trimmed)) {
+    if (/\bcards\b/i.test(trimmed) && !/\bpocket_cards\b/i.test(trimmed) && !/\bexclusive_cards\b/i.test(trimmed)) {
+      annotationTables.push("cards");
+    }
+    if (/\bpocket_cards\b/i.test(trimmed)) {
+      annotationTables.push("pocket_cards");
+    }
+    if (/\bexclusive_cards\b/i.test(trimmed)) {
+      annotationTables.push("exclusive_cards");
+    }
+  }
+
+  let syncCount = 0;
+  for (const table of annotationTables) {
+    // Get all current IndexedDB annotation IDs
+    const idbRows = await idbGetAll(STORE_ANNOTATIONS);
+    const idbIds = new Set(idbRows.map((r) => r.id));
+
+    // Read all non-empty annotations from this table
+    const nonEmpty = await conn.query(
+      `SELECT id, annotations FROM ${table} WHERE annotations != '{}'`
+    );
+    const dbRows = nonEmpty.toArray();
+
+    // Upsert each non-empty annotation to IndexedDB
+    for (const row of dbRows) {
+      const data =
+        typeof row.annotations === "string"
+          ? JSON.parse(row.annotations)
+          : row.annotations || {};
+      await idbPut(STORE_ANNOTATIONS, { id: row.id, data });
+      idbIds.delete(row.id);
+      syncCount++;
+    }
+
+    // Remove IndexedDB entries whose table row now has '{}' (annotation was cleared)
+    // Only delete IDs that belong to this table (they exist in the table but weren't in non-empty results)
+    for (const orphanId of idbIds) {
+      const inTable = await conn.query(
+        `SELECT id FROM ${table} WHERE id = ${escapeStr(orphanId)}`
+      );
+      if (inTable.toArray().length > 0) {
+        await idbDelete(STORE_ANNOTATIONS, orphanId);
+      }
+    }
+  }
+
+  const message = syncCount > 0
+    ? `Query executed successfully. Synced ${syncCount} annotation(s) to persistent storage.`
+    : "Query executed successfully";
+
   return {
     columns: [],
     rows: [],
     row_count: 0,
-    message: "Query executed successfully",
+    message,
   };
 }
 

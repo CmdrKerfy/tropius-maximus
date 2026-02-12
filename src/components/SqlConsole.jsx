@@ -120,7 +120,7 @@ export default function SqlConsole({
         const lower = trimmed.toLowerCase();
         const changed = {};
         if (/attribute_definitions/.test(lower)) changed.attributes = true;
-        if (/\bcards\b/.test(lower) || /\bannotations\b/.test(lower))
+        if (/\bcards\b/.test(lower) || /\bpocket_cards\b/.test(lower) || /\bexclusive_cards\b/.test(lower) || /\bannotations\b/.test(lower))
           changed.cards = true;
         if (changed.attributes || changed.cards) onDataChanged(changed);
       }
