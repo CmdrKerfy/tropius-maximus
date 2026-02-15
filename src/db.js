@@ -124,17 +124,16 @@ const TCGDEX_IMG_BASE = `'https://assets.tcgdex.net/en/tcgp/' || ${TCGDEX_SET_EX
 const TCGDEX_IMG_SMALL = `${TCGDEX_IMG_BASE} || '/low.webp'`;
 const TCGDEX_IMG_LARGE = `${TCGDEX_IMG_BASE} || '/high.webp'`;
 
-// ── Exclusive source mapping ────────────────────────────────────────────
+// ── Custom source tracking ──────────────────────────────────────────────
 
-const EXCLUSIVE_SOURCES = {
-  "Japan Exclusive": "ja",
-  "China Exclusive": "zh-cn",
-  "Indonesian Exclusive": "id",
-  "Thai Exclusive": "th",
-};
+let customSourceNames = new Set();
 
-function isExclusiveSource(source) {
-  return source in EXCLUSIVE_SOURCES;
+function isCustomSource(source) {
+  return customSourceNames.has(source);
+}
+
+export function getCustomSourceNames() {
+  return [...customSourceNames].sort();
 }
 
 // ── Initialization ─────────────────────────────────────────────────────
@@ -204,14 +203,13 @@ export async function initDB() {
   try {
     // 2. Fetch Parquet files and register them
     const base = import.meta.env.BASE_URL || "/";
-  const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp, exclCardsResp, exclSetsResp] = await Promise.all([
+  const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp, customCardsResp] = await Promise.all([
     fetch(`${base}data/cards.parquet`),
     fetch(`${base}data/sets.parquet`),
     fetch(`${base}data/pokemon_metadata.parquet`),
     fetch(`${base}data/pocket_cards.parquet`),
     fetch(`${base}data/pocket_sets.parquet`),
-    fetch(`${base}data/exclusive_cards.parquet`),
-    fetch(`${base}data/exclusive_sets.parquet`),
+    fetch(`${base}data/custom_cards.json`),
   ]);
 
   if (!cardsResp.ok) throw new Error("Failed to fetch cards.parquet");
@@ -314,70 +312,109 @@ export async function initDB() {
     `);
   }
 
-  // Create exclusive_cards table (try parquet, fall back to empty)
-  let exclCardsLoaded = false;
-  if (exclCardsResp.ok) {
+  // Create custom_cards table from JSON
+  await conn.query(`
+    CREATE OR REPLACE TABLE custom_cards (
+      id              VARCHAR PRIMARY KEY,
+      name            VARCHAR,
+      supertype       VARCHAR,
+      subtypes        VARCHAR,
+      hp              VARCHAR,
+      types           VARCHAR,
+      evolves_from    VARCHAR,
+      rarity          VARCHAR,
+      special_rarity  VARCHAR,
+      alt_name        VARCHAR,
+      artist          VARCHAR,
+      set_id          VARCHAR,
+      set_name        VARCHAR,
+      set_series      VARCHAR,
+      number          VARCHAR,
+      regulation_mark VARCHAR,
+      image_small     VARCHAR,
+      image_large     VARCHAR,
+      source          VARCHAR,
+      annotations     JSON DEFAULT '{}'
+    )
+  `);
+
+  // Populate custom_cards from JSON
+  if (customCardsResp.ok) {
     try {
-      const exclCardsBuf = new Uint8Array(await exclCardsResp.arrayBuffer());
-      await db.registerFileBuffer("exclusive_cards.parquet", exclCardsBuf);
-      await conn.query(
-        "CREATE OR REPLACE TABLE exclusive_cards AS SELECT *, '{}'::JSON AS annotations FROM 'exclusive_cards.parquet'"
-      );
-      exclCardsLoaded = true;
+      const customJson = await customCardsResp.json();
+      const customCards = customJson.cards || [];
+
+      // Normalize a value to an array (or null)
+      function normalizeToArray(val) {
+        if (val === null || val === undefined) return null;
+        if (Array.isArray(val)) return val;
+        if (typeof val === 'string' && val !== '') return [val];
+        return null;
+      }
+
+      // Fields stored as table columns (not annotations)
+      const columnFields = new Set(["id","name","supertype","subtypes","hp","types","evolves_from",
+        "rarity","special_rarity","alt_name","artist","set_id","set_name","set_series","number",
+        "regulation_mark","image_small","image_large","source"]);
+
+      // Annotation fields that should be normalized to arrays
+      const arrayAnnotationFields = new Set([
+        "art_style","main_character","background_characters","additional_characters",
+        "background_details","emotion","pose","camera_angle","items","actions",
+        "perspective","weather_environment","storytelling","card_locations","pkmn_region",
+      ]);
+
+      for (const card of customCards) {
+        if (!card.id || !card.source) continue;
+
+        // Stringify arrays for VARCHAR columns
+        const subtypesStr = Array.isArray(card.subtypes) ? JSON.stringify(card.subtypes) : (card.subtypes || '[]');
+        const typesStr = Array.isArray(card.types) ? JSON.stringify(card.types) : (card.types || '[]');
+        const hpStr = card.hp != null ? String(card.hp) : '';
+
+        // Build annotations from non-column fields
+        const annotations = {};
+        for (const [k, v] of Object.entries(card)) {
+          if (columnFields.has(k)) continue;
+          if (v === '' || v === null || v === undefined) continue;
+
+          if (k === 'evolution_line') {
+            const arr = normalizeToArray(v);
+            if (arr) annotations[k] = arr.join(' \u2192 ');
+          } else if (arrayAnnotationFields.has(k)) {
+            const arr = normalizeToArray(v);
+            if (arr) annotations[k] = arr;
+          } else {
+            annotations[k] = v;
+          }
+        }
+
+        await conn.query(`
+          INSERT INTO custom_cards (id, name, supertype, subtypes, hp, types, evolves_from,
+            rarity, special_rarity, alt_name, artist, set_id, set_name, set_series, number,
+            regulation_mark, image_small, image_large, source, annotations)
+          VALUES (${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
+            ${escapeStr(subtypesStr)}, ${escapeStr(hpStr)}, ${escapeStr(typesStr)},
+            ${escapeStr(card.evolves_from || '')}, ${escapeStr(card.rarity || '')},
+            ${escapeStr(card.special_rarity || '')}, ${escapeStr(card.alt_name || '')},
+            ${escapeStr(card.artist || '')},
+            ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
+            ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
+            ${escapeStr(card.image_small || '')}, ${escapeStr(card.image_large || '')},
+            ${escapeStr(card.source)},
+            ${escapeStr(JSON.stringify(annotations))})
+        `);
+      }
     } catch (e) {
-      console.warn("Could not load exclusive_cards.parquet, creating empty table:", e.message);
+      console.warn("Could not parse custom_cards.json:", e.message);
     }
-  }
-  if (!exclCardsLoaded) {
-    await conn.query(`
-      CREATE OR REPLACE TABLE exclusive_cards (
-        id            VARCHAR PRIMARY KEY,
-        name          VARCHAR,
-        language      VARCHAR,
-        set_id        VARCHAR,
-        local_id      VARCHAR,
-        category      VARCHAR,
-        hp            INTEGER,
-        types         VARCHAR,
-        rarity        VARCHAR,
-        illustrator   VARCHAR,
-        stage         VARCHAR,
-        image_small   VARCHAR,
-        image_large   VARCHAR,
-        raw_data      JSON,
-        annotations   JSON DEFAULT '{}'
-      )
-    `);
   }
 
-  // Create exclusive_sets table (try parquet, fall back to empty)
-  let exclSetsLoaded = false;
-  if (exclSetsResp.ok) {
-    try {
-      const exclSetsBuf = new Uint8Array(await exclSetsResp.arrayBuffer());
-      await db.registerFileBuffer("exclusive_sets.parquet", exclSetsBuf);
-      await conn.query(
-        "CREATE OR REPLACE TABLE exclusive_sets AS SELECT * FROM 'exclusive_sets.parquet'"
-      );
-      exclSetsLoaded = true;
-    } catch (e) {
-      console.warn("Could not load exclusive_sets.parquet, creating empty table:", e.message);
-    }
-  }
-  if (!exclSetsLoaded) {
-    await conn.query(`
-      CREATE OR REPLACE TABLE exclusive_sets (
-        id            VARCHAR PRIMARY KEY,
-        name          VARCHAR,
-        language      VARCHAR,
-        series_id     VARCHAR,
-        series_name   VARCHAR,
-        release_date  VARCHAR,
-        card_count    INTEGER,
-        logo_url      VARCHAR
-      )
-    `);
-  }
+  // Populate customSourceNames from distinct source values
+  const sourceResult = await conn.query(
+    "SELECT DISTINCT source FROM custom_cards WHERE source IS NOT NULL AND source != ''"
+  );
+  customSourceNames = new Set(sourceResult.toArray().map(r => r.source));
 
   // 5. Create attribute_definitions table with built-in seeds
   await conn.query(`
@@ -412,10 +449,14 @@ export async function initDB() {
     INSERT INTO attribute_definitions VALUES
       ('owned',            'Owned',              'boolean', 'null', 'false',   TRUE, 0),
       ('notes',            'Notes',              'text',    'null', '""',      TRUE, 1),
-      ('pokemon_main',     'Pokemon [Main]',     'text',    'null', '""',      TRUE, 2),
-      ('pokemon_bg',       'Pokemon [Background]', 'text',  'null', '""',      TRUE, 3),
+      ('main_character',   'Main Character',     'text',    'null', '""',      TRUE, 2),
+      ('background_characters', 'Background Characters', 'text', 'null', '""', TRUE, 3),
+      ('art_style',        'Art Style',          'text',    'null', '""',      TRUE, 4),
       ('color',            'Color',              'select',  '["black","blue","brown","gray","green","pink","purple","red","white","yellow"]', 'null', TRUE, 5),
       ('shape',            'Shape',              'select',  ${escapeStr(shapeOptions)}, 'null', TRUE, 6),
+      ('emotion',          'Emotion',            'text',    'null', '""',      TRUE, 7),
+      ('pose',             'Pose',               'text',    'null', '""',      TRUE, 8),
+      ('camera_angle',     'Camera Angle',       'text',    'null', '""',      TRUE, 9),
       ('location',         'Location',           'text',    'null', '""',      TRUE, 10),
       ('video_game',       'Video Game',         'select',  ${escapeStr(videoGameOptions)}, 'null', TRUE, 11),
       ('video_appearance', 'Video Appearance',   'boolean', 'null', 'false',   TRUE, 12),
@@ -423,7 +464,16 @@ export async function initDB() {
       ('video_url',        'Video URL',          'text',    'null', '""',      TRUE, 14),
       ('video_title',      'Video Title',        'text',    'null', '""',      TRUE, 15),
       ('unique_id',        'Unique ID',          'text',    'null', '""',      TRUE, 16),
-      ('evolution_line',   'Evolution Line',     'text',    'null', '""',      TRUE, 20)
+      ('items',            'Items',              'text',    'null', '""',      TRUE, 17),
+      ('actions',          'Actions',            'text',    'null', '""',      TRUE, 18),
+      ('additional_characters', 'Additional Characters', 'text', 'null', '""', TRUE, 19),
+      ('evolution_line',   'Evolution Line',     'text',    'null', '""',      TRUE, 20),
+      ('perspective',      'Perspective',        'text',    'null', '""',      TRUE, 21),
+      ('weather_environment', 'Weather/Environment', 'text', 'null', '""',    TRUE, 22),
+      ('storytelling',     'Storytelling',        'text',    'null', '""',     TRUE, 23),
+      ('background_details', 'Background Details', 'text', 'null', '""',      TRUE, 24),
+      ('card_locations',   'Card Locations',     'text',    'null', '""',      TRUE, 25),
+      ('pkmn_region',      'Pok\\u00e9mon Region', 'text',  'null', '""',     TRUE, 26)
   `);
 
   // 6. Hydrate from IndexedDB
@@ -448,7 +498,7 @@ async function hydrateFromIndexedDB() {
       `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
     );
     await conn.query(
-      `UPDATE exclusive_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+      `UPDATE custom_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
     );
   }
 
@@ -666,53 +716,35 @@ export async function fetchCards(params = {}) {
     return { cards, total, page: pageInt, page_size: pageSizeInt };
   }
 
-  // ── Exclusive source (language-exclusive cards) ────────────────────
-  if (isExclusiveSource(source)) {
-    const lang = EXCLUSIVE_SOURCES[source];
+  // ── Custom source (JSON-defined cards) ──────────────────────────────
+  if (isCustomSource(source)) {
     const conditions = [];
-    conditions.push(`ec.language = ${escapeStr(lang)}`);
-    if (q) conditions.push(`ec.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (rarity) conditions.push(`ec.rarity = ${escapeStr(rarity)}`);
-    if (set_id) conditions.push(`ec.set_id = ${escapeStr(set_id)}`);
-    if (supertype) conditions.push(`ec.category = ${escapeStr(supertype)}`);
-    if (stage) conditions.push(`ec.stage = ${escapeStr(stage)}`);
+    conditions.push(`cc.source = ${escapeStr(source)}`);
+    if (q) conditions.push(`cc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (rarity) conditions.push(`cc.rarity = ${escapeStr(rarity)}`);
+    if (set_id) conditions.push(`cc.set_id = ${escapeStr(set_id)}`);
+    if (supertype) conditions.push(`cc.supertype = ${escapeStr(supertype)}`);
+    if (artist) conditions.push(`cc.artist = ${escapeStr(artist)}`);
 
     const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
-    const EXCL_ALLOWED_SORT = new Set(["name", "hp", "set_name", "rarity", "number", "id"]);
-    const safeSortBy = EXCL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
-    let sortExpr;
-    if (safeSortBy === "number") {
-      sortExpr = "ec.local_id";
-    } else if (safeSortBy === "set_name") {
-      sortExpr = "es.name";
-    } else {
-      sortExpr = `ec.${safeSortBy}`;
-    }
-
-    const joinClause = "LEFT JOIN exclusive_sets es ON es.id = ec.set_id";
+    const CUSTOM_ALLOWED_SORT = new Set(["name", "hp", "set_name", "rarity", "number", "id"]);
+    const safeSortBy = CUSTOM_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
+    const sortExpr = safeSortBy === "number"
+      ? "TRY_CAST(cc.number AS INTEGER)"
+      : `cc.${safeSortBy}`;
 
     const countResult = await conn.query(
-      `SELECT COUNT(*)::INTEGER AS cnt FROM exclusive_cards ec ${joinClause} ${where}`
+      `SELECT COUNT(*)::INTEGER AS cnt FROM custom_cards cc ${where}`
     );
     const total = countResult.toArray()[0].cnt;
 
     const dataResult = await conn.query(`
-      SELECT ec.id, ec.name,
-             ec.category AS supertype,
-             ec.hp,
-             ec.types,
-             ec.rarity,
-             ec.set_id,
-             es.name AS set_name,
-             ec.local_id AS number,
-             ec.image_small,
-             ec.image_large,
-             ec.illustrator,
-             ec.stage,
-             ec.annotations
-      FROM exclusive_cards ec
-      ${joinClause}
+      SELECT cc.id, cc.name, cc.supertype, cc.subtypes, cc.hp, cc.types,
+             cc.rarity, cc.special_rarity, cc.alt_name,
+             cc.set_id, cc.set_name, cc.number,
+             cc.image_small, cc.image_large, cc.artist, cc.annotations
+      FROM custom_cards cc
       ${where}
       ORDER BY ${sortExpr} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
@@ -727,11 +759,13 @@ export async function fetchCards(params = {}) {
       return {
         id: r.id,
         name: r.name,
+        alt_name: r.alt_name || null,
         supertype: r.supertype || "",
-        subtypes: "[]",
+        subtypes: r.subtypes || "[]",
         hp: r.hp,
         types: r.types || "[]",
         rarity: r.rarity,
+        special_rarity: r.special_rarity || null,
         set_id: r.set_id,
         set_name: r.set_name,
         number: r.number,
@@ -958,26 +992,22 @@ export async function fetchCard(id, source = "TCG") {
     };
   }
 
-  // ── Exclusive source (language-exclusive cards) ────────────────────
-  if (isExclusiveSource(source)) {
+  // ── Custom source (JSON-defined cards) ──────────────────────────────
+  if (isCustomSource(source)) {
     const result = await conn.query(`
-      SELECT ec.id, ec.name, ec.category, ec.hp, ec.types, ec.rarity,
-             ec.stage, ec.illustrator, ec.language,
-             ec.raw_data, ec.annotations,
-             ec.set_id, ec.local_id,
-             ec.image_small, ec.image_large,
-             es.name AS set_name, es.series_name AS set_series
-      FROM exclusive_cards ec
-      LEFT JOIN exclusive_sets es ON es.id = ec.set_id
-      WHERE ec.id = ${escapeStr(id)}
+      SELECT cc.id, cc.name, cc.supertype, cc.subtypes, cc.hp, cc.types,
+             cc.evolves_from, cc.rarity, cc.special_rarity, cc.alt_name,
+             cc.artist, cc.set_id, cc.set_name,
+             cc.set_series, cc.number, cc.regulation_mark,
+             cc.image_small, cc.image_large, cc.source, cc.annotations
+      FROM custom_cards cc
+      WHERE cc.id = ${escapeStr(id)}
     `);
 
     const rows = result.toArray();
     if (rows.length === 0) throw new Error("Card not found");
 
     const r = rows[0];
-    const raw_data =
-      typeof r.raw_data === "string" ? JSON.parse(r.raw_data) : r.raw_data || {};
     let annotations =
       typeof r.annotations === "string"
         ? JSON.parse(r.annotations)
@@ -989,34 +1019,31 @@ export async function fetchCard(id, source = "TCG") {
       await patchAnnotations(r.id, { unique_id: annotations.unique_id });
     }
 
-    // Build weaknesses from raw_data if available
-    const weaknesses = raw_data?.weaknesses || [];
-
     return {
       id: r.id,
       name: r.name,
-      supertype: r.category || "",
-      subtypes: "[]",
+      alt_name: r.alt_name || null,
+      supertype: r.supertype || "",
+      subtypes: r.subtypes || "[]",
       hp: r.hp,
       types: r.types || "[]",
-      evolves_from: raw_data?.evolveFrom || null,
+      evolves_from: r.evolves_from || null,
       rarity: r.rarity,
-      artist: r.illustrator,
+      special_rarity: r.special_rarity || null,
+      artist: r.artist,
       set_id: r.set_id,
       set_name: r.set_name,
       set_series: r.set_series,
-      number: r.local_id,
-      regulation_mark: raw_data?.regulationMark || null,
+      number: r.number,
+      regulation_mark: r.regulation_mark || null,
       image_small: r.image_small || r.image_large,
       image_large: r.image_large,
       image_fallback: r.image_large || r.image_small || undefined,
-      raw_data: { ...raw_data, weaknesses },
+      raw_data: {},
       annotations,
-      prices: raw_data?.pricing || null,
-      pokedex_numbers: raw_data?.dexId || [],
+      prices: null,
+      pokedex_numbers: [],
       genus: null,
-      stage: r.stage || null,
-      language: r.language,
     };
   }
 
@@ -1171,41 +1198,40 @@ export async function fetchFilterOptions(source = "TCG") {
     };
   }
 
-  // ── Exclusive source (language-exclusive cards) ────────────────────
-  if (isExclusiveSource(source)) {
-    const lang = EXCLUSIVE_SOURCES[source];
-    const langFilter = `language = ${escapeStr(lang)}`;
+  // ── Custom source (JSON-defined cards) ──────────────────────────────
+  if (isCustomSource(source)) {
+    const srcFilter = `source = ${escapeStr(source)}`;
 
-    const [categoriesResult, raritiesResult, setsResult, stagesResult] =
+    const [supertypesResult, raritiesResult, setsResult, artistsResult] =
       await Promise.all([
         conn.query(
-          `SELECT DISTINCT category FROM exclusive_cards WHERE ${langFilter} AND category IS NOT NULL AND category != '' ORDER BY category`
+          `SELECT DISTINCT supertype FROM custom_cards WHERE ${srcFilter} AND supertype IS NOT NULL AND supertype != '' ORDER BY supertype`
         ),
         conn.query(
-          `SELECT DISTINCT rarity FROM exclusive_cards WHERE ${langFilter} AND rarity IS NOT NULL AND rarity != '' ORDER BY rarity`
+          `SELECT DISTINCT rarity FROM custom_cards WHERE ${srcFilter} AND rarity IS NOT NULL AND rarity != '' ORDER BY rarity`
         ),
         conn.query(
-          `SELECT es.id, es.name, es.series_name AS series FROM exclusive_sets es WHERE es.language = ${escapeStr(lang)} ORDER BY es.series_name, es.release_date`
+          `SELECT DISTINCT set_id AS id, set_name AS name, set_series AS series FROM custom_cards WHERE ${srcFilter} AND set_id IS NOT NULL AND set_id != '' ORDER BY set_series, set_name`
         ),
         conn.query(
-          `SELECT DISTINCT stage FROM exclusive_cards WHERE ${langFilter} AND stage IS NOT NULL AND stage != '' ORDER BY stage`
+          `SELECT DISTINCT artist FROM custom_cards WHERE ${srcFilter} AND artist IS NOT NULL AND artist != '' ORDER BY artist`
         ),
       ]);
 
     return {
-      supertypes: categoriesResult.toArray().map((r) => r.category),
+      supertypes: supertypesResult.toArray().map((r) => r.supertype),
       rarities: raritiesResult.toArray().map((r) => r.rarity),
       sets: setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series })),
       regions: [],
       generations: [],
       colors: [],
-      artists: [],
+      artists: artistsResult.toArray().map((r) => r.artist),
       evolution_lines: [],
       trainer_types: [],
       specialties: [],
       card_types: [],
       elements: [],
-      stages: stagesResult.toArray().map((r) => r.stage),
+      stages: [],
     };
   }
 
@@ -1308,7 +1334,7 @@ export async function fetchAnnotations(cardId) {
   }
   if (rows.length === 0) {
     result = await conn.query(
-      `SELECT annotations FROM exclusive_cards WHERE id = ${escapeStr(cardId)}`
+      `SELECT annotations FROM custom_cards WHERE id = ${escapeStr(cardId)}`
     );
     rows = result.toArray();
   }
@@ -1345,7 +1371,7 @@ export async function patchAnnotations(cardId, annotations) {
     `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
   );
   await conn.query(
-    `UPDATE exclusive_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+    `UPDATE custom_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
   );
 
   // Write-through to IndexedDB
@@ -1487,14 +1513,14 @@ export async function executeSql(query) {
   // Detect annotation UPDATEs and sync affected rows to IndexedDB
   const annotationTables = [];
     if (/\bupdate\b/i.test(trimmed) && /\bannotations\b/i.test(trimmed)) {
-    if (/\bcards\b/i.test(trimmed) && !/\bpocket_cards\b/i.test(trimmed) && !/\bexclusive_cards\b/i.test(trimmed)) {
+    if (/\bcards\b/i.test(trimmed) && !/\bpocket_cards\b/i.test(trimmed) && !/\bcustom_cards\b/i.test(trimmed)) {
       annotationTables.push("cards");
     }
     if (/\bpocket_cards\b/i.test(trimmed)) {
       annotationTables.push("pocket_cards");
     }
-    if (/\bexclusive_cards\b/i.test(trimmed)) {
-      annotationTables.push("exclusive_cards");
+    if (/\bcustom_cards\b/i.test(trimmed)) {
+      annotationTables.push("custom_cards");
     }
   }
 

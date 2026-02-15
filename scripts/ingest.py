@@ -16,11 +16,11 @@ This is a standalone version for the static site pipeline.
 It creates a local DuckDB file at scripts/pokemon.duckdb.
 
 Usage:
-    python ingest.py              # Fetch ALL cards (~15k) + Pokemon metadata + Pocket cards
+    python ingest.py              # Fetch ALL cards (~15k) + Pokemon metadata + Pocket
     python ingest.py --set sv1    # Fetch only set "sv1" (good for testing)
-    python ingest.py --skip-pokemon  # Skip PokeAPI fetch (use existing data)
-    python ingest.py --skip-pocket   # Skip Pokemon TCG Pocket data
-    python ingest.py --force      # Re-download all sets even if already present
+    python ingest.py --skip-pokemon    # Skip PokeAPI fetch (use existing data)
+    python ingest.py --skip-pocket     # Skip Pokemon TCG Pocket data
+    python ingest.py --force           # Re-download all sets even if already present
 
 Features:
     - Resume: Automatically skips sets that are already fully ingested
@@ -664,7 +664,7 @@ def ingest_pocket_cards(force: bool = False) -> int:
     return ingested
 
 
-def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, force: bool = False) -> int:
+def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, skip_tcg: bool = False, force: bool = False) -> int:
     """Run the full ingestion pipeline."""
     initialize_database()
 
@@ -672,8 +672,12 @@ def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip
     if not skip_pokemon:
         ingest_pokemon_metadata(force=force)
 
-    set_lookup = ingest_sets()
-    total = ingest_cards(set_lookup, set_id=set_id, force=force)
+    # Ingest main TCG cards (unless skipped)
+    if not skip_tcg:
+        set_lookup = ingest_sets()
+        total = ingest_cards(set_lookup, set_id=set_id, force=force)
+    else:
+        total = 0
 
     # Ingest Pocket data (unless skipped)
     if not skip_pocket:
@@ -704,13 +708,19 @@ def main():
         help="Skip fetching Pokemon TCG Pocket data.",
     )
     parser.add_argument(
+        "--skip-tcg",
+        dest="skip_tcg",
+        action="store_true",
+        help="Skip fetching main TCG card data from pokemontcg.io.",
+    )
+    parser.add_argument(
         "--force",
         dest="force",
         action="store_true",
         help="Force re-download of all sets, even if already in database.",
     )
     args = parser.parse_args()
-    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, force=args.force)
+    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, force=args.force)
 
 
 if __name__ == "__main__":

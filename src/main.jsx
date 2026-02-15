@@ -9,9 +9,19 @@ function Root() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      setError("Load timed out (30s). Check the browser console for errors.");
+    }, 30000);
     initDB()
-      .then(() => setReady(true))
-      .catch((err) => setError(err.message || String(err)));
+      .then(() => {
+        clearTimeout(timeout);
+        setReady(true);
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        console.error("initDB error:", err);
+        setError(err?.message || String(err));
+      });
   }, []);
 
   if (error) {
@@ -23,6 +33,9 @@ function Root() {
             Failed to load database
           </h1>
           <p className="text-sm text-gray-600 mb-4">{error}</p>
+          <p className="text-xs text-gray-500 mb-4">
+            If the app still fails to load, try an incognito window or disable browser extensions.
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors"

@@ -1,0 +1,4 @@
+# Data ingestion and scraping (scripts/)
+duckdb>=0.9.0
+httpx>=0.24.0
+beautifulsoup4>=4.12.0

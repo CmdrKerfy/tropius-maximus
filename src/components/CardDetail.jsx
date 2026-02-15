@@ -341,6 +341,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               <div className="flex-1 min-w-0">
                 {/* Card name and basic info */}
                 <h2 className="text-2xl font-bold">{card.name}</h2>
+                {card.alt_name && (
+                  <p className="text-lg text-gray-500">{card.alt_name}</p>
+                )}
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="px-2 py-0.5 bg-gray-100 rounded text-sm text-gray-600">
                     {card.supertype}
@@ -375,6 +378,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                   )}
                   {card.rarity && ` · ${card.rarity}`}
+                  {card.special_rarity && ` · ${card.special_rarity}`}
                   {card.artist && ` · Artist: ${card.artist}`}
                 </div>
 
@@ -420,6 +424,49 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     Evolution Line: <strong>{card.annotations.evolution_line}</strong>
                   </p>
                 )}
+
+                {/* Custom card annotation fields */}
+                {card.annotations && (() => {
+                  const annotationLabels = [
+                    ['art_style', 'Art Style'],
+                    ['main_character', 'Main Character'],
+                    ['background_characters', 'Background Characters'],
+                    ['emotion', 'Emotion'],
+                    ['pose', 'Pose'],
+                    ['camera_angle', 'Camera Angle'],
+                    ['items', 'Items'],
+                    ['actions', 'Actions'],
+                    ['additional_characters', 'Additional Characters'],
+                    ['perspective', 'Perspective'],
+                    ['weather_environment', 'Weather/Environment'],
+                    ['storytelling', 'Storytelling'],
+                    ['background_details', 'Background Details'],
+                    ['card_locations', 'Card Locations'],
+                    ['pkmn_region', 'Pok\u00e9mon Region'],
+                  ];
+                  const entries = annotationLabels
+                    .filter(([key]) => {
+                      const val = card.annotations[key];
+                      if (val === null || val === undefined || val === '') return false;
+                      if (Array.isArray(val) && val.length === 0) return false;
+                      return true;
+                    });
+                  if (entries.length === 0) return null;
+                  return (
+                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      {entries.map(([key, label]) => {
+                        const val = card.annotations[key];
+                        const display = Array.isArray(val) ? val.join(', ') : String(val);
+                        return (
+                          <p key={key} className="text-gray-600">
+                            <span className="font-semibold text-gray-700">{label}:</span>{' '}
+                            {display}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* Rules (for Trainer/Energy cards) */}
                 {rules.length > 0 && (

@@ -17,66 +17,46 @@ DB_PATH = os.path.join(SCRIPT_DIR, "pokemon.duckdb")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "public", "data")
 
 
+def safe_export(conn, table, query, output_path, label):
+    """Export a table to parquet, but skip if the table is empty or missing."""
+    try:
+        count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        if count == 0:
+            print(f"  {label}: SKIPPED (table is empty, refusing to overwrite)")
+            return
+        conn.execute(f"""
+            COPY ({query})
+            TO '{output_path}'
+            (FORMAT PARQUET, COMPRESSION ZSTD)
+        """)
+        size = os.path.getsize(output_path)
+        if size > 1024 * 1024:
+            print(f"  {label}: {size / 1024 / 1024:.1f} MB ({count} rows)")
+        else:
+            print(f"  {label}: {size / 1024:.0f} KB ({count} rows)")
+    except Exception as e:
+        print(f"  {label}: skipped ({e})")
+
+
 def export():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     conn = duckdb.connect(DB_PATH, read_only=True)
 
-    cards_path = os.path.join(OUTPUT_DIR, "cards.parquet")
-    conn.execute(f"""
-        COPY (SELECT * FROM cards)
-        TO '{cards_path}'
-        (FORMAT PARQUET, COMPRESSION ZSTD)
-    """)
-    cards_size = os.path.getsize(cards_path)
-    print(f"  cards.parquet: {cards_size / 1024 / 1024:.1f} MB")
+    safe_export(conn, "cards", "SELECT * FROM cards",
+                os.path.join(OUTPUT_DIR, "cards.parquet"), "cards.parquet")
 
-    sets_path = os.path.join(OUTPUT_DIR, "sets.parquet")
-    conn.execute(f"""
-        COPY (SELECT * FROM sets)
-        TO '{sets_path}'
-        (FORMAT PARQUET, COMPRESSION ZSTD)
-    """)
-    sets_size = os.path.getsize(sets_path)
-    print(f"  sets.parquet: {sets_size / 1024:.0f} KB")
+    safe_export(conn, "sets", "SELECT * FROM sets",
+                os.path.join(OUTPUT_DIR, "sets.parquet"), "sets.parquet")
 
-    # Export pokemon_metadata if it exists
-    try:
-        pokemon_path = os.path.join(OUTPUT_DIR, "pokemon_metadata.parquet")
-        conn.execute(f"""
-            COPY (SELECT pokedex_number, name, region, generation, color, shape, genus, encounter_location, evolution_chain FROM pokemon_metadata)
-            TO '{pokemon_path}'
-            (FORMAT PARQUET, COMPRESSION ZSTD)
-        """)
-        pokemon_size = os.path.getsize(pokemon_path)
-        print(f"  pokemon_metadata.parquet: {pokemon_size / 1024:.0f} KB")
-    except Exception as e:
-        print(f"  pokemon_metadata.parquet: skipped (table not found)")
+    safe_export(conn, "pokemon_metadata",
+                "SELECT pokedex_number, name, region, generation, color, shape, genus, encounter_location, evolution_chain FROM pokemon_metadata",
+                os.path.join(OUTPUT_DIR, "pokemon_metadata.parquet"), "pokemon_metadata.parquet")
 
-    # Export pocket_sets if it exists
-    try:
-        pocket_sets_path = os.path.join(OUTPUT_DIR, "pocket_sets.parquet")
-        conn.execute(f"""
-            COPY (SELECT * FROM pocket_sets)
-            TO '{pocket_sets_path}'
-            (FORMAT PARQUET, COMPRESSION ZSTD)
-        """)
-        pocket_sets_size = os.path.getsize(pocket_sets_path)
-        print(f"  pocket_sets.parquet: {pocket_sets_size / 1024:.0f} KB")
-    except Exception:
-        print(f"  pocket_sets.parquet: skipped (table not found)")
+    safe_export(conn, "pocket_sets", "SELECT * FROM pocket_sets",
+                os.path.join(OUTPUT_DIR, "pocket_sets.parquet"), "pocket_sets.parquet")
 
-    # Export pocket_cards if it exists
-    try:
-        pocket_cards_path = os.path.join(OUTPUT_DIR, "pocket_cards.parquet")
-        conn.execute(f"""
-            COPY (SELECT * FROM pocket_cards)
-            TO '{pocket_cards_path}'
-            (FORMAT PARQUET, COMPRESSION ZSTD)
-        """)
-        pocket_cards_size = os.path.getsize(pocket_cards_path)
-        print(f"  pocket_cards.parquet: {pocket_cards_size / 1024:.1f} KB")
-    except Exception:
-        print(f"  pocket_cards.parquet: skipped (table not found)")
+    safe_export(conn, "pocket_cards", "SELECT * FROM pocket_cards",
+                os.path.join(OUTPUT_DIR, "pocket_cards.parquet"), "pocket_cards.parquet")
 
     conn.close()
     print("Done!")

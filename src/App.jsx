@@ -10,6 +10,7 @@ import {
   fetchCards,
   fetchFilterOptions,
   fetchAttributes,
+  getCustomSourceNames,
 } from "./db";
 import SearchBar from "./components/SearchBar";
 import FilterPanel from "./components/FilterPanel";
@@ -63,6 +64,9 @@ export default function App() {
   // ── Attribute definitions (for the annotation editor) ───────────────
   const [attributes, setAttributes] = useState([]);
 
+  // ── Custom source names (from JSON) ────────────────────────────────
+  const [customSources, setCustomSources] = useState([]);
+
   // ── UI state ────────────────────────────────────────────────────────
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -78,6 +82,8 @@ export default function App() {
     fetchAttributes()
       .then(setAttributes)
       .catch((err) => console.error("Failed to load attributes:", err));
+
+    setCustomSources(getCustomSourceNames());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch cards whenever search, filters, or page changes ──────────
@@ -279,6 +285,7 @@ export default function App() {
             onChange={handleFilterChange}
             expanded={filtersExpanded}
             onToggleExpand={() => setFiltersExpanded((prev) => !prev)}
+            customSources={customSources}
           />
         )}
 

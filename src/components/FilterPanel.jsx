@@ -11,7 +11,7 @@
  * - Sort controls in separate row (always visible)
  */
 
-export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand }) {
+export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand, customSources = [] }) {
   // Group sets by series for the dropdown optgroups.
   const setsBySeries = {};
   for (const s of options.sets) {
@@ -25,6 +25,8 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
   const isPocket = filters.source === "Pocket";
+  const isCustom = customSources.includes(filters.source);
+  const isTCG = !isPocket && !isCustom;
 
   // Check if any filter is active (for highlight)
   const hasActiveFilters =
@@ -86,11 +88,14 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             >
               <option value="TCG">TCG</option>
               <option value="Pocket">Pocket</option>
+              {customSources.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
 
           {/* ── TCG-only filters ─────────────────────────────────── */}
-          {!isPocket && (
+          {isTCG && (
             <>
               {/* Supertype filter */}
               <div>
@@ -148,6 +153,49 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                       <option key={s} value={s}>
                         {s}
                       </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Custom source filters ────────────────────────────── */}
+          {isCustom && (
+            <>
+              {/* Supertype filter */}
+              {options.supertypes && options.supertypes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Supertype
+                  </label>
+                  <select
+                    value={filters.supertype || ""}
+                    onChange={(e) => onChange({ supertype: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="">All</option>
+                    {options.supertypes.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Artist filter */}
+              {options.artists && options.artists.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Artist
+                  </label>
+                  <select
+                    value={filters.artist || ""}
+                    onChange={(e) => onChange({ artist: e.target.value })}
+                    className={selectClass + " max-w-[200px]"}
+                  >
+                    <option value="">All</option>
+                    {options.artists.map((a) => (
+                      <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
                 </div>
@@ -266,7 +314,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </div>
 
           {/* ── TCG-only filters (continued) ─────────────────────── */}
-          {!isPocket && (
+          {isTCG && (
             <>
               {/* Artist filter */}
               {options.artists && options.artists.length > 0 && (
@@ -398,13 +446,13 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           >
             <option value="name">Name</option>
             <option value="number">Number</option>
-            {!isPocket && <option value="pokedex">Pokedex #</option>}
+            {isTCG && <option value="pokedex">Pokedex #</option>}
             <option value="hp">HP</option>
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
-            {!isPocket && <option value="price">Price</option>}
-            {!isPocket && <option value="generation">Generation</option>}
-            {!isPocket && <option value="region">Region</option>}
+            {isTCG && <option value="price">Price</option>}
+            {isTCG && <option value="generation">Generation</option>}
+            {isTCG && <option value="region">Region</option>}
           </select>
         </div>
 
@@ -439,7 +487,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               element: "",
               card_type: "",
               stage: "",
-              sort_by: isPocket ? "name" : "pokedex",
+              sort_by: isTCG ? "pokedex" : "name",
               sort_dir: "asc",
             })
           }
