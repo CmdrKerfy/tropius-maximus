@@ -1434,6 +1434,162 @@ export async function fetchFilterOptions(source = "TCG") {
   };
 }
 
+// ── Form Options (for custom card form comboboxes) ─────────────────────
+
+/**
+ * Fetch distinct values for custom card form comboboxes.
+ * Queries cards, custom_cards, pokemon_metadata, and sets tables.
+ */
+export async function fetchFormOptions() {
+  const queries = await Promise.all([
+    // rarity: from cards + custom_cards
+    conn.query(
+      `SELECT DISTINCT val FROM (
+        SELECT rarity AS val FROM cards WHERE rarity IS NOT NULL AND rarity != ''
+        UNION SELECT rarity AS val FROM custom_cards WHERE rarity IS NOT NULL AND rarity != ''
+      ) ORDER BY val`
+    ),
+    // artist: from cards + custom_cards
+    conn.query(
+      `SELECT DISTINCT val FROM (
+        SELECT artist AS val FROM cards WHERE artist IS NOT NULL AND artist != ''
+        UNION SELECT artist AS val FROM custom_cards WHERE artist IS NOT NULL AND artist != ''
+      ) ORDER BY val`
+    ),
+    // pkmnRegion: from pokemon_metadata
+    conn.query(
+      `SELECT DISTINCT region AS val FROM pokemon_metadata WHERE region IS NOT NULL AND region != '' ORDER BY val`
+    ),
+    // setSeries: from sets
+    conn.query(
+      `SELECT DISTINCT series AS val FROM sets WHERE series IS NOT NULL AND series != '' ORDER BY val`
+    ),
+    // types: from cards (unnest JSON array)
+    conn.query(
+      `SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+        REPLACE(REPLACE(types, '[', ''), ']', ''), ','
+      )))) AS val FROM cards WHERE types != '[]' AND types != '' ORDER BY val`
+    ),
+    // subtypes: from cards (unnest JSON array)
+    conn.query(
+      `SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+        REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
+      )))) AS val FROM cards WHERE subtypes != '[]' AND subtypes != '' ORDER BY val`
+    ),
+    // emotion: from custom_cards
+    conn.query(
+      `SELECT DISTINCT emotion AS val FROM custom_cards WHERE emotion IS NOT NULL AND emotion != '' ORDER BY val`
+    ),
+    // pose: from custom_cards
+    conn.query(
+      `SELECT DISTINCT pose AS val FROM custom_cards WHERE pose IS NOT NULL AND pose != '' ORDER BY val`
+    ),
+    // cameraAngle: from custom_cards
+    conn.query(
+      `SELECT DISTINCT camera_angle AS val FROM custom_cards WHERE camera_angle IS NOT NULL AND camera_angle != '' ORDER BY val`
+    ),
+    // perspective: from custom_cards
+    conn.query(
+      `SELECT DISTINCT perspective AS val FROM custom_cards WHERE perspective IS NOT NULL AND perspective != '' ORDER BY val`
+    ),
+    // weatherEnvironment: from custom_cards
+    conn.query(
+      `SELECT DISTINCT weather_environment AS val FROM custom_cards WHERE weather_environment IS NOT NULL AND weather_environment != '' ORDER BY val`
+    ),
+    // storytelling: from custom_cards
+    conn.query(
+      `SELECT DISTINCT storytelling AS val FROM custom_cards WHERE storytelling IS NOT NULL AND storytelling != '' ORDER BY val`
+    ),
+    // cardLocations: from custom_cards
+    conn.query(
+      `SELECT DISTINCT card_locations AS val FROM custom_cards WHERE card_locations IS NOT NULL AND card_locations != '' ORDER BY val`
+    ),
+    // items: from custom_cards
+    conn.query(
+      `SELECT DISTINCT items AS val FROM custom_cards WHERE items IS NOT NULL AND items != '' ORDER BY val`
+    ),
+    // actions: from custom_cards
+    conn.query(
+      `SELECT DISTINCT actions AS val FROM custom_cards WHERE actions IS NOT NULL AND actions != '' ORDER BY val`
+    ),
+    // videoTitle: from custom_cards
+    conn.query(
+      `SELECT DISTINCT video_title AS val FROM custom_cards WHERE video_title IS NOT NULL AND video_title != '' ORDER BY val`
+    ),
+  ]);
+
+  const toArr = (result) => result.toArray().map((r) => r.val).filter(Boolean);
+
+  // For multi-value fields stored as JSON arrays or comma-separated, we need to split them
+  const splitJsonArrayValues = async (column, table = "custom_cards") => {
+    const result = await conn.query(
+      `SELECT DISTINCT TRIM(val) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(${column}, '["', ''), '"]', ''),
+          '","'
+        )) AS val FROM ${table}
+        WHERE ${column} IS NOT NULL AND ${column} != '' AND ${column} != '[]'
+      ) WHERE TRIM(val) != '' ORDER BY val`
+    );
+    return result.toArray().map((r) => r.val).filter(Boolean);
+  };
+
+  const [artStyle, mainCharacter, backgroundPokemon, backgroundHumans,
+         additionalCharacters, backgroundDetails, evolutionLine] = await Promise.all([
+    splitJsonArrayValues("art_style"),
+    splitJsonArrayValues("main_character"),
+    splitJsonArrayValues("background_pokemon"),
+    splitJsonArrayValues("background_humans"),
+    splitJsonArrayValues("additional_characters"),
+    splitJsonArrayValues("background_details"),
+    // evolution_line: custom_cards (arrow-separated) + pokemon_metadata.evolution_chain (JSON array)
+    (async () => {
+      const [customResult, pmResult] = await Promise.all([
+        conn.query(
+          `SELECT DISTINCT TRIM(val) AS val FROM (
+            SELECT unnest(string_split(evolution_line, ' → ')) AS val
+            FROM custom_cards WHERE evolution_line IS NOT NULL AND evolution_line != ''
+          ) WHERE TRIM(val) != '' ORDER BY val`
+        ),
+        conn.query(
+          `SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+            REPLACE(REPLACE(evolution_chain, '[', ''), ']', ''), ','
+          )))) AS val FROM pokemon_metadata WHERE evolution_chain IS NOT NULL AND evolution_chain != '' AND evolution_chain != '[]' ORDER BY val`
+        ),
+      ]);
+      const fromCustom = customResult.toArray().map((r) => r.val).filter(Boolean);
+      const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
+      return [...new Set([...fromCustom, ...fromPm])].sort();
+    })(),
+  ]);
+
+  return {
+    rarity: toArr(queries[0]),
+    artist: toArr(queries[1]),
+    pkmnRegion: toArr(queries[2]),
+    setSeries: toArr(queries[3]),
+    types: toArr(queries[4]),
+    subtypes: toArr(queries[5]),
+    emotion: toArr(queries[6]),
+    pose: toArr(queries[7]),
+    cameraAngle: toArr(queries[8]),
+    perspective: toArr(queries[9]),
+    weatherEnvironment: toArr(queries[10]),
+    storytelling: toArr(queries[11]),
+    cardLocations: toArr(queries[12]),
+    items: toArr(queries[13]),
+    actions: toArr(queries[14]),
+    videoTitle: toArr(queries[15]),
+    artStyle,
+    mainCharacter,
+    backgroundPokemon,
+    backgroundHumans,
+    additionalCharacters,
+    backgroundDetails,
+    evolutionLine,
+  };
+}
+
 // ── Annotations ────────────────────────────────────────────────────────
 
 /**

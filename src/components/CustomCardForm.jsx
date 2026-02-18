@@ -3,9 +3,28 @@
  * and optional GitHub auto-commit via PAT.
  */
 
-import { useState } from "react";
-import { addCustomCard } from "../db";
+import { useState, useEffect } from "react";
+import { addCustomCard, fetchFormOptions } from "../db";
 import { getToken, setToken, commitNewCard } from "../lib/github";
+import ComboBox from "./ComboBox";
+import MultiComboBox from "./MultiComboBox";
+
+// Hardcoded option sets
+const COLOR_OPTIONS = [
+  "black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow",
+];
+const SHAPE_OPTIONS = [
+  "ball", "squiggle", "fish", "arms", "blob", "upright", "legs",
+  "quadruped", "wings", "tentacles", "heads", "humanoid", "bug-wings", "armor",
+];
+const VIDEO_GAME_OPTIONS = [
+  "Red/Blue", "Gold/Silver", "Ruby/Sapphire", "FireRed/LeafGreen",
+  "Diamond/Pearl", "Platinum", "HeartGold/SoulSilver",
+  "Black/White", "Black 2/White 2", "X/Y", "Omega Ruby/Alpha Sapphire",
+  "Sun/Moon", "Ultra Sun/Ultra Moon", "Let's Go Pikachu/Eevee",
+  "Sword/Shield", "Brilliant Diamond/Shining Pearl",
+  "Legends Arceus", "Scarlet/Violet", "Other",
+];
 
 function CollapsibleSection({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -36,7 +55,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [setIdVal, setSetIdVal] = useState("");
   const [setNameVal, setSetNameVal] = useState("");
   const [imageSmall, setImageSmall] = useState("");
-  const [source, setSource] = useState("Japan Exclusive");
+  const [source, setSource] = useState("");
 
   // ── Card details ──
   const [supertype, setSupertype] = useState("Pokémon");
@@ -95,6 +114,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   // ── GitHub token ──
   const [ghToken, setGhToken] = useState(getToken());
   const [showTokenInput, setShowTokenInput] = useState(false);
+
+  // ── Combobox options (loaded from DB) ──
+  const [opts, setOpts] = useState({});
+
+  useEffect(() => {
+    fetchFormOptions()
+      .then(setOpts)
+      .catch((err) => console.warn("Failed to load form options:", err.message));
+  }, []);
 
   // Parse comma-separated string into array, filtering empty
   const toArray = (s) => s ? s.split(",").map(v => v.trim()).filter(Boolean) : [];
@@ -204,8 +232,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           : `Card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
       );
 
+      // Refetch form options so dropdowns include the newly submitted values
+      fetchFormOptions().then(setOpts).catch(() => {});
+
       // Reset form
       setId(""); setName(""); setImageSmall(""); setImageLarge("");
+      setSource("");
       setAltName(""); setEvolvesFrom(""); setHp(""); setRarity("");
       setSpecialRarity(""); setArtist(""); setNumber(""); setRegulationMark("");
       setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");
@@ -308,13 +340,11 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div>
               <label className={labelClass}>Subtypes</label>
-              <input type="text" value={subtypes} onChange={(e) => setSubtypes(e.target.value)} placeholder="Basic, Stage 1" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={subtypes} onChange={setSubtypes} options={opts.subtypes || []} placeholder="Basic, Stage 1" />
             </div>
             <div>
               <label className={labelClass}>Types</label>
-              <input type="text" value={types} onChange={(e) => setTypes(e.target.value)} placeholder="Lightning, Fire" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={types} onChange={setTypes} options={opts.types || []} placeholder="Lightning, Fire" />
             </div>
             <div>
               <label className={labelClass}>HP</label>
@@ -322,7 +352,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div>
               <label className={labelClass}>Rarity</label>
-              <input type="text" value={rarity} onChange={(e) => setRarity(e.target.value)} placeholder="Promo" className={inputClass + " w-full"} />
+              <ComboBox value={rarity} onChange={setRarity} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Special Rarity</label>
@@ -330,7 +360,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div>
               <label className={labelClass}>Artist</label>
-              <input type="text" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
+              <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Number</label>
@@ -346,7 +376,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div>
               <label className={labelClass}>Set Series</label>
-              <input type="text" value={setSeries} onChange={(e) => setSetSeries(e.target.value)} placeholder="XY" className={inputClass + " w-full"} />
+              <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="XY" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Regulation Mark</label>
@@ -364,90 +394,84 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Art Style</label>
-              <input type="text" value={artStyle} onChange={(e) => setArtStyle(e.target.value)} placeholder="Chibi, Cartoon" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
             </div>
             <div>
               <label className={labelClass}>Main Character</label>
-              <input type="text" value={mainCharacter} onChange={(e) => setMainCharacter(e.target.value)} placeholder="Pikachu" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={mainCharacter} onChange={setMainCharacter} options={opts.mainCharacter || []} placeholder="Pikachu" />
             </div>
             <div>
               <label className={labelClass}>Background Pokemon</label>
-              <input type="text" value={backgroundPokemon} onChange={(e) => setBackgroundPokemon(e.target.value)} placeholder="Bulbasaur, Squirtle" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={backgroundPokemon} onChange={setBackgroundPokemon} options={opts.backgroundPokemon || []} placeholder="Bulbasaur, Squirtle" />
             </div>
             <div>
               <label className={labelClass}>Background Humans</label>
-              <input type="text" value={backgroundHumans} onChange={(e) => setBackgroundHumans(e.target.value)} placeholder="Ash, Misty" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated (leave empty for null)</p>
+              <MultiComboBox value={backgroundHumans} onChange={setBackgroundHumans} options={opts.backgroundHumans || []} placeholder="Ash, Misty" />
             </div>
             <div>
               <label className={labelClass}>Additional Characters</label>
-              <input type="text" value={additionalCharacters} onChange={(e) => setAdditionalCharacters(e.target.value)} placeholder="Friends, Rivals" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={additionalCharacters} onChange={setAdditionalCharacters} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
             </div>
             <div>
               <label className={labelClass}>Emotion</label>
-              <input type="text" value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Happy" className={inputClass + " w-full"} />
+              <ComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Happy" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Pose</label>
-              <input type="text" value={pose} onChange={(e) => setPose(e.target.value)} placeholder="Jumping" className={inputClass + " w-full"} />
+              <ComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Jumping" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Camera Angle</label>
-              <input type="text" value={cameraAngle} onChange={(e) => setCameraAngle(e.target.value)} placeholder="Front" className={inputClass + " w-full"} />
+              <ComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Front" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Items</label>
-              <input type="text" value={items} onChange={(e) => setItems(e.target.value)} placeholder="Poke Ball" className={inputClass + " w-full"} />
+              <ComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Actions</label>
-              <input type="text" value={actions} onChange={(e) => setActions(e.target.value)} placeholder="Running" className={inputClass + " w-full"} />
+              <ComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Perspective</label>
-              <input type="text" value={perspective} onChange={(e) => setPerspective(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+              <ComboBox value={perspective} onChange={setPerspective} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Weather/Environment</label>
-              <input type="text" value={weatherEnvironment} onChange={(e) => setWeatherEnvironment(e.target.value)} placeholder="Sunny" className={inputClass + " w-full"} />
+              <ComboBox value={weatherEnvironment} onChange={setWeatherEnvironment} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Storytelling</label>
-              <input type="text" value={storytelling} onChange={(e) => setStorytelling(e.target.value)} placeholder="Celebration" className={inputClass + " w-full"} />
+              <ComboBox value={storytelling} onChange={setStorytelling} options={opts.storytelling || []} placeholder="Celebration" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Background Details</label>
-              <input type="text" value={backgroundDetails} onChange={(e) => setBackgroundDetails(e.target.value)} placeholder="Trees, River" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+              <MultiComboBox value={backgroundDetails} onChange={setBackgroundDetails} options={opts.backgroundDetails || []} placeholder="Trees, River" />
             </div>
             <div>
               <label className={labelClass}>Card Locations</label>
-              <input type="text" value={cardLocations} onChange={(e) => setCardLocations(e.target.value)} placeholder="Nagoya" className={inputClass + " w-full"} />
+              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Pokemon Region</label>
-              <input type="text" value={pkmnRegion} onChange={(e) => setPkmnRegion(e.target.value)} placeholder="Johto" className={inputClass + " w-full"} />
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Primary Color</label>
-              <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="Yellow" className={inputClass + " w-full"} />
+              <ComboBox value={primaryColor} onChange={setPrimaryColor} options={COLOR_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Secondary Color</label>
-              <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="Brown" className={inputClass + " w-full"} />
+              <ComboBox value={secondaryColor} onChange={setSecondaryColor} options={COLOR_OPTIONS} placeholder="Brown" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Shape</label>
-              <input type="text" value={shape} onChange={(e) => setShape(e.target.value)} placeholder="Round" className={inputClass + " w-full"} />
+              <ComboBox value={shape} onChange={setShape} options={SHAPE_OPTIONS} placeholder="upright" className={inputClass + " w-full"} />
             </div>
             <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Evolution Line</label>
-              <input type="text" value={evolutionLine} onChange={(e) => setEvolutionLine(e.target.value)} placeholder="pichu, pikachu, raichu" className={inputClass + " w-full"} />
-              <p className="text-xs text-gray-400 mt-0.5">Comma-separated (stored as array in JSON, arrow-joined in DB)</p>
+              <MultiComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
+              <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
             </div>
           </div>
         </CollapsibleSection>
@@ -457,7 +481,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Video Game</label>
-              <input type="text" value={videoGame} onChange={(e) => setVideoGame(e.target.value)} placeholder="X/Y" className={inputClass + " w-full"} />
+              <ComboBox value={videoGame} onChange={setVideoGame} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" className={inputClass + " w-full"} />
             </div>
             <div className="flex items-center gap-2 pt-6">
               <input type="checkbox" id="videoAppearance" checked={videoAppearance} onChange={(e) => setVideoAppearance(e.target.checked)} className="rounded" />
@@ -473,7 +497,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Video Title</label>
-              <input type="text" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+              <ComboBox value={videoTitle} onChange={setVideoTitle} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
             </div>
           </div>
         </CollapsibleSection>
