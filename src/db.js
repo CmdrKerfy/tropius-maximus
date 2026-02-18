@@ -136,6 +136,47 @@ export function getCustomSourceNames() {
   return [...customSourceNames].sort();
 }
 
+// Promoted annotation column names (array-valued ones stored as JSON strings)
+const PROMOTED_ARRAY_FIELDS = new Set([
+  "art_style","main_character","background_pokemon","background_humans",
+  "additional_characters","background_details",
+]);
+
+const PROMOTED_STRING_FIELDS = [
+  "emotion","pose","camera_angle","items","actions","perspective",
+  "weather_environment","storytelling","card_locations","pkmn_region",
+  "primary_color","secondary_color","shape",
+  "video_game","video_url","video_title","unique_id","notes","evolution_line",
+];
+
+const PROMOTED_BOOL_FIELDS = ["video_appearance","thumbnail_used","owned"];
+
+/**
+ * Build an annotations-like object from promoted custom_cards columns.
+ * Skips empty/null/false values.
+ */
+function buildPromotedAnnotations(row) {
+  const result = {};
+  for (const key of PROMOTED_ARRAY_FIELDS) {
+    const val = row[key];
+    if (!val) continue;
+    try {
+      const arr = JSON.parse(val);
+      if (Array.isArray(arr) && arr.length > 0) result[key] = arr;
+    } catch {
+      if (val) result[key] = val;
+    }
+  }
+  for (const key of PROMOTED_STRING_FIELDS) {
+    const val = row[key];
+    if (val) result[key] = val;
+  }
+  for (const key of PROMOTED_BOOL_FIELDS) {
+    if (row[key] === true) result[key] = true;
+  }
+  return result;
+}
+
 // ── Initialization ─────────────────────────────────────────────────────
 
 /**
@@ -334,7 +375,36 @@ export async function initDB() {
       image_small     VARCHAR,
       image_large     VARCHAR,
       source          VARCHAR,
-      annotations     JSON DEFAULT '{}'
+      -- promoted annotation columns
+      art_style              VARCHAR,
+      main_character         VARCHAR,
+      background_pokemon     VARCHAR,
+      background_humans      VARCHAR,
+      additional_characters  VARCHAR,
+      evolution_line         VARCHAR,
+      background_details     VARCHAR,
+      emotion                VARCHAR,
+      pose                   VARCHAR,
+      camera_angle           VARCHAR,
+      items                  VARCHAR,
+      actions                VARCHAR,
+      perspective            VARCHAR,
+      weather_environment    VARCHAR,
+      storytelling           VARCHAR,
+      card_locations         VARCHAR,
+      pkmn_region            VARCHAR,
+      primary_color          VARCHAR,
+      secondary_color        VARCHAR,
+      shape                  VARCHAR,
+      video_game             VARCHAR,
+      video_appearance       BOOLEAN DEFAULT FALSE,
+      thumbnail_used         BOOLEAN DEFAULT FALSE,
+      video_url              VARCHAR,
+      video_title            VARCHAR,
+      unique_id              VARCHAR,
+      owned                  BOOLEAN DEFAULT FALSE,
+      notes                  VARCHAR,
+      annotations            JSON DEFAULT '{}'
     )
   `);
 
@@ -352,16 +422,24 @@ export async function initDB() {
         return null;
       }
 
-      // Fields stored as table columns (not annotations)
-      const columnFields = new Set(["id","name","supertype","subtypes","hp","types","evolves_from",
+      // All known column fields
+      const allColumnFields = new Set([
+        "id","name","supertype","subtypes","hp","types","evolves_from",
         "rarity","special_rarity","alt_name","artist","set_id","set_name","set_series","number",
-        "regulation_mark","image_small","image_large","source"]);
+        "regulation_mark","image_small","image_large","source",
+        "art_style","main_character","background_pokemon","background_humans",
+        "additional_characters","evolution_line","background_details",
+        "emotion","pose","camera_angle","items","actions","perspective",
+        "weather_environment","storytelling","card_locations","pkmn_region",
+        "primary_color","secondary_color","shape",
+        "video_game","video_appearance","thumbnail_used","video_url","video_title",
+        "unique_id","owned","notes",
+      ]);
 
-      // Annotation fields that should be normalized to arrays
-      const arrayAnnotationFields = new Set([
-        "art_style","main_character","background_characters","additional_characters",
-        "background_details","emotion","pose","camera_angle","items","actions",
-        "perspective","weather_environment","storytelling","card_locations","pkmn_region",
+      // Fields that should be stored as JSON array strings
+      const arrayColumnFields = new Set([
+        "art_style","main_character","background_pokemon","background_humans",
+        "additional_characters","background_details",
       ]);
 
       for (const card of customCards) {
@@ -372,28 +450,40 @@ export async function initDB() {
         const typesStr = Array.isArray(card.types) ? JSON.stringify(card.types) : (card.types || '[]');
         const hpStr = card.hp != null ? String(card.hp) : '';
 
-        // Build annotations from non-column fields
+        // Prepare promoted column values
+        const arrayVal = (key) => {
+          const arr = normalizeToArray(card[key]);
+          return arr ? JSON.stringify(arr) : '';
+        };
+        const strVal = (key) => card[key] != null ? String(card[key]) : '';
+        const boolVal = (key) => card[key] === true;
+        const evolutionLine = (() => {
+          const arr = normalizeToArray(card.evolution_line);
+          return arr ? arr.join(' → ') : '';
+        })();
+
+        // Build annotations from truly unknown fields
         const annotations = {};
         for (const [k, v] of Object.entries(card)) {
-          if (columnFields.has(k)) continue;
+          if (allColumnFields.has(k)) continue;
           if (v === '' || v === null || v === undefined) continue;
-
-          if (k === 'evolution_line') {
-            const arr = normalizeToArray(v);
-            if (arr) annotations[k] = arr.join(' \u2192 ');
-          } else if (arrayAnnotationFields.has(k)) {
-            const arr = normalizeToArray(v);
-            if (arr) annotations[k] = arr;
-          } else {
-            annotations[k] = v;
-          }
+          annotations[k] = v;
         }
 
         await conn.query(`
-          INSERT INTO custom_cards (id, name, supertype, subtypes, hp, types, evolves_from,
+          INSERT INTO custom_cards (
+            id, name, supertype, subtypes, hp, types, evolves_from,
             rarity, special_rarity, alt_name, artist, set_id, set_name, set_series, number,
-            regulation_mark, image_small, image_large, source, annotations)
-          VALUES (${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
+            regulation_mark, image_small, image_large, source,
+            art_style, main_character, background_pokemon, background_humans,
+            additional_characters, evolution_line, background_details,
+            emotion, pose, camera_angle, items, actions, perspective,
+            weather_environment, storytelling, card_locations, pkmn_region,
+            primary_color, secondary_color, shape,
+            video_game, video_appearance, thumbnail_used, video_url, video_title,
+            unique_id, owned, notes, annotations
+          ) VALUES (
+            ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
             ${escapeStr(subtypesStr)}, ${escapeStr(hpStr)}, ${escapeStr(typesStr)},
             ${escapeStr(card.evolves_from || '')}, ${escapeStr(card.rarity || '')},
             ${escapeStr(card.special_rarity || '')}, ${escapeStr(card.alt_name || '')},
@@ -402,7 +492,23 @@ export async function initDB() {
             ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
             ${escapeStr(card.image_small || '')}, ${escapeStr(card.image_large || '')},
             ${escapeStr(card.source)},
-            ${escapeStr(JSON.stringify(annotations))})
+            ${escapeStr(arrayVal('art_style'))}, ${escapeStr(arrayVal('main_character'))},
+            ${escapeStr(arrayVal('background_pokemon'))}, ${escapeStr(arrayVal('background_humans'))},
+            ${escapeStr(arrayVal('additional_characters'))}, ${escapeStr(evolutionLine)},
+            ${escapeStr(arrayVal('background_details'))},
+            ${escapeStr(strVal('emotion'))}, ${escapeStr(strVal('pose'))},
+            ${escapeStr(strVal('camera_angle'))}, ${escapeStr(strVal('items'))},
+            ${escapeStr(strVal('actions'))}, ${escapeStr(strVal('perspective'))},
+            ${escapeStr(strVal('weather_environment'))}, ${escapeStr(strVal('storytelling'))},
+            ${escapeStr(strVal('card_locations'))}, ${escapeStr(strVal('pkmn_region'))},
+            ${escapeStr(strVal('primary_color'))}, ${escapeStr(strVal('secondary_color'))},
+            ${escapeStr(strVal('shape'))},
+            ${escapeStr(strVal('video_game'))}, ${boolVal('video_appearance')}, ${boolVal('thumbnail_used')},
+            ${escapeStr(strVal('video_url'))}, ${escapeStr(strVal('video_title'))},
+            ${escapeStr(strVal('unique_id'))}, ${boolVal('owned')},
+            ${escapeStr(strVal('notes'))},
+            ${escapeStr(JSON.stringify(annotations))}
+          )
         `);
       }
     } catch (e) {
@@ -450,7 +556,8 @@ export async function initDB() {
       ('owned',            'Owned',              'boolean', 'null', 'false',   TRUE, 0),
       ('notes',            'Notes',              'text',    'null', '""',      TRUE, 1),
       ('main_character',   'Main Character',     'text',    'null', '""',      TRUE, 2),
-      ('background_characters', 'Background Characters', 'text', 'null', '""', TRUE, 3),
+      ('background_pokemon', 'Background Pok\u00e9mon', 'text', 'null', '""', TRUE, 3),
+      ('background_humans', 'Background Humans', 'text', 'null', '""',    TRUE, 3),
       ('art_style',        'Art Style',          'text',    'null', '""',      TRUE, 4),
       ('color',            'Color',              'select',  '["black","blue","brown","gray","green","pink","purple","red","white","yellow"]', 'null', TRUE, 5),
       ('shape',            'Shape',              'select',  ${escapeStr(shapeOptions)}, 'null', TRUE, 6),
@@ -545,35 +652,46 @@ async function hydrateFromIndexedDB() {
     }
   }
 
-  // Hydrate custom cards
+  // Hydrate custom cards into custom_cards table
   const customCards = await idbGetAll(STORE_CUSTOM_CARDS);
   for (const card of customCards) {
     const existing = await conn.query(
-      `SELECT id FROM cards WHERE id = ${escapeStr(card.id)}`
+      `SELECT id FROM custom_cards WHERE id = ${escapeStr(card.id)}`
     );
     if (existing.numRows === 0) {
+      const s = (key) => escapeStr(card[key] || '');
+      const b = (key) => card[key] === true;
+      const subtypesStr = Array.isArray(card.subtypes) ? JSON.stringify(card.subtypes) : (card.subtypes || '[]');
+      const typesStr = Array.isArray(card.types) ? JSON.stringify(card.types) : (card.types || '[]');
       await conn.query(`
-        INSERT INTO cards (
-          id, name, supertype, subtypes, hp, types, rarity, artist,
-          set_id, set_name, number, image_small, image_large, raw_data, annotations
+        INSERT INTO custom_cards (
+          id, name, supertype, subtypes, hp, types, evolves_from,
+          rarity, special_rarity, alt_name, artist, set_id, set_name, set_series, number,
+          regulation_mark, image_small, image_large, source,
+          art_style, main_character, background_pokemon, background_humans,
+          additional_characters, evolution_line, background_details,
+          emotion, pose, camera_angle, items, actions, perspective,
+          weather_environment, storytelling, card_locations, pkmn_region,
+          primary_color, secondary_color, shape,
+          video_game, video_appearance, thumbnail_used, video_url, video_title,
+          unique_id, owned, notes, annotations
         ) VALUES (
-          ${escapeStr(card.id)},
-          ${escapeStr(card.name)},
-          ${escapeStr(card.supertype || "")},
-          ${escapeStr(card.subtypes || "[]")},
-          ${escapeStr(card.hp || "")},
-          ${escapeStr(card.types || "[]")},
-          ${escapeStr(card.rarity || "")},
-          ${escapeStr(card.artist || "")},
-          ${escapeStr(card.set_id)},
-          ${escapeStr(card.set_name || "")},
-          ${escapeStr(card.number || "")},
-          ${escapeStr(card.image_small || "")},
-          ${escapeStr(card.image_large || card.image_small || "")},
-          ${escapeStr(JSON.stringify(card.raw_data || {}))},
+          ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
+          ${escapeStr(subtypesStr)}, ${escapeStr(card.hp != null ? String(card.hp) : '')}, ${escapeStr(typesStr)},
+          ${s('evolves_from')}, ${s('rarity')}, ${s('special_rarity')}, ${s('alt_name')}, ${s('artist')},
+          ${s('set_id')}, ${s('set_name')}, ${s('set_series')}, ${s('number')},
+          ${s('regulation_mark')}, ${s('image_small')}, ${s('image_large')}, ${s('source')},
+          ${s('art_style')}, ${s('main_character')}, ${s('background_pokemon')}, ${s('background_humans')},
+          ${s('additional_characters')}, ${s('evolution_line')}, ${s('background_details')},
+          ${s('emotion')}, ${s('pose')}, ${s('camera_angle')}, ${s('items')}, ${s('actions')}, ${s('perspective')},
+          ${s('weather_environment')}, ${s('storytelling')}, ${s('card_locations')}, ${s('pkmn_region')},
+          ${s('primary_color')}, ${s('secondary_color')}, ${s('shape')},
+          ${s('video_game')}, ${b('video_appearance')}, ${b('thumbnail_used')}, ${s('video_url')}, ${s('video_title')},
+          ${s('unique_id')}, ${b('owned')}, ${s('notes')},
           ${escapeStr(JSON.stringify(card.annotations || {}))}
         )
       `);
+      if (card.source) customSourceNames.add(card.source);
     }
   }
 }
@@ -740,10 +858,7 @@ export async function fetchCards(params = {}) {
     const total = countResult.toArray()[0].cnt;
 
     const dataResult = await conn.query(`
-      SELECT cc.id, cc.name, cc.supertype, cc.subtypes, cc.hp, cc.types,
-             cc.rarity, cc.special_rarity, cc.alt_name,
-             cc.set_id, cc.set_name, cc.number,
-             cc.image_small, cc.image_large, cc.artist, cc.annotations
+      SELECT cc.*
       FROM custom_cards cc
       ${where}
       ORDER BY ${sortExpr} ${safeSortDir}
@@ -756,6 +871,8 @@ export async function fetchCards(params = {}) {
         typeof r.annotations === "string"
           ? JSON.parse(r.annotations)
           : r.annotations || {};
+      // Merge promoted columns into annotations for backward compat
+      const promoted = buildPromotedAnnotations(r);
       return {
         id: r.id,
         name: r.name,
@@ -772,7 +889,7 @@ export async function fetchCards(params = {}) {
         image_small: r.image_small || r.image_large,
         image_large: r.image_large,
         image_fallback: r.image_large || r.image_small || undefined,
-        annotations,
+        annotations: { ...promoted, ...annotations },
       };
     });
 
@@ -995,11 +1112,7 @@ export async function fetchCard(id, source = "TCG") {
   // ── Custom source (JSON-defined cards) ──────────────────────────────
   if (isCustomSource(source)) {
     const result = await conn.query(`
-      SELECT cc.id, cc.name, cc.supertype, cc.subtypes, cc.hp, cc.types,
-             cc.evolves_from, cc.rarity, cc.special_rarity, cc.alt_name,
-             cc.artist, cc.set_id, cc.set_name,
-             cc.set_series, cc.number, cc.regulation_mark,
-             cc.image_small, cc.image_large, cc.source, cc.annotations
+      SELECT cc.*
       FROM custom_cards cc
       WHERE cc.id = ${escapeStr(id)}
     `);
@@ -1012,11 +1125,16 @@ export async function fetchCard(id, source = "TCG") {
       typeof r.annotations === "string"
         ? JSON.parse(r.annotations)
         : r.annotations || {};
+    // Merge promoted columns into annotations for backward compat
+    const promoted = buildPromotedAnnotations(r);
+    annotations = { ...promoted, ...annotations };
 
     // Auto-populate unique_id if empty
     if (!annotations.unique_id) {
       annotations.unique_id = r.id;
-      await patchAnnotations(r.id, { unique_id: annotations.unique_id });
+      await conn.query(
+        `UPDATE custom_cards SET unique_id = ${escapeStr(r.id)} WHERE id = ${escapeStr(r.id)}`
+      );
     }
 
     return {
@@ -1370,8 +1488,21 @@ export async function patchAnnotations(cardId, annotations) {
   await conn.query(
     `UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
   );
+
+  // For custom_cards, also update promoted columns
+  const promotedColumnUpdates = [];
+  const allPromoted = new Set([...PROMOTED_ARRAY_FIELDS, ...PROMOTED_STRING_FIELDS, ...PROMOTED_BOOL_FIELDS]);
+  for (const [key, value] of Object.entries(annotations)) {
+    if (!allPromoted.has(key)) continue;
+    if (PROMOTED_BOOL_FIELDS.includes(key)) {
+      promotedColumnUpdates.push(`${key} = ${value === true}`);
+    } else {
+      promotedColumnUpdates.push(`${key} = ${escapeStr(typeof value === 'object' ? JSON.stringify(value) : String(value || ''))}`);
+    }
+  }
+  const extraSet = promotedColumnUpdates.length > 0 ? ', ' + promotedColumnUpdates.join(', ') : '';
   await conn.query(
-    `UPDATE custom_cards SET annotations = ${escaped} WHERE id = ${escapedId}`
+    `UPDATE custom_cards SET annotations = ${escaped}${extraSet} WHERE id = ${escapedId}`
   );
 
   // Write-through to IndexedDB
@@ -1625,103 +1756,82 @@ export async function addCustomSet(set) {
 
 /**
  * Add a custom card to the database.
- * Custom cards must have a set_id that starts with "custom-".
+ * Accepts all custom_cards columns. Inserts into custom_cards table.
  */
 export async function addCustomCard(card) {
-  if (!card.set_id.startsWith("custom-")) {
-    throw new Error("Custom card set_id must start with 'custom-'");
+  if (!card.id) {
+    throw new Error("Card must have an id");
   }
-
-  // Build full card ID
-  const fullId = `${card.set_id}-${card.card_id}`;
 
   // Check if card already exists
   const existing = await conn.query(
-    `SELECT id FROM cards WHERE id = ${escapeStr(fullId)}`
+    `SELECT id FROM custom_cards WHERE id = ${escapeStr(card.id)}`
   );
   if (existing.numRows > 0) {
-    throw new Error(`Card with ID '${fullId}' already exists`);
+    throw new Error(`Card with ID '${card.id}' already exists`);
   }
 
-  // Ensure the set exists
-  await addCustomSet({
-    id: card.set_id,
-    name: card.set_name || card.set_id.replace("custom-", "").replace(/-/g, " "),
-  });
+  const s = (key) => escapeStr(card[key] || '');
+  const b = (key) => card[key] === true;
 
-  const cardData = {
-    id: fullId,
-    name: card.name,
-    supertype: card.supertype || "",
-    subtypes: card.subtypes || "[]",
-    hp: card.hp || "",
-    types: card.types ? JSON.stringify([card.types]) : "[]",
-    rarity: card.rarity || "",
-    artist: card.artist || "",
-    set_id: card.set_id,
-    set_name: card.set_name || card.set_id.replace("custom-", "").replace(/-/g, " "),
-    number: card.number || "",
-    image_small: card.image_url || "",
-    image_large: card.image_url || "",
-    raw_data: {},
-    annotations: {},
-  };
+  // Ensure subtypes and types are JSON array strings
+  const subtypesStr = Array.isArray(card.subtypes) ? JSON.stringify(card.subtypes) : (card.subtypes || '[]');
+  const typesStr = Array.isArray(card.types) ? JSON.stringify(card.types) : (card.types || '[]');
 
-  // Insert into DuckDB
+  // Insert into DuckDB custom_cards table
   await conn.query(`
-    INSERT INTO cards (
-      id, name, supertype, subtypes, hp, types, rarity, artist,
-      set_id, set_name, number, image_small, image_large, raw_data, annotations
+    INSERT INTO custom_cards (
+      id, name, supertype, subtypes, hp, types, evolves_from,
+      rarity, special_rarity, alt_name, artist, set_id, set_name, set_series, number,
+      regulation_mark, image_small, image_large, source,
+      art_style, main_character, background_pokemon, background_humans,
+      additional_characters, evolution_line, background_details,
+      emotion, pose, camera_angle, items, actions, perspective,
+      weather_environment, storytelling, card_locations, pkmn_region,
+      primary_color, secondary_color, shape,
+      video_game, video_appearance, thumbnail_used, video_url, video_title,
+      unique_id, owned, notes, annotations
     ) VALUES (
-      ${escapeStr(cardData.id)},
-      ${escapeStr(cardData.name)},
-      ${escapeStr(cardData.supertype)},
-      ${escapeStr(cardData.subtypes)},
-      ${escapeStr(cardData.hp)},
-      ${escapeStr(cardData.types)},
-      ${escapeStr(cardData.rarity)},
-      ${escapeStr(cardData.artist)},
-      ${escapeStr(cardData.set_id)},
-      ${escapeStr(cardData.set_name)},
-      ${escapeStr(cardData.number)},
-      ${escapeStr(cardData.image_small)},
-      ${escapeStr(cardData.image_large)},
-      ${escapeStr(JSON.stringify(cardData.raw_data))},
-      ${escapeStr(JSON.stringify(cardData.annotations))}
+      ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
+      ${escapeStr(subtypesStr)}, ${escapeStr(card.hp != null ? String(card.hp) : '')}, ${escapeStr(typesStr)},
+      ${s('evolves_from')}, ${s('rarity')}, ${s('special_rarity')}, ${s('alt_name')}, ${s('artist')},
+      ${s('set_id')}, ${s('set_name')}, ${s('set_series')}, ${s('number')},
+      ${s('regulation_mark')}, ${s('image_small')}, ${s('image_large')}, ${s('source')},
+      ${s('art_style')}, ${s('main_character')}, ${s('background_pokemon')}, ${s('background_humans')},
+      ${s('additional_characters')}, ${s('evolution_line')}, ${s('background_details')},
+      ${s('emotion')}, ${s('pose')}, ${s('camera_angle')}, ${s('items')}, ${s('actions')}, ${s('perspective')},
+      ${s('weather_environment')}, ${s('storytelling')}, ${s('card_locations')}, ${s('pkmn_region')},
+      ${s('primary_color')}, ${s('secondary_color')}, ${s('shape')},
+      ${s('video_game')}, ${b('video_appearance')}, ${b('thumbnail_used')}, ${s('video_url')}, ${s('video_title')},
+      ${s('unique_id')}, ${b('owned')}, ${s('notes')},
+      ${escapeStr(JSON.stringify({}))}
     )
   `);
 
-  // Write-through to IndexedDB for persistence
-  await idbPut(STORE_CUSTOM_CARDS, cardData);
+  // Register the source name if new
+  if (card.source) {
+    customSourceNames.add(card.source);
+  }
 
-  return cardData;
+  // Write-through to IndexedDB for persistence
+  await idbPut(STORE_CUSTOM_CARDS, card);
+
+  return card;
 }
 
 /**
- * Delete a custom card. Only cards with set_id starting with "custom-" can be deleted.
+ * Delete a custom card.
  */
 export async function deleteCustomCard(cardId) {
-  // Check if the card exists and is a custom card
   const result = await conn.query(
-    `SELECT set_id FROM cards WHERE id = ${escapeStr(cardId)}`
+    `SELECT id FROM custom_cards WHERE id = ${escapeStr(cardId)}`
   );
-  const rows = result.toArray();
-
-  if (rows.length === 0) {
-    throw new Error(`Card '${cardId}' not found`);
+  if (result.toArray().length === 0) {
+    throw new Error(`Card '${cardId}' not found in custom_cards`);
   }
 
-  if (!rows[0].set_id.startsWith("custom-")) {
-    throw new Error("Only custom cards can be deleted");
-  }
-
-  // Delete from DuckDB
-  await conn.query(`DELETE FROM cards WHERE id = ${escapeStr(cardId)}`);
-
-  // Delete from IndexedDB
+  await conn.query(`DELETE FROM custom_cards WHERE id = ${escapeStr(cardId)}`);
   await idbDelete(STORE_CUSTOM_CARDS, cardId);
-
-  // Also delete any annotations for this card
   await idbDelete(STORE_ANNOTATIONS, cardId);
 }
 
@@ -1730,10 +1840,9 @@ export async function deleteCustomCard(cardId) {
  */
 export async function fetchCustomCards() {
   const result = await conn.query(`
-    SELECT id, name, supertype, hp, types, rarity, set_id, set_name, number, image_small
-    FROM cards
-    WHERE set_id LIKE 'custom-%'
-    ORDER BY set_id, name
+    SELECT id, name, supertype, hp, types, rarity, set_id, set_name, number, image_small, source
+    FROM custom_cards
+    ORDER BY source, set_id, name
   `);
 
   return result.toArray().map((r) => ({
@@ -1747,5 +1856,6 @@ export async function fetchCustomCards() {
     set_name: r.set_name,
     number: r.number,
     image_small: r.image_small,
+    source: r.source,
   }));
 }

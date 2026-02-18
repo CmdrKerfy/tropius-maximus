@@ -43,6 +43,13 @@ LIMIT 50`,
       "SELECT id, name, set_name, artist FROM cards WHERE artist ILIKE 'Sachiko Adachi'",
   },
   {
+    label: "Background Characters (custom)",
+    query: `SELECT id, name, set_name, image_small,
+  annotations::JSON->>'background_characters' AS background_characters
+FROM custom_cards
+WHERE annotations::JSON->>'background_characters' ILIKE '%Pikachu%'`,
+  },
+  {
     label: "Selected Cards",
     query: "SELECT id, name, set_name FROM cards WHERE id IN {{selected}}",
   },
@@ -120,7 +127,7 @@ export default function SqlConsole({
         const lower = trimmed.toLowerCase();
         const changed = {};
         if (/attribute_definitions/.test(lower)) changed.attributes = true;
-        if (/\bcards\b/.test(lower) || /\bpocket_cards\b/.test(lower) || /\bexclusive_cards\b/.test(lower) || /\bannotations\b/.test(lower))
+        if (/\bcards\b/.test(lower) || /\bpocket_cards\b/.test(lower) || /\bcustom_cards\b/.test(lower) || /\bannotations\b/.test(lower))
           changed.cards = true;
         if (changed.attributes || changed.cards) onDataChanged(changed);
       }

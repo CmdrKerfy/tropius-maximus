@@ -1,77 +1,223 @@
 /**
- * CustomCardForm — Form to add custom cards (Japan exclusives, promos, etc.)
- *
- * Custom cards use a reserved set_id prefix ("custom-*") so they won't be
- * overwritten by future ingestion runs from the official Pokemon TCG API.
+ * CustomCardForm — Expanded form to add custom cards with all fields
+ * and optional GitHub auto-commit via PAT.
  */
 
 import { useState } from "react";
 import { addCustomCard } from "../db";
+import { getToken, setToken, commitNewCard } from "../lib/github";
+
+function CollapsibleSection({ title, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-600 hover:text-gray-800"
+      >
+        <svg
+          className={`w-4 h-4 transition-transform ${open ? "rotate-90" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        {title}
+      </button>
+      {open && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
 
 export default function CustomCardForm({ onCardAdded, onClose }) {
-  // Required fields
-  const [cardId, setCardId] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [setId, setSetId] = useState("custom-");
-  const [setDisplayName, setSetDisplayName] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  // ── Required fields ──
+  const [id, setId] = useState("");
+  const [name, setName] = useState("");
+  const [setIdVal, setSetIdVal] = useState("");
+  const [setNameVal, setSetNameVal] = useState("");
+  const [imageSmall, setImageSmall] = useState("");
+  const [source, setSource] = useState("Japan Exclusive");
 
-  // Optional fields
-  const [supertype, setSupertype] = useState("Pokemon");
+  // ── Card details ──
+  const [supertype, setSupertype] = useState("Pokémon");
+  const [subtypes, setSubtypes] = useState("");
   const [types, setTypes] = useState("");
   const [hp, setHp] = useState("");
   const [rarity, setRarity] = useState("");
+  const [specialRarity, setSpecialRarity] = useState("");
   const [artist, setArtist] = useState("");
   const [number, setNumber] = useState("");
+  const [altName, setAltName] = useState("");
+  const [evolvesFrom, setEvolvesFrom] = useState("");
+  const [setSeries, setSetSeries] = useState("");
+  const [regulationMark, setRegulationMark] = useState("");
+  const [imageLarge, setImageLarge] = useState("");
 
+  // ── Annotation fields ──
+  const [artStyle, setArtStyle] = useState("");
+  const [mainCharacter, setMainCharacter] = useState("");
+  const [backgroundPokemon, setBackgroundPokemon] = useState("");
+  const [backgroundHumans, setBackgroundHumans] = useState("");
+  const [additionalCharacters, setAdditionalCharacters] = useState("");
+  const [emotion, setEmotion] = useState("");
+  const [pose, setPose] = useState("");
+  const [cameraAngle, setCameraAngle] = useState("");
+  const [items, setItems] = useState("");
+  const [actions, setActions] = useState("");
+  const [perspective, setPerspective] = useState("");
+  const [weatherEnvironment, setWeatherEnvironment] = useState("");
+  const [storytelling, setStorytelling] = useState("");
+  const [backgroundDetails, setBackgroundDetails] = useState("");
+  const [cardLocations, setCardLocations] = useState("");
+  const [pkmnRegion, setPkmnRegion] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [secondaryColor, setSecondaryColor] = useState("");
+  const [shape, setShape] = useState("");
+  const [evolutionLine, setEvolutionLine] = useState("");
+
+  // ── Video fields ──
+  const [videoGame, setVideoGame] = useState("");
+  const [videoAppearance, setVideoAppearance] = useState(false);
+  const [thumbnailUsed, setThumbnailUsed] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
+
+  // ── Notes fields ──
+  const [owned, setOwned] = useState(false);
+  const [notes, setNotes] = useState("");
+
+  // ── UI state ──
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [creating, setCreating] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  // ── GitHub token ──
+  const [ghToken, setGhToken] = useState(getToken());
+  const [showTokenInput, setShowTokenInput] = useState(false);
+
+  // Parse comma-separated string into array, filtering empty
+  const toArray = (s) => s ? s.split(",").map(v => v.trim()).filter(Boolean) : [];
+  // Format for JSON storage - returns JSON string of array or null
+  const arrayStr = (s) => {
+    const arr = toArray(s);
+    return arr.length > 0 ? JSON.stringify(arr) : "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setCreating(true);
 
     try {
-      // Validate set_id prefix
-      if (!setId.startsWith("custom-")) {
-        throw new Error("Set ID must start with 'custom-'");
+      if (!id || !name || !setIdVal || !setNameVal || !imageSmall || !source) {
+        throw new Error("Please fill in all required fields");
       }
 
-      if (setId === "custom-") {
-        throw new Error("Please provide a set ID after 'custom-'");
+      // Build card object for custom_cards.json format
+      const cardJson = {
+        id,
+        name,
+        alt_name: altName || "",
+        supertype: supertype || "",
+        subtypes: toArray(subtypes),
+        hp: hp ? Number(hp) || hp : null,
+        types: toArray(types),
+        evolves_from: evolvesFrom || null,
+        rarity: rarity || "",
+        special_rarity: specialRarity || "",
+        artist: artist || "",
+        art_style: toArray(artStyle),
+        set_id: setIdVal,
+        set_name: setNameVal,
+        set_series: setSeries || "",
+        number: number || "",
+        regulation_mark: regulationMark || "",
+        image_small: imageSmall,
+        image_large: imageLarge || imageSmall,
+        source,
+        owned,
+        notes: notes || "",
+        main_character: toArray(mainCharacter),
+        background_pokemon: toArray(backgroundPokemon),
+        background_humans: backgroundHumans ? toArray(backgroundHumans) : null,
+        primary_color: primaryColor || "",
+        secondary_color: secondaryColor || "",
+        shape: shape || "",
+        video_game: videoGame || null,
+        video_appearance: videoAppearance,
+        thumbnail_used: thumbnailUsed,
+        video_url: videoUrl || "",
+        video_title: videoTitle || "",
+        unique_id: id,
+        evolution_line: toArray(evolutionLine),
+        emotion: emotion || "",
+        pose: pose || "",
+        camera_angle: cameraAngle || "",
+        items: items || "",
+        actions: actions || "",
+        additional_characters: toArray(additionalCharacters),
+        perspective: perspective || "",
+        weather_environment: weatherEnvironment || "",
+        storytelling: storytelling || "",
+        background_details: toArray(backgroundDetails),
+        card_locations: cardLocations || "",
+        pkmn_region: pkmnRegion || "",
+      };
+
+      // Build card for DuckDB insert (arrays as JSON strings, evolution_line as arrow string)
+      const dbCard = {
+        ...cardJson,
+        subtypes: JSON.stringify(cardJson.subtypes),
+        types: JSON.stringify(cardJson.types),
+        art_style: arrayStr(artStyle),
+        main_character: arrayStr(mainCharacter),
+        background_pokemon: arrayStr(backgroundPokemon),
+        background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
+        additional_characters: arrayStr(additionalCharacters),
+        background_details: arrayStr(backgroundDetails),
+        evolution_line: toArray(evolutionLine).join(" → "),
+        image_large: imageLarge || imageSmall,
+        unique_id: id,
+      };
+
+      // Insert into local DuckDB
+      await addCustomCard(dbCard);
+
+      // Auto-commit to GitHub if token is set
+      let ghCommitted = false;
+      const token = getToken();
+      if (token) {
+        try {
+          await commitNewCard(token, cardJson);
+          ghCommitted = true;
+        } catch (ghErr) {
+          console.warn("GitHub commit failed:", ghErr.message);
+          setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+        }
       }
 
-      await addCustomCard({
-        card_id: cardId,
-        name: cardName,
-        set_id: setId,
-        set_name: setDisplayName || setId.replace("custom-", "").replace(/-/g, " "),
-        image_url: imageUrl,
-        supertype,
-        types: types || null,
-        hp: hp || null,
-        rarity: rarity || null,
-        artist: artist || null,
-        number: number || null,
-      });
+      setSuccess(
+        ghCommitted
+          ? `Card "${name}" added and committed to GitHub!`
+          : `Card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
+      );
 
       // Reset form
-      setCardId("");
-      setCardName("");
-      setSetId("custom-");
-      setSetDisplayName("");
-      setImageUrl("");
-      setSupertype("Pokemon");
-      setTypes("");
-      setHp("");
-      setRarity("");
-      setArtist("");
-      setNumber("");
+      setId(""); setName(""); setImageSmall(""); setImageLarge("");
+      setAltName(""); setEvolvesFrom(""); setHp(""); setRarity("");
+      setSpecialRarity(""); setArtist(""); setNumber(""); setRegulationMark("");
+      setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");
+      setBackgroundHumans(""); setAdditionalCharacters(""); setEmotion("");
+      setPose(""); setCameraAngle(""); setItems(""); setActions("");
+      setPerspective(""); setWeatherEnvironment(""); setStorytelling("");
+      setBackgroundDetails(""); setCardLocations(""); setPkmnRegion("");
+      setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
+      setVideoGame(""); setVideoAppearance(false); setThumbnailUsed(false);
+      setVideoUrl(""); setVideoTitle(""); setOwned(false); setNotes("");
       setImageError(false);
 
-      // Notify parent
       onCardAdded?.();
     } catch (err) {
       setError(err.message);
@@ -83,7 +229,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const inputClass =
     "px-3 py-1.5 border border-gray-300 rounded text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
-
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
@@ -91,223 +236,320 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-gray-800">Add Custom Card</h2>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
             &times;
           </button>
         )}
       </div>
-
-      <p className="text-sm text-gray-600 mb-4">
-        Add cards that don't exist in the official Pokemon TCG API (Japan
-        exclusives, promos, etc.). Custom cards use a "custom-" prefix and won't
-        be affected by data updates.
-      </p>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-4">
           {error}
         </div>
       )}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-sm mb-4">
+          {success}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Required Fields */}
+        {/* ── Required Fields ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>
-              Card ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={cardId}
-              onChange={(e) => setCardId(e.target.value)}
-              placeholder="e.g., pikachu-001"
-              required
-              pattern="[a-z0-9-]+"
-              title="Lowercase letters, numbers, and hyphens only"
-              className={inputClass + " w-full"}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Full ID will be: {setId}-{cardId || "..."}
-            </p>
+            <label className={labelClass}>ID <span className="text-red-500">*</span></label>
+            <input type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g., xyp-JP279" required className={inputClass + " w-full"} />
           </div>
-
           <div>
-            <label className={labelClass}>
-              Card Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={cardName}
-              onChange={(e) => setCardName(e.target.value)}
-              placeholder="e.g., Pikachu"
-              required
-              className={inputClass + " w-full"}
-            />
+            <label className={labelClass}>Name <span className="text-red-500">*</span></label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Pikachu" required className={inputClass + " w-full"} />
           </div>
-
           <div>
-            <label className={labelClass}>
-              Set ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={setId}
-              onChange={(e) => {
-                let val = e.target.value;
-                // Ensure it always starts with custom-
-                if (!val.startsWith("custom-")) {
-                  val = "custom-" + val.replace(/^custom-?/, "");
-                }
-                setSetId(val.toLowerCase());
-              }}
-              placeholder="custom-jp-promos"
-              required
-              className={inputClass + " w-full"}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Must start with "custom-"
-            </p>
+            <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
+            <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., xyp" required className={inputClass + " w-full"} />
           </div>
-
           <div>
-            <label className={labelClass}>Set Name</label>
-            <input
-              type="text"
-              value={setDisplayName}
-              onChange={(e) => setSetDisplayName(e.target.value)}
-              placeholder="e.g., Japan Promos"
-              className={inputClass + " w-full"}
-            />
+            <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
+            <input type="text" value={setNameVal} onChange={(e) => setSetNameVal(e.target.value)} placeholder="e.g., XY Japanese Promos" required className={inputClass + " w-full"} />
           </div>
-        </div>
-
-        <div>
-          <label className={labelClass}>
-            Image URL <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => {
-              setImageUrl(e.target.value);
-              setImageError(false);
-            }}
-            placeholder="https://..."
-            required
-            className={inputClass + " w-full"}
-          />
+          <div>
+            <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
+            <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
+          </div>
+          <div>
+            <label className={labelClass}>Source <span className="text-red-500">*</span></label>
+            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g., Japan Exclusive" required className={inputClass + " w-full"} />
+          </div>
         </div>
 
         {/* Image Preview */}
-        {imageUrl && (
+        {imageSmall && (
           <div className="flex justify-center">
-            <div className="w-48 h-auto">
+            <div className="w-48">
               {!imageError ? (
-                <img
-                  src={imageUrl}
-                  alt="Card preview"
-                  className="w-full h-auto rounded shadow-md"
-                  onError={() => setImageError(true)}
-                />
+                <img src={imageSmall} alt="Preview" className="w-full h-auto rounded shadow-md" onError={() => setImageError(true)} />
               ) : (
-                <div className="w-full h-64 bg-gray-100 rounded flex items-center justify-center text-gray-500 text-sm">
-                  Failed to load image
-                </div>
+                <div className="w-full h-64 bg-gray-100 rounded flex items-center justify-center text-gray-500 text-sm">Failed to load</div>
               )}
             </div>
           </div>
         )}
 
-        {/* Optional Fields */}
-        <div className="border-t pt-4">
-          <h3 className="text-sm font-medium text-gray-600 mb-3">
-            Optional Details
-          </h3>
+        {/* ── Card Details (collapsible) ── */}
+        <CollapsibleSection title="Card Details">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Supertype</label>
-              <select
-                value={supertype}
-                onChange={(e) => setSupertype(e.target.value)}
-                className={inputClass + " w-full"}
-              >
-                <option value="Pokemon">Pokemon</option>
+              <select value={supertype} onChange={(e) => setSupertype(e.target.value)} className={inputClass + " w-full"}>
+                <option value="Pokémon">Pokémon</option>
                 <option value="Trainer">Trainer</option>
                 <option value="Energy">Energy</option>
               </select>
             </div>
-
             <div>
-              <label className={labelClass}>Type</label>
-              <select
-                value={types}
-                onChange={(e) => setTypes(e.target.value)}
-                className={inputClass + " w-full"}
-              >
-                <option value="">None</option>
-                <option value="Colorless">Colorless</option>
-                <option value="Darkness">Darkness</option>
-                <option value="Dragon">Dragon</option>
-                <option value="Fairy">Fairy</option>
-                <option value="Fighting">Fighting</option>
-                <option value="Fire">Fire</option>
-                <option value="Grass">Grass</option>
-                <option value="Lightning">Lightning</option>
-                <option value="Metal">Metal</option>
-                <option value="Psychic">Psychic</option>
-                <option value="Water">Water</option>
-              </select>
+              <label className={labelClass}>Subtypes</label>
+              <input type="text" value={subtypes} onChange={(e) => setSubtypes(e.target.value)} placeholder="Basic, Stage 1" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
             </div>
-
+            <div>
+              <label className={labelClass}>Types</label>
+              <input type="text" value={types} onChange={(e) => setTypes(e.target.value)} placeholder="Lightning, Fire" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
             <div>
               <label className={labelClass}>HP</label>
-              <input
-                type="text"
-                value={hp}
-                onChange={(e) => setHp(e.target.value)}
-                placeholder="e.g., 60"
-                className={inputClass + " w-full"}
-              />
+              <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="60" className={inputClass + " w-full"} />
             </div>
-
             <div>
               <label className={labelClass}>Rarity</label>
-              <input
-                type="text"
-                value={rarity}
-                onChange={(e) => setRarity(e.target.value)}
-                placeholder="e.g., Promo"
-                className={inputClass + " w-full"}
-              />
+              <input type="text" value={rarity} onChange={(e) => setRarity(e.target.value)} placeholder="Promo" className={inputClass + " w-full"} />
             </div>
-
+            <div>
+              <label className={labelClass}>Special Rarity</label>
+              <input type="text" value={specialRarity} onChange={(e) => setSpecialRarity(e.target.value)} placeholder="20th Anniversary" className={inputClass + " w-full"} />
+            </div>
             <div>
               <label className={labelClass}>Artist</label>
-              <input
-                type="text"
-                value={artist}
-                onChange={(e) => setArtist(e.target.value)}
-                placeholder="e.g., Ken Sugimori"
-                className={inputClass + " w-full"}
-              />
+              <input type="text" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
             </div>
-
             <div>
               <label className={labelClass}>Number</label>
-              <input
-                type="text"
-                value={number}
-                onChange={(e) => setNumber(e.target.value)}
-                placeholder="e.g., 001/100"
-                className={inputClass + " w-full"}
-              />
+              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="XY279" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Alt Name</label>
+              <input type="text" value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="ピカチュウ" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Evolves From</label>
+              <input type="text" value={evolvesFrom} onChange={(e) => setEvolvesFrom(e.target.value)} placeholder="Pichu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Set Series</label>
+              <input type="text" value={setSeries} onChange={(e) => setSetSeries(e.target.value)} placeholder="XY" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Regulation Mark</label>
+              <input type="text" value={regulationMark} onChange={(e) => setRegulationMark(e.target.value)} placeholder="G" className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Large Image URL</label>
+              <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://... (defaults to small image)" className={inputClass + " w-full"} />
             </div>
           </div>
-        </div>
+        </CollapsibleSection>
 
+        {/* ── Annotations (collapsible) ── */}
+        <CollapsibleSection title="Annotations">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label className={labelClass}>Art Style</label>
+              <input type="text" value={artStyle} onChange={(e) => setArtStyle(e.target.value)} placeholder="Chibi, Cartoon" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
+            <div>
+              <label className={labelClass}>Main Character</label>
+              <input type="text" value={mainCharacter} onChange={(e) => setMainCharacter(e.target.value)} placeholder="Pikachu" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
+            <div>
+              <label className={labelClass}>Background Pokemon</label>
+              <input type="text" value={backgroundPokemon} onChange={(e) => setBackgroundPokemon(e.target.value)} placeholder="Bulbasaur, Squirtle" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
+            <div>
+              <label className={labelClass}>Background Humans</label>
+              <input type="text" value={backgroundHumans} onChange={(e) => setBackgroundHumans(e.target.value)} placeholder="Ash, Misty" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated (leave empty for null)</p>
+            </div>
+            <div>
+              <label className={labelClass}>Additional Characters</label>
+              <input type="text" value={additionalCharacters} onChange={(e) => setAdditionalCharacters(e.target.value)} placeholder="Friends, Rivals" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
+            <div>
+              <label className={labelClass}>Emotion</label>
+              <input type="text" value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Happy" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Pose</label>
+              <input type="text" value={pose} onChange={(e) => setPose(e.target.value)} placeholder="Jumping" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Camera Angle</label>
+              <input type="text" value={cameraAngle} onChange={(e) => setCameraAngle(e.target.value)} placeholder="Front" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Items</label>
+              <input type="text" value={items} onChange={(e) => setItems(e.target.value)} placeholder="Poke Ball" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Actions</label>
+              <input type="text" value={actions} onChange={(e) => setActions(e.target.value)} placeholder="Running" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Perspective</label>
+              <input type="text" value={perspective} onChange={(e) => setPerspective(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Weather/Environment</label>
+              <input type="text" value={weatherEnvironment} onChange={(e) => setWeatherEnvironment(e.target.value)} placeholder="Sunny" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Storytelling</label>
+              <input type="text" value={storytelling} onChange={(e) => setStorytelling(e.target.value)} placeholder="Celebration" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Background Details</label>
+              <input type="text" value={backgroundDetails} onChange={(e) => setBackgroundDetails(e.target.value)} placeholder="Trees, River" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated</p>
+            </div>
+            <div>
+              <label className={labelClass}>Card Locations</label>
+              <input type="text" value={cardLocations} onChange={(e) => setCardLocations(e.target.value)} placeholder="Nagoya" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Pokemon Region</label>
+              <input type="text" value={pkmnRegion} onChange={(e) => setPkmnRegion(e.target.value)} placeholder="Johto" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Primary Color</label>
+              <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="Yellow" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Secondary Color</label>
+              <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="Brown" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Shape</label>
+              <input type="text" value={shape} onChange={(e) => setShape(e.target.value)} placeholder="Round" className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Evolution Line</label>
+              <input type="text" value={evolutionLine} onChange={(e) => setEvolutionLine(e.target.value)} placeholder="pichu, pikachu, raichu" className={inputClass + " w-full"} />
+              <p className="text-xs text-gray-400 mt-0.5">Comma-separated (stored as array in JSON, arrow-joined in DB)</p>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── Video (collapsible) ── */}
+        <CollapsibleSection title="Video">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label className={labelClass}>Video Game</label>
+              <input type="text" value={videoGame} onChange={(e) => setVideoGame(e.target.value)} placeholder="X/Y" className={inputClass + " w-full"} />
+            </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" id="videoAppearance" checked={videoAppearance} onChange={(e) => setVideoAppearance(e.target.checked)} className="rounded" />
+              <label htmlFor="videoAppearance" className="text-sm text-gray-700">Video Appearance</label>
+            </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" id="thumbnailUsed" checked={thumbnailUsed} onChange={(e) => setThumbnailUsed(e.target.checked)} className="rounded" />
+              <label htmlFor="thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
+            </div>
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Video URL</label>
+              <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Video Title</label>
+              <input type="text" value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── Notes (collapsible) ── */}
+        <CollapsibleSection title="Notes">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="owned" checked={owned} onChange={(e) => setOwned(e.target.checked)} className="rounded" />
+              <label htmlFor="owned" className="text-sm text-gray-700">Owned</label>
+            </div>
+            <div>
+              <label className={labelClass}>Notes</label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── GitHub Settings (collapsible) ── */}
+        <CollapsibleSection title="GitHub Auto-Commit Settings">
+          <div className="space-y-3">
+            {ghToken ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-green-700">GitHub PAT configured</span>
+                <button
+                  type="button"
+                  onClick={() => setShowTokenInput(!showTokenInput)}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  {showTokenInput ? "Hide" : "Change"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setToken(""); setGhToken(""); }}
+                  className="text-sm text-red-500 hover:text-red-700 underline"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                No GitHub PAT set. Cards will only be saved locally. To auto-commit to the repo,
+                create a{" "}
+                <a
+                  href="https://github.com/settings/tokens?type=beta"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  fine-grained PAT
+                </a>{" "}
+                with <strong>Contents: Read and write</strong> permission for CmdrKerfy/tropius-maximus.
+              </p>
+            )}
+            {(!ghToken || showTokenInput) && (
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={ghToken}
+                  onChange={(e) => setGhToken(e.target.value)}
+                  placeholder="github_pat_..."
+                  className={inputClass + " flex-1"}
+                />
+                <button
+                  type="button"
+                  onClick={() => { setToken(ghToken); setShowTokenInput(false); }}
+                  className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-800"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+
+        {/* ── Submit ── */}
         <div className="flex gap-3 pt-2">
           <button
             type="submit"

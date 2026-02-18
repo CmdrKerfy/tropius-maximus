@@ -430,7 +430,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   const annotationLabels = [
                     ['art_style', 'Art Style'],
                     ['main_character', 'Main Character'],
-                    ['background_characters', 'Background Characters'],
+                    ['background_pokemon', 'Background Pok\u00e9mon'],
+                    ['background_humans', 'Background Humans'],
                     ['emotion', 'Emotion'],
                     ['pose', 'Pose'],
                     ['camera_angle', 'Camera Angle'],
@@ -443,6 +444,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     ['background_details', 'Background Details'],
                     ['card_locations', 'Card Locations'],
                     ['pkmn_region', 'Pok\u00e9mon Region'],
+                    ['primary_color', 'Primary Color'],
+                    ['secondary_color', 'Secondary Color'],
+                    ['shape', 'Shape'],
+                    ['video_game', 'Video Game'],
+                    ['video_url', 'Video URL'],
+                    ['video_title', 'Video Title'],
+                    ['notes', 'Notes'],
                   ];
                   const entries = annotationLabels
                     .filter(([key]) => {
