@@ -186,10 +186,11 @@ export default function App() {
     }
   };
 
-  // Refresh cards and filters after adding a custom card.
+  // Refresh cards, filters, and custom sources after adding a custom card.
   const handleCustomCardAdded = () => {
     loadCards();
-    fetchFilterOptions().then(setFilterOptions).catch(console.error);
+    setCustomSources(getCustomSourceNames());
+    fetchFilterOptions(filters.source).then(setFilterOptions).catch(console.error);
   };
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -218,7 +219,7 @@ export default function App() {
               }}
               className="px-3 py-1.5 bg-green-700 hover:bg-green-800 rounded text-sm font-medium transition-colors"
             >
-              {showSettings ? "Close Settings" : "Settings"}
+              {showSettings ? "Close" : "Custom Cards"}
             </button>
           </div>
         </div>
@@ -267,10 +268,7 @@ export default function App() {
               />
             )}
 
-            <AttributeManager
-              attributes={attributes}
-              onChanged={handleAttributesChanged}
-            />
+            {/* AttributeManager hidden for now */}
           </div>
         )}
 
