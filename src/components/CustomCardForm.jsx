@@ -294,15 +294,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
           <div>
             <label className={labelClass}>Name <span className="text-red-500">*</span></label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Pikachu" required className={inputClass + " w-full"} />
+            <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
-            <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., xyp" required className={inputClass + " w-full"} />
+            <ComboBox value={setIdVal} onChange={setSetIdVal} options={opts.setId || []} placeholder="e.g., xyp" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
-            <input type="text" value={setNameVal} onChange={(e) => setSetNameVal(e.target.value)} placeholder="e.g., XY Japanese Promos" required className={inputClass + " w-full"} />
+            <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
@@ -310,7 +310,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
           <div>
             <label className={labelClass}>Source <span className="text-red-500">*</span></label>
-            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g., Japan Exclusive" required className={inputClass + " w-full"} />
+            <ComboBox value={source} onChange={setSource} options={opts.source || []} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
           </div>
         </div>
 

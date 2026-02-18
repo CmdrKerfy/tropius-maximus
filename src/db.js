@@ -1516,6 +1516,31 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT video_title AS val FROM custom_cards WHERE video_title IS NOT NULL AND video_title != '' ORDER BY val`
     ),
+    // setId: from sets + custom_cards
+    conn.query(
+      `SELECT DISTINCT val FROM (
+        SELECT id AS val FROM sets WHERE id IS NOT NULL AND id != ''
+        UNION SELECT set_id AS val FROM custom_cards WHERE set_id IS NOT NULL AND set_id != ''
+      ) ORDER BY val`
+    ),
+    // setName: from sets + custom_cards
+    conn.query(
+      `SELECT DISTINCT val FROM (
+        SELECT name AS val FROM sets WHERE name IS NOT NULL AND name != ''
+        UNION SELECT set_name AS val FROM custom_cards WHERE set_name IS NOT NULL AND set_name != ''
+      ) ORDER BY val`
+    ),
+    // name: from cards + custom_cards
+    conn.query(
+      `SELECT DISTINCT val FROM (
+        SELECT name AS val FROM cards WHERE name IS NOT NULL AND name != ''
+        UNION SELECT name AS val FROM custom_cards WHERE name IS NOT NULL AND name != ''
+      ) ORDER BY val`
+    ),
+    // source: from custom_cards
+    conn.query(
+      `SELECT DISTINCT source AS val FROM custom_cards WHERE source IS NOT NULL AND source != '' ORDER BY val`
+    ),
   ]);
 
   const toArr = (result) => result.toArray().map((r) => r.val).filter(Boolean);
@@ -1580,6 +1605,10 @@ export async function fetchFormOptions() {
     items: toArr(queries[13]),
     actions: toArr(queries[14]),
     videoTitle: toArr(queries[15]),
+    setId: toArr(queries[16]),
+    setName: toArr(queries[17]),
+    name: toArr(queries[18]),
+    source: toArr(queries[19]),
     artStyle,
     mainCharacter,
     backgroundPokemon,
