@@ -10,7 +10,8 @@
  */
 
 import { useState, useRef, useCallback } from "react";
-import { executeSql } from "../db";
+import { executeSql, syncMutableTablesToIndexedDB } from "../db";
+import { getToken, setToken, getFileContents, updateFileContents } from "../lib/github";
 
 const EXAMPLES = [
   { label: "All Columns (cards)", query: "SELECT * FROM cards LIMIT 5" },
@@ -84,6 +85,12 @@ export default function SqlConsole({
   const [running, setRunning] = useState(false);
   const textareaRef = useRef(null);
 
+  const [hasUncommittedChanges, setHasUncommittedChanges] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [commitMessage, setCommitMessage] = useState(null); // { type: 'success'|'error', text }
+  const [ghToken, setGhToken] = useState(() => getToken());
+  const [showTokenInput, setShowTokenInput] = useState(false);
+
   // Expand {{selected}} template variable with actual card IDs
   const expandTemplate = useCallback(
     (sql) => {
@@ -131,12 +138,50 @@ export default function SqlConsole({
           changed.cards = true;
         if (changed.attributes || changed.cards) onDataChanged(changed);
       }
+
+      // Flag uncommitted changes after any successful mutation
+      const isMutation = /^\s*(UPDATE|INSERT|DELETE|DROP|ALTER|CREATE)/i.test(trimmed);
+      if (isMutation) {
+        setHasUncommittedChanges(true);
+        setCommitMessage(null);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setRunning(false);
     }
   }, [query, onDataChanged, selectedCardIds, expandTemplate]);
+
+  const commitSqlChanges = useCallback(async () => {
+    setCommitting(true);
+    setCommitMessage(null);
+    try {
+      const { annotationsSynced, customCardsSynced, customCardsData } =
+        await syncMutableTablesToIndexedDB();
+
+      let msg = `Saved to local storage (${annotationsSynced} annotation(s), ${customCardsSynced} custom card(s))`;
+
+      // Push to GitHub if a PAT is configured
+      if (ghToken && customCardsData) {
+        const { sha } = await getFileContents(ghToken);
+        await updateFileContents(
+          ghToken,
+          customCardsData,
+          sha,
+          "SQL Console: sync custom cards and annotations"
+        );
+        msg += " and committed to GitHub";
+      }
+
+      setCommitMessage({ type: "success", text: msg });
+      setHasUncommittedChanges(false);
+      if (onDataChanged) onDataChanged({ cards: true });
+    } catch (err) {
+      setCommitMessage({ type: "error", text: err.message });
+    } finally {
+      setCommitting(false);
+    }
+  }, [ghToken, onDataChanged]);
 
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -219,6 +264,95 @@ export default function SqlConsole({
       {result && result.message && (
         <div className="mt-3 bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-sm">
           {result.message}
+        </div>
+      )}
+
+      {/* Commit Changes section — shown after any successful mutation */}
+      {hasUncommittedChanges && (
+        <div className="mt-3 border border-amber-200 rounded-lg p-3 bg-amber-50">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <span className="text-sm font-medium text-amber-800">Uncommitted changes</span>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Saves SQL mutations to local storage
+                {ghToken ? " and commits to GitHub" : ""}
+              </p>
+            </div>
+            <button
+              onClick={commitSqlChanges}
+              disabled={committing}
+              className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded text-sm font-medium
+                         hover:bg-amber-700 disabled:bg-gray-400 transition-colors"
+            >
+              {committing ? "Committing..." : "Commit Changes to Database"}
+            </button>
+          </div>
+
+          {commitMessage && (
+            <div
+              className={`mt-2 text-xs px-2 py-1.5 rounded ${
+                commitMessage.type === "success"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {commitMessage.text}
+            </div>
+          )}
+
+          {/* GitHub PAT status */}
+          <div className="mt-2 border-t border-amber-200 pt-2 space-y-1.5">
+            {ghToken ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-green-700">GitHub PAT configured</span>
+                <button
+                  type="button"
+                  onClick={() => setShowTokenInput(!showTokenInput)}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  {showTokenInput ? "Hide" : "Change"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setToken(""); setGhToken(""); }}
+                  className="text-xs text-red-500 hover:text-red-700 underline"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-600">
+                No GitHub PAT — changes saved locally only.{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowTokenInput(true)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Add PAT
+                </button>{" "}
+                to also commit to GitHub.
+              </p>
+            )}
+            {(!ghToken || showTokenInput) && (
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={ghToken}
+                  onChange={(e) => setGhToken(e.target.value)}
+                  placeholder="github_pat_..."
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono
+                             focus:outline-none focus:ring-1 focus:ring-green-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setToken(ghToken); setShowTokenInput(false); }}
+                  className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

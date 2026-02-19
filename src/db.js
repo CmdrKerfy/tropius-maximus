@@ -107,6 +107,19 @@ function idbDelete(storeName, key) {
   );
 }
 
+function idbClearStore(storeName) {
+  return openIDB().then(
+    (idb) =>
+      new Promise((resolve, reject) => {
+        const tx = idb.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      })
+  );
+}
+
 // ── SQL escape helpers ─────────────────────────────────────────────────
 
 function escapeStr(s) {
@@ -1885,6 +1898,112 @@ export async function executeSql(query) {
     row_count: 0,
     message,
   };
+}
+
+// ── Mutable Table Sync ─────────────────────────────────────────────────
+
+/**
+ * Sync the mutable DuckDB tables (annotations + custom_cards) back to
+ * IndexedDB. Call this after SQL console mutations to persist changes.
+ * Returns { annotationsSynced, customCardsSynced, customCardsData } where
+ * customCardsData is the { cards: [...] } payload ready for GitHub.
+ */
+export async function syncMutableTablesToIndexedDB() {
+  const results = { annotationsSynced: 0, customCardsSynced: 0, customCardsData: null };
+
+  // 1. Upsert all non-empty annotations from every card table
+  const annQueries = await Promise.all([
+    conn.query("SELECT id, annotations FROM cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+    conn.query("SELECT id, annotations FROM pocket_cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+    conn.query("SELECT id, annotations FROM custom_cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+  ]);
+
+  for (const result of annQueries) {
+    for (const row of result.toArray()) {
+      const data =
+        typeof row.annotations === "string"
+          ? JSON.parse(row.annotations)
+          : row.annotations || {};
+      if (Object.keys(data).length > 0) {
+        await idbPut(STORE_ANNOTATIONS, { id: row.id, data });
+        results.annotationsSynced++;
+      }
+    }
+  }
+
+  // 2. Full sync of custom_cards — clear store and repopulate from DuckDB
+  await idbClearStore(STORE_CUSTOM_CARDS);
+
+  const customCardsResult = await conn.query("SELECT * FROM custom_cards");
+  const rows = customCardsResult.toArray();
+  const cardsForJson = [];
+
+  const parseArr = (val) => {
+    if (!val || val === "[]") return [];
+    try { return JSON.parse(val); } catch { return val ? [val] : []; }
+  };
+
+  for (const row of rows) {
+    const card = {
+      id: row.id || "",
+      name: row.name || "",
+      supertype: row.supertype || "",
+      subtypes: parseArr(row.subtypes),
+      hp: row.hp || "",
+      types: parseArr(row.types),
+      evolves_from: row.evolves_from || "",
+      rarity: row.rarity || "",
+      special_rarity: row.special_rarity || "",
+      alt_name: row.alt_name || "",
+      artist: row.artist || "",
+      set_id: row.set_id || "",
+      set_name: row.set_name || "",
+      set_series: row.set_series || "",
+      number: row.number || "",
+      regulation_mark: row.regulation_mark || "",
+      image_small: row.image_small || "",
+      image_large: row.image_large || "",
+      source: row.source || "",
+      art_style: parseArr(row.art_style),
+      main_character: parseArr(row.main_character),
+      background_pokemon: parseArr(row.background_pokemon),
+      background_humans: parseArr(row.background_humans),
+      additional_characters: parseArr(row.additional_characters),
+      evolution_line: row.evolution_line || "",
+      background_details: parseArr(row.background_details),
+      emotion: row.emotion || "",
+      pose: row.pose || "",
+      camera_angle: row.camera_angle || "",
+      items: row.items || "",
+      actions: row.actions || "",
+      perspective: row.perspective || "",
+      weather_environment: row.weather_environment || "",
+      storytelling: row.storytelling || "",
+      card_locations: row.card_locations || "",
+      pkmn_region: row.pkmn_region || "",
+      primary_color: row.primary_color || "",
+      secondary_color: row.secondary_color || "",
+      shape: row.shape || "",
+      video_game: row.video_game || "",
+      video_appearance: row.video_appearance === true,
+      thumbnail_used: row.thumbnail_used === true,
+      video_url: row.video_url || "",
+      video_title: row.video_title || "",
+      unique_id: row.unique_id || "",
+      owned: row.owned === true,
+      notes: row.notes || "",
+      annotations:
+        typeof row.annotations === "string"
+          ? JSON.parse(row.annotations)
+          : row.annotations || {},
+    };
+    await idbPut(STORE_CUSTOM_CARDS, card);
+    cardsForJson.push(card);
+    results.customCardsSynced++;
+  }
+
+  results.customCardsData = { cards: cardsForJson };
+  return results;
 }
 
 // ── Ingest (disabled) ──────────────────────────────────────────────────
