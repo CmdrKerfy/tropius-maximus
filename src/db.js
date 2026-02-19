@@ -16,6 +16,7 @@ import {
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
   VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
+  STAMP_OPTIONS,
 } from "./lib/annotationOptions.js";
 // Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
 import duckdb_wasm_mvp from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
@@ -171,10 +172,10 @@ const PROMOTED_STRING_FIELDS = [
   "weather_environment","storytelling","card_locations","pkmn_region",
   "primary_color","secondary_color","shape",
   "video_game","video_url","video_title","unique_id","notes","evolution_line",
-  "held_item","pokeball","trainer_card_type",
+  "held_item","pokeball","trainer_card_type","stamp",
 ];
 
-const PROMOTED_BOOL_FIELDS = ["video_appearance","thumbnail_used","owned"];
+const PROMOTED_BOOL_FIELDS = ["video_appearance","thumbnail_used","owned","pocket_exclusive"];
 
 /**
  * Build an annotations-like object from promoted custom_cards columns.
@@ -441,6 +442,8 @@ export async function initDB() {
       video_type             VARCHAR,
       video_region           VARCHAR,
       video_location         VARCHAR,
+      pocket_exclusive       BOOLEAN DEFAULT FALSE,
+      stamp                  VARCHAR,
       annotations            JSON DEFAULT '{}'
     )
   `);
@@ -474,6 +477,7 @@ export async function initDB() {
         "card_subcategory","held_item","pokeball","evolution_items","berries",
         "holiday_theme","multi_card","trainer_card_type","trainer_card_subgroup",
         "video_type","video_region","video_location",
+        "pocket_exclusive","stamp",
       ]);
 
       // Fields that should be stored as JSON array strings
@@ -527,6 +531,7 @@ export async function initDB() {
             card_subcategory, held_item, pokeball, evolution_items, berries,
             holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
             video_type, video_region, video_location,
+            pocket_exclusive, stamp,
             annotations
           ) VALUES (
             ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
@@ -559,6 +564,7 @@ export async function initDB() {
             ${escapeStr(arrayVal('multi_card'))}, ${escapeStr(strVal('trainer_card_type'))},
             ${escapeStr(arrayVal('trainer_card_subgroup'))},
             ${escapeStr(arrayVal('video_type'))}, ${escapeStr(arrayVal('video_region'))}, ${escapeStr(arrayVal('video_location'))},
+            ${boolVal('pocket_exclusive')}, ${escapeStr(strVal('stamp'))},
             ${escapeStr(JSON.stringify(annotations))}
           )
         `);
@@ -742,6 +748,7 @@ async function hydrateFromIndexedDB() {
           card_subcategory, held_item, pokeball, evolution_items, berries,
           holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
           video_type, video_region, video_location,
+          pocket_exclusive, stamp,
           annotations
         ) VALUES (
           ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
@@ -767,6 +774,7 @@ async function hydrateFromIndexedDB() {
           ${escapeStr(Array.isArray(card.video_type) ? JSON.stringify(card.video_type) : (card.video_type || ''))},
           ${escapeStr(Array.isArray(card.video_region) ? JSON.stringify(card.video_region) : (card.video_region || ''))},
           ${escapeStr(Array.isArray(card.video_location) ? JSON.stringify(card.video_location) : (card.video_location || ''))},
+          ${b('pocket_exclusive')}, ${s('stamp')},
           ${escapeStr(JSON.stringify(card.annotations || {}))}
         )
       `);
@@ -1632,6 +1640,10 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT trainer_card_type AS val FROM custom_cards WHERE trainer_card_type IS NOT NULL AND trainer_card_type != '' ORDER BY val`
     ),
+    // stamp: from custom_cards
+    conn.query(
+      `SELECT DISTINCT stamp AS val FROM custom_cards WHERE stamp IS NOT NULL AND stamp != '' ORDER BY val`
+    ),
   ]);
 
   const toArr = (result) => result.toArray().map((r) => r.val).filter(Boolean);
@@ -1717,6 +1729,7 @@ export async function fetchFormOptions() {
     heldItem: merge(HELD_ITEM_OPTIONS, toArr(queries[20])),
     pokeball: merge(POKEBALL_OPTIONS, toArr(queries[21])),
     trainerCardType: merge(TRAINER_CARD_TYPE_OPTIONS, toArr(queries[22])),
+    stamp: merge(STAMP_OPTIONS, toArr(queries[23])),
     artStyle: merge(ART_STYLE_OPTIONS, artStyle),
     mainCharacter,
     backgroundPokemon,
@@ -2214,6 +2227,7 @@ export async function addCustomCard(card) {
       card_subcategory, held_item, pokeball, evolution_items, berries,
       holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
       video_type, video_region, video_location,
+      pocket_exclusive, stamp,
       annotations
     ) VALUES (
       ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
@@ -2232,6 +2246,7 @@ export async function addCustomCard(card) {
       ${s('berries')}, ${s('holiday_theme')}, ${s('multi_card')}, ${s('trainer_card_type')},
       ${s('trainer_card_subgroup')},
       ${s('video_type')}, ${s('video_region')}, ${s('video_location')},
+      ${b('pocket_exclusive')}, ${s('stamp')},
       ${escapeStr(JSON.stringify({}))}
     )
   `);

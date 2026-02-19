@@ -175,6 +175,11 @@ export const VIDEO_REGION_OPTIONS = [
   "Paldea","Aquapolis","Holon","Peaceful Park",
 ];
 
+export const STAMP_OPTIONS = [
+  "Pokemon Day", "Anniversary", "Pokemon Center", "Pokemon League",
+  "Set", "Championship Series", "Finalist",
+];
+
 export const VIDEO_LOCATION_OPTIONS = [
   // Kanto
   "Pallet Town","Viridian City","Pewter City","Cerulean City","Vermilion City",

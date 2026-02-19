@@ -13,6 +13,7 @@ import {
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
   VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
+  STAMP_OPTIONS,
 } from "../lib/annotationOptions";
 
 // Hardcoded option sets
@@ -108,6 +109,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [multiCard, setMultiCard] = useState("");
   const [trainerCardType, setTrainerCardType] = useState("");
   const [trainerCardSubgroup, setTrainerCardSubgroup] = useState("");
+  const [pocketExclusive, setPocketExclusive] = useState(false);
+  const [stamp, setStamp] = useState("");
 
   // ── Video fields ──
   const [videoGame, setVideoGame] = useState("");
@@ -222,6 +225,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         multi_card: toArray(multiCard),
         trainer_card_type: trainerCardType || "",
         trainer_card_subgroup: toArray(trainerCardSubgroup),
+        pocket_exclusive: pocketExclusive,
+        stamp: stamp || "",
       };
 
       // Build card for DuckDB insert (arrays as JSON strings, evolution_line as arrow string)
@@ -290,6 +295,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setCardSubcategory(""); setHeldItem(""); setPokeball("");
       setEvolutionItems(""); setBerries(""); setHolidayTheme("");
       setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
+      setPocketExclusive(false); setStamp("");
       setImageError(false);
 
       onCardAdded?.();
@@ -434,6 +440,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         {/* ── Annotations (collapsible) ── */}
         <CollapsibleSection title="Annotations">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+            {/* ── Card Classification ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Card Classification</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
             <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Card Subcategory</label>
               <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
@@ -447,8 +459,21 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
             </div>
             <div>
-              <label className={labelClass}>Art Style</label>
-              <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
+              <label className={labelClass}>Stamp</label>
+              <ComboBox value={stamp} onChange={setStamp}
+                options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
+                className={inputClass + " w-full"} />
+            </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
+                onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
+              <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
+            </div>
+
+            {/* ── Characters ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Characters</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div>
               <label className={labelClass}>Main Character</label>
@@ -466,6 +491,17 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Additional Characters</label>
               <MultiComboBox value={additionalCharacters} onChange={setAdditionalCharacters} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
             </div>
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Evolution Line</label>
+              <MultiComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
+              <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
+            </div>
+
+            {/* ── Subject ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Subject</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
             <div>
               <label className={labelClass}>Emotion</label>
               <ComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Happy" className={inputClass + " w-full"} />
@@ -475,8 +511,70 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Jumping" className={inputClass + " w-full"} />
             </div>
             <div>
+              <label className={labelClass}>Actions</label>
+              <ComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Shape</label>
+              <ComboBox value={shape} onChange={setShape} options={SHAPE_OPTIONS} placeholder="upright" className={inputClass + " w-full"} />
+            </div>
+
+            {/* ── Art Style ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Art Style</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+            <div>
+              <label className={labelClass}>Art Style</label>
+              <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
+            </div>
+            <div>
               <label className={labelClass}>Camera Angle</label>
               <ComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Front" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Perspective</label>
+              <ComboBox value={perspective} onChange={setPerspective} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Primary Color</label>
+              <ComboBox value={primaryColor} onChange={setPrimaryColor} options={COLOR_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Secondary Color</label>
+              <ComboBox value={secondaryColor} onChange={setSecondaryColor} options={COLOR_OPTIONS} placeholder="Brown" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Storytelling</label>
+              <ComboBox value={storytelling} onChange={setStorytelling} options={opts.storytelling || []} placeholder="Celebration" className={inputClass + " w-full"} />
+            </div>
+
+            {/* ── Scene & Setting ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Scene & Setting</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+            <div>
+              <label className={labelClass}>Card Locations</label>
+              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Pokemon Region</label>
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Weather/Environment</label>
+              <ComboBox value={weatherEnvironment} onChange={setWeatherEnvironment} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Background Details</label>
+              <MultiComboBox value={backgroundDetails} onChange={setBackgroundDetails} options={opts.backgroundDetails || []} placeholder="Trees, River" />
+            </div>
+
+            {/* ── Items ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Items</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div>
               <label className={labelClass}>Items</label>
@@ -491,40 +589,18 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball" className={inputClass + " w-full"} />
             </div>
             <div>
-              <label className={labelClass}>Actions</label>
-              <ComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Perspective</label>
-              <ComboBox value={perspective} onChange={setPerspective} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Weather/Environment</label>
-              <ComboBox value={weatherEnvironment} onChange={setWeatherEnvironment} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Storytelling</label>
-              <ComboBox value={storytelling} onChange={setStorytelling} options={opts.storytelling || []} placeholder="Celebration" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Background Details</label>
-              <MultiComboBox value={backgroundDetails} onChange={setBackgroundDetails} options={opts.backgroundDetails || []} placeholder="Trees, River" />
-            </div>
-            <div>
-              <label className={labelClass}>Card Locations</label>
-              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Pokemon Region</label>
-              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
-            </div>
-            <div>
               <label className={labelClass}>Evolution Items</label>
               <MultiComboBox value={evolutionItems} onChange={setEvolutionItems} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Fire Stone" />
             </div>
             <div>
               <label className={labelClass}>Berries</label>
               <MultiComboBox value={berries} onChange={setBerries} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry" />
+            </div>
+
+            {/* ── Themes ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Themes</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div>
               <label className={labelClass}>Holiday Theme</label>
@@ -534,23 +610,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Multi Card</label>
               <MultiComboBox value={multiCard} onChange={setMultiCard} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling" />
             </div>
-            <div>
-              <label className={labelClass}>Primary Color</label>
-              <ComboBox value={primaryColor} onChange={setPrimaryColor} options={COLOR_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Secondary Color</label>
-              <ComboBox value={secondaryColor} onChange={setSecondaryColor} options={COLOR_OPTIONS} placeholder="Brown" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Shape</label>
-              <ComboBox value={shape} onChange={setShape} options={SHAPE_OPTIONS} placeholder="upright" className={inputClass + " w-full"} />
-            </div>
-            <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Evolution Line</label>
-              <MultiComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
-              <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
-            </div>
+
           </div>
         </CollapsibleSection>
 
