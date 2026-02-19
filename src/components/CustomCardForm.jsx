@@ -8,6 +8,11 @@ import { addCustomCard, fetchFormOptions } from "../db";
 import { getToken, setToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
+import {
+  CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
+  EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
+  MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
+} from "../lib/annotationOptions";
 
 // Hardcoded option sets
 const COLOR_OPTIONS = [
@@ -93,6 +98,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [secondaryColor, setSecondaryColor] = useState("");
   const [shape, setShape] = useState("");
   const [evolutionLine, setEvolutionLine] = useState("");
+  const [cardSubcategory, setCardSubcategory] = useState("");
+  const [heldItem, setHeldItem] = useState("");
+  const [pokeball, setPokeball] = useState("");
+  const [evolutionItems, setEvolutionItems] = useState("");
+  const [berries, setBerries] = useState("");
+  const [holidayTheme, setHolidayTheme] = useState("");
+  const [multiCard, setMultiCard] = useState("");
+  const [trainerCardType, setTrainerCardType] = useState("");
+  const [trainerCardSubgroup, setTrainerCardSubgroup] = useState("");
 
   // ── Video fields ──
   const [videoGame, setVideoGame] = useState("");
@@ -192,6 +206,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         background_details: toArray(backgroundDetails),
         card_locations: cardLocations || "",
         pkmn_region: pkmnRegion || "",
+        card_subcategory: toArray(cardSubcategory),
+        held_item: heldItem || "",
+        pokeball: pokeball || "",
+        evolution_items: toArray(evolutionItems),
+        berries: toArray(berries),
+        holiday_theme: toArray(holidayTheme),
+        multi_card: toArray(multiCard),
+        trainer_card_type: trainerCardType || "",
+        trainer_card_subgroup: toArray(trainerCardSubgroup),
       };
 
       // Build card for DuckDB insert (arrays as JSON strings, evolution_line as arrow string)
@@ -208,6 +231,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         evolution_line: toArray(evolutionLine).join(" → "),
         image_large: imageLarge || imageSmall,
         unique_id: id,
+        card_subcategory:      arrayStr(cardSubcategory),
+        evolution_items:       arrayStr(evolutionItems),
+        berries:               arrayStr(berries),
+        holiday_theme:         arrayStr(holidayTheme),
+        multi_card:            arrayStr(multiCard),
+        trainer_card_subgroup: arrayStr(trainerCardSubgroup),
       };
 
       // Insert into local DuckDB
@@ -248,6 +277,9 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
       setVideoGame(""); setVideoAppearance(false); setThumbnailUsed(false);
       setVideoUrl(""); setVideoTitle(""); setOwned(false); setNotes("");
+      setCardSubcategory(""); setHeldItem(""); setPokeball("");
+      setEvolutionItems(""); setBerries(""); setHolidayTheme("");
+      setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
       setImageError(false);
 
       onCardAdded?.();
@@ -392,6 +424,18 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         {/* ── Annotations (collapsible) ── */}
         <CollapsibleSection title="Annotations">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="col-span-2 md:col-span-3">
+              <label className={labelClass}>Card Subcategory</label>
+              <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
+            </div>
+            <div>
+              <label className={labelClass}>Trainer Card Type</label>
+              <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-2">
+              <label className={labelClass}>Trainer Card Subgroup</label>
+              <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
+            </div>
             <div>
               <label className={labelClass}>Art Style</label>
               <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
@@ -429,6 +473,14 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
             </div>
             <div>
+              <label className={labelClass}>Held Item</label>
+              <ComboBox value={heldItem} onChange={setHeldItem} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Berry" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Pokeball</label>
+              <ComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball" className={inputClass + " w-full"} />
+            </div>
+            <div>
               <label className={labelClass}>Actions</label>
               <ComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
             </div>
@@ -455,6 +507,22 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <div>
               <label className={labelClass}>Pokemon Region</label>
               <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Evolution Items</label>
+              <MultiComboBox value={evolutionItems} onChange={setEvolutionItems} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Fire Stone" />
+            </div>
+            <div>
+              <label className={labelClass}>Berries</label>
+              <MultiComboBox value={berries} onChange={setBerries} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry" />
+            </div>
+            <div>
+              <label className={labelClass}>Holiday Theme</label>
+              <MultiComboBox value={holidayTheme} onChange={setHolidayTheme} options={opts.holidayTheme || HOLIDAY_THEME_OPTIONS} placeholder="Halloween" />
+            </div>
+            <div>
+              <label className={labelClass}>Multi Card</label>
+              <MultiComboBox value={multiCard} onChange={setMultiCard} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling" />
             </div>
             <div>
               <label className={labelClass}>Primary Color</label>

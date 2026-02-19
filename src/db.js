@@ -8,6 +8,14 @@
  */
 
 import * as duckdb from "@duckdb/duckdb-wasm";
+import {
+  ART_STYLE_OPTIONS, CAMERA_ANGLE_OPTIONS, EMOTION_OPTIONS, ACTIONS_OPTIONS,
+  POSE_OPTIONS, ITEMS_OPTIONS, ADDITIONAL_CHARACTERS_OPTIONS, PERSPECTIVE_OPTIONS,
+  WEATHER_ENVIRONMENT_OPTIONS, CARD_LOCATIONS_OPTIONS, BACKGROUND_DETAILS_OPTIONS,
+  PKMN_REGION_OPTIONS, CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
+  EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
+  MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
+} from "./lib/annotationOptions.js";
 // Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
 import duckdb_wasm_mvp from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
@@ -153,6 +161,7 @@ export function getCustomSourceNames() {
 const PROMOTED_ARRAY_FIELDS = new Set([
   "art_style","main_character","background_pokemon","background_humans",
   "additional_characters","background_details",
+  "card_subcategory","evolution_items","berries","holiday_theme","multi_card","trainer_card_subgroup",
 ]);
 
 const PROMOTED_STRING_FIELDS = [
@@ -160,6 +169,7 @@ const PROMOTED_STRING_FIELDS = [
   "weather_environment","storytelling","card_locations","pkmn_region",
   "primary_color","secondary_color","shape",
   "video_game","video_url","video_title","unique_id","notes","evolution_line",
+  "held_item","pokeball","trainer_card_type",
 ];
 
 const PROMOTED_BOOL_FIELDS = ["video_appearance","thumbnail_used","owned"];
@@ -417,6 +427,15 @@ export async function initDB() {
       unique_id              VARCHAR,
       owned                  BOOLEAN DEFAULT FALSE,
       notes                  VARCHAR,
+      card_subcategory       VARCHAR,
+      held_item              VARCHAR,
+      pokeball               VARCHAR,
+      evolution_items        VARCHAR,
+      berries                VARCHAR,
+      holiday_theme          VARCHAR,
+      multi_card             VARCHAR,
+      trainer_card_type      VARCHAR,
+      trainer_card_subgroup  VARCHAR,
       annotations            JSON DEFAULT '{}'
     )
   `);
@@ -447,12 +466,15 @@ export async function initDB() {
         "primary_color","secondary_color","shape",
         "video_game","video_appearance","thumbnail_used","video_url","video_title",
         "unique_id","owned","notes",
+        "card_subcategory","held_item","pokeball","evolution_items","berries",
+        "holiday_theme","multi_card","trainer_card_type","trainer_card_subgroup",
       ]);
 
       // Fields that should be stored as JSON array strings
       const arrayColumnFields = new Set([
         "art_style","main_character","background_pokemon","background_humans",
         "additional_characters","background_details",
+        "card_subcategory","evolution_items","berries","holiday_theme","multi_card","trainer_card_subgroup",
       ]);
 
       for (const card of customCards) {
@@ -494,7 +516,10 @@ export async function initDB() {
             weather_environment, storytelling, card_locations, pkmn_region,
             primary_color, secondary_color, shape,
             video_game, video_appearance, thumbnail_used, video_url, video_title,
-            unique_id, owned, notes, annotations
+            unique_id, owned, notes,
+            card_subcategory, held_item, pokeball, evolution_items, berries,
+            holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
+            annotations
           ) VALUES (
             ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
             ${escapeStr(subtypesStr)}, ${escapeStr(hpStr)}, ${escapeStr(typesStr)},
@@ -520,6 +545,11 @@ export async function initDB() {
             ${escapeStr(strVal('video_url'))}, ${escapeStr(strVal('video_title'))},
             ${escapeStr(strVal('unique_id'))}, ${boolVal('owned')},
             ${escapeStr(strVal('notes'))},
+            ${escapeStr(arrayVal('card_subcategory'))}, ${escapeStr(strVal('held_item'))},
+            ${escapeStr(strVal('pokeball'))}, ${escapeStr(arrayVal('evolution_items'))},
+            ${escapeStr(arrayVal('berries'))}, ${escapeStr(arrayVal('holiday_theme'))},
+            ${escapeStr(arrayVal('multi_card'))}, ${escapeStr(strVal('trainer_card_type'))},
+            ${escapeStr(arrayVal('trainer_card_subgroup'))},
             ${escapeStr(JSON.stringify(annotations))}
           )
         `);
@@ -593,7 +623,16 @@ export async function initDB() {
       ('storytelling',     'Storytelling',        'text',    'null', '""',     TRUE, 23),
       ('background_details', 'Background Details', 'text', 'null', '""',      TRUE, 24),
       ('card_locations',   'Card Locations',     'text',    'null', '""',      TRUE, 25),
-      ('pkmn_region',      'Pok\\u00e9mon Region', 'text',  'null', '""',     TRUE, 26)
+      ('pkmn_region',      'Pok\\u00e9mon Region', 'text',  'null', '""',     TRUE, 26),
+      ('card_subcategory', 'Card Subcategory', 'text', 'null', '""', TRUE, 27),
+      ('held_item',        'Held Item',        'text', 'null', '""', TRUE, 28),
+      ('pokeball',         'Pokeball',         'text', 'null', '""', TRUE, 29),
+      ('evolution_items',  'Evolution Items',  'text', 'null', '""', TRUE, 30),
+      ('berries',          'Berries',          'text', 'null', '""', TRUE, 31),
+      ('holiday_theme',    'Holiday Theme',    'text', 'null', '""', TRUE, 32),
+      ('multi_card',       'Multi Card',       'text', 'null', '""', TRUE, 33),
+      ('trainer_card_type','Trainer Card Type','text', 'null', '""', TRUE, 34),
+      ('trainer_card_subgroup','Trainer Card Subgroup','text','null','""',TRUE, 35)
   `);
 
   // 6. Hydrate from IndexedDB
@@ -687,7 +726,10 @@ async function hydrateFromIndexedDB() {
           weather_environment, storytelling, card_locations, pkmn_region,
           primary_color, secondary_color, shape,
           video_game, video_appearance, thumbnail_used, video_url, video_title,
-          unique_id, owned, notes, annotations
+          unique_id, owned, notes,
+          card_subcategory, held_item, pokeball, evolution_items, berries,
+          holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
+          annotations
         ) VALUES (
           ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
           ${escapeStr(subtypesStr)}, ${escapeStr(card.hp != null ? String(card.hp) : '')}, ${escapeStr(typesStr)},
@@ -701,6 +743,14 @@ async function hydrateFromIndexedDB() {
           ${s('primary_color')}, ${s('secondary_color')}, ${s('shape')},
           ${s('video_game')}, ${b('video_appearance')}, ${b('thumbnail_used')}, ${s('video_url')}, ${s('video_title')},
           ${s('unique_id')}, ${b('owned')}, ${s('notes')},
+          ${escapeStr(Array.isArray(card.card_subcategory) ? JSON.stringify(card.card_subcategory) : (card.card_subcategory || ''))},
+          ${s('held_item')}, ${s('pokeball')},
+          ${escapeStr(Array.isArray(card.evolution_items) ? JSON.stringify(card.evolution_items) : (card.evolution_items || ''))},
+          ${escapeStr(Array.isArray(card.berries) ? JSON.stringify(card.berries) : (card.berries || ''))},
+          ${escapeStr(Array.isArray(card.holiday_theme) ? JSON.stringify(card.holiday_theme) : (card.holiday_theme || ''))},
+          ${escapeStr(Array.isArray(card.multi_card) ? JSON.stringify(card.multi_card) : (card.multi_card || ''))},
+          ${s('trainer_card_type')},
+          ${escapeStr(Array.isArray(card.trainer_card_subgroup) ? JSON.stringify(card.trainer_card_subgroup) : (card.trainer_card_subgroup || ''))},
           ${escapeStr(JSON.stringify(card.annotations || {}))}
         )
       `);
@@ -1554,6 +1604,18 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT source AS val FROM custom_cards WHERE source IS NOT NULL AND source != '' ORDER BY val`
     ),
+    // heldItem: from custom_cards
+    conn.query(
+      `SELECT DISTINCT held_item AS val FROM custom_cards WHERE held_item IS NOT NULL AND held_item != '' ORDER BY val`
+    ),
+    // pokeball: from custom_cards
+    conn.query(
+      `SELECT DISTINCT pokeball AS val FROM custom_cards WHERE pokeball IS NOT NULL AND pokeball != '' ORDER BY val`
+    ),
+    // trainerCardType: from custom_cards
+    conn.query(
+      `SELECT DISTINCT trainer_card_type AS val FROM custom_cards WHERE trainer_card_type IS NOT NULL AND trainer_card_type != '' ORDER BY val`
+    ),
   ]);
 
   const toArr = (result) => result.toArray().map((r) => r.val).filter(Boolean);
@@ -1573,7 +1635,9 @@ export async function fetchFormOptions() {
   };
 
   const [artStyle, mainCharacter, backgroundPokemon, backgroundHumans,
-         additionalCharacters, backgroundDetails, evolutionLine] = await Promise.all([
+         additionalCharacters, backgroundDetails, evolutionLine,
+         cardSubcategory, evolutionItems, berries, holidayTheme, multiCard,
+         trainerCardSubgroup] = await Promise.all([
     splitJsonArrayValues("art_style"),
     splitJsonArrayValues("main_character"),
     splitJsonArrayValues("background_pokemon"),
@@ -1599,36 +1663,54 @@ export async function fetchFormOptions() {
       const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
       return [...new Set([...fromCustom, ...fromPm])].sort();
     })(),
+    splitJsonArrayValues("card_subcategory"),
+    splitJsonArrayValues("evolution_items"),
+    splitJsonArrayValues("berries"),
+    splitJsonArrayValues("holiday_theme"),
+    splitJsonArrayValues("multi_card"),
+    splitJsonArrayValues("trainer_card_subgroup"),
   ]);
+
+  // Merge helper: canonical first, then any DB values not already in the list
+  const merge = (staticOpts, dbVals) => [...new Set([...staticOpts, ...dbVals])];
 
   return {
     rarity: toArr(queries[0]),
     artist: toArr(queries[1]),
-    pkmnRegion: toArr(queries[2]),
+    pkmnRegion: merge(PKMN_REGION_OPTIONS, toArr(queries[2])),
     setSeries: toArr(queries[3]),
     types: toArr(queries[4]),
     subtypes: toArr(queries[5]),
-    emotion: toArr(queries[6]),
-    pose: toArr(queries[7]),
-    cameraAngle: toArr(queries[8]),
-    perspective: toArr(queries[9]),
-    weatherEnvironment: toArr(queries[10]),
+    emotion: merge(EMOTION_OPTIONS, toArr(queries[6])),
+    pose: merge(POSE_OPTIONS, toArr(queries[7])),
+    cameraAngle: merge(CAMERA_ANGLE_OPTIONS, toArr(queries[8])),
+    perspective: merge(PERSPECTIVE_OPTIONS, toArr(queries[9])),
+    weatherEnvironment: merge(WEATHER_ENVIRONMENT_OPTIONS, toArr(queries[10])),
     storytelling: toArr(queries[11]),
-    cardLocations: toArr(queries[12]),
-    items: toArr(queries[13]),
-    actions: toArr(queries[14]),
+    cardLocations: merge(CARD_LOCATIONS_OPTIONS, toArr(queries[12])),
+    items: merge(ITEMS_OPTIONS, toArr(queries[13])),
+    actions: merge(ACTIONS_OPTIONS, toArr(queries[14])),
     videoTitle: toArr(queries[15]),
     setId: toArr(queries[16]),
     setName: toArr(queries[17]),
     name: toArr(queries[18]),
     source: toArr(queries[19]),
-    artStyle,
+    heldItem: merge(HELD_ITEM_OPTIONS, toArr(queries[20])),
+    pokeball: merge(POKEBALL_OPTIONS, toArr(queries[21])),
+    trainerCardType: merge(TRAINER_CARD_TYPE_OPTIONS, toArr(queries[22])),
+    artStyle: merge(ART_STYLE_OPTIONS, artStyle),
     mainCharacter,
     backgroundPokemon,
     backgroundHumans,
-    additionalCharacters,
-    backgroundDetails,
+    additionalCharacters: merge(ADDITIONAL_CHARACTERS_OPTIONS, additionalCharacters),
+    backgroundDetails: merge(BACKGROUND_DETAILS_OPTIONS, backgroundDetails),
     evolutionLine,
+    cardSubcategory: merge(CARD_SUBCATEGORY_OPTIONS, cardSubcategory),
+    evolutionItems: merge(EVOLUTION_ITEMS_OPTIONS, evolutionItems),
+    berries: merge(BERRIES_OPTIONS, berries),
+    holidayTheme: merge(HOLIDAY_THEME_OPTIONS, holidayTheme),
+    multiCard: merge(MULTI_CARD_OPTIONS, multiCard),
+    trainerCardSubgroup: merge(TRAINER_CARD_SUBGROUP_OPTIONS, trainerCardSubgroup),
   };
 }
 
@@ -1992,6 +2074,15 @@ export async function syncMutableTablesToIndexedDB() {
       unique_id: row.unique_id || "",
       owned: row.owned === true,
       notes: row.notes || "",
+      card_subcategory:      parseArr(row.card_subcategory),
+      held_item:             row.held_item || "",
+      pokeball:              row.pokeball || "",
+      evolution_items:       parseArr(row.evolution_items),
+      berries:               parseArr(row.berries),
+      holiday_theme:         parseArr(row.holiday_theme),
+      multi_card:            parseArr(row.multi_card),
+      trainer_card_type:     row.trainer_card_type || "",
+      trainer_card_subgroup: parseArr(row.trainer_card_subgroup),
       annotations:
         typeof row.annotations === "string"
           ? JSON.parse(row.annotations)
@@ -2094,7 +2185,10 @@ export async function addCustomCard(card) {
       weather_environment, storytelling, card_locations, pkmn_region,
       primary_color, secondary_color, shape,
       video_game, video_appearance, thumbnail_used, video_url, video_title,
-      unique_id, owned, notes, annotations
+      unique_id, owned, notes,
+      card_subcategory, held_item, pokeball, evolution_items, berries,
+      holiday_theme, multi_card, trainer_card_type, trainer_card_subgroup,
+      annotations
     ) VALUES (
       ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
       ${escapeStr(subtypesStr)}, ${escapeStr(card.hp != null ? String(card.hp) : '')}, ${escapeStr(typesStr)},
@@ -2108,6 +2202,9 @@ export async function addCustomCard(card) {
       ${s('primary_color')}, ${s('secondary_color')}, ${s('shape')},
       ${s('video_game')}, ${b('video_appearance')}, ${b('thumbnail_used')}, ${s('video_url')}, ${s('video_title')},
       ${s('unique_id')}, ${b('owned')}, ${s('notes')},
+      ${s('card_subcategory')}, ${s('held_item')}, ${s('pokeball')}, ${s('evolution_items')},
+      ${s('berries')}, ${s('holiday_theme')}, ${s('multi_card')}, ${s('trainer_card_type')},
+      ${s('trainer_card_subgroup')},
       ${escapeStr(JSON.stringify({}))}
     )
   `);
