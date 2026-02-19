@@ -3,14 +3,36 @@
  *
  * Fetches the complete card data (including raw API payload and annotations)
  * when opened. Displays the large card image, key stats, attacks, weaknesses,
- * and the AnnotationEditor for user-defined fields.
+ * and editable Annotations / Video / Notes sections matching the Add a Card form.
  *
  * Closes when clicking the backdrop or pressing Escape.
  */
 
 import { useState, useEffect } from "react";
-import { fetchCard, patchAnnotations } from "../db";
-import AnnotationEditor from "./AnnotationEditor";
+import { fetchCard, patchAnnotations, fetchFormOptions } from "../db";
+import ComboBox from "./ComboBox";
+import MultiComboBox from "./MultiComboBox";
+
+const COLOR_OPTIONS = [
+  "black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow",
+];
+const SHAPE_OPTIONS = [
+  "ball", "squiggle", "fish", "arms", "blob", "upright", "legs",
+  "quadruped", "wings", "tentacles", "heads", "humanoid", "bug-wings", "armor",
+];
+const VIDEO_GAME_OPTIONS = [
+  "Red/Blue", "Gold/Silver", "Ruby/Sapphire", "FireRed/LeafGreen",
+  "Diamond/Pearl", "Platinum", "HeartGold/SoulSilver",
+  "Black/White", "Black 2/White 2", "X/Y", "Omega Ruby/Alpha Sapphire",
+  "Sun/Moon", "Ultra Sun/Ultra Moon", "Let's Go Pikachu/Eevee",
+  "Sword/Shield", "Brilliant Diamond/Shining Pearl",
+  "Legends Arceus", "Scarlet/Violet", "Other",
+];
+
+const MULTI_VALUE_ANNOTATION_KEYS = new Set([
+  "art_style", "main_character", "background_pokemon", "background_humans",
+  "additional_characters", "background_details", "evolution_line",
+]);
 
 /**
  * CollapsibleSection — A reusable component for collapsible content areas.
@@ -44,6 +66,19 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
   );
 }
 
+function parseAnnotations(card) {
+  if (!card?.annotations) return {};
+  const a = card.annotations;
+  if (typeof a === "string") {
+    try {
+      return JSON.parse(a);
+    } catch {
+      return {};
+    }
+  }
+  return a;
+}
+
 export default function CardDetail({ cardId, attributes, source = "TCG", onClose, hasPrev, hasNext, onPrev, onNext }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,6 +87,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [newImageUrl, setNewImageUrl] = useState("");
   const [savingImage, setSavingImage] = useState(false);
   const [imageEnlarged, setImageEnlarged] = useState(false);
+  const [formOpts, setFormOpts] = useState({});
+
+  useEffect(() => {
+    fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
+  }, []);
 
   // Fetch full card details when the modal opens or card changes.
   useEffect(() => {
@@ -117,6 +157,36 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const rules = raw?.rules || [];
   const subtypes = card ? parseJson(card.subtypes) : [];
   const types = card ? parseJson(card.types) : [];
+
+  const ann = card ? parseAnnotations(card) : {};
+  const opts = formOpts || {};
+  const inputClass =
+    "w-full px-3 py-1.5 border border-gray-300 rounded text-sm " +
+    "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
+  const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+
+  const saveAnnotation = async (key, value) => {
+    let stored = value;
+    if (MULTI_VALUE_ANNOTATION_KEYS.has(key) && typeof value === "string") {
+      stored = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    }
+    try {
+      await patchAnnotations(card.id, { [key]: stored });
+      setCard((prev) => ({
+        ...prev,
+        annotations: { ...parseAnnotations(prev), [key]: stored },
+      }));
+    } catch (err) {
+      console.error("Failed to save annotation:", err);
+    }
+  };
+
+  const annValue = (key, multi = false) => {
+    const v = ann[key];
+    if (multi && Array.isArray(v)) return v.join(", ");
+    if (v === null || v === undefined) return "";
+    return String(v);
+  };
 
   return (
     // Backdrop — clicking it closes the modal.
@@ -190,7 +260,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               {/* Left: large card image */}
               <div className="flex-shrink-0">
                 {(() => {
-                  const displayImage = card.annotations?.image_override || card.image_large;
+                  const displayImage = ann.image_override || card.image_large;
 
                   // Image editing mode
                   if (editingImage) {
@@ -292,7 +362,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                       {/* Edit button overlay */}
                       <button
                         onClick={() => {
-                          setNewImageUrl(card.annotations?.image_override || "");
+                          setNewImageUrl(ann.image_override || "");
                           setEditingImage(true);
                         }}
                         className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full
@@ -414,67 +484,16 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                 )}
 
                 {/* Auto-populated card identifiers */}
-                {card.annotations?.unique_id && (
+                {ann.unique_id && (
                   <p className="mt-2 text-sm text-gray-600">
-                    Unique ID: <strong>{card.annotations.unique_id}</strong>
+                    Unique ID: <strong>{ann.unique_id}</strong>
                   </p>
                 )}
-                {card.annotations?.evolution_line && (
+                {(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && (
                   <p className="mt-2 text-sm text-gray-600">
-                    Evolution Line: <strong>{card.annotations.evolution_line}</strong>
+                    Evolution Line: <strong>{Array.isArray(ann.evolution_line) ? ann.evolution_line.join(" → ") : ann.evolution_line}</strong>
                   </p>
                 )}
-
-                {/* Custom card annotation fields */}
-                {card.annotations && (() => {
-                  const annotationLabels = [
-                    ['art_style', 'Art Style'],
-                    ['main_character', 'Main Character'],
-                    ['background_pokemon', 'Background Pok\u00e9mon'],
-                    ['background_humans', 'Background Humans'],
-                    ['emotion', 'Emotion'],
-                    ['pose', 'Pose'],
-                    ['camera_angle', 'Camera Angle'],
-                    ['items', 'Items'],
-                    ['actions', 'Actions'],
-                    ['additional_characters', 'Additional Characters'],
-                    ['perspective', 'Perspective'],
-                    ['weather_environment', 'Weather/Environment'],
-                    ['storytelling', 'Storytelling'],
-                    ['background_details', 'Background Details'],
-                    ['card_locations', 'Card Locations'],
-                    ['pkmn_region', 'Pok\u00e9mon Region'],
-                    ['primary_color', 'Primary Color'],
-                    ['secondary_color', 'Secondary Color'],
-                    ['shape', 'Shape'],
-                    ['video_game', 'Video Game'],
-                    ['video_url', 'Video URL'],
-                    ['video_title', 'Video Title'],
-                    ['notes', 'Notes'],
-                  ];
-                  const entries = annotationLabels
-                    .filter(([key]) => {
-                      const val = card.annotations[key];
-                      if (val === null || val === undefined || val === '') return false;
-                      if (Array.isArray(val) && val.length === 0) return false;
-                      return true;
-                    });
-                  if (entries.length === 0) return null;
-                  return (
-                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                      {entries.map(([key, label]) => {
-                        const val = card.annotations[key];
-                        const display = Array.isArray(val) ? val.join(', ') : String(val);
-                        return (
-                          <p key={key} className="text-gray-600">
-                            <span className="font-semibold text-gray-700">{label}:</span>{' '}
-                            {display}
-                          </p>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
 
                 {/* Rules (for Trainer/Energy cards) */}
                 {rules.length > 0 && (
@@ -648,18 +667,130 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               </div>
             </div>
 
-            {/* Annotation editor — below the card info */}
-            <div className="mt-6 border-t pt-6">
-              <CollapsibleSection title="Custom Attributes" defaultOpen={false}>
-                <AnnotationEditor
-                  cardId={card.id}
-                  annotations={
-                    typeof card.annotations === "string"
-                      ? JSON.parse(card.annotations)
-                      : card.annotations || {}
-                  }
-                  attributes={attributes}
-                />
+            {/* Annotations, Video, Notes — same grouping as Add a Card form */}
+            <div className="mt-6 border-t pt-6 space-y-4">
+              <CollapsibleSection title="Annotations" defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Art Style</label>
+                    <MultiComboBox value={annValue("art_style", true)} onChange={(v) => saveAnnotation("art_style", v)} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Main Character</label>
+                    <MultiComboBox value={annValue("main_character", true)} onChange={(v) => saveAnnotation("main_character", v)} options={opts.mainCharacter || []} placeholder="Pikachu" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Background Pokemon</label>
+                    <MultiComboBox value={annValue("background_pokemon", true)} onChange={(v) => saveAnnotation("background_pokemon", v)} options={opts.backgroundPokemon || []} placeholder="Bulbasaur, Squirtle" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Background Humans</label>
+                    <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={opts.backgroundHumans || []} placeholder="Ash, Misty" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Additional Characters</label>
+                    <MultiComboBox value={annValue("additional_characters", true)} onChange={(v) => saveAnnotation("additional_characters", v)} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Emotion</label>
+                    <ComboBox value={annValue("emotion")} onChange={(v) => saveAnnotation("emotion", v)} options={opts.emotion || []} placeholder="Happy" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Pose</label>
+                    <ComboBox value={annValue("pose")} onChange={(v) => saveAnnotation("pose", v)} options={opts.pose || []} placeholder="Jumping" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Camera Angle</label>
+                    <ComboBox value={annValue("camera_angle")} onChange={(v) => saveAnnotation("camera_angle", v)} options={opts.cameraAngle || []} placeholder="Front" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Items</label>
+                    <ComboBox value={annValue("items")} onChange={(v) => saveAnnotation("items", v)} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Actions</label>
+                    <ComboBox value={annValue("actions")} onChange={(v) => saveAnnotation("actions", v)} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Perspective</label>
+                    <ComboBox value={annValue("perspective")} onChange={(v) => saveAnnotation("perspective", v)} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Weather/Environment</label>
+                    <ComboBox value={annValue("weather_environment")} onChange={(v) => saveAnnotation("weather_environment", v)} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Storytelling</label>
+                    <ComboBox value={annValue("storytelling")} onChange={(v) => saveAnnotation("storytelling", v)} options={opts.storytelling || []} placeholder="Celebration" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Background Details</label>
+                    <MultiComboBox value={annValue("background_details", true)} onChange={(v) => saveAnnotation("background_details", v)} options={opts.backgroundDetails || []} placeholder="Trees, River" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Card Locations</label>
+                    <ComboBox value={annValue("card_locations")} onChange={(v) => saveAnnotation("card_locations", v)} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Pokemon Region</label>
+                    <ComboBox value={annValue("pkmn_region")} onChange={(v) => saveAnnotation("pkmn_region", v)} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Primary Color</label>
+                    <ComboBox value={annValue("primary_color")} onChange={(v) => saveAnnotation("primary_color", v)} options={COLOR_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Secondary Color</label>
+                    <ComboBox value={annValue("secondary_color")} onChange={(v) => saveAnnotation("secondary_color", v)} options={COLOR_OPTIONS} placeholder="Brown" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Shape</label>
+                    <ComboBox value={annValue("shape")} onChange={(v) => saveAnnotation("shape", v)} options={SHAPE_OPTIONS} placeholder="upright" className={inputClass + " w-full"} />
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <label className={labelClass}>Evolution Line</label>
+                    <MultiComboBox value={annValue("evolution_line", true)} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
+                    <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Video" defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Video Game</label>
+                    <ComboBox value={annValue("video_game")} onChange={(v) => saveAnnotation("video_game", v)} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" className={inputClass + " w-full"} />
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input type="checkbox" id="cardDetail-videoAppearance" checked={!!ann.video_appearance} onChange={(e) => saveAnnotation("video_appearance", e.target.checked)} className="rounded" />
+                    <label htmlFor="cardDetail-videoAppearance" className="text-sm text-gray-700">Video Appearance</label>
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input type="checkbox" id="cardDetail-thumbnailUsed" checked={!!ann.thumbnail_used} onChange={(e) => saveAnnotation("thumbnail_used", e.target.checked)} className="rounded" />
+                    <label htmlFor="cardDetail-thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <label className={labelClass}>Video URL</label>
+                    <input type="url" value={annValue("video_url")} onChange={(e) => saveAnnotation("video_url", e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <label className={labelClass}>Video Title</label>
+                    <ComboBox value={annValue("video_title")} onChange={(v) => saveAnnotation("video_title", v)} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Notes" defaultOpen={false}>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="cardDetail-owned" checked={!!ann.owned} onChange={(e) => saveAnnotation("owned", e.target.checked)} className="rounded" />
+                    <label htmlFor="cardDetail-owned" className="text-sm text-gray-700">Owned</label>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Notes</label>
+                    <textarea value={annValue("notes")} onChange={(e) => saveAnnotation("notes", e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
+                  </div>
+                </div>
               </CollapsibleSection>
             </div>
           </div>
@@ -673,7 +804,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
           onClick={() => setImageEnlarged(false)}
         >
           <img
-            src={card.annotations?.image_override || card.image_large}
+            src={parseAnnotations(card).image_override || card.image_large}
             alt={card.name}
             className="max-h-[90vh] max-w-[90vw] object-contain"
             onClick={(e) => e.stopPropagation()}
