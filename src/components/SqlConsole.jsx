@@ -46,9 +46,10 @@ LIMIT 50`,
   {
     label: "Background Characters (custom)",
     query: `SELECT id, name, set_name, image_small,
-  annotations::JSON->>'background_characters' AS background_characters
+  background_pokemon, background_humans
 FROM custom_cards
-WHERE annotations::JSON->>'background_characters' ILIKE '%Pikachu%'`,
+WHERE background_pokemon ILIKE '%Pikachu%'
+   OR background_humans ILIKE '%Pikachu%'`,
   },
   {
     label: "Selected Cards",
