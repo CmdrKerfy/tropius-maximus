@@ -21,6 +21,29 @@ import CustomCardForm from "./components/CustomCardForm";
 import Pagination from "./components/Pagination";
 import SqlConsole from "./components/SqlConsole";
 
+function sortCards(arr, sort_by, sort_dir) {
+  const dir = sort_dir === "desc" ? -1 : 1;
+  return [...arr].sort((a, b) => {
+    let av, bv;
+    if (sort_by === "pokedex") {
+      av = a.pokedex_numbers?.[0] ?? Infinity;
+      bv = b.pokedex_numbers?.[0] ?? Infinity;
+    } else if (sort_by === "number") {
+      av = parseFloat(a.number) || 0;
+      bv = parseFloat(b.number) || 0;
+    } else if (sort_by === "hp") {
+      av = Number(a.hp) || 0;
+      bv = Number(b.hp) || 0;
+    } else {
+      av = String(a[sort_by] || "").toLowerCase();
+      bv = String(b[sort_by] || "").toLowerCase();
+    }
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+}
+
 export default function App() {
   // ── Card list state ─────────────────────────────────────────────────
   const [cards, setCards] = useState([]);
@@ -150,6 +173,17 @@ export default function App() {
         .catch((err) => console.error("Failed to load filter options:", err));
     } else {
       setFilters((prev) => ({ ...prev, ...newFilters }));
+
+      // If only sort_by/sort_dir changed and SQL results are displayed,
+      // re-sort them client-side rather than clearing them.
+      const isSortOnly = Object.keys(newFilters).every(
+        (k) => k === "sort_by" || k === "sort_dir"
+      );
+      if (sqlCards && isSortOnly) {
+        const merged = { ...filters, ...newFilters };
+        setSqlCards(sortCards(sqlCards, merged.sort_by, merged.sort_dir));
+        return;
+      }
     }
     setPage(1);
     setSqlCards(null);
