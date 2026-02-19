@@ -12,6 +12,7 @@ import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
+  VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
 } from "../lib/annotationOptions";
 
 // Hardcoded option sets
@@ -114,6 +115,9 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [thumbnailUsed, setThumbnailUsed] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
+  const [videoType, setVideoType] = useState("");
+  const [videoRegion, setVideoRegion] = useState("");
+  const [videoLocation, setVideoLocation] = useState("");
 
   // ── Notes fields ──
   const [owned, setOwned] = useState(false);
@@ -192,6 +196,9 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         thumbnail_used: thumbnailUsed,
         video_url: videoUrl || "",
         video_title: videoTitle || "",
+        video_type: toArray(videoType),
+        video_region: toArray(videoRegion),
+        video_location: toArray(videoLocation),
         unique_id: id,
         evolution_line: toArray(evolutionLine),
         emotion: emotion || "",
@@ -237,6 +244,9 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         holiday_theme:         arrayStr(holidayTheme),
         multi_card:            arrayStr(multiCard),
         trainer_card_subgroup: arrayStr(trainerCardSubgroup),
+        video_type:            arrayStr(videoType),
+        video_region:          arrayStr(videoRegion),
+        video_location:        arrayStr(videoLocation),
       };
 
       // Insert into local DuckDB
@@ -276,7 +286,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setBackgroundDetails(""); setCardLocations(""); setPkmnRegion("");
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
       setVideoGame(""); setVideoAppearance(false); setThumbnailUsed(false);
-      setVideoUrl(""); setVideoTitle(""); setOwned(false); setNotes("");
+      setVideoUrl(""); setVideoTitle(""); setVideoType(""); setVideoRegion(""); setVideoLocation(""); setOwned(false); setNotes("");
       setCardSubcategory(""); setHeldItem(""); setPokeball("");
       setEvolutionItems(""); setBerries(""); setHolidayTheme("");
       setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
@@ -566,6 +576,21 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Video Title</label>
               <ComboBox value={videoTitle} onChange={setVideoTitle} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Video Type</label>
+              <MultiComboBox value={videoType} onChange={setVideoType}
+                options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Regional" />
+            </div>
+            <div>
+              <label className={labelClass}>Video Region</label>
+              <MultiComboBox value={videoRegion} onChange={setVideoRegion}
+                options={opts.videoRegion || VIDEO_REGION_OPTIONS} placeholder="Kanto, Johto" />
+            </div>
+            <div>
+              <label className={labelClass}>Video Location</label>
+              <MultiComboBox value={videoLocation} onChange={setVideoLocation}
+                options={opts.videoLocation || VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Lumiose City" />
             </div>
           </div>
         </CollapsibleSection>

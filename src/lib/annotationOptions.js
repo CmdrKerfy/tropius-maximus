@@ -167,3 +167,50 @@ export const TRAINER_CARD_SUBGROUP_OPTIONS = [
   "Doesn't Seem like a Pokemon Card","Artwork Includes Other Items","ACE SPEC",
   "Villain Team Items","dangerous stadiums",
 ];
+
+export const VIDEO_TYPE_OPTIONS = ["Top 10", "Regional"];
+
+export const VIDEO_REGION_OPTIONS = [
+  "Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar","Hisui",
+  "Paldea","Aquapolis","Holon","Peaceful Park",
+];
+
+export const VIDEO_LOCATION_OPTIONS = [
+  // Kanto
+  "Pallet Town","Viridian City","Pewter City","Cerulean City","Vermilion City",
+  "Lavender Town","Celadon City","Fuchsia City","Saffron City","Cinnabar Island",
+  "Indigo Plateau",
+  // Johto
+  "New Bark Town","Cherrygrove City","Violet City","Azalea Town","Goldenrod City",
+  "Ecruteak City","Olivine City","Cianwood City","Mahogany Town","Blackthorn City",
+  "Mt. Silver",
+  // Hoenn
+  "Littleroot Town","Petalburg City","Rustboro City","Slateport City",
+  "Mauville City","Lavaridge Town","Fortree City","Lilycove City",
+  "Mossdeep City","Sootopolis City","Ever Grande City",
+  // Sinnoh
+  "Twinleaf Town","Sandgem Town","Jubilife City","Oreburgh City",
+  "Floaroma Town","Eterna City","Hearthome City","Veilstone City",
+  "Pastoria City","Celestic Town","Canalave City","Snowpoint City",
+  "Sunyshore City",
+  // Unova
+  "Nuvema Town","Striaton City","Nacrene City","Castelia City","Nimbasa City",
+  "Driftveil City","Mistralton City","Icirrus City","Opelucid City",
+  "Lacunosa Town","Undella Town","Humilau City","Black City","White Forest",
+  // Kalos
+  "Vaniville Town","Aquacorde Town","Santalune City","Lumiose City",
+  "Camphrier Town","Cyllage City","Geosenge Town","Shalour City",
+  "Coumarine City","Laverre City","Anistar City","Snowbelle City","Kiloude City",
+  // Alola
+  "Iki Town","Hau'oli City","Heahea City","Paniola Town","Konikoni City",
+  "Malie City","Po Town","Aether Paradise",
+  // Galar
+  "Postwick","Wedgehurst","Motostoke","Turffield","Hulbury","Hammerlocke",
+  "Stow-on-Side","Ballonlea","Circhester","Spikemuth","Wyndon",
+  // Hisui
+  "Jubilife Village","Floaro","Crimson Mirelands","Cobalt Coastlands",
+  "Coronet Highlands","Alabaster Icelands",
+  // Paldea
+  "Cabo Poco","Mesagoza","Artazon","Levincia","Cascarrafa","Medali",
+  "Montenevera","Alfornada","Glaseado Mountain","Area Zero",
+];

@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { fetchCard, patchAnnotations, fetchFormOptions } from "../db";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
+import { VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS } from "../lib/annotationOptions";
 
 const COLOR_OPTIONS = [
   "black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow",
@@ -32,6 +33,7 @@ const VIDEO_GAME_OPTIONS = [
 const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "art_style", "main_character", "background_pokemon", "background_humans",
   "additional_characters", "background_details", "evolution_line",
+  "video_type", "video_region", "video_location",
 ]);
 
 /**
@@ -776,6 +778,21 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   <div className="col-span-2 md:col-span-3">
                     <label className={labelClass}>Video Title</label>
                     <ComboBox value={annValue("video_title")} onChange={(v) => saveAnnotation("video_title", v)} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Video Type</label>
+                    <MultiComboBox value={annValue("video_type", true)} onChange={(v) => saveAnnotation("video_type", v)}
+                      options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Regional" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Video Region</label>
+                    <MultiComboBox value={annValue("video_region", true)} onChange={(v) => saveAnnotation("video_region", v)}
+                      options={opts.videoRegion || VIDEO_REGION_OPTIONS} placeholder="Kanto, Johto" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Video Location</label>
+                    <MultiComboBox value={annValue("video_location", true)} onChange={(v) => saveAnnotation("video_location", v)}
+                      options={opts.videoLocation || VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Lumiose City" />
                   </div>
                 </div>
               </CollapsibleSection>
