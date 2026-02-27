@@ -9,8 +9,8 @@ for the set list, but card data comes from the API for pricing.
 Also fetches Pokemon metadata (region, generation, color, evolution chain)
 from PokeAPI for auto-populating card metadata based on Pokedex numbers.
 
-Additionally fetches Pokemon TCG Pocket cards from the flibustier
-pokemon-tcg-pocket-database GitHub repo into separate tables.
+Additionally fetches Pokemon TCG Pocket cards from the TCGdex API
+into separate tables.
 
 This is a standalone version for the static site pipeline.
 It creates a local DuckDB file at scripts/pokemon.duckdb.
@@ -20,6 +20,7 @@ Usage:
     python ingest.py --set sv1    # Fetch only set "sv1" (good for testing)
     python ingest.py --skip-pokemon    # Skip PokeAPI fetch (use existing data)
     python ingest.py --skip-pocket     # Skip Pokemon TCG Pocket data
+    python ingest.py --pocket          # Only fetch Pocket data (skip TCG + Pokemon)
     python ingest.py --force           # Re-download all sets even if already present
 
 Features:
@@ -42,7 +43,7 @@ import duckdb
 # ── Configuration ────────────────────────────────────────────────────────
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(SCRIPT_DIR, "pokemon.duckdb")
+DB_PATH = os.path.join(SCRIPT_DIR, "..", "public", "data", "pokemon.duckdb")
 
 # Base URL for raw JSON files on GitHub (used for sets).
 GITHUB_RAW = "https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master"
@@ -56,18 +57,9 @@ POKEMON_TCG_API = "https://api.pokemontcg.io/v2"
 # PokeAPI for Pokemon metadata (species, color, evolution chains).
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
-# Pokemon TCG Pocket database (flibustier GitHub repo).
-POCKET_DB_BASE = "https://raw.githubusercontent.com/flibustier/pokemon-tcg-pocket-database/main/dist"
+# TCGdex API (used for Pocket card data and images).
+TCGDEX_API_BASE = "https://api.tcgdex.net/v2/en"
 POCKET_IMAGE_BASE = "https://assets.tcgdex.net/en/tcgp"
-
-
-def pocket_tcgdex_set_id(set_id: str) -> str:
-    """Map our Pocket set IDs to TCGdex set IDs."""
-    if set_id == "PROMO-A":
-        return "P-A"
-    if set_id == "PROMO-B":
-        return "P-B"
-    return set_id
 
 REQUEST_TIMEOUT = 120  # Increased for large sets
 MAX_RETRIES = 3
@@ -183,9 +175,15 @@ def initialize_database() -> None:
             packs           JSON,
             image_url       VARCHAR,
             image_filename  VARCHAR,
+            illustrator     VARCHAR,
             raw_data        JSON
         )
     """)
+
+    # Migrate: add illustrator column if it doesn't exist (schema upgrade)
+    existing_cols = {row[0] for row in conn.execute("DESCRIBE pocket_cards").fetchall()}
+    if "illustrator" not in existing_cols:
+        conn.execute("ALTER TABLE pocket_cards ADD COLUMN illustrator VARCHAR")
 
     conn.close()
 
@@ -540,40 +538,44 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
 
 
 def ingest_pocket_sets() -> None:
-    """Fetch Pocket sets from the flibustier GitHub repo and upsert into pocket_sets."""
+    """Fetch Pocket sets from the TCGdex API and upsert into pocket_sets."""
     print("Fetching Pocket sets...")
-    resp = httpx.get(f"{POCKET_DB_BASE}/sets.json", timeout=REQUEST_TIMEOUT)
+    resp = httpx.get(f"{TCGDEX_API_BASE}/series/tcgp", timeout=REQUEST_TIMEOUT)
     resp.raise_for_status()
     data = resp.json()
 
+    sets_list = data.get("sets", [])
     conn = get_connection()
+    conn.execute("DELETE FROM pocket_sets")
     count = 0
-    for series_key in ("A", "B"):
-        series_sets = data.get(series_key, [])
-        for s in series_sets:
-            code = s["code"]
-            name_en = s.get("name", {}).get("en", code)
-            conn.execute("""
-                INSERT OR REPLACE INTO pocket_sets
-                    (id, name, series, release_date, card_count, packs, logo_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, [
-                code,
-                name_en,
-                series_key,
-                s.get("releaseDate", ""),
-                s.get("count", 0),
-                json.dumps(s.get("packs", [])),
-                "",  # No logo URL in the source data
-            ])
-            count += 1
+    for s in sets_list:
+        card_count_raw = s.get("cardCount", {})
+        if isinstance(card_count_raw, dict):
+            card_count = card_count_raw.get("official", card_count_raw.get("total", 0))
+        else:
+            card_count = int(card_count_raw) if card_count_raw else 0
+
+        conn.execute("""
+            INSERT INTO pocket_sets
+                (id, name, series, release_date, card_count, packs, logo_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, [
+            s["id"],
+            s.get("name", s["id"]),
+            "tcgp",
+            s.get("releaseDate", ""),
+            card_count,
+            json.dumps([]),
+            "",
+        ])
+        count += 1
 
     conn.close()
     print(f"  Saved {count} Pocket sets.")
 
 
 def ingest_pocket_cards(force: bool = False) -> int:
-    """Fetch Pocket cards from the flibustier GitHub repo and upsert into pocket_cards."""
+    """Fetch Pocket cards from the TCGdex API and upsert into pocket_cards."""
     conn = get_connection()
 
     # Resume check
@@ -585,88 +587,121 @@ def ingest_pocket_cards(force: bool = False) -> int:
             conn.close()
             return existing
 
-    print("Fetching Pocket cards...")
+    print("Fetching Pocket cards from TCGdex...")
 
-    # Fetch primary card data
-    resp = httpx.get(f"{POCKET_DB_BASE}/cards.json", timeout=REQUEST_TIMEOUT)
+    # Get all sets in the tcgp series
+    resp = httpx.get(f"{TCGDEX_API_BASE}/series/tcgp", timeout=REQUEST_TIMEOUT)
     resp.raise_for_status()
-    cards_data = resp.json()
-    print(f"  Got {len(cards_data)} cards from cards.json")
+    series_data = resp.json()
+    sets_list = series_data.get("sets", [])
+    print(f"  Found {len(sets_list)} Pocket sets")
 
-    # Fetch enrichment data
-    try:
-        resp_extra = httpx.get(f"{POCKET_DB_BASE}/cards.extra.json", timeout=REQUEST_TIMEOUT)
-        resp_extra.raise_for_status()
-        extra_data = resp_extra.json()
-        print(f"  Got {len(extra_data)} enrichment entries from cards.extra.json")
-    except Exception as e:
-        print(f"  Warning: Could not fetch cards.extra.json: {e}")
-        extra_data = []
-
-    # Build lookup dict from extra keyed by (set, number)
-    extra_lookup = {}
-    for entry in extra_data:
-        key = (entry.get("set"), entry.get("number"))
-        extra_lookup[key] = entry
-
+    conn.execute("DELETE FROM pocket_cards")
     ingested = 0
-    for card in cards_data:
-        card_set = card.get("set", "")
-        card_number = card.get("number", 0)
-        card_id = f"{card_set}-{card_number:03d}"
+    for set_idx, set_info in enumerate(sets_list, 1):
+        set_id = set_info["id"]
+        print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
 
-        # Merge enrichment data where available
-        extra = extra_lookup.get((card_set, card_number), {})
-        merged = {**card, **{k: v for k, v in extra.items() if k not in card or k in ("element", "type", "stage", "health", "retreatCost", "weakness", "evolvesFrom")}}
+        # Fetch abbreviated card list for this set
+        try:
+            set_resp = httpx.get(f"{TCGDEX_API_BASE}/sets/{set_id}", timeout=REQUEST_TIMEOUT)
+            set_resp.raise_for_status()
+            set_data = set_resp.json()
+        except Exception as e:
+            print(f"failed ({e})")
+            continue
 
-        # Normalize stage
-        stage = merged.get("stage")
-        if stage == 0 or stage == "0":
-            stage = "basic"
-        elif isinstance(stage, int):
-            stage = f"stage {stage}"
-        elif isinstance(stage, str):
-            stage = stage.lower()
+        cards_brief = set_data.get("cards", [])
+        set_ingested = 0
 
-        # Construct image URL via TCGdex CDN
-        image_filename = card.get("image", "")
-        tcgdex_sid = pocket_tcgdex_set_id(card_set)
-        image_url = f"{POCKET_IMAGE_BASE}/{tcgdex_sid}/{card_number:03d}/high.webp" if card_set else ""
+        for card_brief in cards_brief:
+            card_id = card_brief["id"]
 
-        conn.execute("""
-            INSERT OR REPLACE INTO pocket_cards
-                (id, name, set_id, number, rarity, card_type, element, hp,
-                 stage, retreat_cost, weakness, evolves_from, packs,
-                 image_url, image_filename, raw_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, [
-            card_id,
-            card.get("name", ""),
-            card_set,
-            card_number,
-            card.get("rarity", ""),
-            extra.get("type", ""),
-            extra.get("element", ""),
-            extra.get("health"),
-            stage,
-            extra.get("retreatCost"),
-            extra.get("weakness", ""),
-            extra.get("evolvesFrom", ""),
-            json.dumps(card.get("packs", [])),
-            image_url,
-            image_filename,
-            json.dumps(merged),
-        ])
-        ingested += 1
+            # Fetch full card data
+            try:
+                card_resp = httpx.get(f"{TCGDEX_API_BASE}/cards/{card_id}", timeout=REQUEST_TIMEOUT)
+                card_resp.raise_for_status()
+                card = card_resp.json()
+            except Exception as e:
+                print(f"\n    Warning: Failed to fetch {card_id}: {e}")
+                time.sleep(0.05)
+                continue
+
+            # Parse number from localId (e.g., "001" -> 1)
+            local_id = card.get("localId", "")
+            try:
+                number = int(local_id)
+            except (ValueError, TypeError):
+                number = 0
+
+            # Map card type (category), lowercase
+            category = card.get("category", "")
+            card_type = category.lower() if category else ""
+
+            # Map element (first type)
+            types = card.get("types") or []
+            element = types[0] if types else ""
+
+            # Map stage (lowercase)
+            stage_raw = card.get("stage", "")
+            stage = stage_raw.lower() if stage_raw else ""
+
+            # Map weakness (first entry's type)
+            weaknesses = card.get("weaknesses") or []
+            weakness = weaknesses[0].get("type", "") if weaknesses else ""
+
+            # Map boosters to packs
+            boosters = card.get("boosters") or []
+            packs = [{"id": b.get("id", ""), "name": b.get("name", "")} for b in boosters]
+
+            # Image URL from TCGdex image field
+            image_base = card.get("image", "")
+            image_url = f"{image_base}/high.webp" if image_base else ""
+
+            conn.execute("""
+                INSERT INTO pocket_cards
+                    (id, name, set_id, number, rarity, card_type, element, hp,
+                     stage, retreat_cost, weakness, evolves_from, packs,
+                     image_url, image_filename, illustrator, raw_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                card_id,
+                card.get("name", ""),
+                set_id,
+                number,
+                card.get("rarity", ""),
+                card_type,
+                element,
+                card.get("hp"),
+                stage,
+                card.get("retreat"),
+                weakness,
+                card.get("evolveFrom", ""),
+                json.dumps(packs),
+                image_url,
+                "",
+                card.get("illustrator", ""),
+                json.dumps(card),
+            ])
+            set_ingested += 1
+            time.sleep(0.05)
+
+        ingested += set_ingested
+        print(f"{set_ingested} cards")
 
     conn.close()
     print(f"  Saved {ingested} Pocket cards.")
     return ingested
 
 
-def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, skip_tcg: bool = False, force: bool = False) -> int:
+def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, skip_tcg: bool = False, pocket_only: bool = False, force: bool = False) -> int:
     """Run the full ingestion pipeline."""
     initialize_database()
+
+    if pocket_only:
+        ingest_pocket_sets()
+        ingest_pocket_cards(force=force)
+        return 0
 
     # Ingest Pokemon metadata first (unless skipped)
     if not skip_pokemon:
@@ -714,13 +749,19 @@ def main():
         help="Skip fetching main TCG card data from pokemontcg.io.",
     )
     parser.add_argument(
+        "--pocket",
+        dest="pocket_only",
+        action="store_true",
+        help="Only fetch Pocket data (skip TCG cards and Pokemon metadata).",
+    )
+    parser.add_argument(
         "--force",
         dest="force",
         action="store_true",
         help="Force re-download of all sets, even if already in database.",
     )
     args = parser.parse_args()
-    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, force=args.force)
+    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, pocket_only=args.pocket_only, force=args.force)
 
 
 if __name__ == "__main__":

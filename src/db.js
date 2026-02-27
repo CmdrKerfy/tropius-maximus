@@ -352,6 +352,7 @@ export async function initDB() {
         packs           JSON,
         image_url       VARCHAR,
         image_filename  VARCHAR,
+        illustrator     VARCHAR,
         raw_data        JSON,
         annotations     JSON DEFAULT '{}'
       )
@@ -1224,7 +1225,7 @@ export async function fetchCard(id, source = "TCG") {
     const result = await conn.query(`
       SELECT pc.id, pc.name, pc.card_type, pc.hp, pc.element, pc.rarity,
              pc.stage, pc.retreat_cost, pc.weakness, pc.evolves_from,
-             pc.packs, pc.raw_data, pc.annotations,
+             pc.packs, pc.raw_data, pc.annotations, pc.illustrator,
              pc.set_id, pc.number,
              ${TCGDEX_IMG_SMALL} AS image_small,
              ${TCGDEX_IMG_LARGE} AS image_large,
@@ -1275,7 +1276,7 @@ export async function fetchCard(id, source = "TCG") {
       types,
       evolves_from: r.evolves_from || null,
       rarity: r.rarity,
-      artist: null,
+      artist: r.illustrator || null,
       set_id: r.set_id,
       set_name: r.set_name,
       set_series: r.set_series,

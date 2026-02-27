@@ -13,7 +13,7 @@ import os
 import duckdb
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(SCRIPT_DIR, "pokemon.duckdb")
+DB_PATH = os.path.join(SCRIPT_DIR, "..", "public", "data", "pokemon.duckdb")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "public", "data")
 
 
