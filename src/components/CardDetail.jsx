@@ -452,7 +452,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
                 {/* Set and card number */}
                 <div className="mt-3 text-sm text-gray-500">
-                  {card.set_name} ({card.set_series}) · #{card.number}
+                  {ann.set_name || card.set_name} ({card.set_series}) · #{card.number}
                   {card.pokedex_numbers?.length > 0 && (
                     <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                   )}
@@ -685,6 +685,16 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Card Classification</span>
                     <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="col-span-2 md:col-span-3">
+                    <label className={labelClass}>Set Name</label>
+                    <ComboBox
+                      value={annValue("set_name") || card.set_name || ""}
+                      onChange={(v) => saveAnnotation("set_name", v)}
+                      options={opts.setName || []}
+                      placeholder="Set name"
+                      className={inputClass + " w-full"}
+                    />
                   </div>
                   <div className="col-span-2 md:col-span-3">
                     <label className={labelClass}>Card Subcategory</label>
