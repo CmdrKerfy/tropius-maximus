@@ -11,7 +11,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { executeSql, syncMutableTablesToIndexedDB } from "../db";
-import { getToken, setToken, getFileContents, updateFileContents } from "../lib/github";
+import { getToken, getFileContents, updateFileContents } from "../lib/github";
 
 const EXAMPLES = [
   { label: "All Columns (cards)", query: "SELECT * FROM cards LIMIT 5" },
@@ -89,9 +89,6 @@ export default function SqlConsole({
   const [hasUncommittedChanges, setHasUncommittedChanges] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [commitMessage, setCommitMessage] = useState(null); // { type: 'success'|'error', text }
-  const [ghToken, setGhToken] = useState(() => getToken());
-  const [showTokenInput, setShowTokenInput] = useState(false);
-
   // Expand {{selected}} template variable with actual card IDs
   const expandTemplate = useCallback(
     (sql) => {
@@ -163,10 +160,11 @@ export default function SqlConsole({
       let msg = `Saved to local storage (${annotationsSynced} annotation(s), ${customCardsSynced} custom card(s))`;
 
       // Push to GitHub if a PAT is configured
-      if (ghToken && customCardsData) {
-        const { sha } = await getFileContents(ghToken);
+      const token = getToken();
+      if (token && customCardsData) {
+        const { sha } = await getFileContents(token);
         await updateFileContents(
-          ghToken,
+          token,
           customCardsData,
           sha,
           "SQL Console: sync custom cards and annotations"
@@ -301,59 +299,6 @@ export default function SqlConsole({
             </div>
           )}
 
-          {/* GitHub PAT status */}
-          <div className="mt-2 border-t border-amber-200 pt-2 space-y-1.5">
-            {ghToken ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-green-700">GitHub PAT configured</span>
-                <button
-                  type="button"
-                  onClick={() => setShowTokenInput(!showTokenInput)}
-                  className="text-xs text-gray-500 hover:text-gray-700 underline"
-                >
-                  {showTokenInput ? "Hide" : "Change"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setToken(""); setGhToken(""); }}
-                  className="text-xs text-red-500 hover:text-red-700 underline"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <p className="text-xs text-gray-600">
-                No GitHub PAT — changes saved locally only.{" "}
-                <button
-                  type="button"
-                  onClick={() => setShowTokenInput(true)}
-                  className="text-blue-600 hover:underline"
-                >
-                  Add PAT
-                </button>{" "}
-                to also commit to GitHub.
-              </p>
-            )}
-            {(!ghToken || showTokenInput) && (
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={ghToken}
-                  onChange={(e) => setGhToken(e.target.value)}
-                  placeholder="github_pat_..."
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono
-                             focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => { setToken(ghToken); setShowTokenInput(false); }}
-                  className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

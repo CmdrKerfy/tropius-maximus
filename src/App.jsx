@@ -12,6 +12,7 @@ import {
   fetchAttributes,
   getCustomSourceNames,
 } from "./db";
+import { getToken, setToken } from "./lib/github";
 import SearchBar from "./components/SearchBar";
 import FilterPanel from "./components/FilterPanel";
 import CardGrid from "./components/CardGrid";
@@ -95,6 +96,10 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showSqlConsole, setShowSqlConsole] = useState(false);
   const [showCustomCardForm, setShowCustomCardForm] = useState(false);
+
+  // ── GitHub PAT state ─────────────────────────────────────────────────
+  const [ghToken, setGhToken] = useState(() => getToken());
+  const [showTokenInput, setShowTokenInput] = useState(false);
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
@@ -296,6 +301,61 @@ export default function App() {
               <p className="text-xs text-gray-400 mt-1">
                 Last build: {typeof __BUILD_DATE__ !== "undefined" ? new Date(__BUILD_DATE__).toLocaleDateString() : "unknown"}
               </p>
+
+              {/* GitHub PAT */}
+              <div className="mt-3 border-t border-gray-100 pt-3 space-y-1.5">
+                {ghToken ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-green-700">GitHub PAT configured</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTokenInput(!showTokenInput)}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                      {showTokenInput ? "Hide" : "Change"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setToken(""); setGhToken(""); }}
+                      className="text-xs text-red-500 hover:text-red-700 underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-600">
+                    No GitHub PAT —{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowTokenInput(true)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Add PAT
+                    </button>{" "}
+                    to sync annotations and cards across devices.
+                  </p>
+                )}
+                {(!ghToken || showTokenInput) && (
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={ghToken}
+                      onChange={(e) => setGhToken(e.target.value)}
+                      placeholder="github_pat_..."
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono
+                                 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setToken(ghToken); setShowTokenInput(false); }}
+                      className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setShowCustomCardForm(!showCustomCardForm)}
                 className="mt-3 px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium
