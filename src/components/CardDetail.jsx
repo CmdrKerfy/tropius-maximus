@@ -205,6 +205,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (MULTI_VALUE_ANNOTATION_KEYS.has(key) && typeof value === "string") {
       stored = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
     }
+    if (key === "background_pokemon" && Array.isArray(stored)) {
+      stored = stored.map((s) => s.toLowerCase());
+    }
     try {
       await patchAnnotations(card.id, { [key]: stored });
       setCard((prev) => ({
@@ -760,14 +763,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <label htmlFor="cardDetail-pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
                   </div>
 
-                  {/* ── Characters ── */}
+                  {/* ── Background Characters ── */}
                   <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Characters</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Background Characters</span>
                     <div className="flex-1 h-px bg-gray-200" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Main Character</label>
-                    <MultiComboBox value={annValue("main_character", true)} onChange={(v) => saveAnnotation("main_character", v)} options={opts.mainCharacter || []} placeholder="Pikachu" />
                   </div>
                   <div>
                     <label className={labelClass}>Background Pokemon</label>

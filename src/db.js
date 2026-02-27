@@ -1865,8 +1865,9 @@ export async function fetchFormOptions() {
         splitJsonArrayValues("background_pokemon"),
         conn.query(`SELECT DISTINCT name AS val FROM pokemon_metadata WHERE name IS NOT NULL ORDER BY name`),
       ]);
+      const fromCustom = customResult.map((v) => v.toLowerCase());
       const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
-      return [...new Set([...customResult, ...fromPm])].sort();
+      return [...new Set([...fromPm, ...fromCustom])].sort();
     })(),
     // background_humans: from custom cards + static trainer list
     (async () => {

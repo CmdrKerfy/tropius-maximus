@@ -165,6 +165,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         throw new Error("Please fill in all required fields");
       }
 
+      const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
+
       // Build card object for custom_cards.json format
       const cardJson = {
         id,
@@ -190,7 +192,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         owned,
         notes: notes || "",
         main_character: toArray(mainCharacter),
-        background_pokemon: toArray(backgroundPokemon),
+        background_pokemon: bgPokemon,
         background_humans: backgroundHumans ? toArray(backgroundHumans) : null,
         primary_color: primaryColor || "",
         secondary_color: secondaryColor || "",
@@ -240,7 +242,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         types: JSON.stringify(cardJson.types),
         art_style: arrayStr(artStyle),
         main_character: arrayStr(mainCharacter),
-        background_pokemon: arrayStr(backgroundPokemon),
+        background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
         background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
         additional_characters: arrayStr(additionalCharacters),
         background_details: arrayStr(backgroundDetails),
@@ -479,14 +481,10 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
                 className={inputClass + " w-full"} />
             </div>
 
-            {/* ── Characters ── */}
+            {/* ── Background Characters ── */}
             <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Characters</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Background Characters</span>
               <div className="flex-1 h-px bg-gray-200" />
-            </div>
-            <div>
-              <label className={labelClass}>Main Character</label>
-              <MultiComboBox value={mainCharacter} onChange={setMainCharacter} options={opts.mainCharacter || []} placeholder="Pikachu" />
             </div>
             <div>
               <label className={labelClass}>Background Pokemon</label>
