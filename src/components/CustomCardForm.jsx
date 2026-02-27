@@ -369,7 +369,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <label className={labelClass}>Source <span className="text-red-500">*</span></label>
             <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
           </div>
-          <div className="md:col-start-2 flex items-center gap-2 pt-2">
+          <div className="md:col-start-2 flex items-center gap-2 pt-0.5">
             <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
               onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
             <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
@@ -646,15 +646,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">YouTube Videos</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
-            <div className="flex items-center gap-2 pt-6">
+            <div className="flex items-center gap-2 pt-1 pb-3">
               <input type="checkbox" id="shortsAppearance" checked={shortsAppearance} onChange={(e) => setShortsAppearance(e.target.checked)} className="rounded" />
               <label htmlFor="shortsAppearance" className="text-sm text-gray-700">Shorts Appearance</label>
             </div>
-            <div className="flex items-center gap-2 pt-6">
+            <div className="flex items-center gap-2 pt-1 pb-3">
               <input type="checkbox" id="regionAppearance" checked={regionAppearance} onChange={(e) => setRegionAppearance(e.target.checked)} className="rounded" />
               <label htmlFor="regionAppearance" className="text-sm text-gray-700">Region Appearance</label>
             </div>
-            <div className="flex items-center gap-2 pt-6">
+            <div className="flex items-center gap-2 pt-1 pb-3">
               <input type="checkbox" id="thumbnailUsed" checked={thumbnailUsed} onChange={(e) => setThumbnailUsed(e.target.checked)} className="rounded" />
               <label htmlFor="thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
             </div>
