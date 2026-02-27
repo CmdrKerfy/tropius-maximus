@@ -1863,24 +1863,23 @@ export async function fetchFormOptions() {
     splitJsonArrayValues("background_humans"),
     splitJsonArrayValues("additional_characters"),
     splitJsonArrayValues("background_details"),
-    // evolution_line: custom_cards (arrow-separated) + pokemon_metadata.evolution_chain (JSON array)
+    // evolution_line: full chains from custom_cards + pokemon_metadata.evolution_chain
     (async () => {
       const [customResult, pmResult] = await Promise.all([
         conn.query(
-          `SELECT DISTINCT TRIM(val) AS val FROM (
-            SELECT unnest(string_split(evolution_line, ' → ')) AS val
-            FROM custom_cards WHERE evolution_line IS NOT NULL AND evolution_line != ''
-          ) WHERE TRIM(val) != '' ORDER BY val`
+          `SELECT DISTINCT TRIM(evolution_line) AS val
+           FROM custom_cards WHERE evolution_line IS NOT NULL AND evolution_line != ''
+           ORDER BY val`
         ),
         conn.query(
-          `SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
-            REPLACE(REPLACE(evolution_chain, '[', ''), ']', ''), ','
-          )))) AS val FROM pokemon_metadata WHERE evolution_chain IS NOT NULL AND evolution_chain != '' AND evolution_chain != '[]' ORDER BY val`
+          `SELECT DISTINCT REPLACE(REPLACE(REPLACE(REPLACE(evolution_chain, '[', ''), ']', ''), '"', ''), ',', ' → ') AS val
+           FROM pokemon_metadata WHERE evolution_chain IS NOT NULL AND evolution_chain != '' AND evolution_chain != '[]'
+           ORDER BY val`
         ),
       ]);
-      const fromCustom = customResult.toArray().map((r) => r.val).filter(Boolean);
+      const fromCustom = customResult.toArray().map((r) => r.val?.toLowerCase()).filter(Boolean);
       const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
-      return [...new Set([...fromCustom, ...fromPm])].sort();
+      return [...new Set([...fromPm, ...fromCustom])].sort();
     })(),
     splitJsonArrayValues("card_subcategory"),
     splitJsonArrayValues("evolution_items"),

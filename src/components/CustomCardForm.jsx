@@ -207,7 +207,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         video_region: toArray(videoRegion),
         video_location: toArray(videoLocation),
         unique_id: id,
-        evolution_line: toArray(evolutionLine),
+        evolution_line: (evolutionLine || "").toLowerCase(),
         emotion: emotion || "",
         pose: pose || "",
         camera_angle: cameraAngle || "",
@@ -244,7 +244,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
         additional_characters: arrayStr(additionalCharacters),
         background_details: arrayStr(backgroundDetails),
-        evolution_line: toArray(evolutionLine).join(" → "),
+        evolution_line: (evolutionLine || "").toLowerCase(),
         image_large: imageLarge || imageSmall,
         unique_id: id,
         card_subcategory:      arrayStr(cardSubcategory),
@@ -502,8 +502,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Evolution Line</label>
-              <MultiComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
-              <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
+              <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
             </div>
 
             {/* ── Subject ── */}

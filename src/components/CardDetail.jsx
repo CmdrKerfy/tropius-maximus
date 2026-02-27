@@ -39,7 +39,7 @@ const VIDEO_GAME_OPTIONS = [
 
 const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "art_style", "main_character", "background_pokemon", "background_humans",
-  "additional_characters", "background_details", "evolution_line",
+  "additional_characters", "background_details",
   "card_subcategory", "trainer_card_subgroup", "evolution_items",
   "berries", "holiday_theme", "multi_card",
   "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
@@ -783,8 +783,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   </div>
                   <div className="col-span-2 md:col-span-3">
                     <label className={labelClass}>Evolution Line</label>
-                    <MultiComboBox value={annValue("evolution_line", true)} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="pichu, pikachu, raichu" />
-                    <p className="text-xs text-gray-400 mt-0.5">Stored as array in JSON, arrow-joined in DB</p>
+                    <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
                   </div>
 
                   {/* ── Subject ── */}
