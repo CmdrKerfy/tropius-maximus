@@ -62,6 +62,56 @@ export const ITEMS_OPTIONS = [
   "Technical Machine (TM)","Mask","Incense","Rare Candy","Fossil","apple",
 ];
 
+export const BACKGROUND_HUMANS_OPTIONS = [
+  // Anime protagonists & companions
+  "Ash","Misty","Brock","Tracey","May","Max","Dawn","Iris","Cilan","Serena",
+  "Clemont","Bonnie","Lana","Kiawe","Mallow","Sophocles","Lillie","Goh","Chloe",
+  // Team Rocket
+  "Jessie","James","Meowth","Giovanni",
+  // Game protagonists
+  "Red","Blue","Leaf","Gold","Kris","Silver","Brendan","Wally","Lucas","Barry",
+  "Hilbert","Hilda","Nate","Rosa","Cheren","Bianca","Hugh","Calem","Shauna",
+  "Tierno","Trevor","Elio","Selene","Hau","Gladion","Victor","Gloria","Hop",
+  "Bede","Marnie","Florian","Juliana","Nemona","Arven","Penny",
+  // Professors
+  "Professor Oak","Professor Elm","Professor Birch","Professor Rowan",
+  "Professor Juniper","Professor Sycamore","Professor Kukui","Professor Burnet",
+  "Professor Magnolia","Professor Sonia","Professor Willow","Professor Sada",
+  "Professor Turo","Jacq","Clavell",
+  // Kanto gym leaders & elite four
+  "Lt. Surge","Sabrina","Erika","Koga","Janine","Blaine","Lorelei","Bruno",
+  "Agatha","Lance",
+  // Johto gym leaders & elite four
+  "Falkner","Bugsy","Whitney","Morty","Chuck","Jasmine","Pryce","Clair",
+  "Will","Karen",
+  // Hoenn gym leaders & elite four
+  "Roxanne","Brawly","Wattson","Flannery","Norman","Winona","Tate","Liza",
+  "Juan","Wallace","Steven","Sidney","Phoebe","Glacia","Drake",
+  // Sinnoh gym leaders & elite four
+  "Roark","Gardenia","Maylene","Crasher Wake","Fantina","Byron","Candice",
+  "Volkner","Aaron","Bertha","Flint","Lucian","Cynthia",
+  // Unova gym leaders & elite four
+  "Lenora","Burgh","Elesa","Clay","Skyla","Brycen","Drayden","Roxie","Marlon",
+  "Shauntal","Grimsley","Caitlin","Marshal","Alder","Iris (Champion)","N","Ghetsis",
+  // Kalos gym leaders & elite four
+  "Viola","Grant","Korrina","Ramos","Valerie","Olympia","Wulfric",
+  "Malva","Siebold","Wikstrom","Drasna","Diantha","Lysandre",
+  // Alola kahunas & elite four
+  "Hala","Olivia","Nanu","Hapu","Ilima","Acerola","Mina","Molayne","Kahili",
+  "Kukui (Champion)","Lusamine","Guzma","Plumeria","Wicke","Faba","Gladion",
+  // Galar gym leaders & champion
+  "Milo","Nessa","Kabu","Bea","Allister","Opal","Gordie","Melony","Piers",
+  "Raihan","Leon","Rose","Oleana","Hop","Bede","Marnie","Avery","Klara",
+  // Paldea gym leaders & elite four
+  "Katy","Brassius","Iono","Kofu","Larry","Ryme","Tulip","Grusha",
+  "Rika","Poppy","Hassel","Geeta","Nemona","Arven","Penny","Giacomo",
+  "Mela","Atticus","Ortega","Eri",
+  // Other notable characters
+  "Bill","Mr. Fuji","Nurse Joy","Officer Jenny","Gary","Ritchie","Paul",
+  "Trip","Alain","Kukui","Burnet","Delia","Spencer","Caroline","Norman (anime)",
+  "Lisia","Wallace (anime)","Cynthia (anime)",
+];
+
 export const ADDITIONAL_CHARACTERS_OPTIONS = [
   "BFFs","Squad Gang","Trainer and Pokemon","Family First","Unexpected Partnerships",
 ];

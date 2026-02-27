@@ -16,7 +16,7 @@ import {
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
   VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
-  STAMP_OPTIONS,
+  STAMP_OPTIONS, BACKGROUND_HUMANS_OPTIONS,
 } from "./lib/annotationOptions.js";
 // Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
 import duckdb_wasm_mvp from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
@@ -1859,8 +1859,20 @@ export async function fetchFormOptions() {
          trainerCardSubgroup, videoType, videoRegion, videoLocation] = await Promise.all([
     splitJsonArrayValues("art_style"),
     splitJsonArrayValues("main_character"),
-    splitJsonArrayValues("background_pokemon"),
-    splitJsonArrayValues("background_humans"),
+    // background_pokemon: from custom cards + all pokemon names from metadata
+    (async () => {
+      const [customResult, pmResult] = await Promise.all([
+        splitJsonArrayValues("background_pokemon"),
+        conn.query(`SELECT DISTINCT name AS val FROM pokemon_metadata WHERE name IS NOT NULL ORDER BY name`),
+      ]);
+      const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
+      return [...new Set([...customResult, ...fromPm])].sort();
+    })(),
+    // background_humans: from custom cards + static trainer list
+    (async () => {
+      const fromCustom = await splitJsonArrayValues("background_humans");
+      return [...new Set([...BACKGROUND_HUMANS_OPTIONS, ...fromCustom])];
+    })(),
     splitJsonArrayValues("additional_characters"),
     splitJsonArrayValues("background_details"),
     // evolution_line: full chains from custom_cards + pokemon_metadata.evolution_chain
