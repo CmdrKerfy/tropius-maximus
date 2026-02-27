@@ -945,10 +945,12 @@ export async function fetchCards(params = {}) {
     );
     const total = countResult.toArray()[0].cnt;
 
+    const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id"]);
+    const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const dataResult = await conn.query(`
       SELECT id, name, set_name, image_small, image_large, _source
       FROM (${unionSQL}) combined
-      ORDER BY name ${safeSortDir}
+      ORDER BY ${allSortBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);
 
