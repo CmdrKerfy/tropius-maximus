@@ -250,7 +250,7 @@ export default function App() {
       <header className="bg-green-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/favicon.png" alt="Tropius" className="h-16 w-16 rounded-full object-cover" />
+            <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Tropius" className="h-16 w-16 rounded-full object-cover" />
             <h1 className="text-2xl font-bold tracking-tight">
               Tropius Maximus Pokemon Tracker
             </h1>
