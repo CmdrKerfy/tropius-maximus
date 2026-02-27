@@ -180,7 +180,7 @@ export default function SqlConsole({
     } finally {
       setCommitting(false);
     }
-  }, [ghToken, onDataChanged]);
+  }, [onDataChanged]);
 
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -274,7 +274,7 @@ export default function SqlConsole({
               <span className="text-sm font-medium text-amber-800">Uncommitted changes</span>
               <p className="text-xs text-amber-700 mt-0.5">
                 Saves SQL mutations to local storage
-                {ghToken ? " and commits to GitHub" : ""}
+                {getToken() ? " and commits to GitHub" : ""}
               </p>
             </div>
             <button
