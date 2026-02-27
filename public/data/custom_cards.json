@@ -5,16 +5,21 @@
       "name": "Pikachu",
       "alt_name": "ピカチュウ",
       "supertype": "Pokémon",
-      "subtypes": ["Basic"],
+      "subtypes": [
+        "Basic"
+      ],
       "hp": 60,
-      "types": ["Lightning"],
+      "types": [
+        "Lightning"
+      ],
       "evolves_from": "Pichu",
       "rarity": "Promo",
-      "special_rarity": "20th Anniversary Festa",
       "artist": "Naoki Saito",
-      "art_style": ["Chibi"],
+      "art_style": [
+        "Chibi"
+      ],
       "set_id": "xyp",
-      "set_name": "XY Japanese Promos",
+      "set_name": "20th Anniversary Festa",
       "set_series": "XY",
       "number": "XY279",
       "regulation_mark": "",
@@ -23,8 +28,12 @@
       "source": "Japan Exclusive",
       "owned": false,
       "notes": "Pikachu is a yellow mouse-like Pokémon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
-      "main_character": ["Pikachu"],
-      "background_pokemon": ["Pikachu"],
+      "main_character": [
+        "Pikachu"
+      ],
+      "background_pokemon": [
+        "Pikachu"
+      ],
       "background_humans": null,
       "primary_color": "Yellow",
       "secondary_color": "Brown",
@@ -35,17 +44,29 @@
       "video_url": "",
       "video_title": "",
       "unique_id": "xyp-JP279",
-      "evolution_line": ["pichu", "pikachu", "raichu"],
+      "evolution_line": [
+        "pichu",
+        "pikachu",
+        "raichu"
+      ],
       "emotion": "Happy",
       "pose": "Jumping",
       "camera_angle": "Front",
       "items": "20th Anniversary Trophy",
       "actions": "Jumping",
-      "additional_characters": ["Bulbasaur", "Charmander", "Squirtle"],
+      "additional_characters": [
+        "Bulbasaur",
+        "Charmander",
+        "Squirtle"
+      ],
       "perspective": "",
       "weather_environment": "Indoors",
       "storytelling": "Celebration",
-      "background_details": ["Trophy", "Throne", "Confetti"],
+      "background_details": [
+        "Trophy",
+        "Throne",
+        "Confetti"
+      ],
       "card_locations": "Nagoya",
       "pkmn_region": "Johto"
     },
@@ -54,16 +75,19 @@
       "name": "Lass' Special",
       "alt_name": "ミニスカートのおすすめ",
       "supertype": "Trainer",
-      "subtypes": ["Supporter"],
+      "subtypes": [
+        "Supporter"
+      ],
       "hp": null,
       "types": [],
       "evolves_from": null,
       "rarity": "Promo",
-      "special_rarity": "20th Anniversary Festa",
       "artist": "Yusuke Ohmura",
-      "art_style": ["Cartoon"],
+      "art_style": [
+        "Cartoon"
+      ],
       "set_id": "xyp",
-      "set_name": "XY Japanese Promos",
+      "set_name": "20th Anniversary Festa",
       "set_series": "XY",
       "number": "XY289",
       "regulation_mark": "",
@@ -73,7 +97,9 @@
       "owned": false,
       "notes": "",
       "main_character": "Lass",
-      "background_pokemon": ["Roselia"],
+      "background_pokemon": [
+        "Roselia"
+      ],
       "background_humans": null,
       "primary_color": "Black",
       "secondary_color": "Red",
@@ -94,7 +120,11 @@
       "perspective": "",
       "weather_environment": "Sunny",
       "storytelling": "",
-      "background_details": ["Statue", "Cafe", "Water Fountain"],
+      "background_details": [
+        "Statue",
+        "Cafe",
+        "Water Fountain"
+      ],
       "card_locations": "Santalune City",
       "pkmn_region": ""
     },
@@ -103,16 +133,21 @@
       "name": "Machoke",
       "alt_name": "ゴーリキー",
       "supertype": "Pokemon",
-      "subtypes": ["Stage 1"],
+      "subtypes": [
+        "Stage 1"
+      ],
       "hp": 60,
-      "types": ["Fighting"],
+      "types": [
+        "Fighting"
+      ],
       "evolves_from": "Machop",
       "rarity": "Promo",
-      "special_rarity": "Vending Machine Set 3",
       "artist": "Tomokazu Komiya",
-      "art_style": ["Paper"],
+      "art_style": [
+        "Paper"
+      ],
       "set_id": "vm-s3",
-      "set_name": "Expansion Sheet 3",
+      "set_name": "Vending Machine Set 3",
       "set_series": "VM3",
       "number": "VM3-28",
       "regulation_mark": "",
@@ -122,7 +157,12 @@
       "owned": false,
       "notes": "",
       "main_character": "Machoke",
-      "background_pokemon": ["Ditto", "Sandshrew", "Chansey", "Doduo"],
+      "background_pokemon": [
+        "Ditto",
+        "Sandshrew",
+        "Chansey",
+        "Doduo"
+      ],
       "background_humans": null,
       "primary_color": "Purple",
       "secondary_color": "Red",
@@ -139,11 +179,16 @@
       "camera_angle": "Front",
       "items": null,
       "actions": "Holding Pokemon",
-      "additional_characters": ["Friends"],
+      "additional_characters": [
+        "Friends"
+      ],
       "perspective": "",
       "weather_environment": "Sunny",
       "storytelling": "",
-      "background_details": ["River", "Trees"],
+      "background_details": [
+        "River",
+        "Trees"
+      ],
       "card_locations": "",
       "pkmn_region": ""
     }
