@@ -9,10 +9,11 @@ import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import {
-  CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
+  SOURCE_OPTIONS, CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
-  VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
+  VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
+  VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
   STAMP_OPTIONS,
 } from "../lib/annotationOptions";
 
@@ -114,11 +115,14 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
 
   // ── Video fields ──
   const [videoGame, setVideoGame] = useState("");
-  const [videoAppearance, setVideoAppearance] = useState(false);
+  const [videoGameLocation, setVideoGameLocation] = useState("");
+  const [shortsAppearance, setShortsAppearance] = useState(false);
+  const [regionAppearance, setRegionAppearance] = useState(false);
   const [thumbnailUsed, setThumbnailUsed] = useState(false);
-  const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
   const [videoType, setVideoType] = useState("");
+  const [top10Themes, setTop10Themes] = useState("");
+  const [wtpcEpisode, setWtpcEpisode] = useState("");
   const [videoRegion, setVideoRegion] = useState("");
   const [videoLocation, setVideoLocation] = useState("");
 
@@ -191,12 +195,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         primary_color: primaryColor || "",
         secondary_color: secondaryColor || "",
         shape: shape || "",
-        video_game: videoGame || null,
-        video_appearance: videoAppearance,
+        video_game: toArray(videoGame),
+        video_game_location: toArray(videoGameLocation),
+        shorts_appearance: shortsAppearance,
+        region_appearance: regionAppearance,
         thumbnail_used: thumbnailUsed,
-        video_url: videoUrl || "",
-        video_title: videoTitle || "",
+        video_title: toArray(videoTitle),
         video_type: toArray(videoType),
+        top_10_themes: toArray(top10Themes),
+        wtpc_episode: toArray(wtpcEpisode),
         video_region: toArray(videoRegion),
         video_location: toArray(videoLocation),
         unique_id: id,
@@ -246,7 +253,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         holiday_theme:         arrayStr(holidayTheme),
         multi_card:            arrayStr(multiCard),
         trainer_card_subgroup: arrayStr(trainerCardSubgroup),
+        video_title:           arrayStr(videoTitle),
+        video_game:            arrayStr(videoGame),
+        video_game_location:     arrayStr(videoGameLocation),
         video_type:            arrayStr(videoType),
+        top_10_themes:         arrayStr(top10Themes),
+        wtpc_episode:          arrayStr(wtpcEpisode),
         video_region:          arrayStr(videoRegion),
         video_location:        arrayStr(videoLocation),
       };
@@ -287,8 +299,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setPerspective(""); setWeatherEnvironment(""); setStorytelling("");
       setBackgroundDetails(""); setCardLocations(""); setPkmnRegion("");
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
-      setVideoGame(""); setVideoAppearance(false); setThumbnailUsed(false);
-      setVideoUrl(""); setVideoTitle(""); setVideoType(""); setVideoRegion(""); setVideoLocation(""); setOwned(false); setNotes("");
+      setVideoGame(""); setVideoGameRegion(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
+      setVideoTitle(""); setVideoType(""); setTop10Themes(""); setWtpcEpisode(""); setVideoRegion(""); setVideoLocation(""); setOwned(false); setNotes("");
       setCardSubcategory(""); setHeldItem(""); setPokeball("");
       setEvolutionItems(""); setBerries(""); setHolidayTheme("");
       setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
@@ -355,7 +367,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
           <div>
             <label className={labelClass}>Source <span className="text-red-500">*</span></label>
-            <ComboBox value={source} onChange={setSource} options={opts.source || []} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
+            <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
+          </div>
+          <div className="md:col-start-2 flex items-center gap-2 pt-2">
+            <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
+              onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
+            <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
           </div>
         </div>
 
@@ -460,11 +477,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={stamp} onChange={setStamp}
                 options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
                 className={inputClass + " w-full"} />
-            </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
-                onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
-              <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
             </div>
 
             {/* ── Characters ── */}
@@ -614,35 +626,61 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         {/* ── Video (collapsible) ── */}
         <CollapsibleSection title="Video">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+            {/* ── Video Games ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Video Games</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
             <div>
               <label className={labelClass}>Video Game</label>
-              <ComboBox value={videoGame} onChange={setVideoGame} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" className={inputClass + " w-full"} />
+              <MultiComboBox value={videoGame} onChange={setVideoGame} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" />
+            </div>
+            <div>
+              <label className={labelClass}>Video Game Location</label>
+              <MultiComboBox value={videoGameLocation} onChange={setVideoGameLocation} options={opts.videoGameLocation || VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Route 1" />
+            </div>
+
+            {/* ── YouTube Videos ── */}
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">YouTube Videos</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" id="videoAppearance" checked={videoAppearance} onChange={(e) => setVideoAppearance(e.target.checked)} className="rounded" />
-              <label htmlFor="videoAppearance" className="text-sm text-gray-700">Video Appearance</label>
+              <input type="checkbox" id="shortsAppearance" checked={shortsAppearance} onChange={(e) => setShortsAppearance(e.target.checked)} className="rounded" />
+              <label htmlFor="shortsAppearance" className="text-sm text-gray-700">Shorts Appearance</label>
+            </div>
+            <div className="flex items-center gap-2 pt-6">
+              <input type="checkbox" id="regionAppearance" checked={regionAppearance} onChange={(e) => setRegionAppearance(e.target.checked)} className="rounded" />
+              <label htmlFor="regionAppearance" className="text-sm text-gray-700">Region Appearance</label>
             </div>
             <div className="flex items-center gap-2 pt-6">
               <input type="checkbox" id="thumbnailUsed" checked={thumbnailUsed} onChange={(e) => setThumbnailUsed(e.target.checked)} className="rounded" />
               <label htmlFor="thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
             </div>
             <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Video URL</label>
-              <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
+              <label className={labelClass}>Video Title</label>
+              <MultiComboBox value={videoTitle} onChange={setVideoTitle} options={opts.videoTitle || []} placeholder="Video title" />
             </div>
             <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Video Title</label>
-              <ComboBox value={videoTitle} onChange={setVideoTitle} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
-            </div>
-            <div>
               <label className={labelClass}>Video Type</label>
               <MultiComboBox value={videoType} onChange={setVideoType}
-                options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Regional" />
+                options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Every Card in a Region" />
             </div>
             <div>
               <label className={labelClass}>Video Region</label>
               <MultiComboBox value={videoRegion} onChange={setVideoRegion}
                 options={opts.videoRegion || VIDEO_REGION_OPTIONS} placeholder="Kanto, Johto" />
+            </div>
+            <div>
+              <label className={labelClass}>Top 10 Themes</label>
+              <MultiComboBox value={top10Themes} onChange={setTop10Themes}
+                options={opts.top10Themes || TOP_10_THEMES_OPTIONS} placeholder="Theme" />
+            </div>
+            <div>
+              <label className={labelClass}>WTPC Episode Number</label>
+              <MultiComboBox value={wtpcEpisode} onChange={setWtpcEpisode}
+                options={WTPC_EPISODE_OPTIONS} placeholder="Episode 1" />
             </div>
             <div>
               <label className={labelClass}>Video Location</label>

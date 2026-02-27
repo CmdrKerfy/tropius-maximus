@@ -2,6 +2,10 @@
 // These are the "seed" values that always appear in dropdowns,
 // merged with any user-submitted DB values at runtime.
 
+export const SOURCE_OPTIONS = [
+  "TCG", "Pocket", "Japan Exclusive", "Korea Exclusive", "China Exclusive",
+];
+
 export const ART_STYLE_OPTIONS = [
   "Hand Drawn","mixed media","Clay","Yarn","Polygon Graphics","2D","No Shading",
   "Hyperrealistic","cursed art","That Reminds Me Of Something","you've changed",
@@ -168,7 +172,24 @@ export const TRAINER_CARD_SUBGROUP_OPTIONS = [
   "Villain Team Items","dangerous stadiums",
 ];
 
-export const VIDEO_TYPE_OPTIONS = ["Top 10", "Regional"];
+export const VIDEO_TYPE_OPTIONS = ["Top 10", "Every Card in a Region", "What's That Pokemon Card?"];
+
+export const TOP_10_THEMES_OPTIONS = [
+  "Agents of Destruction", "Grimer", "Trauma Inducers", "Old School Graphics",
+  "Nameless Supporters", "Unexpected Partnerships", "Tree Huggers",
+  "Dangerous Stadiums", "Flabbergasted", "Balloons", "Background Characters",
+  "Public Servants", "Below the Surface", "Ditto", "Selfies", "At Their Lowest",
+  "In Another Dimension", "Peeping Toms", "Rainbows", "Reflections",
+  "Well That Sucks", "Sun's Out Guns Out", "Off-Center", "Sunblockers", "Tongues",
+  "Crochet", "Balancing On One Leg", "Chameleons", "Psyduck at Worlds", "Doggos",
+  "Symmetrical Pokemon", "Picnickers", "Sunsets", "Autumnal Landscapes",
+  "Breathtaking Views", "Lights in the Darkness", "Creepypasta", "Run For Your Life",
+  "Spooky Ghosts", "Yuka Morii", "Accidental Giants", "Pokemon League Items",
+  "Upside Down", "Sachiko Adachi Artworks", "Christmas", "Fireworks",
+  "Legendary Cameos", "Aerial Views", "Valentines", "POVs", "Snow Days",
+];
+
+export const WTPC_EPISODE_OPTIONS = Array.from({ length: 50 }, (_, i) => `Episode ${i + 1}`);
 
 export const VIDEO_REGION_OPTIONS = [
   "Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar","Hisui",

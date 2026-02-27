@@ -17,7 +17,8 @@ import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
-  VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS, STAMP_OPTIONS,
+  VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
+  VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS, STAMP_OPTIONS,
 } from "../lib/annotationOptions";
 
 const COLOR_OPTIONS = [
@@ -41,7 +42,8 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "additional_characters", "background_details", "evolution_line",
   "card_subcategory", "trainer_card_subgroup", "evolution_items",
   "berries", "holiday_theme", "multi_card",
-  "video_type", "video_region", "video_location",
+  "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
+  "video_region", "video_location",
 ]);
 
 /**
@@ -902,33 +904,47 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div>
                     <label className={labelClass}>Video Game</label>
-                    <ComboBox value={annValue("video_game")} onChange={(v) => saveAnnotation("video_game", v)} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" className={inputClass + " w-full"} />
+                    <MultiComboBox value={annValue("video_game", true)} onChange={(v) => saveAnnotation("video_game", v)} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Video Game Location</label>
+                    <MultiComboBox value={annValue("video_game_location", true)} onChange={(v) => saveAnnotation("video_game_location", v)} options={opts.videoGameLocation || VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Route 1" />
                   </div>
                   <div className="flex items-center gap-2 pt-6">
-                    <input type="checkbox" id="cardDetail-videoAppearance" checked={!!ann.video_appearance} onChange={(e) => saveAnnotation("video_appearance", e.target.checked)} className="rounded" />
-                    <label htmlFor="cardDetail-videoAppearance" className="text-sm text-gray-700">Video Appearance</label>
+                    <input type="checkbox" id="cardDetail-shortsAppearance" checked={!!ann.shorts_appearance} onChange={(e) => saveAnnotation("shorts_appearance", e.target.checked)} className="rounded" />
+                    <label htmlFor="cardDetail-shortsAppearance" className="text-sm text-gray-700">Shorts Appearance</label>
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input type="checkbox" id="cardDetail-regionAppearance" checked={!!ann.region_appearance} onChange={(e) => saveAnnotation("region_appearance", e.target.checked)} className="rounded" />
+                    <label htmlFor="cardDetail-regionAppearance" className="text-sm text-gray-700">Region Appearance</label>
                   </div>
                   <div className="flex items-center gap-2 pt-6">
                     <input type="checkbox" id="cardDetail-thumbnailUsed" checked={!!ann.thumbnail_used} onChange={(e) => saveAnnotation("thumbnail_used", e.target.checked)} className="rounded" />
                     <label htmlFor="cardDetail-thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
                   </div>
                   <div className="col-span-2 md:col-span-3">
-                    <label className={labelClass}>Video URL</label>
-                    <input type="url" value={annValue("video_url")} onChange={(e) => saveAnnotation("video_url", e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
+                    <label className={labelClass}>Video Title</label>
+                    <MultiComboBox value={annValue("video_title", true)} onChange={(v) => saveAnnotation("video_title", v)} options={opts.videoTitle || []} placeholder="Video title" />
                   </div>
                   <div className="col-span-2 md:col-span-3">
-                    <label className={labelClass}>Video Title</label>
-                    <ComboBox value={annValue("video_title")} onChange={(v) => saveAnnotation("video_title", v)} options={opts.videoTitle || []} placeholder="Video title" className={inputClass + " w-full"} />
-                  </div>
-                  <div>
                     <label className={labelClass}>Video Type</label>
                     <MultiComboBox value={annValue("video_type", true)} onChange={(v) => saveAnnotation("video_type", v)}
-                      options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Regional" />
+                      options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Every Card in a Region" />
                   </div>
                   <div>
                     <label className={labelClass}>Video Region</label>
                     <MultiComboBox value={annValue("video_region", true)} onChange={(v) => saveAnnotation("video_region", v)}
                       options={opts.videoRegion || VIDEO_REGION_OPTIONS} placeholder="Kanto, Johto" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Top 10 Themes</label>
+                    <MultiComboBox value={annValue("top_10_themes", true)} onChange={(v) => saveAnnotation("top_10_themes", v)}
+                      options={opts.top10Themes || TOP_10_THEMES_OPTIONS} placeholder="Theme" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>WTPC Episode Number</label>
+                    <MultiComboBox value={annValue("wtpc_episode", true)} onChange={(v) => saveAnnotation("wtpc_episode", v)}
+                      options={WTPC_EPISODE_OPTIONS} placeholder="Episode 1" />
                   </div>
                   <div>
                     <label className={labelClass}>Video Location</label>
