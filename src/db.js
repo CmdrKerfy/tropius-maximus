@@ -845,6 +845,107 @@ export async function fetchCards(params = {}) {
   const offset = (pageInt - 1) * pageSizeInt;
   const safeSortDir = sort_dir === "desc" ? "DESC" : "ASC";
 
+  // ── All sources ────────────────────────────────────────────────────
+  if (source === "") {
+    const pmJoin = `LEFT JOIN pokemon_metadata pm
+      ON pm.pokedex_number = TRY_CAST(
+           c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)`;
+
+    // TCG branch: full conditions + pokemon_metadata JOIN
+    const tcgConditions = [];
+    if (q)              tcgConditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (supertype)      tcgConditions.push(`c.supertype = ${escapeStr(supertype)}`);
+    if (rarity)         tcgConditions.push(`c.rarity = ${escapeStr(rarity)}`);
+    if (set_id)         tcgConditions.push(`c.set_id = ${escapeStr(set_id)}`);
+    if (artist)         tcgConditions.push(`c.artist = ${escapeStr(artist)}`);
+    if (trainer_type)   tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
+    if (specialty)      tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
+    if (region)         tcgConditions.push(`pm.region = ${escapeStr(region)}`);
+    if (generation)     { const g = parseInt(generation); if (g > 0) tcgConditions.push(`pm.generation = ${g}`); }
+    if (color)          tcgConditions.push(`pm.color = ${escapeStr(color)}`);
+    if (evolution_line) tcgConditions.push(`pm.evolution_chain = ${escapeStr(evolution_line)}`);
+    const tcgWhere = tcgConditions.length ? "WHERE " + tcgConditions.join(" AND ") : "";
+
+    // Pocket branch: excluded if any filter with no Pocket equivalent is active
+    let pocketExcluded = !!(set_id || artist || trainer_type || specialty || generation || color || rarity);
+    const pocketConditions = [];
+    if (q)              pocketConditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (region)         pocketConditions.push(`pc.annotations::JSON->>'pkmn_region' = ${escapeStr(region)}`);
+    if (evolution_line) pocketConditions.push(`pc.annotations::JSON->>'evolution_line' = ${escapeStr(evolution_line)}`);
+
+    // Supertype: normalize TCG value to Pocket card_type format
+    // TCG uses "Pokémon"/"Trainer"/"Energy"; Pocket uses "pokemon"/"supporter"/"item"/"tool"/"fossil"
+    if (supertype && !pocketExcluded) {
+      const norm = supertype.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (norm === 'energy') {
+        pocketExcluded = true;  // Pocket has no energy cards
+      } else if (norm === 'trainer') {
+        pocketConditions.push(`LOWER(pc.card_type) IN ('supporter','item','tool','fossil','trainer')`);
+      } else {
+        pocketConditions.push(`LOWER(pc.card_type) = ${escapeStr(norm)}`);
+      }
+    }
+
+    const pocketWhere = pocketConditions.length ? "WHERE " + pocketConditions.join(" AND ") : "";
+
+    // Custom branch: excluded if generation or color is active (no equivalent columns)
+    const customExcluded = !!(generation || color);
+    const customConditions = [];
+    if (q)              customConditions.push(`cc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (rarity)         customConditions.push(`cc.rarity = ${escapeStr(rarity)}`);
+    if (supertype)      customConditions.push(`cc.supertype = ${escapeStr(supertype)}`);
+    if (set_id)         customConditions.push(`cc.set_id = ${escapeStr(set_id)}`);
+    if (artist)         customConditions.push(`cc.artist = ${escapeStr(artist)}`);
+    if (trainer_type)   customConditions.push(`cc.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
+    if (specialty)      customConditions.push(`cc.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
+    if (region)         customConditions.push(`cc.pkmn_region = ${escapeStr(region)}`);
+    if (evolution_line) customConditions.push(`cc.evolution_line = ${escapeStr(evolution_line)}`);
+    const customWhere = customConditions.length ? "WHERE " + customConditions.join(" AND ") : "";
+
+    const tcgSelect = `
+      SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, 'TCG' AS _source
+      FROM cards c ${pmJoin} ${tcgWhere}`;
+
+    const pocketSelect = `
+      SELECT pc.id, pc.name, ps.name AS set_name,
+             pc.image_url AS image_small, pc.image_url AS image_large, 'Pocket' AS _source
+      FROM pocket_cards pc
+      LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
+      ${pocketWhere}`;
+
+    const customSelect = `
+      SELECT cc.id, cc.name, cc.set_name, cc.image_small, cc.image_large, cc.source AS _source
+      FROM custom_cards cc ${customWhere}`;
+
+    const parts = [tcgSelect];
+    if (!pocketExcluded) parts.push(pocketSelect);
+    if (!customExcluded) parts.push(customSelect);
+    const unionSQL = parts.join(" UNION ALL ");
+
+    const countResult = await conn.query(
+      `SELECT COUNT(*)::INTEGER AS cnt FROM (${unionSQL}) combined`
+    );
+    const total = countResult.toArray()[0].cnt;
+
+    const dataResult = await conn.query(`
+      SELECT id, name, set_name, image_small, image_large, _source
+      FROM (${unionSQL}) combined
+      ORDER BY name ${safeSortDir}
+      LIMIT ${pageSizeInt} OFFSET ${offset}
+    `);
+
+    const cards = dataResult.toArray().map((r) => ({
+      id: r.id,
+      name: r.name,
+      set_name: r.set_name,
+      image_small: r.image_small,
+      image_large: r.image_large,
+      _source: r._source,
+      annotations: {},
+    }));
+    return { cards, total, page: pageInt, page_size: pageSizeInt };
+  }
+
   // ── Pocket source ──────────────────────────────────────────────────
   if (source === "Pocket") {
     const conditions = [];
@@ -1364,6 +1465,76 @@ export async function fetchCard(id, source = "TCG") {
  * Fetch distinct values for all filter dropdowns.
  */
 export async function fetchFilterOptions(source = "TCG") {
+  // ── All sources ────────────────────────────────────────────────────
+  if (source === "") {
+    const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult] =
+      await Promise.all([
+        conn.query(
+          "SELECT DISTINCT supertype FROM cards WHERE supertype != '' ORDER BY supertype"
+        ),
+        conn.query(
+          "SELECT DISTINCT rarity FROM cards WHERE rarity IS NOT NULL AND rarity != '' ORDER BY rarity"
+        ),
+        conn.query(
+          "SELECT id, name, series FROM sets ORDER BY series, release_date"
+        ),
+        conn.query(
+          "SELECT DISTINCT region FROM pokemon_metadata WHERE region IS NOT NULL ORDER BY region"
+        ),
+        conn.query(
+          "SELECT DISTINCT generation FROM pokemon_metadata WHERE generation IS NOT NULL ORDER BY generation"
+        ),
+        conn.query(
+          "SELECT DISTINCT color FROM pokemon_metadata WHERE color IS NOT NULL ORDER BY color"
+        ),
+        conn.query(
+          "SELECT DISTINCT artist FROM cards WHERE artist IS NOT NULL AND artist != '' ORDER BY artist"
+        ),
+        conn.query(
+          "SELECT DISTINCT evolution_chain FROM pokemon_metadata WHERE evolution_chain IS NOT NULL ORDER BY evolution_chain"
+        ),
+        conn.query(`
+          SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+            REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
+          )))) AS trainer_type
+          FROM cards
+          WHERE supertype = 'Trainer' AND subtypes != '[]' AND subtypes != ''
+          ORDER BY trainer_type
+        `),
+        conn.query(`
+          SELECT DISTINCT TRIM(BOTH '"' FROM TRIM(unnest(string_split(
+            REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
+          )))) AS specialty
+          FROM cards
+          WHERE subtypes ILIKE '%Ace Spec%'
+             OR subtypes ILIKE '%Tool%'
+             OR subtypes ILIKE '%Technical%'
+          ORDER BY specialty
+        `),
+      ]);
+
+    const supertypes = stResult.toArray().map((r) => r.supertype);
+    const rarities = raritiesResult.toArray().map((r) => r.rarity);
+    const sets = setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series }));
+    const regions = regionsResult.toArray().map((r) => r.region);
+    const generations = generationsResult.toArray().map((r) =>
+      typeof r.generation === "bigint" ? Number(r.generation) : r.generation
+    );
+    const colors = colorsResult.toArray().map((r) => r.color);
+    const artists = artistsResult.toArray().map((r) => r.artist);
+    const evolution_lines = evolutionLinesResult.toArray().map((r) => r.evolution_chain);
+    const decodeUnicode = (str) => {
+      try { return JSON.parse(`"${str}"`); } catch { return str; }
+    };
+    const trainer_types = trainerTypesResult.toArray().map((r) => decodeUnicode(r.trainer_type)).filter(t => t);
+    const specialties = specialtiesResult.toArray().map((r) => decodeUnicode(r.specialty)).filter(s => s);
+
+    return {
+      supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties,
+      card_types: [], elements: [], stages: [],
+    };
+  }
+
   // ── Pocket source ──────────────────────────────────────────────────
   if (source === "Pocket") {
     const [cardTypesResult, raritiesResult, setsResult, elementsResult, stagesResult] =

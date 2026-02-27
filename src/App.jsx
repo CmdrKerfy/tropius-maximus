@@ -146,28 +146,39 @@ export default function App() {
 
   // When any filter changes, reset to page 1.
   // When source changes, reset all filters and re-fetch filter options.
+  // Exception: switching TO "All" preserves the current search and filters.
   const handleFilterChange = (newFilters) => {
-    if (newFilters.source && newFilters.source !== filters.source) {
+    if ("source" in newFilters && newFilters.source !== filters.source) {
       const newSource = newFilters.source;
-      setFilters({
-        source: newSource,
-        supertype: "",
-        rarity: "",
-        set_id: "",
-        region: "",
-        generation: "",
-        color: "",
-        artist: "",
-        evolution_line: "",
-        trainer_type: "",
-        specialty: "",
-        element: "",
-        card_type: "",
-        stage: "",
-        sort_by: "name",
-        sort_dir: "asc",
-      });
-      setSearchQuery("");
+      if (newSource === "") {
+        // "All" mode: keep existing search/filters, just switch source and
+        // normalise sort to "name" (TCG-only sort options aren't available).
+        setFilters((prev) => ({
+          ...prev,
+          source: "",
+          sort_by: "name",
+        }));
+      } else {
+        setFilters({
+          source: newSource,
+          supertype: "",
+          rarity: "",
+          set_id: "",
+          region: "",
+          generation: "",
+          color: "",
+          artist: "",
+          evolution_line: "",
+          trainer_type: "",
+          specialty: "",
+          element: "",
+          card_type: "",
+          stage: "",
+          sort_by: "name",
+          sort_dir: "asc",
+        });
+        setSearchQuery("");
+      }
       fetchFilterOptions(newSource)
         .then(setFilterOptions)
         .catch((err) => console.error("Failed to load filter options:", err));
@@ -405,11 +416,12 @@ export default function App() {
           const displayedCards = sqlCards || cards;
           const cardIds = displayedCards.map(c => c.id);
           const currentIndex = cardIds.indexOf(selectedCardId);
+          const cardSource = filters.source || displayedCards[currentIndex]?._source || "TCG";
           return (
             <CardDetail
               cardId={selectedCardId}
               attributes={attributes}
-              source={filters.source}
+              source={cardSource}
               onClose={() => setSelectedCardId(null)}
               hasPrev={currentIndex > 0}
               hasNext={currentIndex < cardIds.length - 1}

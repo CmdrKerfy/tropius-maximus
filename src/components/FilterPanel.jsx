@@ -24,9 +24,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     "px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
+  const isAll    = filters.source === "";
   const isPocket = filters.source === "Pocket";
   const isCustom = customSources.includes(filters.source);
-  const isTCG = !isPocket && !isCustom;
+  const isTCG    = !isAll && !isPocket && !isCustom;
 
   // Check if any filter is active (for highlight)
   const hasActiveFilters =
@@ -82,10 +83,11 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               Source
             </label>
             <select
-              value={filters.source || "TCG"}
+              value={filters.source}
               onChange={(e) => onChange({ source: e.target.value })}
               className={selectClass}
             >
+              <option value="">All</option>
               <option value="TCG">TCG</option>
               <option value="Pocket">Pocket</option>
               {customSources.map((s) => (
@@ -95,7 +97,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </div>
 
           {/* ── TCG-only filters ─────────────────────────────────── */}
-          {isTCG && (
+          {(isTCG || isAll) && (
             <>
               {/* Supertype filter */}
               <div>
@@ -314,7 +316,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </div>
 
           {/* ── TCG-only filters (continued) ─────────────────────── */}
-          {isTCG && (
+          {(isTCG || isAll) && (
             <>
               {/* Artist filter */}
               {options.artists && options.artists.length > 0 && (
