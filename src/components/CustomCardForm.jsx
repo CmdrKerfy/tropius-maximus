@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { addCustomCard, fetchFormOptions } from "../db";
-import { getToken, setToken, commitNewCard } from "../lib/github";
+import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import {
@@ -132,9 +132,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [creating, setCreating] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // ── GitHub token ──
-  const [ghToken, setGhToken] = useState(getToken());
-  const [showTokenInput, setShowTokenInput] = useState(false);
 
   // ── Combobox options (loaded from DB) ──
   const [opts, setOpts] = useState({});
@@ -666,63 +663,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Notes</label>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
             </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── GitHub Settings (collapsible) ── */}
-        <CollapsibleSection title="GitHub Auto-Commit Settings">
-          <div className="space-y-3">
-            {ghToken ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-green-700">GitHub PAT configured</span>
-                <button
-                  type="button"
-                  onClick={() => setShowTokenInput(!showTokenInput)}
-                  className="text-sm text-gray-500 hover:text-gray-700 underline"
-                >
-                  {showTokenInput ? "Hide" : "Change"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setToken(""); setGhToken(""); }}
-                  className="text-sm text-red-500 hover:text-red-700 underline"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                No GitHub PAT set. Cards will only be saved locally. To auto-commit to the repo,
-                create a{" "}
-                <a
-                  href="https://github.com/settings/tokens?type=beta"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  fine-grained PAT
-                </a>{" "}
-                with <strong>Contents: Read and write</strong> permission for CmdrKerfy/tropius-maximus.
-              </p>
-            )}
-            {(!ghToken || showTokenInput) && (
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={ghToken}
-                  onChange={(e) => setGhToken(e.target.value)}
-                  placeholder="github_pat_..."
-                  className={inputClass + " flex-1"}
-                />
-                <button
-                  type="button"
-                  onClick={() => { setToken(ghToken); setShowTokenInput(false); }}
-                  className="px-3 py-1.5 bg-gray-700 text-white rounded text-sm hover:bg-gray-800"
-                >
-                  Save
-                </button>
-              </div>
-            )}
           </div>
         </CollapsibleSection>
 
