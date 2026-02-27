@@ -346,35 +346,51 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* ── Required Fields ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>ID <span className="text-red-500">*</span></label>
-            <input type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g., xyp-JP279" required className={inputClass + " w-full"} />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass}>Name <span className="text-red-500">*</span></label>
             <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
-            <ComboBox value={setIdVal} onChange={setSetIdVal} options={opts.setId || []} placeholder="e.g., xyp" className={inputClass + " w-full"} />
+            <label className={labelClass}>Set Series</label>
+            <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
             <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
-            <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
+            <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
+            <ComboBox value={setIdVal} onChange={setSetIdVal} options={opts.setId || []} placeholder='e.g., Base Set 2 = "base2"' className={inputClass + " w-full"} />
+          </div>
+          <div>
+            <label className={labelClass}>Card ID <span className="text-red-500">*</span></label>
+            <input type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g. Mega Evolution Set 1 #133 = 'me1-133'" required className={inputClass + " w-full"} />
+          </div>
+          <div>
+            <label className={labelClass}>Card Number</label>
+            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="e.g. '20', 'SM198', etc" className={inputClass + " w-full"} />
+          </div>
+          <div>
+            <label className={labelClass}>Artist</label>
+            <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Source <span className="text-red-500">*</span></label>
             <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
           </div>
-          <div className="md:col-start-2 flex items-center gap-2 pt-0.5">
+          <div className="flex items-center gap-2 pt-5">
             <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
               onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
             <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
+          </div>
+          <div className="col-span-1 md:col-span-3">
+            <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
+            <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
+          </div>
+          <div className="col-span-1 md:col-span-3 pb-2">
+            <label className={labelClass}>Large Image URL [Optional]</label>
+            <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
           </div>
         </div>
 
@@ -393,7 +409,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
 
         {/* ── Card Details (collapsible) ── */}
         <CollapsibleSection title="Card Details">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
             <div>
               <label className={labelClass}>Supertype</label>
               <select value={supertype} onChange={(e) => setSupertype(e.target.value)} className={inputClass + " w-full"}>
@@ -415,40 +431,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="60" className={inputClass + " w-full"} />
             </div>
             <div>
-              <label className={labelClass}>Rarity</label>
-              <ComboBox value={rarity} onChange={setRarity} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Special Rarity</label>
-              <input type="text" value={specialRarity} onChange={(e) => setSpecialRarity(e.target.value)} placeholder="20th Anniversary" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Artist</label>
-              <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Number</label>
-              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="XY279" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Alt Name</label>
-              <input type="text" value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="ピカチュウ" className={inputClass + " w-full"} />
-            </div>
-            <div>
               <label className={labelClass}>Evolves From</label>
               <input type="text" value={evolvesFrom} onChange={(e) => setEvolvesFrom(e.target.value)} placeholder="Pichu" className={inputClass + " w-full"} />
             </div>
             <div>
-              <label className={labelClass}>Set Series</label>
-              <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="XY" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Regulation Mark</label>
-              <input type="text" value={regulationMark} onChange={(e) => setRegulationMark(e.target.value)} placeholder="G" className={inputClass + " w-full"} />
-            </div>
-            <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Large Image URL</label>
-              <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://... (defaults to small image)" className={inputClass + " w-full"} />
+              <label className={labelClass}>Evolution Line</label>
+              <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
             </div>
           </div>
         </CollapsibleSection>
@@ -458,11 +446,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Card Classification ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Card Classification</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
-            <div className="col-span-2 md:col-span-3">
+            <div>
+              <label className={labelClass}>Rarity</label>
+              <ComboBox value={rarity} onChange={setRarity} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
+            </div>
+            <div>
               <label className={labelClass}>Card Subcategory</label>
               <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
             </div>
@@ -470,7 +462,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Trainer Card Type</label>
               <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
             </div>
-            <div className="col-span-2">
+            <div>
               <label className={labelClass}>Trainer Card Subgroup</label>
               <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
             </div>
@@ -482,7 +474,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── Background Characters ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Background Characters</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -498,13 +490,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Additional Characters</label>
               <MultiComboBox value={additionalCharacters} onChange={setAdditionalCharacters} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
             </div>
-            <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Evolution Line</label>
-              <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
-            </div>
-
             {/* ── Subject ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Subject</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -526,7 +513,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── Art Style ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Art Style</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -556,7 +543,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── Scene & Setting ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Scene & Setting</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -578,7 +565,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── Items ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Items</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -604,7 +591,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── Themes ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Themes</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -625,7 +612,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Video Games ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Video Games</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
@@ -639,7 +626,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
 
             {/* ── YouTube Videos ── */}
-            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
+            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">YouTube Videos</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>

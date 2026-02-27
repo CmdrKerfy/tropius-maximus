@@ -450,9 +450,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               <div className="flex-1 min-w-0">
                 {/* Card name and basic info */}
                 <h2 className="text-2xl font-bold">{card.name}</h2>
-                {card.alt_name && (
-                  <p className="text-lg text-gray-500">{card.alt_name}</p>
-                )}
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="px-2 py-0.5 bg-gray-100 rounded text-sm text-gray-600">
                     {card.supertype}
@@ -487,7 +484,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                   )}
                   {card.rarity && ` · ${card.rarity}`}
-                  {card.special_rarity && ` · ${card.special_rarity}`}
                   {card.artist && ` · Artist: ${card.artist}`}
                 </div>
 
@@ -651,12 +647,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   )}
                 </div>
 
-                {/* Regulation mark */}
-                {card.regulation_mark && (
-                  <p className="mt-2 text-xs text-gray-400">
-                    Regulation Mark: {card.regulation_mark}
-                  </p>
-                )}
 
                 {/* Market Prices */}
                 {card.prices?.tcgplayer?.prices && (
@@ -737,7 +727,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                       className={inputClass + " w-full"}
                     />
                   </div>
-                  <div className="col-span-2 md:col-span-3">
+                  <div>
                     <label className={labelClass}>Card Subcategory</label>
                     <MultiComboBox value={annValue("card_subcategory", true)} onChange={(v) => saveAnnotation("card_subcategory", v)} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
                   </div>
@@ -745,7 +735,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <label className={labelClass}>Trainer Card Type</label>
                     <ComboBox value={annValue("trainer_card_type")} onChange={(v) => saveAnnotation("trainer_card_type", v)} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <label className={labelClass}>Trainer Card Subgroup</label>
                     <MultiComboBox value={annValue("trainer_card_subgroup", true)} onChange={(v) => saveAnnotation("trainer_card_subgroup", v)} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
                   </div>
@@ -754,6 +744,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <ComboBox value={annValue("stamp")} onChange={(v) => saveAnnotation("stamp", v)}
                       options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
                       className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Evolution Line</label>
+                    <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
                   </div>
                   <div className="flex items-center gap-2 pt-6">
                     <input type="checkbox" id="cardDetail-pocketExclusive"
@@ -780,11 +774,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <label className={labelClass}>Additional Characters</label>
                     <MultiComboBox value={annValue("additional_characters", true)} onChange={(v) => saveAnnotation("additional_characters", v)} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
                   </div>
-                  <div className="col-span-2 md:col-span-3">
-                    <label className={labelClass}>Evolution Line</label>
-                    <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
-                  </div>
-
                   {/* ── Subject ── */}
                   <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-2 mt-1">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Subject</span>
