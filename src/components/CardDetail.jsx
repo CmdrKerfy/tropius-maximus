@@ -8,8 +8,9 @@
  * Closes when clicking the backdrop or pressing Escape.
  */
 
-import { useState, useEffect } from "react";
-import { fetchCard, patchAnnotations, fetchFormOptions } from "../db";
+import { useState, useEffect, useRef } from "react";
+import { fetchCard, patchAnnotations, fetchFormOptions, exportAllAnnotations } from "../db";
+import { getToken, getAnnotationsFileContents, updateAnnotationsFileContents } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import {
@@ -97,6 +98,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [savingImage, setSavingImage] = useState(false);
   const [imageEnlarged, setImageEnlarged] = useState(false);
   const [formOpts, setFormOpts] = useState({});
+  const ghPushTimer = useRef(null);
 
   useEffect(() => {
     fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
@@ -174,6 +176,28 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
+  useEffect(() => () => clearTimeout(ghPushTimer.current), []);
+
+  const scheduleGitHubPush = () => {
+    const token = getToken();
+    if (!token) return;
+    clearTimeout(ghPushTimer.current);
+    ghPushTimer.current = setTimeout(async () => {
+      try {
+        const allAnnotations = await exportAllAnnotations();
+        const { sha } = await getAnnotationsFileContents(token);
+        await updateAnnotationsFileContents(
+          token,
+          allAnnotations,
+          sha,
+          `CardDetail: update annotations for ${card?.name ?? "card"}`
+        );
+      } catch (err) {
+        console.warn("CardDetail GitHub push failed:", err.message);
+      }
+    }, 1000);
+  };
+
   const saveAnnotation = async (key, value) => {
     let stored = value;
     if (MULTI_VALUE_ANNOTATION_KEYS.has(key) && typeof value === "string") {
@@ -185,6 +209,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         ...prev,
         annotations: { ...parseAnnotations(prev), [key]: stored },
       }));
+      scheduleGitHubPush();
     } catch (err) {
       console.error("Failed to save annotation:", err);
     }
@@ -678,6 +703,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
             {/* Annotations, Video, Notes — same grouping as Add a Card form */}
             <div className="mt-6 border-t pt-6 space-y-4">
+              {/* No-token warning — shown above collapsed Annotations section */}
+              {!getToken() && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  No GitHub PAT configured — annotation changes will only save locally to this browser.
+                  Add a PAT in the SQL Console to sync across devices.
+                </div>
+              )}
               <CollapsibleSection title="Annotations" defaultOpen={false}>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 

@@ -8,6 +8,7 @@
 const OWNER = "CmdrKerfy";
 const REPO = "tropius-maximus";
 const FILE_PATH = "public/data/custom_cards.json";
+const ANNOTATIONS_FILE_PATH = "public/data/annotations.json";
 const API_BASE = "https://api.github.com";
 
 const LS_TOKEN_KEY = "github_pat";
@@ -73,6 +74,30 @@ export async function updateFileContents(token, content, sha, message) {
     throw new Error(`GitHub commit failed (${resp.status}): ${body}`);
   }
 
+  return await resp.json();
+}
+
+export async function getAnnotationsFileContents(token) {
+  const resp = await fetch(`${API_BASE}/repos/${OWNER}/${REPO}/contents/${ANNOTATIONS_FILE_PATH}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" },
+  });
+  if (resp.status === 404) return { content: {}, sha: null };
+  if (!resp.ok) { const body = await resp.text(); throw new Error(`GitHub API error (${resp.status}): ${body}`); }
+  const data = await resp.json();
+  const decoded = atob(data.content.replace(/\n/g, ""));
+  return { content: JSON.parse(decoded), sha: data.sha };
+}
+
+export async function updateAnnotationsFileContents(token, content, sha, message) {
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2) + "\n")));
+  const body = { message, content: encoded };
+  if (sha) body.sha = sha;
+  const resp = await fetch(`${API_BASE}/repos/${OWNER}/${REPO}/contents/${ANNOTATIONS_FILE_PATH}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) { const b = await resp.text(); throw new Error(`GitHub commit failed (${resp.status}): ${b}`); }
   return await resp.json();
 }
 

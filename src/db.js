@@ -575,6 +575,23 @@ export async function initDB() {
     }
   }
 
+  // Load annotations from GitHub-committed annotations.json
+  try {
+    const annResp = await fetch(`${base}data/annotations.json`);
+    if (annResp.ok) {
+      const annData = await annResp.json();
+      for (const [cardId, data] of Object.entries(annData)) {
+        const escaped = escapeStr(JSON.stringify(data));
+        const escapedId = escapeStr(cardId);
+        await conn.query(`UPDATE cards SET annotations = ${escaped} WHERE id = ${escapedId}`);
+        await conn.query(`UPDATE pocket_cards SET annotations = ${escaped} WHERE id = ${escapedId}`);
+        await conn.query(`UPDATE custom_cards SET annotations = ${escaped} WHERE id = ${escapedId}`);
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load annotations.json:", e.message);
+  }
+
   // Populate customSourceNames from distinct source values
   const sourceResult = await conn.query(
     "SELECT DISTINCT source FROM custom_cards WHERE source IS NOT NULL AND source != ''"
@@ -2190,6 +2207,22 @@ export async function executeSql(query) {
 }
 
 // ── Mutable Table Sync ─────────────────────────────────────────────────
+
+export async function exportAllAnnotations() {
+  const results = {};
+  const queries = await Promise.all([
+    conn.query("SELECT id, annotations FROM cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+    conn.query("SELECT id, annotations FROM pocket_cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+    conn.query("SELECT id, annotations FROM custom_cards WHERE annotations IS NOT NULL AND annotations != '{}'"),
+  ]);
+  for (const result of queries) {
+    for (const row of result.toArray()) {
+      const data = typeof row.annotations === "string" ? JSON.parse(row.annotations) : row.annotations || {};
+      if (Object.keys(data).length > 0) results[row.id] = data;
+    }
+  }
+  return results;
+}
 
 /**
  * Sync the mutable DuckDB tables (annotations + custom_cards) back to
