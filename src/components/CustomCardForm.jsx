@@ -572,12 +572,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div>
-              <label className={labelClass}>Card Locations</label>
-              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
-            </div>
-            <div>
               <label className={labelClass}>Card Region</label>
               <ComboBox value={cardRegion} onChange={setCardRegion} options={opts.cardRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Card Location</label>
+              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Weather</label>
