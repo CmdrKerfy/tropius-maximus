@@ -17,6 +17,10 @@ import {
   STAMP_OPTIONS,
 } from "../lib/annotationOptions";
 
+// Sources that have existing card databases — Card ID auto-generation is skipped
+// for these to avoid ID collisions with real cards across annotation tables.
+const NON_CUSTOM_SOURCES = new Set(["TCG", "Pocket"]);
+
 // Hardcoded option sets
 const COLOR_OPTIONS = [
   "black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow",
@@ -139,6 +143,14 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
 
   // ── Combobox options (loaded from DB) ──
   const [opts, setOpts] = useState({});
+
+  // Auto-generate Card ID from Set ID + Card Number for custom-only sources.
+  // Skipped for "TCG" and "Pocket" sources since those have existing card databases
+  // with established IDs — a collision would corrupt annotation updates across tables.
+  useEffect(() => {
+    if (NON_CUSTOM_SOURCES.has(source)) return;
+    setId(setIdVal && number ? `${setIdVal}-${number}` : "");
+  }, [setIdVal, number, source]);
 
   useEffect(() => {
     fetchFormOptions()
@@ -364,12 +376,18 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <ComboBox value={setIdVal} onChange={setSetIdVal} options={opts.setId || []} placeholder='e.g., Base Set 2 = "base2"' className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Card ID <span className="text-red-500">*</span></label>
-            <input type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g. Mega Evolution Set 1 #133 = 'me1-133'" required className={inputClass + " w-full"} />
+            <label className={labelClass}>Card Number</label>
+            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Card Number</label>
-            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="e.g. '20', 'SM198', etc" className={inputClass + " w-full"} />
+            <label className={labelClass}>Card ID <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={id}
+              readOnly
+              placeholder={NON_CUSTOM_SOURCES.has(source) ? "Enter Card ID manually" : "Auto-filled from Set ID + Card Number"}
+              className={inputClass + " w-full bg-gray-100 text-gray-500 cursor-default"}
+            />
           </div>
           <div>
             <label className={labelClass}>Artist</label>
