@@ -111,3 +111,16 @@ export async function commitNewCard(token, card) {
   const message = `Add custom card: ${card.name} (${card.id})`;
   return await updateFileContents(token, content, sha, message);
 }
+
+/**
+ * High-level: remove cards by ID from custom_cards.json and commit.
+ */
+export async function deleteCardsFromGitHub(token, cardIds) {
+  const idsToDelete = new Set(cardIds);
+  const { content, sha } = await getFileContents(token);
+  const before = content.cards.length;
+  content.cards = content.cards.filter((c) => !idsToDelete.has(c.id));
+  if (content.cards.length === before) return; // nothing changed
+  const label = cardIds.length === 1 ? cardIds[0] : `${cardIds.length} cards`;
+  return await updateFileContents(token, content, sha, `Delete custom card(s): ${label}`);
+}

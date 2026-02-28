@@ -11,8 +11,9 @@ import {
   fetchFilterOptions,
   fetchAttributes,
   getCustomSourceNames,
+  deleteCardsById,
 } from "./db";
-import { getToken, setToken } from "./lib/github";
+import { getToken, setToken, deleteCardsFromGitHub } from "./lib/github";
 import SearchBar from "./components/SearchBar";
 import FilterPanel from "./components/FilterPanel";
 import CardGrid from "./components/CardGrid";
@@ -59,6 +60,8 @@ export default function App() {
 
   // ── Multi-select state for bulk SQL operations ───────────────────
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -226,6 +229,30 @@ export default function App() {
   };
 
   const handleClearSelection = () => setSelectedCardIds(new Set());
+
+  const handleDeleteSelected = async () => {
+    setDeleteInProgress(true);
+    try {
+      const deleted = await deleteCardsById(selectedCardIds);
+      if (deleted.length > 0) {
+        const token = getToken();
+        if (token) {
+          try {
+            await deleteCardsFromGitHub(token, deleted);
+          } catch (e) {
+            console.warn("GitHub delete failed:", e.message);
+          }
+        }
+      }
+      setSelectedCardIds(new Set());
+      setShowDeleteConfirm(false);
+      setSqlCards(null);
+      setPage(1);
+      loadCards();
+    } finally {
+      setDeleteInProgress(false);
+    }
+  };
 
   const handleSqlDataChanged = (changed) => {
     if (changed.attributes)
@@ -437,7 +464,7 @@ export default function App() {
 
         {/* Selection toolbar */}
         {(showSqlConsole || selectedCardIds.size > 0) && (
-          <div className="mt-4 mb-2 bg-gray-100 border border-gray-200 rounded px-4 py-2 flex items-center gap-4">
+          <div className="mt-4 mb-2 bg-gray-100 border border-gray-200 rounded px-4 py-2 flex items-center gap-4 flex-wrap">
             <span className="text-sm text-gray-700">
               <span className="font-medium">{selectedCardIds.size}</span> card
               {selectedCardIds.size !== 1 ? "s" : ""} selected
@@ -455,8 +482,71 @@ export default function App() {
             >
               Clear Selection
             </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={selectedCardIds.size === 0}
+              className="ml-auto text-sm font-medium px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Delete Selected Card{selectedCardIds.size !== 1 ? "s" : ""}
+            </button>
           </div>
         )}
+
+        {/* Delete confirmation dialog */}
+        {showDeleteConfirm && (() => {
+          const displayedCards = sqlCards || cards;
+          const nonCustomCount = displayedCards.filter(
+            (c) => selectedCardIds.has(c.id) && (c._source === "TCG" || c._source === "Pocket")
+          ).length;
+          const customCount = selectedCardIds.size - nonCustomCount;
+          const hasToken = !!getToken();
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">Delete Cards?</h2>
+
+                {customCount > 0 && (
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-semibold text-red-600">{customCount}</span> custom card
+                    {customCount !== 1 ? "s" : ""} will be permanently deleted
+                    {hasToken ? " from this browser and from GitHub." : " from this browser only. Add a GitHub PAT in Settings to also remove from GitHub."}
+                  </p>
+                )}
+
+                {nonCustomCount > 0 && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-2">
+                    {nonCustomCount} TCG/Pocket card{nonCustomCount !== 1 ? "s" : ""} cannot be deleted and will be skipped.
+                  </p>
+                )}
+
+                {customCount === 0 && (
+                  <p className="text-sm text-gray-500 mb-2">
+                    None of the selected cards are custom cards. Only custom cards can be deleted.
+                  </p>
+                )}
+
+                <p className="text-xs text-gray-400 mt-3 mb-5">This cannot be undone.</p>
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleteInProgress}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={deleteInProgress || customCount === 0}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleteInProgress ? "Deleting…" : "Yes, Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Card grid */}
         {(!error || sqlCards) && (

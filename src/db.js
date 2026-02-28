@@ -2529,6 +2529,26 @@ export async function deleteCustomCard(cardId) {
 }
 
 /**
+ * Delete multiple custom cards by ID from DuckDB + IndexedDB.
+ * Only removes cards that exist in custom_cards; skips TCG/Pocket IDs.
+ * Returns the list of IDs that were actually deleted.
+ */
+export async function deleteCardsById(cardIds) {
+  const deleted = [];
+  for (const id of [...cardIds]) {
+    const inCustom = (await conn.query(
+      `SELECT id FROM custom_cards WHERE id = ${escapeStr(id)}`
+    )).toArray().length > 0;
+    if (!inCustom) continue;
+    await conn.query(`DELETE FROM custom_cards WHERE id = ${escapeStr(id)}`);
+    await idbDelete(STORE_CUSTOM_CARDS, id);
+    await idbDelete(STORE_ANNOTATIONS, id);
+    deleted.push(id);
+  }
+  return deleted;
+}
+
+/**
  * Fetch all custom cards.
  */
 export async function fetchCustomCards() {
