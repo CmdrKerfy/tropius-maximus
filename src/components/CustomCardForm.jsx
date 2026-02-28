@@ -141,10 +141,18 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [success, setSuccess] = useState(null);
   const [creating, setCreating] = useState(false);
   const [imageError, setImageError] = useState(false);
-
+  const [setIdManual, setSetIdManual] = useState(false);
 
   // ── Combobox options (loaded from DB) ──
   const [opts, setOpts] = useState({});
+
+  // Auto-generate Set ID from Set Name for custom-only sources.
+  // Stops auto-filling if the user manually edits the Set ID field.
+  useEffect(() => {
+    if (NON_CUSTOM_SOURCES.has(source) || setIdManual) return;
+    const derived = setNameVal.toLowerCase().replace(/[^a-z0-9]/g, "");
+    setSetIdVal(derived);
+  }, [setNameVal, source, setIdManual]);
 
   // Auto-generate Card ID from Set ID + Card Number for custom-only sources.
   // Skipped for "TCG" and "Pocket" sources since those have existing card databases
@@ -314,7 +322,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");
       setBackgroundHumans(""); setAdditionalCharacters(""); setEmotion("");
       setPose(""); setCameraAngle(""); setItems(""); setActions("");
-      setPerspective(""); setWeatherEnvironment(""); setStorytelling("");
+      setPerspective(""); setWeather(""); setEnvironment(""); setStorytelling("");
       setBackgroundDetails(""); setCardLocations(""); setPkmnRegion(""); setCardRegion("");
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
       setVideoGame(""); setVideoGameRegion(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
@@ -323,6 +331,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setEvolutionItems(""); setBerries(""); setHolidayTheme("");
       setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
       setPocketExclusive(false); setStamp("");
+      setSetIdManual(false);
       setImageError(false);
 
       onCardAdded?.();
@@ -377,7 +386,13 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
           <div>
             <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
-            <ComboBox value={setIdVal} onChange={setSetIdVal} options={opts.setId || []} placeholder='e.g., Base Set 2 = "base2"' className={inputClass + " w-full"} />
+            <ComboBox
+              value={setIdVal}
+              onChange={(v) => { setSetIdVal(v); setSetIdManual(true); }}
+              options={opts.setId || []}
+              placeholder='e.g., Base Set 2 = "base2"'
+              className={inputClass + " w-full"}
+            />
           </div>
           <div>
             <label className={labelClass}>Card Number</label>
