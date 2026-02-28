@@ -101,6 +101,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [backgroundDetails, setBackgroundDetails] = useState("");
   const [cardLocations, setCardLocations] = useState("");
   const [pkmnRegion, setPkmnRegion] = useState("");
+  const [cardRegion, setCardRegion] = useState("");
   const [primaryColor, setPrimaryColor] = useState("");
   const [secondaryColor, setSecondaryColor] = useState("");
   const [shape, setShape] = useState("");
@@ -222,11 +223,11 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         video_location: toArray(videoLocation),
         unique_id: id,
         evolution_line: (evolutionLine || "").toLowerCase(),
-        emotion: emotion || "",
-        pose: pose || "",
+        emotion: toArray(emotion),
+        pose: toArray(pose),
         camera_angle: cameraAngle || "",
         items: items || "",
-        actions: actions || "",
+        actions: toArray(actions),
         additional_characters: toArray(additionalCharacters),
         perspective: perspective || "",
         weather_environment: weatherEnvironment || "",
@@ -234,6 +235,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         background_details: toArray(backgroundDetails),
         card_locations: cardLocations || "",
         pkmn_region: pkmnRegion || "",
+        card_region: cardRegion || "",
         card_subcategory: toArray(cardSubcategory),
         held_item: heldItem || "",
         pokeball: pokeball || "",
@@ -311,7 +313,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       setBackgroundHumans(""); setAdditionalCharacters(""); setEmotion("");
       setPose(""); setCameraAngle(""); setItems(""); setActions("");
       setPerspective(""); setWeatherEnvironment(""); setStorytelling("");
-      setBackgroundDetails(""); setCardLocations(""); setPkmnRegion("");
+      setBackgroundDetails(""); setCardLocations(""); setPkmnRegion(""); setCardRegion("");
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
       setVideoGame(""); setVideoGameRegion(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
       setVideoTitle(""); setVideoType(""); setTop10Themes(""); setWtpcEpisode(""); setVideoRegion(""); setVideoLocation(""); setOwned(false); setNotes("");
@@ -380,14 +382,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Card ID <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              value={id}
-              readOnly
-              placeholder={NON_CUSTOM_SOURCES.has(source) ? "Enter Card ID manually" : "Auto-filled from Set ID + Card Number"}
-              className={inputClass + " w-full bg-gray-100 text-gray-500 cursor-default"}
-            />
+            <label className={labelClass}>Pokémon Region</label>
+            <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
           </div>
           <div>
             <label className={labelClass}>Artist</label>
@@ -515,19 +511,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             </div>
             <div>
               <label className={labelClass}>Emotion</label>
-              <ComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Happy" className={inputClass + " w-full"} />
+              <MultiComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Happy" />
             </div>
             <div>
               <label className={labelClass}>Pose</label>
-              <ComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Jumping" className={inputClass + " w-full"} />
+              <MultiComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Jumping" />
             </div>
             <div>
               <label className={labelClass}>Actions</label>
-              <ComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Shape</label>
-              <ComboBox value={shape} onChange={setShape} options={SHAPE_OPTIONS} placeholder="upright" className={inputClass + " w-full"} />
+              <MultiComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" />
             </div>
 
             {/* ── Art Style ── */}
@@ -570,8 +562,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
             </div>
             <div>
-              <label className={labelClass}>Pokemon Region</label>
-              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+              <label className={labelClass}>Card Region</label>
+              <ComboBox value={cardRegion} onChange={setCardRegion} options={opts.cardRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Weather/Environment</label>
