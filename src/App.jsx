@@ -63,10 +63,10 @@ export default function App() {
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
-    source: "TCG",
+    source: "",
     supertype: "",
     rarity: "",
-    set_id: "base1",
+    set_id: "",
     region: "",
     generation: "",
     color: "",
