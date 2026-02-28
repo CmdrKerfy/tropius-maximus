@@ -8,10 +8,12 @@
  * When SQL console is open, cards can be selected for bulk operations via checkboxes.
  */
 
+import { useState } from "react";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.annotations?.image_override || card.image_small || card.image_large;
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <div className="relative">
@@ -48,16 +50,22 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
                    focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-white
                    ${isSelected ? "ring-2 ring-green-500" : ""}`}
       >
+        {!imgLoaded && (
+          <div className="absolute inset-0 aspect-[2.5/3.5] bg-gray-200 animate-pulse rounded-lg" />
+        )}
         <img
           src={displayImage || pocketCardBg}
           alt={card.name}
-          className="w-full h-auto"
+          className={`w-full h-auto transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           loading="lazy"
+          onLoad={() => setImgLoaded(true)}
           onError={(e) => {
             if (card.image_fallback && e.target.src !== card.image_fallback) {
               e.target.src = card.image_fallback;
             } else if (e.target.src !== pocketCardBg) {
               e.target.src = pocketCardBg;
+            } else {
+              setImgLoaded(true);
             }
           }}
         />

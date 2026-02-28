@@ -926,18 +926,21 @@ export async function fetchCards(params = {}) {
     const customWhere = customConditions.length ? "WHERE " + customConditions.join(" AND ") : "";
 
     const tcgSelect = `
-      SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, 'TCG' AS _source
+      SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, 'TCG' AS _source,
+             c.number, c.hp, c.rarity
       FROM cards c ${pmJoin} ${tcgWhere}`;
 
     const pocketSelect = `
       SELECT pc.id, pc.name, ps.name AS set_name,
-             pc.image_url AS image_small, pc.image_url AS image_large, 'Pocket' AS _source
+             pc.image_url AS image_small, pc.image_url AS image_large, 'Pocket' AS _source,
+             CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity
       FROM pocket_cards pc
       LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
       ${pocketWhere}`;
 
     const customSelect = `
-      SELECT cc.id, cc.name, cc.set_name, cc.image_small, cc.image_large, cc.source AS _source
+      SELECT cc.id, cc.name, cc.set_name, cc.image_small, cc.image_large, cc.source AS _source,
+             cc.number, cc.hp, cc.rarity
       FROM custom_cards cc ${customWhere}`;
 
     const parts = [tcgSelect];
@@ -950,10 +953,10 @@ export async function fetchCards(params = {}) {
     );
     const total = countResult.toArray()[0].cnt;
 
-    const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id"]);
+    const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id", "number", "hp", "rarity"]);
     const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const dataResult = await conn.query(`
-      SELECT id, name, set_name, image_small, image_large, _source
+      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity
       FROM (${unionSQL}) combined
       ORDER BY ${allSortBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
