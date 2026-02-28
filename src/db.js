@@ -883,7 +883,7 @@ export async function fetchCards(params = {}) {
     if (artist)         tcgConditions.push(`c.artist = ${escapeStr(artist)}`);
     if (trainer_type)   tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
     if (specialty)      tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
-    if (region)         tcgConditions.push(`pm.region = ${escapeStr(region)}`);
+    if (region)         tcgConditions.push(`c.annotations::JSON->>'pkmn_region' = ${escapeStr(region)}`);
     if (generation)     { const g = parseInt(generation); if (g > 0) tcgConditions.push(`pm.generation = ${g}`); }
     if (color)          tcgConditions.push(`pm.color = ${escapeStr(color)}`);
     if (evolution_line) tcgConditions.push(`pm.evolution_chain = ${escapeStr(evolution_line)}`);
@@ -1140,9 +1140,9 @@ export async function fetchCards(params = {}) {
     conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
   }
 
-  // Pokemon metadata filters (using JOIN)
+  // Pokemon Region annotation filter
   if (region) {
-    conditions.push(`pm.region = ${escapeStr(region)}`);
+    conditions.push(`c.annotations::JSON->>'pkmn_region' = ${escapeStr(region)}`);
   }
   if (generation) {
     const genInt = parseInt(generation) || 0;
@@ -1181,7 +1181,7 @@ export async function fetchCards(params = {}) {
   } else if (safeSortBy === "generation") {
     sortExpr = "pm.generation";
   } else if (safeSortBy === "region") {
-    sortExpr = "pm.region";
+    sortExpr = "c.annotations::JSON->>'pkmn_region'";
   } else {
     sortExpr = `c.${safeSortBy}`;
   }
@@ -1503,9 +1503,15 @@ export async function fetchFilterOptions(source = "TCG") {
         conn.query(
           "SELECT id, name, series FROM sets ORDER BY series, release_date"
         ),
-        conn.query(
-          "SELECT DISTINCT region FROM pokemon_metadata WHERE region IS NOT NULL ORDER BY region"
-        ),
+        conn.query(`
+          SELECT DISTINCT val FROM (
+            SELECT pkmn_region AS val FROM custom_cards WHERE pkmn_region IS NOT NULL AND pkmn_region != ''
+            UNION
+            SELECT annotations::JSON->>'pkmn_region' AS val FROM cards WHERE annotations IS NOT NULL AND annotations::JSON->>'pkmn_region' IS NOT NULL AND annotations::JSON->>'pkmn_region' != ''
+            UNION
+            SELECT annotations::JSON->>'pkmn_region' AS val FROM pocket_cards WHERE annotations IS NOT NULL AND annotations::JSON->>'pkmn_region' IS NOT NULL AND annotations::JSON->>'pkmn_region' != ''
+          ) WHERE val IS NOT NULL ORDER BY val
+        `),
         conn.query(
           "SELECT DISTINCT generation FROM pokemon_metadata WHERE generation IS NOT NULL ORDER BY generation"
         ),
@@ -1541,7 +1547,8 @@ export async function fetchFilterOptions(source = "TCG") {
     const supertypes = stResult.toArray().map((r) => r.supertype);
     const rarities = raritiesResult.toArray().map((r) => r.rarity);
     const sets = setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series }));
-    const regions = regionsResult.toArray().map((r) => r.region);
+    const dbRegions = regionsResult.toArray().map((r) => r.val).filter(Boolean);
+    const regions = [...new Set([...PKMN_REGION_OPTIONS, ...dbRegions])].sort();
     const generations = generationsResult.toArray().map((r) =>
       typeof r.generation === "bigint" ? Number(r.generation) : r.generation
     );
@@ -1648,9 +1655,15 @@ export async function fetchFilterOptions(source = "TCG") {
       conn.query(
         "SELECT id, name, series FROM sets ORDER BY series, release_date"
       ),
-      conn.query(
-        "SELECT DISTINCT region FROM pokemon_metadata WHERE region IS NOT NULL ORDER BY region"
-      ),
+      conn.query(`
+        SELECT DISTINCT val FROM (
+          SELECT pkmn_region AS val FROM custom_cards WHERE pkmn_region IS NOT NULL AND pkmn_region != ''
+          UNION
+          SELECT annotations::JSON->>'pkmn_region' AS val FROM cards WHERE annotations IS NOT NULL AND annotations::JSON->>'pkmn_region' IS NOT NULL AND annotations::JSON->>'pkmn_region' != ''
+          UNION
+          SELECT annotations::JSON->>'pkmn_region' AS val FROM pocket_cards WHERE annotations IS NOT NULL AND annotations::JSON->>'pkmn_region' IS NOT NULL AND annotations::JSON->>'pkmn_region' != ''
+        ) WHERE val IS NOT NULL ORDER BY val
+      `),
       conn.query(
         "SELECT DISTINCT generation FROM pokemon_metadata WHERE generation IS NOT NULL ORDER BY generation"
       ),
@@ -1692,7 +1705,8 @@ export async function fetchFilterOptions(source = "TCG") {
     name: r.name,
     series: r.series,
   }));
-  const regions = regionsResult.toArray().map((r) => r.region);
+  const dbRegions = regionsResult.toArray().map((r) => r.val).filter(Boolean);
+  const regions = [...new Set([...PKMN_REGION_OPTIONS, ...dbRegions])].sort();
   const generations = generationsResult.toArray().map((r) =>
     typeof r.generation === "bigint" ? Number(r.generation) : r.generation
   );

@@ -371,7 +371,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               {options.regions && options.regions.length > 0 && (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Region
+                    Pokémon Region
                   </label>
                   <select
                     value={filters.region || ""}
@@ -454,7 +454,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             <option value="set_name">Set</option>
             {isTCG && <option value="price">Price</option>}
             {isTCG && <option value="generation">Generation</option>}
-            {isTCG && <option value="region">Region</option>}
+            {isTCG && <option value="region">Pokémon Region</option>}
           </select>
         </div>
 
