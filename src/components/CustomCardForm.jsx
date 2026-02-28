@@ -150,7 +150,14 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   // Stops auto-filling if the user manually edits the Set ID field.
   useEffect(() => {
     if (NON_CUSTOM_SOURCES.has(source) || setIdManual) return;
-    const derived = setNameVal.toLowerCase().replace(/[^a-z0-9]/g, "");
+    // Acronym: first letter of each word + any trailing digits (e.g. "Test Set Name, Set 4" → "tsns4")
+    const derived = setNameVal
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .trim()
+      .split(/\s+/)
+      .map((w) => (/^\d+$/.test(w) ? w : w[0]))
+      .join("")
+      .toLowerCase();
     setSetIdVal(derived);
   }, [setNameVal, source, setIdManual]);
 
@@ -183,7 +190,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
     setCreating(true);
 
     try {
-      if (!id || !name || !setIdVal || !setNameVal || !imageSmall || !source) {
+      if (!name || !number || !setNameVal || !imageSmall || !source) {
         throw new Error("Please fill in all required fields");
       }
 
@@ -385,17 +392,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
           </div>
           <div>
-            <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
-            <ComboBox
-              value={setIdVal}
-              onChange={(v) => { setSetIdVal(v); setSetIdManual(true); }}
-              options={opts.setId || []}
-              placeholder='e.g., Base Set 2 = "base2"'
-              className={inputClass + " w-full"}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Card Number</label>
+            <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
             <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
           </div>
           <div>
