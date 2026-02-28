@@ -153,8 +153,7 @@ export const BACKGROUND_DETAILS_OPTIONS = [
 ];
 
 export const PKMN_REGION_OPTIONS = [
-  "Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar","Hisui",
-  "Paldea","Aquapolis","Holon","Peaceful Park",
+  "Kanto","Johto","Hoenn","Sinnoh (Hisui)","Unova","Kalos","Alola","Galar","Paldea",
 ];
 
 // ── New fields ────────────────────────────────────────────────────────────────

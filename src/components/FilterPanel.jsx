@@ -388,8 +388,8 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 </div>
               )}
 
-              {/* Generation filter */}
-              {options.generations && options.generations.length > 0 && (
+              {/* Generation filter — hidden for now */}
+              {false && options.generations && options.generations.length > 0 && (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
                     Generation
@@ -453,7 +453,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
             {isTCG && <option value="price">Price</option>}
-            {isTCG && <option value="generation">Generation</option>}
+            {/* {isTCG && <option value="generation">Generation</option>} */}
             {isTCG && <option value="region">Pokémon Region</option>}
           </select>
         </div>
