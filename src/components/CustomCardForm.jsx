@@ -96,7 +96,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [items, setItems] = useState("");
   const [actions, setActions] = useState("");
   const [perspective, setPerspective] = useState("");
-  const [weatherEnvironment, setWeatherEnvironment] = useState("");
+  const [weather, setWeather] = useState("");
+  const [environment, setEnvironment] = useState("");
   const [storytelling, setStorytelling] = useState("");
   const [backgroundDetails, setBackgroundDetails] = useState("");
   const [cardLocations, setCardLocations] = useState("");
@@ -230,7 +231,8 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         actions: toArray(actions),
         additional_characters: toArray(additionalCharacters),
         perspective: perspective || "",
-        weather_environment: weatherEnvironment || "",
+        weather: weather || "",
+        environment: environment || "",
         storytelling: storytelling || "",
         background_details: toArray(backgroundDetails),
         card_locations: cardLocations || "",
@@ -566,8 +568,12 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <ComboBox value={cardRegion} onChange={setCardRegion} options={opts.cardRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
             </div>
             <div>
-              <label className={labelClass}>Weather/Environment</label>
-              <ComboBox value={weatherEnvironment} onChange={setWeatherEnvironment} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
+              <label className={labelClass}>Weather</label>
+              <ComboBox value={weather} onChange={setWeather} options={opts.weather || []} placeholder="Sunny" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Environment</label>
+              <ComboBox value={environment} onChange={setEnvironment} options={opts.environment || []} placeholder="Indoors" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Background Details</label>

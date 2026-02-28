@@ -840,8 +840,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     <ComboBox value={annValue("pkmn_region")} onChange={(v) => saveAnnotation("pkmn_region", v)} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
                   </div>
                   <div>
-                    <label className={labelClass}>Weather/Environment</label>
-                    <ComboBox value={annValue("weather_environment")} onChange={(v) => saveAnnotation("weather_environment", v)} options={opts.weatherEnvironment || []} placeholder="Sunny" className={inputClass + " w-full"} />
+                    <label className={labelClass}>Weather</label>
+                    <ComboBox value={annValue("weather")} onChange={(v) => saveAnnotation("weather", v)} options={opts.weather || []} placeholder="Sunny" className={inputClass + " w-full"} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Environment</label>
+                    <ComboBox value={annValue("environment")} onChange={(v) => saveAnnotation("environment", v)} options={opts.environment || []} placeholder="Indoors" className={inputClass + " w-full"} />
                   </div>
                   <div>
                     <label className={labelClass}>Background Details</label>

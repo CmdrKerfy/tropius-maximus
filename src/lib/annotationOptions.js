@@ -120,10 +120,14 @@ export const PERSPECTIVE_OPTIONS = [
   "Tiny","Gigantic","Rotate 90 Degrees","Exiting The Frame",
 ];
 
-export const WEATHER_ENVIRONMENT_OPTIONS = [
-  "Sun","heavens shine down","Rain","Snow","snowflakes","Thunder","Starry Night",
-  "Crescent Moon","Full Moon","Clouds","aurora borealis","spring","autumn",
-  "rainbow","sunset",
+export const WEATHER_OPTIONS = [
+  "Sunny","Rain","Snow","Snowflakes","Thunder","Clouds","Overcast",
+  "Aurora Borealis","Rainbow","Heavens Shine Down",
+];
+
+export const ENVIRONMENT_OPTIONS = [
+  "Indoors","Outdoors","Day","Night","Starry Night","Crescent Moon","Full Moon",
+  "Sunrise","Sunset","Spring","Summer","Autumn","Winter",
 ];
 
 export const CARD_LOCATIONS_OPTIONS = [
