@@ -649,7 +649,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    Info
+                    Attributes
                   </button>
                   <button
                     onClick={() => setActiveTab("attributes")}
@@ -659,7 +659,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    Attributes
+                    Additional Information
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("market")}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                      activeTab === "market"
+                        ? "border-green-600 text-green-700"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Market Information
                   </button>
                   <div className="ml-auto flex items-center gap-2 pb-2">
                     <button
@@ -699,20 +709,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                       {card.artist && ` · Artist: ${card.artist}`}
                     </div>
 
-                    {/* Species genus (e.g., "Seed Pokémon") */}
-                    {card.genus && (
-                      <p className="text-sm text-gray-600 italic">
-                        {card.genus}
-                      </p>
-                    )}
-
-                    {/* Evolution info */}
-                    {card.evolves_from && (
-                      <p className="text-sm text-gray-600">
-                        Evolves from: <strong>{card.evolves_from}</strong>
-                      </p>
-                    )}
-
                     {/* Pocket-specific fields */}
                     {card.stage && (
                       <p className="text-sm text-gray-600">
@@ -730,180 +726,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                       </p>
                     )}
 
-                    {/* Auto-populated card identifiers */}
-                    {ann.unique_id && (
-                      <p className="text-sm text-gray-600">
-                        Unique ID: <strong>{ann.unique_id}</strong>
-                      </p>
-                    )}
-                    {(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && (
-                      <p className="text-sm text-gray-600">
-                        Evolution Line: <strong>{Array.isArray(ann.evolution_line) ? ann.evolution_line.join(" → ") : ann.evolution_line}</strong>
-                      </p>
-                    )}
-
-                    {/* Rules (for Trainer/Energy cards) */}
-                    {rules.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm text-gray-700 mb-1">
-                          Rules
-                        </h3>
-                        {rules.map((rule, i) => (
-                          <p key={i} className="text-sm text-gray-600 mt-1">
-                            {rule}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Abilities */}
-                    {abilities.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm text-gray-700 mb-1">
-                          Abilities
-                        </h3>
-                        {abilities.map((ab, i) => (
-                          <div key={i} className="mt-2">
-                            <p className="text-sm font-medium text-purple-700">
-                              {ab.name}
-                              <span className="text-gray-400 ml-1">
-                                ({ab.type})
-                              </span>
-                            </p>
-                            <p className="text-sm text-gray-600">{ab.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Flavor text */}
-                    {raw?.flavorText && (
-                      <p className="text-sm text-gray-600 italic border-l-2 border-gray-300 pl-3">
-                        {raw.flavorText}
-                      </p>
-                    )}
-
-                    {/* Attacks */}
-                    {attacks.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm text-gray-700 mb-1">
-                          Attacks
-                        </h3>
-                        {attacks.map((atk, i) => (
-                          <div
-                            key={i}
-                            className="mt-2 p-2 bg-gray-50 rounded"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">
-                                {atk.name}
-                              </span>
-                              {atk.damage && (
-                                <span className="text-green-600 font-bold text-sm">
-                                  {atk.damage}
-                                </span>
-                              )}
-                            </div>
-                            {atk.cost && (
-                              <p className="text-xs text-gray-400 mt-0.5">
-                                Cost: {atk.cost.join(", ")}
-                              </p>
-                            )}
-                            {atk.text && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {atk.text}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Weaknesses, Resistances, Retreat Cost */}
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {weaknesses.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-gray-700">
-                            Weakness:{" "}
-                          </span>
-                          {weaknesses.map((w, i) => (
-                            <span key={i} className="text-gray-600">
-                              {w.type} {w.value}
-                              {i < weaknesses.length - 1 ? ", " : ""}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {resistances.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-gray-700">
-                            Resistance:{" "}
-                          </span>
-                          {resistances.map((r, i) => (
-                            <span key={i} className="text-gray-600">
-                              {r.type} {r.value}
-                              {i < resistances.length - 1 ? ", " : ""}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {retreatCost.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-gray-700">
-                            Retreat:{" "}
-                          </span>
-                          <span className="text-gray-600">
-                            {retreatCost.length}
-                          </span>
-                        </div>
-                      )}
+                    {/* Annotation attributes */}
+                    <div className="pt-2 border-t border-gray-100">
+                      {renderAnnotationView()}
                     </div>
-
-                    {/* Market Prices */}
-                    {card.prices?.tcgplayer?.prices && (
-                      <div>
-                        <h3 className="font-semibold text-sm text-gray-700 mb-2">
-                          Market Prices (USD)
-                        </h3>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          {Object.entries(card.prices.tcgplayer.prices).map(
-                            ([variant, p]) => (
-                              <div
-                                key={variant}
-                                className="bg-gray-50 rounded p-2"
-                              >
-                                <span className="font-medium capitalize text-gray-700">
-                                  {variant.replace(/([A-Z])/g, " $1").trim()}
-                                </span>
-                                <div className="text-green-700 font-bold">
-                                  ${p.market?.toFixed(2) || "—"}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  Low: ${p.low?.toFixed(2) || "—"} · High: $
-                                  {p.high?.toFixed(2) || "—"}
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-                        {card.prices.tcgplayer.updatedAt && (
-                          <p className="text-xs text-gray-400 mt-2">
-                            Prices from TCGPlayer · Updated{" "}
-                            {card.prices.tcgplayer.updatedAt}
-                          </p>
-                        )}
-                        {card.prices.tcgplayer.url && (
-                          <a
-                            href={card.prices.tcgplayer.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline mt-1 inline-block"
-                          >
-                            View on TCGPlayer
-                          </a>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -1216,7 +1042,152 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         )}
                       </div>
                     ) : (
-                      renderAnnotationView()
+                      <div className="space-y-4">
+                        {ann.unique_id && (
+                          <p className="text-sm text-gray-600">Unique ID: <strong>{ann.unique_id}</strong></p>
+                        )}
+                        {card.evolves_from && (
+                          <p className="text-sm text-gray-600">
+                            Evolves from: <strong>{card.evolves_from}</strong>
+                          </p>
+                        )}
+                        {(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && (
+                          <p className="text-sm text-gray-600">
+                            Evolution Line: <strong>{Array.isArray(ann.evolution_line) ? ann.evolution_line.join(" → ") : ann.evolution_line}</strong>
+                          </p>
+                        )}
+                        {card.genus && (
+                          <p className="text-sm text-gray-600 italic">{card.genus}</p>
+                        )}
+                        {rules.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-sm text-gray-700 mb-1">Rules</h3>
+                            {rules.map((rule, i) => (
+                              <p key={i} className="text-sm text-gray-600 mt-1">{rule}</p>
+                            ))}
+                          </div>
+                        )}
+                        {abilities.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-sm text-gray-700 mb-1">Abilities</h3>
+                            {abilities.map((ab, i) => (
+                              <div key={i} className="mt-2">
+                                <p className="text-sm font-medium text-purple-700">
+                                  {ab.name}
+                                  <span className="text-gray-400 ml-1">({ab.type})</span>
+                                </p>
+                                <p className="text-sm text-gray-600">{ab.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {raw?.flavorText && (
+                          <p className="text-sm text-gray-600 italic border-l-2 border-gray-300 pl-3">
+                            {raw.flavorText}
+                          </p>
+                        )}
+                        {attacks.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-sm text-gray-700 mb-1">Attacks</h3>
+                            {attacks.map((atk, i) => (
+                              <div key={i} className="mt-2 p-2 bg-gray-50 rounded">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-sm">{atk.name}</span>
+                                  {atk.damage && (
+                                    <span className="text-green-600 font-bold text-sm">{atk.damage}</span>
+                                  )}
+                                </div>
+                                {atk.cost && (
+                                  <p className="text-xs text-gray-400 mt-0.5">Cost: {atk.cost.join(", ")}</p>
+                                )}
+                                {atk.text && (
+                                  <p className="text-sm text-gray-600 mt-1">{atk.text}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {(weaknesses.length > 0 || resistances.length > 0 || retreatCost.length > 0) && (
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            {weaknesses.length > 0 && (
+                              <div>
+                                <span className="font-semibold text-gray-700">Weakness: </span>
+                                {weaknesses.map((w, i) => (
+                                  <span key={i} className="text-gray-600">
+                                    {w.type} {w.value}{i < weaknesses.length - 1 ? ", " : ""}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {resistances.length > 0 && (
+                              <div>
+                                <span className="font-semibold text-gray-700">Resistance: </span>
+                                {resistances.map((r, i) => (
+                                  <span key={i} className="text-gray-600">
+                                    {r.type} {r.value}{i < resistances.length - 1 ? ", " : ""}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {retreatCost.length > 0 && (
+                              <div>
+                                <span className="font-semibold text-gray-700">Retreat: </span>
+                                <span className="text-gray-600">{retreatCost.length}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {!ann.unique_id && !card.evolves_from && !(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && !card.genus && !rules.length && !abilities.length && !raw?.flavorText && !attacks.length && !weaknesses.length && !resistances.length && !retreatCost.length && (
+                          <p className="text-sm text-gray-400 text-center py-8">No additional information available.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Market Information tab panel */}
+                {activeTab === "market" && (
+                  <div className="mt-4 flex-1 overflow-y-auto pr-1">
+                    {card.prices?.tcgplayer?.prices ? (
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-sm text-gray-700 mb-2">
+                          Market Prices (USD)
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {Object.entries(card.prices.tcgplayer.prices).map(
+                            ([variant, p]) => (
+                              <div key={variant} className="bg-gray-50 rounded p-2">
+                                <span className="font-medium capitalize text-gray-700">
+                                  {variant.replace(/([A-Z])/g, " $1").trim()}
+                                </span>
+                                <div className="text-green-700 font-bold">
+                                  ${p.market?.toFixed(2) || "—"}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Low: ${p.low?.toFixed(2) || "—"} · High: ${p.high?.toFixed(2) || "—"}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                        {card.prices.tcgplayer.updatedAt && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            Prices from TCGPlayer · Updated {card.prices.tcgplayer.updatedAt}
+                          </p>
+                        )}
+                        {card.prices.tcgplayer.url && (
+                          <a
+                            href={card.prices.tcgplayer.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                          >
+                            View on TCGPlayer
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 text-center py-8">No market data available.</p>
                     )}
                   </div>
                 )}
