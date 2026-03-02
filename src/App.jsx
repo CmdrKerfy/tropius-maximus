@@ -11,8 +11,9 @@ import {
   fetchFilterOptions,
   fetchAttributes,
   deleteCardsById,
+  syncMutableTablesToIndexedDB,
 } from "./db";
-import { getToken, setToken, deleteCardsFromGitHub } from "./lib/github";
+import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents } from "./lib/github";
 import SearchBar from "./components/SearchBar";
 import FilterPanel from "./components/FilterPanel";
 import CardGrid from "./components/CardGrid";
@@ -101,6 +102,8 @@ export default function App() {
   // ── GitHub PAT state ─────────────────────────────────────────────────
   const [ghToken, setGhToken] = useState(() => getToken());
   const [showTokenInput, setShowTokenInput] = useState(false);
+  const [pushStatus, setPushStatus] = useState(null); // null | "pushing" | "success" | "error"
+  const [pushMessage, setPushMessage] = useState("");
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
@@ -252,6 +255,22 @@ export default function App() {
     }
   };
 
+  const handlePushToGitHub = async () => {
+    setPushStatus("pushing");
+    setPushMessage("");
+    try {
+      const { customCardsData } = await syncMutableTablesToIndexedDB();
+      const token = getToken();
+      const { sha } = await getFileContents(token);
+      await updateFileContents(token, customCardsData, sha, "Manual sync: push local custom cards to GitHub");
+      setPushStatus("success");
+      setPushMessage(`${customCardsData.cards.length} card(s) pushed to GitHub.`);
+    } catch (e) {
+      setPushStatus("error");
+      setPushMessage(e.message);
+    }
+  };
+
   const handleSqlDataChanged = (changed) => {
     if (changed.attributes)
       fetchAttributes().then(setAttributes).catch(console.error);
@@ -388,13 +407,29 @@ export default function App() {
                 )}
               </div>
 
-              <button
-                onClick={() => setShowCustomCardForm(!showCustomCardForm)}
-                className="mt-3 px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium
-                           hover:bg-green-700 transition-colors"
-              >
-                {showCustomCardForm ? "Hide Form" : "+ Add Custom Card"}
-              </button>
+              <div className="mt-3 flex flex-wrap gap-2 items-center">
+                <button
+                  onClick={() => setShowCustomCardForm(!showCustomCardForm)}
+                  className="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium
+                             hover:bg-green-700 transition-colors"
+                >
+                  {showCustomCardForm ? "Hide Form" : "+ Add Custom Card"}
+                </button>
+                <button
+                  onClick={handlePushToGitHub}
+                  disabled={!ghToken || pushStatus === "pushing"}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
+                             hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {pushStatus === "pushing" ? "Pushing…" : "Push Local Cards to GitHub"}
+                </button>
+              </div>
+              {pushStatus === "success" && (
+                <p className="mt-2 text-xs text-green-700">{pushMessage}</p>
+              )}
+              {pushStatus === "error" && (
+                <p className="mt-2 text-xs text-red-600">{pushMessage}</p>
+              )}
             </div>
 
             {/* Custom Card Form */}
