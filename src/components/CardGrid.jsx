@@ -45,7 +45,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
 
       <button
         onClick={() => onCardClick(card.id)}
-        className={`group relative rounded-lg overflow-hidden shadow-sm hover:shadow-xl
+        className={`group relative w-full rounded-lg overflow-hidden shadow-sm hover:shadow-xl
                    transition-all duration-200 hover:scale-105 focus:outline-none
                    focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-white
                    aspect-[2.5/3.5]
