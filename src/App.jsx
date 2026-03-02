@@ -50,7 +50,7 @@ export default function App() {
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(42);
+  const [pageSize] = useState(60);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

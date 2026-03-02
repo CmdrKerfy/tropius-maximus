@@ -16,7 +16,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
-    <div className="relative">
+    <div className="relative aspect-[2.5/3.5]">
       {onToggleSelection && (
         <button
           onClick={(e) => {
@@ -45,10 +45,9 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
 
       <button
         onClick={() => onCardClick(card.id)}
-        className={`group relative w-full rounded-lg overflow-hidden shadow-sm hover:shadow-xl
+        className={`w-full h-full group rounded-lg overflow-hidden shadow-sm hover:shadow-xl
                    transition-all duration-200 hover:scale-105 focus:outline-none
                    focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-white
-                   aspect-[2.5/3.5]
                    ${isSelected ? "ring-2 ring-green-500" : ""}`}
       >
         {!imgLoaded && (
