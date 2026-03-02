@@ -146,6 +146,13 @@ function escapeStr(s) {
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
 
+// Generate SQL IN/= clause for a multi-value filter array, or null if empty.
+function inSQL(vals, col) {
+  if (!Array.isArray(vals) || vals.length === 0) return null;
+  if (vals.length === 1) return `${col} = ${escapeStr(vals[0])}`;
+  return `${col} IN (${vals.map(escapeStr).join(", ")})`;
+}
+
 // ── TCGdex image URL helpers ──────────────────────────────────────────
 
 // SQL CASE expression to map our set_id to TCGdex set IDs
@@ -904,20 +911,20 @@ export async function fetchCards(params = {}) {
   const {
     q = "",
     supertype = "",
-    rarity = "",
-    set_id = "",
-    region = "",
+    rarity = [],
+    set_id = [],
+    region = [],
     generation = "",
     color = "",
-    artist = "",
-    evolution_line = "",
+    artist = [],
+    evolution_line = [],
     trainer_type = "",
     specialty = "",
-    element = "",
-    card_type = "",
-    stage = "",
-    weather = "",
-    environment = "",
+    element = [],
+    card_type = [],
+    stage = [],
+    weather = [],
+    environment = [],
     source = "TCG",
     sort_by = "name",
     sort_dir = "asc",
@@ -940,25 +947,25 @@ export async function fetchCards(params = {}) {
     const tcgConditions = [];
     if (q)              tcgConditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
     if (supertype)      tcgConditions.push(supertypeSQL(supertype));
-    if (rarity)         tcgConditions.push(`c.rarity = ${escapeStr(rarity)}`);
-    if (set_id)         tcgConditions.push(`c.set_id = ${escapeStr(set_id)}`);
-    if (artist)         tcgConditions.push(`c.artist = ${escapeStr(artist)}`);
+    { const s = inSQL(rarity, "c.rarity"); if (s) tcgConditions.push(s); }
+    { const s = inSQL(set_id, "c.set_id"); if (s) tcgConditions.push(s); }
+    { const s = inSQL(artist, "c.artist"); if (s) tcgConditions.push(s); }
     if (trainer_type)   tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
     if (specialty)      tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
-    if (region)         tcgConditions.push(`c.pkmn_region = ${escapeStr(region)}`);
+    { const s = inSQL(region, "c.pkmn_region"); if (s) tcgConditions.push(s); }
     if (generation)     { const g = parseInt(generation); if (g > 0) tcgConditions.push(`pm.generation = ${g}`); }
     if (color)          tcgConditions.push(`pm.color = ${escapeStr(color)}`);
-    if (evolution_line) tcgConditions.push(`pm.evolution_chain = ${escapeStr(evolution_line)}`);
-    if (weather)        tcgConditions.push(`c.weather = ${escapeStr(weather)}`);
-    if (environment)    tcgConditions.push(`c.environment = ${escapeStr(environment)}`);
+    { const s = inSQL(evolution_line, "pm.evolution_chain"); if (s) tcgConditions.push(s); }
+    { const s = inSQL(weather, "c.weather"); if (s) tcgConditions.push(s); }
+    { const s = inSQL(environment, "c.environment"); if (s) tcgConditions.push(s); }
     const tcgWhere = tcgConditions.length ? "WHERE " + tcgConditions.join(" AND ") : "";
 
     // Pocket branch: excluded if any filter with no Pocket equivalent is active
-    let pocketExcluded = !!(set_id || artist || trainer_type || specialty || generation || color || rarity || weather || environment);
+    let pocketExcluded = !!(set_id.length || artist.length || trainer_type || specialty || generation || color || rarity.length || weather.length || environment.length);
     const pocketConditions = [];
     if (q)              pocketConditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (region)         pocketConditions.push(`pc.pkmn_region = ${escapeStr(region)}`);
-    if (evolution_line) pocketConditions.push(`pc.evolution_line = ${escapeStr(evolution_line)}`);
+    { const s = inSQL(region, "pc.pkmn_region"); if (s) pocketConditions.push(s); }
+    { const s = inSQL(evolution_line, "pc.evolution_line"); if (s) pocketConditions.push(s); }
 
     if (supertype && !pocketExcluded) {
       const norm = supertype.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1020,11 +1027,11 @@ export async function fetchCards(params = {}) {
   if (source === "Pocket") {
     const conditions = [];
     if (q) conditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (rarity) conditions.push(`pc.rarity = ${escapeStr(rarity)}`);
-    if (set_id) conditions.push(`pc.set_id = ${escapeStr(set_id)}`);
-    if (card_type) conditions.push(`pc.card_type = ${escapeStr(card_type)}`);
-    if (element) conditions.push(`pc.element = ${escapeStr(element)}`);
-    if (stage) conditions.push(`pc.stage = ${escapeStr(stage)}`);
+    { const s = inSQL(rarity, "pc.rarity"); if (s) conditions.push(s); }
+    { const s = inSQL(set_id, "pc.set_id"); if (s) conditions.push(s); }
+    { const s = inSQL(card_type, "pc.card_type"); if (s) conditions.push(s); }
+    { const s = inSQL(element, "pc.element"); if (s) conditions.push(s); }
+    { const s = inSQL(stage, "pc.stage"); if (s) conditions.push(s); }
 
     const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
@@ -1095,13 +1102,13 @@ export async function fetchCards(params = {}) {
   // ── Custom Cards (all is_custom = TRUE cards) ──────────────────────
   if (source === "Custom") {
     const conditions = ["c.is_custom = TRUE"];
-    if (q)           conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (supertype)   conditions.push(supertypeSQL(supertype));
-    if (artist)      conditions.push(`c.artist = ${escapeStr(artist)}`);
-    if (rarity)      conditions.push(`c.rarity = ${escapeStr(rarity)}`);
-    if (set_id)      conditions.push(`c.set_id = ${escapeStr(set_id)}`);
-    if (weather)     conditions.push(`c.weather = ${escapeStr(weather)}`);
-    if (environment) conditions.push(`c.environment = ${escapeStr(environment)}`);
+    if (q)         conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (supertype) conditions.push(supertypeSQL(supertype));
+    { const s = inSQL(artist, "c.artist"); if (s) conditions.push(s); }
+    { const s = inSQL(rarity, "c.rarity"); if (s) conditions.push(s); }
+    { const s = inSQL(set_id, "c.set_id"); if (s) conditions.push(s); }
+    { const s = inSQL(weather, "c.weather"); if (s) conditions.push(s); }
+    { const s = inSQL(environment, "c.environment"); if (s) conditions.push(s); }
     const where = "WHERE " + conditions.join(" AND ");
 
     const countResult = await conn.query(
@@ -1150,19 +1157,19 @@ export async function fetchCards(params = {}) {
   } else {
     conditions.push(`c.source = ${escapeStr(source)}`);
   }
-  if (q)              conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
-  if (supertype)      conditions.push(supertypeSQL(supertype));
-  if (rarity)         conditions.push(`c.rarity = ${escapeStr(rarity)}`);
-  if (set_id)         conditions.push(`c.set_id = ${escapeStr(set_id)}`);
-  if (artist)         conditions.push(`c.artist = ${escapeStr(artist)}`);
-  if (trainer_type)   conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
-  if (specialty)      conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
-  if (region)         conditions.push(`c.pkmn_region = ${escapeStr(region)}`);
-  if (generation)     { const genInt = parseInt(generation) || 0; if (genInt > 0) conditions.push(`pm.generation = ${genInt}`); }
-  if (color)          conditions.push(`pm.color = ${escapeStr(color)}`);
-  if (evolution_line) conditions.push(`pm.evolution_chain = ${escapeStr(evolution_line)}`);
-  if (weather)        conditions.push(`c.weather = ${escapeStr(weather)}`);
-  if (environment)    conditions.push(`c.environment = ${escapeStr(environment)}`);
+  if (q)            conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+  if (supertype)    conditions.push(supertypeSQL(supertype));
+  { const s = inSQL(rarity, "c.rarity"); if (s) conditions.push(s); }
+  { const s = inSQL(set_id, "c.set_id"); if (s) conditions.push(s); }
+  { const s = inSQL(artist, "c.artist"); if (s) conditions.push(s); }
+  if (trainer_type) conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
+  if (specialty)    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
+  { const s = inSQL(region, "c.pkmn_region"); if (s) conditions.push(s); }
+  if (generation)   { const genInt = parseInt(generation) || 0; if (genInt > 0) conditions.push(`pm.generation = ${genInt}`); }
+  if (color)        conditions.push(`pm.color = ${escapeStr(color)}`);
+  { const s = inSQL(evolution_line, "pm.evolution_chain"); if (s) conditions.push(s); }
+  { const s = inSQL(weather, "c.weather"); if (s) conditions.push(s); }
+  { const s = inSQL(environment, "c.environment"); if (s) conditions.push(s); }
 
   const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 

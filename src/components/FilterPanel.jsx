@@ -1,50 +1,140 @@
 /**
- * FilterPanel — Dropdowns and controls for filtering the card list.
+ * FilterPanel — Two-row filter layout + sort controls.
  *
- * Includes: supertype dropdown, rarity dropdown, set dropdown (grouped by series),
- * artist filter, evolution line filter, region/generation/color filters,
- * trainer type filter, specialty filter, and sort controls.
- * All filter values are lifted to App.jsx via the onChange callback.
- *
- * Features:
- * - Collapsible filter section with toggle button (collapsed by default)
- * - Sort controls in separate row (always visible)
+ * Row 1: Source | Set | Artist | Supertype | Featured Region
+ * Row 2: Specialty | Rarity | Evolution Line | Weather | Environment
  */
 
+import { useState, useEffect, useRef } from "react";
+
+function MultiSelectDropdown({ options, values, onChange, className = "", groups = null }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const getVal = (o) => (o && typeof o === "object" ? o.value : o);
+  const getLabel = (o) => (o && typeof o === "object" ? o.label : o);
+
+  const toggle = (val) =>
+    onChange(values.includes(val) ? values.filter((v) => v !== val) : [...values, val]);
+
+  const findLabel = (val) => {
+    if (groups) {
+      for (const g of groups) {
+        const s = g.sets.find((s) => s.id === val);
+        if (s) return s.name;
+      }
+      return val;
+    }
+    const opt = options?.find((o) => getVal(o) === val);
+    return opt ? getLabel(opt) : val;
+  };
+
+  const displayText =
+    values.length === 0 ? "All" :
+    values.length === 1 ? findLabel(values[0]) :
+    `${values.length} selected`;
+
+  const isActive = values.length > 0;
+
+  const btnCls =
+    "px-3 py-2 border rounded-lg bg-white text-sm text-left flex items-center gap-1.5 min-w-0 " +
+    "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent " +
+    (isActive ? "border-green-400 text-green-700 " : "border-gray-300 text-gray-900 ") +
+    className;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className={btnCls}>
+        <span className="flex-1 truncate">{displayText}</span>
+        <svg
+          className={`w-4 h-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto min-w-full w-max max-w-xs">
+          {groups
+            ? groups.map(({ series, sets }) => (
+                <div key={series}>
+                  <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 sticky top-0">
+                    {series}
+                  </div>
+                  {sets.map((s) => (
+                    <label key={s.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={values.includes(s.id)}
+                        onChange={() => toggle(s.id)}
+                        className="rounded shrink-0"
+                      />
+                      <span className="truncate">{s.name}</span>
+                    </label>
+                  ))}
+                </div>
+              ))
+            : options.map((opt) => (
+                <label key={getVal(opt)} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={values.includes(getVal(opt))}
+                    onChange={() => toggle(getVal(opt))}
+                    className="rounded shrink-0"
+                  />
+                  <span className="truncate">{getLabel(opt)}</span>
+                </label>
+              ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand }) {
-  // Group sets by series for the dropdown optgroups.
+  // Build grouped set list for the Set dropdown.
+  const seriesOrder = [];
   const setsBySeries = {};
   for (const s of options.sets) {
-    if (!setsBySeries[s.series]) setsBySeries[s.series] = [];
+    if (!setsBySeries[s.series]) {
+      setsBySeries[s.series] = [];
+      seriesOrder.push(s.series);
+    }
     setsBySeries[s.series].push(s);
   }
+  const setGroups = seriesOrder.map((series) => ({ series, sets: setsBySeries[series] }));
 
-  // Shared styling for all dropdowns.
+  // Parse evolution line JSON arrays into {value, label} objects.
+  const evoOptions = (options.evolution_lines || []).map((evo) => {
+    try {
+      return { value: evo, label: JSON.parse(evo).join(" → ") };
+    } catch {
+      return { value: evo, label: evo };
+    }
+  });
+
   const selectClass =
     "px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
-  const isAll    = filters.source === "";
-  const isPocket = filters.source === "Pocket";
-  const isCustom = filters.source === "Custom";
-  const isTCG    = !isAll && !isPocket && !isCustom;
+  const isTCG = filters.source !== "" && filters.source !== "Pocket" && filters.source !== "Custom";
 
-  // Check if any filter is active (for highlight)
+  const isActive = (val) => (Array.isArray(val) ? val.length > 0 : !!val);
   const hasActiveFilters =
-    filters.supertype ||
-    filters.rarity ||
-    filters.set_id ||
-    filters.region ||
-    filters.generation ||
-    filters.artist ||
-    filters.evolution_line ||
-    filters.trainer_type ||
-    filters.specialty ||
-    filters.element ||
-    filters.card_type ||
-    filters.stage ||
-    filters.weather ||
-    filters.environment;
+    isActive(filters.supertype) || isActive(filters.rarity) || isActive(filters.set_id) ||
+    isActive(filters.region) || isActive(filters.generation) || isActive(filters.artist) ||
+    isActive(filters.evolution_line) || isActive(filters.trainer_type) ||
+    isActive(filters.specialty) || isActive(filters.element) || isActive(filters.card_type) ||
+    isActive(filters.stage) || isActive(filters.weather) || isActive(filters.environment);
 
   return (
     <div className="mt-4">
@@ -57,32 +147,26 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
       >
         <svg
           className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
         {expanded ? "Hide Filters" : "Show Filters"}
         {hasActiveFilters && !expanded && (
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-            Active
-          </span>
+          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
         )}
       </button>
 
-      {/* Collapsible filter row */}
+      {/* Collapsible filter rows */}
       <div
-        className={`overflow-hidden transition-all duration-200 ${
-          expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        className={`transition-all duration-200 ${
+          expanded ? "max-h-screen opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
+        {/* Row 1: Source | Set | Artist | Supertype | Featured Region */}
         <div className="flex flex-wrap gap-3 items-end pb-3">
-          {/* Source filter */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Source
-            </label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
             <select
               value={filters.source}
               onChange={(e) => onChange({ source: e.target.value })}
@@ -95,352 +179,127 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             </select>
           </div>
 
-          {/* ── TCG-only filters ─────────────────────────────────── */}
-          {(isTCG || isAll) && (
-            <>
-              {/* Supertype filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Supertype
-                </label>
-                <select
-                  value={filters.supertype}
-                  onChange={(e) => onChange({ supertype: e.target.value })}
-                  className={selectClass}
-                >
-                  <option value="">All</option>
-                  {options.supertypes.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Trainer Type filter */}
-              {options.trainer_types && options.trainer_types.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Trainer Type
-                  </label>
-                  <select
-                    value={filters.trainer_type || ""}
-                    onChange={(e) => onChange({ trainer_type: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.trainer_types.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Specialty filter */}
-              {options.specialties && options.specialties.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Specialty
-                  </label>
-                  <select
-                    value={filters.specialty || ""}
-                    onChange={(e) => onChange({ specialty: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.specialties.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
+          {options.sets?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Set</label>
+              <MultiSelectDropdown
+                groups={setGroups}
+                values={filters.set_id || []}
+                onChange={(v) => onChange({ set_id: v })}
+                className="max-w-[180px]"
+              />
+            </div>
           )}
 
-          {/* ── Custom source filters ────────────────────────────── */}
-          {isCustom && (
-            <>
-              {/* Supertype filter */}
-              {options.supertypes && options.supertypes.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Supertype
-                  </label>
-                  <select
-                    value={filters.supertype || ""}
-                    onChange={(e) => onChange({ supertype: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.supertypes.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Artist filter */}
-              {options.artists && options.artists.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Artist
-                  </label>
-                  <select
-                    value={filters.artist || ""}
-                    onChange={(e) => onChange({ artist: e.target.value })}
-                    className={selectClass + " max-w-[200px]"}
-                  >
-                    <option value="">All</option>
-                    {options.artists.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
+          {options.artists?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Artist</label>
+              <MultiSelectDropdown
+                options={options.artists}
+                values={filters.artist || []}
+                onChange={(v) => onChange({ artist: v })}
+                className="max-w-[180px]"
+              />
+            </div>
           )}
 
-          {/* ── Pocket-only filters ──────────────────────────────── */}
-          {isPocket && (
-            <>
-              {/* Card Type filter */}
-              {options.card_types && options.card_types.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Card Type
-                  </label>
-                  <select
-                    value={filters.card_type || ""}
-                    onChange={(e) => onChange({ card_type: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.card_types.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Element filter */}
-              {options.elements && options.elements.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Element
-                  </label>
-                  <select
-                    value={filters.element || ""}
-                    onChange={(e) => onChange({ element: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.elements.map((el) => (
-                      <option key={el} value={el}>
-                        {el}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Stage filter */}
-              {options.stages && options.stages.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Stage
-                  </label>
-                  <select
-                    value={filters.stage || ""}
-                    onChange={(e) => onChange({ stage: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.stages.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
+          {options.supertypes?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Supertype</label>
+              <select
+                value={filters.supertype || ""}
+                onChange={(e) => onChange({ supertype: e.target.value })}
+                className={selectClass}
+              >
+                <option value="">All</option>
+                {options.supertypes.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
           )}
 
-          {/* Rarity filter (shared) */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Rarity
-            </label>
-            <select
-              value={filters.rarity}
-              onChange={(e) => onChange({ rarity: e.target.value })}
-              className={selectClass}
-            >
-              <option value="">All</option>
-              {options.rarities.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
+          {options.regions?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Featured Region</label>
+              <MultiSelectDropdown
+                options={options.regions}
+                values={filters.region || []}
+                onChange={(v) => onChange({ region: v })}
+              />
+            </div>
+          )}
+        </div>
 
-          {/* Set filter — grouped by series using optgroups (shared) */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Set
-            </label>
-            <select
-              value={filters.set_id}
-              onChange={(e) => onChange({ set_id: e.target.value })}
-              className={selectClass + " max-w-[200px]"}
-            >
-              <option value="">All Sets</option>
-              {Object.entries(setsBySeries).map(([series, sets]) => (
-                <optgroup key={series} label={series}>
-                  {sets.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
+        {/* Row 2: Specialty | Rarity | Evolution Line | Weather | Environment */}
+        <div className="flex flex-wrap gap-3 items-end pb-3">
+          {options.specialties?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Specialty</label>
+              <select
+                value={filters.specialty || ""}
+                onChange={(e) => onChange({ specialty: e.target.value })}
+                className={selectClass}
+              >
+                <option value="">All</option>
+                {options.specialties.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* ── TCG-only filters (continued) ─────────────────────── */}
-          {(isTCG || isAll) && (
-            <>
-              {/* Artist filter */}
-              {options.artists && options.artists.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Artist
-                  </label>
-                  <select
-                    value={filters.artist || ""}
-                    onChange={(e) => onChange({ artist: e.target.value })}
-                    className={selectClass + " max-w-[200px]"}
-                  >
-                    <option value="">All</option>
-                    {options.artists.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {options.rarities?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Rarity</label>
+              <MultiSelectDropdown
+                options={options.rarities}
+                values={filters.rarity || []}
+                onChange={(v) => onChange({ rarity: v })}
+              />
+            </div>
+          )}
 
-              {/* Evolution Line filter */}
-              {options.evolution_lines && options.evolution_lines.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Evolution Line
-                  </label>
-                  <select
-                    value={filters.evolution_line || ""}
-                    onChange={(e) => onChange({ evolution_line: e.target.value })}
-                    className={selectClass + " max-w-[250px]"}
-                  >
-                    <option value="">All</option>
-                    {options.evolution_lines.map((evo) => {
-                      // Parse JSON array and format as "A -> B -> C"
-                      try {
-                        const arr = JSON.parse(evo);
-                        const display = arr.join(" -> ");
-                        return (
-                          <option key={evo} value={evo}>{display}</option>
-                        );
-                      } catch {
-                        return (
-                          <option key={evo} value={evo}>{evo}</option>
-                        );
-                      }
-                    })}
-                  </select>
-                </div>
-              )}
+          {evoOptions.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Evolution Line</label>
+              <MultiSelectDropdown
+                options={evoOptions}
+                values={filters.evolution_line || []}
+                onChange={(v) => onChange({ evolution_line: v })}
+                className="max-w-[220px]"
+              />
+            </div>
+          )}
 
-              {/* Region filter */}
-              {options.regions && options.regions.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Featured Region
-                  </label>
-                  <select
-                    value={filters.region || ""}
-                    onChange={(e) => onChange({ region: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.regions.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {options.weathers?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Weather</label>
+              <MultiSelectDropdown
+                options={options.weathers}
+                values={filters.weather || []}
+                onChange={(v) => onChange({ weather: v })}
+              />
+            </div>
+          )}
 
-              {/* Generation filter — hidden for now */}
-              {false && options.generations && options.generations.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Generation
-                  </label>
-                  <select
-                    value={filters.generation || ""}
-                    onChange={(e) => onChange({ generation: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.generations.map((g) => (
-                      <option key={g} value={g}>
-                        Gen {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Weather filter */}
-              {options.weathers && options.weathers.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Weather</label>
-                  <select value={filters.weather || ""} onChange={(e) => onChange({ weather: e.target.value })} className={selectClass}>
-                    <option value="">All</option>
-                    {options.weathers.map((w) => <option key={w} value={w}>{w}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* Environment filter */}
-              {options.environments && options.environments.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Environment</label>
-                  <select value={filters.environment || ""} onChange={(e) => onChange({ environment: e.target.value })} className={selectClass}>
-                    <option value="">All</option>
-                    {options.environments.map((env) => <option key={env} value={env}>{env}</option>)}
-                  </select>
-                </div>
-              )}
-            </>
+          {options.environments?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Environment</label>
+              <MultiSelectDropdown
+                options={options.environments}
+                values={filters.environment || []}
+                onChange={(v) => onChange({ environment: v })}
+              />
+            </div>
           )}
         </div>
       </div>
 
       {/* Sort row (always visible) */}
       <div className="flex flex-wrap gap-3 items-end border-t border-gray-200 pt-3">
-        {/* Sort controls */}
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Sort By
-          </label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Sort By</label>
           <select
             value={filters.sort_by}
             onChange={(e) => onChange({ sort_by: e.target.value })}
@@ -453,15 +312,12 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
             {isTCG && <option value="price">Price</option>}
-            {/* {isTCG && <option value="generation">Generation</option>} */}
             {isTCG && <option value="region">Featured Region</option>}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Order
-          </label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Order</label>
           <select
             value={filters.sort_dir}
             onChange={(e) => onChange({ sort_dir: e.target.value })}
@@ -472,31 +328,29 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </select>
         </div>
 
-        {/* Clear all filters button */}
         <button
           onClick={() =>
             onChange({
               supertype: "",
-              rarity: "",
-              set_id: "",
-              region: "",
+              rarity: [],
+              set_id: [],
+              region: [],
               generation: "",
               color: "",
-              artist: "",
-              evolution_line: "",
+              artist: [],
+              evolution_line: [],
               trainer_type: "",
               specialty: "",
-              element: "",
-              card_type: "",
-              stage: "",
-              weather: "",
-              environment: "",
+              element: [],
+              card_type: [],
+              stage: [],
+              weather: [],
+              environment: [],
               sort_by: isTCG ? "pokedex" : "name",
               sort_dir: "asc",
             })
           }
-          className="px-3 py-2 text-sm text-green-600 hover:text-green-800
-                     hover:bg-green-50 rounded-lg transition-colors"
+          className="px-3 py-2 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
         >
           Clear Filters
         </button>
