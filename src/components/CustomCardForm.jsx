@@ -619,10 +619,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
                 <label className={labelClass}>Alt Name</label>
                 <input type="text" value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="" className={inputClass + " w-full"} />
               </div>
-              <div>
-                <label className={labelClass}>Regulation Mark</label>
-                <input type="text" value={regulationMark} onChange={(e) => setRegulationMark(e.target.value)} placeholder="E" className={inputClass + " w-full"} />
-              </div>
             </div>
           </CollapsibleSection>
         )}
@@ -898,10 +894,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label htmlFor="thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
             </div>
             <div className="col-span-2 md:col-span-3">
-              <label className={labelClass}>Video Title</label>
-              <MultiComboBox value={videoTitle} onChange={setVideoTitle} options={opts.videoTitle || []} placeholder="Video title" />
-            </div>
-            <div className="col-span-2 md:col-span-3">
               <label className={labelClass}>Video Type</label>
               <MultiComboBox value={videoType} onChange={setVideoType}
                 options={opts.videoType || VIDEO_TYPE_OPTIONS} placeholder="Top 10, Every Card in a Region" />
@@ -939,20 +931,6 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
             <div>
               <label className={labelClass}>Notes</label>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── New Attributes (collapsible) ── */}
-        <CollapsibleSection title="New Attributes">
-          <div className="grid grid-cols-1 gap-3 pb-2">
-            <div>
-              <label className={labelClass}>Image Override URL</label>
-              <input type="url" value={imageOverride} onChange={(e) => setImageOverride(e.target.value)} placeholder="https://... (overrides image_small when set)" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Video URL</label>
-              <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
             </div>
           </div>
         </CollapsibleSection>
