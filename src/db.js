@@ -939,7 +939,7 @@ export async function fetchCards(params = {}) {
     // TCG branch (tcg_cards covers both API and custom TCG cards)
     const tcgConditions = [];
     if (q)              tcgConditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (supertype)      tcgConditions.push(`c.supertype = ${escapeStr(supertype)}`);
+    if (supertype)      tcgConditions.push(supertypeSQL(supertype));
     if (rarity)         tcgConditions.push(`c.rarity = ${escapeStr(rarity)}`);
     if (set_id)         tcgConditions.push(`c.set_id = ${escapeStr(set_id)}`);
     if (artist)         tcgConditions.push(`c.artist = ${escapeStr(artist)}`);
@@ -1096,7 +1096,7 @@ export async function fetchCards(params = {}) {
   if (source === "Custom") {
     const conditions = ["c.is_custom = TRUE"];
     if (q)           conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
-    if (supertype)   conditions.push(`c.supertype = ${escapeStr(supertype)}`);
+    if (supertype)   conditions.push(supertypeSQL(supertype));
     if (artist)      conditions.push(`c.artist = ${escapeStr(artist)}`);
     if (rarity)      conditions.push(`c.rarity = ${escapeStr(rarity)}`);
     if (set_id)      conditions.push(`c.set_id = ${escapeStr(set_id)}`);
@@ -1145,9 +1145,13 @@ export async function fetchCards(params = {}) {
 
   // ── TCG + custom sources (all non-Pocket sources route to tcg_cards) ─
   const conditions = [];
-  conditions.push(`c.source = ${escapeStr(source)}`);
+  if (source === "TCG") {
+    conditions.push(`(c.source = 'TCG' OR (c.is_custom = TRUE AND c.source != 'Pocket'))`);
+  } else {
+    conditions.push(`c.source = ${escapeStr(source)}`);
+  }
   if (q)              conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
-  if (supertype)      conditions.push(`c.supertype = ${escapeStr(supertype)}`);
+  if (supertype)      conditions.push(supertypeSQL(supertype));
   if (rarity)         conditions.push(`c.rarity = ${escapeStr(rarity)}`);
   if (set_id)         conditions.push(`c.set_id = ${escapeStr(set_id)}`);
   if (artist)         conditions.push(`c.artist = ${escapeStr(artist)}`);
@@ -1427,6 +1431,26 @@ export async function fetchCard(id, source = "TCG") {
   };
 }
 
+// Normalize supertypes: merge "Pokemon" (no accent) into "Pokémon" (with accent) and deduplicate.
+function mergeSupertypes(arr) {
+  const seen = new Set();
+  return arr.map((s) => {
+    const norm = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return norm === "pokemon" ? "Pokémon" : s;
+  }).filter((s) => {
+    if (seen.has(s)) return false;
+    seen.add(s);
+    return true;
+  });
+}
+
+// Build a SQL condition for the supertype column that matches both "Pokémon" and "Pokemon".
+function supertypeSQL(supertype) {
+  const norm = supertype.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (norm === "pokemon") return `c.supertype IN ('Pokémon', 'Pokemon')`;
+  return `c.supertype = ${escapeStr(supertype)}`;
+}
+
 /**
  * Fetch distinct values for all filter dropdowns.
  */
@@ -1442,7 +1466,11 @@ export async function fetchFilterOptions(source = "TCG") {
           "SELECT DISTINCT rarity FROM tcg_cards WHERE rarity IS NOT NULL AND rarity != '' ORDER BY rarity"
         ),
         conn.query(
-          "SELECT id, name, series FROM sets ORDER BY series, release_date"
+          `SELECT id, name, series FROM sets
+           UNION
+           SELECT DISTINCT set_id AS id, set_name AS name, set_series AS series
+             FROM tcg_cards WHERE is_custom = TRUE AND set_id IS NOT NULL AND set_id != ''
+           ORDER BY series, id`
         ),
         conn.query(`
           SELECT DISTINCT val FROM (
@@ -1489,7 +1517,7 @@ export async function fetchFilterOptions(source = "TCG") {
         ),
       ]);
 
-    const supertypes = stResult.toArray().map((r) => r.supertype);
+    const supertypes = mergeSupertypes(stResult.toArray().map((r) => r.supertype));
     const rarities = raritiesResult.toArray().map((r) => r.rarity);
     const sets = setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series }));
     const dbRegions = regionsResult.toArray().map((r) => r.val).filter(Boolean);
@@ -1527,7 +1555,15 @@ export async function fetchFilterOptions(source = "TCG") {
           "SELECT DISTINCT rarity FROM pocket_cards WHERE rarity IS NOT NULL AND rarity != '' ORDER BY rarity"
         ),
         conn.query(
-          "SELECT id, name, series FROM pocket_sets ORDER BY series, release_date"
+          `SELECT id, name, series FROM pocket_sets
+           UNION
+           SELECT DISTINCT pc.set_id AS id,
+             COALESCE(ps.name, pc.set_id) AS name,
+             COALESCE(ps.series, '') AS series
+           FROM pocket_cards pc
+           LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
+           WHERE pc.is_custom = TRUE AND pc.set_id IS NOT NULL AND pc.set_id != ''
+           ORDER BY series, id`
         ),
         conn.query(
           "SELECT DISTINCT element FROM pocket_cards WHERE element IS NOT NULL AND element != '' ORDER BY element"
@@ -1575,7 +1611,7 @@ export async function fetchFilterOptions(source = "TCG") {
     ]);
 
     return {
-      supertypes: stResult.toArray().map((r) => r.supertype),
+      supertypes: mergeSupertypes(stResult.toArray().map((r) => r.supertype)),
       rarities: raritiesResult.toArray().map((r) => r.rarity),
       sets: setsResult.toArray().map((r) => ({ id: r.id, name: r.name, series: r.series })),
       regions: [],
@@ -1595,7 +1631,9 @@ export async function fetchFilterOptions(source = "TCG") {
 
   // ── Custom source (non-Pocket, non-TCG) — route to tcg_cards ──────────
   // (Also handles the default TCG source since all routes to tcg_cards)
-  const srcFilter = `source = ${escapeStr(source)}`;
+  const srcFilter = source === "TCG"
+    ? `(source = 'TCG' OR (is_custom = TRUE AND source != 'Pocket'))`
+    : `source = ${escapeStr(source)}`;
 
   const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult, weathersResult, environmentsResult] =
     await Promise.all([
@@ -1651,7 +1689,7 @@ export async function fetchFilterOptions(source = "TCG") {
       ),
     ]);
 
-  const supertypes = stResult.toArray().map((r) => r.supertype);
+  const supertypes = mergeSupertypes(stResult.toArray().map((r) => r.supertype));
   const rarities = raritiesResult.toArray().map((r) => r.rarity);
   const sets = setsResult.toArray().map((r) => ({
     id: r.id,

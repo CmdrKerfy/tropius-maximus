@@ -36,7 +36,6 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     filters.set_id ||
     filters.region ||
     filters.generation ||
-    filters.color ||
     filters.artist ||
     filters.evolution_line ||
     filters.trainer_type ||
@@ -403,27 +402,6 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                     {options.generations.map((g) => (
                       <option key={g} value={g}>
                         Gen {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Color filter */}
-              {options.colors && options.colors.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Color
-                  </label>
-                  <select
-                    value={filters.color || ""}
-                    onChange={(e) => onChange({ color: e.target.value })}
-                    className={selectClass}
-                  >
-                    <option value="">All</option>
-                    {options.colors.map((c) => (
-                      <option key={c} value={c}>
-                        {c.charAt(0).toUpperCase() + c.slice(1)}
                       </option>
                     ))}
                   </select>
