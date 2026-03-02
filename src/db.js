@@ -919,7 +919,7 @@ export async function fetchCards(params = {}) {
     artist = [],
     evolution_line = [],
     trainer_type = "",
-    specialty = "",
+    specialty = [],
     element = [],
     card_type = [],
     stage = [],
@@ -951,7 +951,7 @@ export async function fetchCards(params = {}) {
     { const s = inSQL(set_id, "c.set_id"); if (s) tcgConditions.push(s); }
     { const s = inSQL(artist, "c.artist"); if (s) tcgConditions.push(s); }
     if (trainer_type)   tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
-    if (specialty)      tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
+    if (specialty.length) tcgConditions.push(`(${specialty.map(s => `c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(s) + '%')}`).join(" OR ")})`);
     { const s = inSQL(region, "c.pkmn_region"); if (s) tcgConditions.push(s); }
     if (generation)     { const g = parseInt(generation); if (g > 0) tcgConditions.push(`pm.generation = ${g}`); }
     if (color)          tcgConditions.push(`pm.color = ${escapeStr(color)}`);
@@ -961,7 +961,7 @@ export async function fetchCards(params = {}) {
     const tcgWhere = tcgConditions.length ? "WHERE " + tcgConditions.join(" AND ") : "";
 
     // Pocket branch: excluded if any filter with no Pocket equivalent is active
-    let pocketExcluded = !!(set_id.length || artist.length || trainer_type || specialty || generation || color || rarity.length || weather.length || environment.length);
+    let pocketExcluded = !!(set_id.length || artist.length || trainer_type || specialty.length || generation || color || rarity.length || weather.length || environment.length);
     const pocketConditions = [];
     if (q)              pocketConditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
     { const s = inSQL(region, "pc.pkmn_region"); if (s) pocketConditions.push(s); }
@@ -1163,7 +1163,7 @@ export async function fetchCards(params = {}) {
   { const s = inSQL(set_id, "c.set_id"); if (s) conditions.push(s); }
   { const s = inSQL(artist, "c.artist"); if (s) conditions.push(s); }
   if (trainer_type) conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
-  if (specialty)    conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(specialty) + '%')}`);
+  if (specialty.length) conditions.push(`(${specialty.map(s => `c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(s) + '%')}`).join(" OR ")})`);
   { const s = inSQL(region, "c.pkmn_region"); if (s) conditions.push(s); }
   if (generation)   { const genInt = parseInt(generation) || 0; if (genInt > 0) conditions.push(`pm.generation = ${genInt}`); }
   if (color)        conditions.push(`pm.color = ${escapeStr(color)}`);

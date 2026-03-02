@@ -7,16 +7,19 @@
 
 import { useState, useEffect, useRef } from "react";
 
-function MultiSelectDropdown({ options, values, onChange, className = "", groups = null }) {
+function MultiSelectDropdown({ options, values, onChange, className = "", groups = null, searchable = true }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const ref = useRef(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setSearch(""); return; }
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
+    if (searchable) setTimeout(() => searchRef.current?.focus(), 0);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
@@ -63,37 +66,61 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
         </svg>
       </button>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto min-w-full w-max max-w-xs">
-          {groups
-            ? groups.map(({ series, sets }) => (
-                <div key={series}>
-                  <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 sticky top-0">
-                    {series}
-                  </div>
-                  {sets.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
+        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg min-w-full w-max max-w-xs flex flex-col">
+          {searchable && (
+            <div className="p-2 border-b border-gray-100">
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+          )}
+          <div className="max-h-52 overflow-y-auto">
+            {groups
+              ? groups.map(({ series, sets }) => {
+                  const filtered = sets.filter((s) =>
+                    s.name.toLowerCase().includes(search.toLowerCase())
+                  );
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div key={series}>
+                      <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 sticky top-0">
+                        {series}
+                      </div>
+                      {filtered.map((s) => (
+                        <label key={s.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
+                          <input
+                            type="checkbox"
+                            checked={values.includes(s.id)}
+                            onChange={() => toggle(s.id)}
+                            className="rounded shrink-0"
+                          />
+                          <span className="truncate">{s.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })
+              : options
+                  .filter((opt) =>
+                    getLabel(opt).toLowerCase().includes(search.toLowerCase())
+                  )
+                  .map((opt) => (
+                    <label key={getVal(opt)} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
                       <input
                         type="checkbox"
-                        checked={values.includes(s.id)}
-                        onChange={() => toggle(s.id)}
+                        checked={values.includes(getVal(opt))}
+                        onChange={() => toggle(getVal(opt))}
                         className="rounded shrink-0"
                       />
-                      <span className="truncate">{s.name}</span>
+                      <span className="truncate">{getLabel(opt)}</span>
                     </label>
                   ))}
-                </div>
-              ))
-            : options.map((opt) => (
-                <label key={getVal(opt)} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
-                  <input
-                    type="checkbox"
-                    checked={values.includes(getVal(opt))}
-                    onChange={() => toggle(getVal(opt))}
-                    className="rounded shrink-0"
-                  />
-                  <span className="truncate">{getLabel(opt)}</span>
-                </label>
-              ))}
+          </div>
         </div>
       )}
     </div>
@@ -164,7 +191,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
         }`}
       >
         {/* Row 1: Source | Set | Artist | Supertype | Featured Region */}
-        <div className="flex flex-wrap gap-3 items-end pb-3">
+        <div className="flex flex-wrap gap-5 items-end pb-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
             <select
@@ -226,26 +253,22 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 options={options.regions}
                 values={filters.region || []}
                 onChange={(v) => onChange({ region: v })}
+                searchable={false}
               />
             </div>
           )}
         </div>
 
         {/* Row 2: Specialty | Rarity | Evolution Line | Weather | Environment */}
-        <div className="flex flex-wrap gap-3 items-end pb-3">
+        <div className="flex flex-wrap gap-5 items-end pb-4 border-t border-gray-100 pt-4">
           {options.specialties?.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Specialty</label>
-              <select
-                value={filters.specialty || ""}
-                onChange={(e) => onChange({ specialty: e.target.value })}
-                className={selectClass}
-              >
-                <option value="">All</option>
-                {options.specialties.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <MultiSelectDropdown
+                options={options.specialties}
+                values={filters.specialty || []}
+                onChange={(v) => onChange({ specialty: v })}
+              />
             </div>
           )}
 
@@ -340,7 +363,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               artist: [],
               evolution_line: [],
               trainer_type: "",
-              specialty: "",
+              specialty: [],
               element: [],
               card_type: [],
               stage: [],
