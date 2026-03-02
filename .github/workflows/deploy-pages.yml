@@ -39,9 +39,7 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: actions/cache@v4
         with:
-          path: |
-            public/data/
-            scripts/pokemon.duckdb
+          path: public/data/
           key: card-data-${{ github.run_id }}
           restore-keys: |
             card-data-
@@ -59,7 +57,6 @@ jobs:
       - name: Commit data files to repo
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          cp scripts/pokemon.duckdb public/data/pokemon.duckdb
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/data/*.parquet public/data/pokemon.duckdb

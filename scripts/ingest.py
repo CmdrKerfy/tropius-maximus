@@ -135,6 +135,14 @@ def initialize_database() -> None:
     """)
 
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS failed_sets (
+            set_id    VARCHAR PRIMARY KEY,
+            reason    VARCHAR,
+            failed_at TIMESTAMP DEFAULT current_timestamp
+        )
+    """)
+
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS pokemon_metadata (
             pokedex_number INTEGER PRIMARY KEY,
             name           VARCHAR,
@@ -258,13 +266,18 @@ def fetch_cards_from_api(set_id: str) -> list:
                 resp.raise_for_status()
                 data = resp.json()
                 break  # Success, exit retry loop
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code < 500:
+                    raise  # 4xx = permanent failure, don't retry
+                last_error = e
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_DELAY * (attempt + 1))
             except (httpx.HTTPError, httpx.TimeoutException) as e:
                 last_error = e
                 if attempt < MAX_RETRIES - 1:
-                    wait_time = RETRY_DELAY * (attempt + 1)  # Exponential-ish backoff
-                    time.sleep(wait_time)
-                    continue
-                raise last_error  # All retries exhausted
+                    time.sleep(RETRY_DELAY * (attempt + 1))
+        else:
+            raise last_error  # All retries exhausted
 
         cards = data.get("data", [])
         all_cards.extend(cards)
@@ -304,7 +317,16 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
     total_ingested = 0
     skipped_count = 0
 
+    # Load permanently-failed sets so we don't retry them
+    failed_sets = {row[0] for row in conn.execute("SELECT set_id FROM failed_sets").fetchall()}
+    perm_skipped = 0
+
     for i, sid in enumerate(set_ids, 1):
+        # Skip sets that have permanently failed (4xx) in a previous run
+        if not force and sid in failed_sets:
+            perm_skipped += 1
+            continue
+
         # Check if set already has cards (resume logic)
         if not force:
             existing = get_existing_card_count(conn, sid)
@@ -318,6 +340,16 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
 
         try:
             cards = fetch_cards_from_api(sid)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code < 500:
+                conn.execute(
+                    "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
+                    [sid, str(e.response.status_code)],
+                )
+                print(f"permanently unavailable ({e.response.status_code}) — will skip in future runs")
+            else:
+                print(f"failed after {MAX_RETRIES} retries (HTTP {e.response.status_code})")
+            continue
         except (httpx.HTTPError, httpx.TimeoutException) as e:
             print(f"failed after {MAX_RETRIES} retries ({e})")
             continue
@@ -371,10 +403,12 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
             time.sleep(0.5)
 
     conn.close()
-    if skipped_count > 0:
-        print(f"Done! Ingested {total_ingested} cards total ({skipped_count} sets skipped - already complete).")
-    else:
-        print(f"Done! Ingested {total_ingested} cards total.")
+    parts = [f"Ingested {total_ingested} cards total."]
+    if skipped_count:
+        parts.append(f"{skipped_count} sets already complete.")
+    if perm_skipped:
+        parts.append(f"{perm_skipped} sets permanently unavailable (skipped).")
+    print("Done! " + " ".join(parts))
     return total_ingested
 
 
@@ -766,7 +800,18 @@ def main():
         action="store_true",
         help="Force re-download of all sets, even if already in database.",
     )
+    parser.add_argument(
+        "--clear-failed",
+        dest="clear_failed",
+        action="store_true",
+        help="Clear the permanently-failed sets list before running.",
+    )
     args = parser.parse_args()
+    if args.clear_failed:
+        conn = get_connection()
+        deleted = conn.execute("DELETE FROM failed_sets").rowcount
+        conn.close()
+        print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
     run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, pocket_only=args.pocket_only, force=args.force)
 
 
