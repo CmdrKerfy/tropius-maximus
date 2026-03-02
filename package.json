@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "failed-sets": "python3 -c \"import duckdb; conn = duckdb.connect('public/data/pokemon.duckdb', read_only=True); [print(r) for r in conn.execute('SELECT set_id, reason FROM failed_sets ORDER BY set_id').fetchall()] or print('None'); conn.close()\"",
+    "missing-sets": "python3 -c \"import duckdb; conn = duckdb.connect('public/data/pokemon.duckdb', read_only=True); [print(r) for r in conn.execute(\\\"SELECT s.id, s.name, s.total FROM sets s LEFT JOIN tcg_cards c ON c.set_id=s.id GROUP BY s.id,s.name,s.total HAVING COUNT(c.id)=0 ORDER BY s.id\\\").fetchall()] or print('None'); conn.close()\""
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

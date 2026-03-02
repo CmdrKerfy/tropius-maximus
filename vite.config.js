@@ -5,7 +5,17 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: process.env.VITE_BASE || "/",
-  build: { outDir: "dist" },
+  build: {
+    outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-duckdb": ["@duckdb/duckdb-wasm"],
+        },
+      },
+    },
+  },
   server: {
     sourcemapIgnoreList: (sourcePath) => sourcePath.includes("node_modules"),
   },
