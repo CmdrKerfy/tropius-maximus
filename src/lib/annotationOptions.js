@@ -244,6 +244,16 @@ export const TOP_10_THEMES_OPTIONS = [
 
 export const WTPC_EPISODE_OPTIONS = Array.from({ length: 50 }, (_, i) => `Episode ${i + 1}`);
 
+export const CARD_BORDER_OPTIONS = ["Yellow", "Gray"];
+
+export const ENERGY_TYPE_OPTIONS = ["Basic", "Special"];
+
+export const RIVAL_GROUP_OPTIONS = [
+  "Team Rocket", "Team Aqua", "Team Magma", "Team Galactic",
+  "Team Plasma", "Team Flare", "Team Skull", "Team Yell", "Team Star",
+  "Aether Foundation", "Team Rainbow Rocket",
+];
+
 export const VIDEO_REGION_OPTIONS = [
   "Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar","Hisui",
   "Paldea","Aquapolis","Holon","Peaceful Park",

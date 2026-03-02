@@ -11,7 +11,7 @@
  * - Sort controls in separate row (always visible)
  */
 
-export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand, customSources = [] }) {
+export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand }) {
   // Group sets by series for the dropdown optgroups.
   const setsBySeries = {};
   for (const s of options.sets) {
@@ -26,7 +26,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
 
   const isAll    = filters.source === "";
   const isPocket = filters.source === "Pocket";
-  const isCustom = customSources.includes(filters.source);
+  const isCustom = filters.source === "Custom";
   const isTCG    = !isAll && !isPocket && !isCustom;
 
   // Check if any filter is active (for highlight)
@@ -43,7 +43,9 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     filters.specialty ||
     filters.element ||
     filters.card_type ||
-    filters.stage;
+    filters.stage ||
+    filters.weather ||
+    filters.environment;
 
   return (
     <div className="mt-4">
@@ -90,9 +92,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               <option value="">All</option>
               <option value="TCG">TCG</option>
               <option value="Pocket">Pocket</option>
-              {customSources.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              <option value="Custom">Custom Cards</option>
             </select>
           </div>
 
@@ -371,7 +371,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               {options.regions && options.regions.length > 0 && (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Pokémon Region
+                    Featured Region
                   </label>
                   <select
                     value={filters.region || ""}
@@ -429,6 +429,28 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                   </select>
                 </div>
               )}
+
+              {/* Weather filter */}
+              {options.weathers && options.weathers.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Weather</label>
+                  <select value={filters.weather || ""} onChange={(e) => onChange({ weather: e.target.value })} className={selectClass}>
+                    <option value="">All</option>
+                    {options.weathers.map((w) => <option key={w} value={w}>{w}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Environment filter */}
+              {options.environments && options.environments.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Environment</label>
+                  <select value={filters.environment || ""} onChange={(e) => onChange({ environment: e.target.value })} className={selectClass}>
+                    <option value="">All</option>
+                    {options.environments.map((env) => <option key={env} value={env}>{env}</option>)}
+                  </select>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -454,7 +476,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
             <option value="set_name">Set</option>
             {isTCG && <option value="price">Price</option>}
             {/* {isTCG && <option value="generation">Generation</option>} */}
-            {isTCG && <option value="region">Pokémon Region</option>}
+            {isTCG && <option value="region">Featured Region</option>}
           </select>
         </div>
 
@@ -489,6 +511,8 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               element: "",
               card_type: "",
               stage: "",
+              weather: "",
+              environment: "",
               sort_by: isTCG ? "pokedex" : "name",
               sort_dir: "asc",
             })

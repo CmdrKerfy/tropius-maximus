@@ -42,7 +42,8 @@ def export():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     conn = duckdb.connect(DB_PATH, read_only=True)
 
-    safe_export(conn, "cards", "SELECT * FROM cards",
+    safe_export(conn, "tcg_cards",
+                "SELECT id, name, supertype, subtypes, hp, types, evolves_from, rarity, artist, set_id, set_name, set_series, number, regulation_mark, image_small, image_large, raw_data, prices FROM tcg_cards WHERE NOT is_custom",
                 os.path.join(OUTPUT_DIR, "cards.parquet"), "cards.parquet")
 
     safe_export(conn, "sets", "SELECT * FROM sets",
@@ -55,7 +56,8 @@ def export():
     safe_export(conn, "pocket_sets", "SELECT * FROM pocket_sets",
                 os.path.join(OUTPUT_DIR, "pocket_sets.parquet"), "pocket_sets.parquet")
 
-    safe_export(conn, "pocket_cards", "SELECT * FROM pocket_cards",
+    safe_export(conn, "pocket_cards",
+                "SELECT id, name, set_id, number, rarity, card_type, element, hp, stage, retreat_cost, weakness, evolves_from, packs, image_url, image_filename, illustrator, raw_data FROM pocket_cards WHERE NOT is_custom",
                 os.path.join(OUTPUT_DIR, "pocket_cards.parquet"), "pocket_cards.parquet")
 
     conn.close()

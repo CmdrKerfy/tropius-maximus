@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { addCustomCard, fetchFormOptions } from "../db";
+import { addTcgCard, addPocketCard, fetchFormOptions } from "../db";
 import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
@@ -14,12 +14,12 @@ import {
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
   VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
   VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
-  STAMP_OPTIONS,
+  STAMP_OPTIONS, CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
 } from "../lib/annotationOptions";
 
-// Sources that have existing card databases — Card ID auto-generation is skipped
+// Sources with existing card databases — Card ID auto-generation is skipped
 // for these to avoid ID collisions with real cards across annotation tables.
-const NON_CUSTOM_SOURCES = new Set(["TCG", "Pocket"]);
+const NON_CUSTOM_SOURCES = new Set(["TCG"]);
 
 // Hardcoded option sets
 const COLOR_OPTIONS = [
@@ -61,7 +61,10 @@ function CollapsibleSection({ title, defaultOpen = false, children }) {
 }
 
 export default function CustomCardForm({ onCardAdded, onClose }) {
-  // ── Required fields ──
+  // ── Card table picker ──
+  const [cardTable, setCardTable] = useState("tcg");
+
+  // ── Required fields (TCG) ──
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [setIdVal, setSetIdVal] = useState("");
@@ -69,7 +72,7 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [imageSmall, setImageSmall] = useState("");
   const [source, setSource] = useState("");
 
-  // ── Card details ──
+  // ── Card details (TCG) ──
   const [supertype, setSupertype] = useState("Pokémon");
   const [subtypes, setSubtypes] = useState("");
   const [types, setTypes] = useState("");
@@ -83,6 +86,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [setSeries, setSetSeries] = useState("");
   const [regulationMark, setRegulationMark] = useState("");
   const [imageLarge, setImageLarge] = useState("");
+
+  // ── Card details (Pocket-specific) ──
+  const [cardType, setCardType] = useState("");
+  const [element, setElement] = useState("");
+  const [stage, setStage] = useState("");
+  const [retreatCost, setRetreatCost] = useState("");
+  const [weakness, setWeakness] = useState("");
+  const [packs, setPacks] = useState("");
+  const [illustrator, setIllustrator] = useState("");
 
   // ── Annotation fields ──
   const [artStyle, setArtStyle] = useState("");
@@ -118,6 +130,9 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [trainerCardSubgroup, setTrainerCardSubgroup] = useState("");
   const [pocketExclusive, setPocketExclusive] = useState(false);
   const [stamp, setStamp] = useState("");
+  const [cardBorder, setCardBorder] = useState("");
+  const [energyType, setEnergyType] = useState("");
+  const [rivalGroup, setRivalGroup] = useState("");
 
   // ── Video fields ──
   const [videoGame, setVideoGame] = useState("");
@@ -136,6 +151,10 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   const [owned, setOwned] = useState(false);
   const [notes, setNotes] = useState("");
 
+  // ── New Attributes ──
+  const [imageOverride, setImageOverride] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+
   // ── UI state ──
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -146,10 +165,10 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
   // ── Combobox options (loaded from DB) ──
   const [opts, setOpts] = useState({});
 
-  // Auto-generate Set ID from Set Name for custom-only sources.
+  // Auto-generate Set ID from Set Name for TCG custom-only sources.
   // Stops auto-filling if the user manually edits the Set ID field.
   useEffect(() => {
-    if (NON_CUSTOM_SOURCES.has(source) || setIdManual) return;
+    if (cardTable === 'pocket' || NON_CUSTOM_SOURCES.has(source) || setIdManual) return;
     // Acronym: first letter of each word + any trailing digits (e.g. "Test Set Name, Set 4" → "tsns4")
     const derived = setNameVal
       .replace(/[^a-zA-Z0-9\s]/g, " ")
@@ -159,15 +178,15 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       .join("")
       .toLowerCase();
     setSetIdVal(derived);
-  }, [setNameVal, source, setIdManual]);
+  }, [setNameVal, source, setIdManual, cardTable]);
 
-  // Auto-generate Card ID from Set ID + Card Number for custom-only sources.
-  // Skipped for "TCG" and "Pocket" sources since those have existing card databases
-  // with established IDs — a collision would corrupt annotation updates across tables.
+  // Auto-generate Card ID from Set ID + Card Number.
+  // For TCG path: skip auto-gen when source is "TCG" (existing card database).
+  // For Pocket path: always auto-gen.
   useEffect(() => {
-    if (NON_CUSTOM_SOURCES.has(source)) return;
+    if (cardTable === 'tcg' && NON_CUSTOM_SOURCES.has(source)) return;
     setId(setIdVal && number ? `${setIdVal}-${number}` : "");
-  }, [setIdVal, number, source]);
+  }, [setIdVal, number, source, cardTable]);
 
   useEffect(() => {
     fetchFormOptions()
@@ -183,6 +202,64 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
     return arr.length > 0 ? JSON.stringify(arr) : "";
   };
 
+  const buildSharedAnnotationFields = () => {
+    const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
+    return {
+      owned,
+      notes: notes || "",
+      art_style: toArray(artStyle),
+      main_character: toArray(mainCharacter),
+      background_pokemon: bgPokemon,
+      background_humans: backgroundHumans ? toArray(backgroundHumans) : null,
+      primary_color: primaryColor || "",
+      secondary_color: secondaryColor || "",
+      shape: shape || "",
+      video_game: toArray(videoGame),
+      video_game_location: toArray(videoGameLocation),
+      shorts_appearance: shortsAppearance,
+      region_appearance: regionAppearance,
+      thumbnail_used: thumbnailUsed,
+      video_title: toArray(videoTitle),
+      video_type: toArray(videoType),
+      top_10_themes: toArray(top10Themes),
+      wtpc_episode: toArray(wtpcEpisode),
+      video_region: toArray(videoRegion),
+      video_location: toArray(videoLocation),
+      unique_id: id,
+      evolution_line: (evolutionLine || "").toLowerCase(),
+      emotion: toArray(emotion),
+      pose: toArray(pose),
+      camera_angle: cameraAngle || "",
+      items: items || "",
+      actions: toArray(actions),
+      additional_characters: toArray(additionalCharacters),
+      perspective: perspective || "",
+      weather: weather || "",
+      environment: environment || "",
+      storytelling: storytelling || "",
+      background_details: toArray(backgroundDetails),
+      card_locations: cardLocations || "",
+      pkmn_region: pkmnRegion || "",
+      card_region: cardRegion || "",
+      card_subcategory: toArray(cardSubcategory),
+      held_item: heldItem || "",
+      pokeball: pokeball || "",
+      evolution_items: toArray(evolutionItems),
+      berries: toArray(berries),
+      holiday_theme: toArray(holidayTheme),
+      multi_card: toArray(multiCard),
+      trainer_card_type: trainerCardType || "",
+      trainer_card_subgroup: toArray(trainerCardSubgroup),
+      pocket_exclusive: pocketExclusive,
+      stamp: stamp || "",
+      card_border: cardBorder || "",
+      energy_type: energyType || "",
+      rival_group: rivalGroup || "",
+      image_override: imageOverride || "",
+      video_url: videoUrl || "",
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -190,154 +267,162 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
     setCreating(true);
 
     try {
-      if (!name || !number || !setNameVal || !imageSmall || !source) {
-        throw new Error("Please fill in all required fields");
-      }
+      const sharedFields = buildSharedAnnotationFields();
 
-      const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
-
-      // Build card object for custom_cards.json format
-      const cardJson = {
-        id,
-        name,
-        alt_name: altName || "",
-        supertype: supertype || "",
-        subtypes: toArray(subtypes),
-        hp: hp ? Number(hp) || hp : null,
-        types: toArray(types),
-        evolves_from: evolvesFrom || null,
-        rarity: rarity || "",
-        special_rarity: specialRarity || "",
-        artist: artist || "",
-        art_style: toArray(artStyle),
-        set_id: setIdVal,
-        set_name: setNameVal,
-        set_series: setSeries || "",
-        number: number || "",
-        regulation_mark: regulationMark || "",
-        image_small: imageSmall,
-        image_large: imageLarge || imageSmall,
-        source,
-        owned,
-        notes: notes || "",
-        main_character: toArray(mainCharacter),
-        background_pokemon: bgPokemon,
-        background_humans: backgroundHumans ? toArray(backgroundHumans) : null,
-        primary_color: primaryColor || "",
-        secondary_color: secondaryColor || "",
-        shape: shape || "",
-        video_game: toArray(videoGame),
-        video_game_location: toArray(videoGameLocation),
-        shorts_appearance: shortsAppearance,
-        region_appearance: regionAppearance,
-        thumbnail_used: thumbnailUsed,
-        video_title: toArray(videoTitle),
-        video_type: toArray(videoType),
-        top_10_themes: toArray(top10Themes),
-        wtpc_episode: toArray(wtpcEpisode),
-        video_region: toArray(videoRegion),
-        video_location: toArray(videoLocation),
-        unique_id: id,
-        evolution_line: (evolutionLine || "").toLowerCase(),
-        emotion: toArray(emotion),
-        pose: toArray(pose),
-        camera_angle: cameraAngle || "",
-        items: items || "",
-        actions: toArray(actions),
-        additional_characters: toArray(additionalCharacters),
-        perspective: perspective || "",
-        weather: weather || "",
-        environment: environment || "",
-        storytelling: storytelling || "",
-        background_details: toArray(backgroundDetails),
-        card_locations: cardLocations || "",
-        pkmn_region: pkmnRegion || "",
-        card_region: cardRegion || "",
-        card_subcategory: toArray(cardSubcategory),
-        held_item: heldItem || "",
-        pokeball: pokeball || "",
-        evolution_items: toArray(evolutionItems),
-        berries: toArray(berries),
-        holiday_theme: toArray(holidayTheme),
-        multi_card: toArray(multiCard),
-        trainer_card_type: trainerCardType || "",
-        trainer_card_subgroup: toArray(trainerCardSubgroup),
-        pocket_exclusive: pocketExclusive,
-        stamp: stamp || "",
-      };
-
-      // Build card for DuckDB insert (arrays as JSON strings, evolution_line as arrow string)
-      const dbCard = {
-        ...cardJson,
-        subtypes: JSON.stringify(cardJson.subtypes),
-        types: JSON.stringify(cardJson.types),
-        art_style: arrayStr(artStyle),
-        main_character: arrayStr(mainCharacter),
-        background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
-        background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
-        additional_characters: arrayStr(additionalCharacters),
-        background_details: arrayStr(backgroundDetails),
-        evolution_line: (evolutionLine || "").toLowerCase(),
-        image_large: imageLarge || imageSmall,
-        unique_id: id,
-        card_subcategory:      arrayStr(cardSubcategory),
-        evolution_items:       arrayStr(evolutionItems),
-        berries:               arrayStr(berries),
-        holiday_theme:         arrayStr(holidayTheme),
-        multi_card:            arrayStr(multiCard),
-        trainer_card_subgroup: arrayStr(trainerCardSubgroup),
-        video_title:           arrayStr(videoTitle),
-        video_game:            arrayStr(videoGame),
-        video_game_location:     arrayStr(videoGameLocation),
-        video_type:            arrayStr(videoType),
-        top_10_themes:         arrayStr(top10Themes),
-        wtpc_episode:          arrayStr(wtpcEpisode),
-        video_region:          arrayStr(videoRegion),
-        video_location:        arrayStr(videoLocation),
-      };
-
-      // Insert into local DuckDB
-      await addCustomCard(dbCard);
-
-      // Auto-commit to GitHub if token is set
-      let ghCommitted = false;
-      const token = getToken();
-      if (token) {
-        try {
-          await commitNewCard(token, cardJson);
-          ghCommitted = true;
-        } catch (ghErr) {
-          console.warn("GitHub commit failed:", ghErr.message);
-          setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+      if (cardTable === 'pocket') {
+        if (!name || !number || !setIdVal || !imageSmall) {
+          throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
         }
-      }
 
-      setSuccess(
-        ghCommitted
-          ? `Card "${name}" added and committed to GitHub!`
-          : `Card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
-      );
+        const pocketCardJson = {
+          id,
+          name,
+          set_id: setIdVal,
+          number: number || "",
+          rarity: rarity || "",
+          card_type: cardType || "",
+          element: element || "",
+          hp: hp ? Number(hp) || null : null,
+          stage: stage || "",
+          retreat_cost: retreatCost ? Number(retreatCost) || null : null,
+          weakness: weakness || "",
+          evolves_from: evolvesFrom || null,
+          packs: toArray(packs),
+          image_url: imageSmall,
+          illustrator: illustrator || "",
+          source: 'Pocket',
+          _table: 'pocket',
+          ...sharedFields,
+        };
+
+        await addPocketCard(pocketCardJson);
+
+        let ghCommitted = false;
+        const token = getToken();
+        if (token) {
+          try {
+            await commitNewCard(token, pocketCardJson);
+            ghCommitted = true;
+          } catch (ghErr) {
+            console.warn("GitHub commit failed:", ghErr.message);
+            setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+          }
+        }
+
+        setSuccess(
+          ghCommitted
+            ? `Pocket card "${name}" added and committed to GitHub!`
+            : `Pocket card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
+        );
+      } else {
+        // TCG path
+        if (!name || !number || !setNameVal || !imageSmall || !source) {
+          throw new Error("Please fill in all required fields");
+        }
+
+        const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
+
+        // Build card object for custom_cards.json format
+        const cardJson = {
+          id,
+          name,
+          alt_name: altName || "",
+          supertype: supertype || "",
+          subtypes: toArray(subtypes),
+          hp: hp ? Number(hp) || hp : null,
+          types: toArray(types),
+          evolves_from: evolvesFrom || null,
+          rarity: rarity || "",
+          special_rarity: specialRarity || "",
+          artist: artist || "",
+          set_id: setIdVal,
+          set_name: setNameVal,
+          set_series: setSeries || "",
+          number: number || "",
+          regulation_mark: regulationMark || "",
+          image_small: imageSmall,
+          image_large: imageLarge || imageSmall,
+          source,
+          _table: 'tcg',
+          ...sharedFields,
+          background_pokemon: bgPokemon,
+        };
+
+        // Build card for DuckDB insert (arrays as JSON strings)
+        const dbCard = {
+          ...cardJson,
+          subtypes: JSON.stringify(cardJson.subtypes),
+          types: JSON.stringify(cardJson.types),
+          art_style: arrayStr(artStyle),
+          main_character: arrayStr(mainCharacter),
+          background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
+          background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
+          additional_characters: arrayStr(additionalCharacters),
+          background_details: arrayStr(backgroundDetails),
+          image_large: imageLarge || imageSmall,
+          card_subcategory:      arrayStr(cardSubcategory),
+          evolution_items:       arrayStr(evolutionItems),
+          berries:               arrayStr(berries),
+          holiday_theme:         arrayStr(holidayTheme),
+          multi_card:            arrayStr(multiCard),
+          trainer_card_subgroup: arrayStr(trainerCardSubgroup),
+          video_title:           arrayStr(videoTitle),
+          video_game:            arrayStr(videoGame),
+          video_game_location:   arrayStr(videoGameLocation),
+          video_type:            arrayStr(videoType),
+          top_10_themes:         arrayStr(top10Themes),
+          wtpc_episode:          arrayStr(wtpcEpisode),
+          video_region:          arrayStr(videoRegion),
+          video_location:        arrayStr(videoLocation),
+        };
+
+        await addTcgCard(dbCard);
+
+        let ghCommitted = false;
+        const token = getToken();
+        if (token) {
+          try {
+            await commitNewCard(token, cardJson);
+            ghCommitted = true;
+          } catch (ghErr) {
+            console.warn("GitHub commit failed:", ghErr.message);
+            setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+          }
+        }
+
+        setSuccess(
+          ghCommitted
+            ? `Card "${name}" added and committed to GitHub!`
+            : `Card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
+        );
+      }
 
       // Refetch form options so dropdowns include the newly submitted values
       fetchFormOptions().then(setOpts).catch(() => {});
 
       // Reset form
-      setId(""); setName(""); setImageSmall(""); setImageLarge("");
-      setSource("");
+      setId(""); setName(""); setSetIdVal(""); setSetNameVal(""); setImageSmall(""); setImageLarge("");
+      setSource(""); setNumber("");
       setAltName(""); setEvolvesFrom(""); setHp(""); setRarity("");
-      setSpecialRarity(""); setArtist(""); setNumber(""); setRegulationMark("");
+      setSpecialRarity(""); setArtist(""); setRegulationMark("");
+      setSupertype("Pokémon"); setSubtypes(""); setTypes(""); setSeries("");
+      setCardType(""); setElement(""); setStage(""); setRetreatCost("");
+      setWeakness(""); setPacks(""); setIllustrator("");
       setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");
       setBackgroundHumans(""); setAdditionalCharacters(""); setEmotion("");
       setPose(""); setCameraAngle(""); setItems(""); setActions("");
       setPerspective(""); setWeather(""); setEnvironment(""); setStorytelling("");
       setBackgroundDetails(""); setCardLocations(""); setPkmnRegion(""); setCardRegion("");
       setPrimaryColor(""); setSecondaryColor(""); setShape(""); setEvolutionLine("");
-      setVideoGame(""); setVideoGameRegion(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
-      setVideoTitle(""); setVideoType(""); setTop10Themes(""); setWtpcEpisode(""); setVideoRegion(""); setVideoLocation(""); setOwned(false); setNotes("");
+      setVideoGame(""); setVideoGameLocation(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
+      setVideoTitle(""); setVideoType(""); setTop10Themes(""); setWtpcEpisode(""); setVideoRegion(""); setVideoLocation("");
+      setOwned(false); setNotes("");
       setCardSubcategory(""); setHeldItem(""); setPokeball("");
       setEvolutionItems(""); setBerries(""); setHolidayTheme("");
       setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
       setPocketExclusive(false); setStamp("");
+      setCardBorder(""); setEnergyType(""); setRivalGroup("");
+      setImageOverride(""); setVideoUrl("");
       setSetIdManual(false);
       setImageError(false);
 
@@ -365,6 +450,32 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         )}
       </div>
 
+      {/* TCG / Pocket Picker */}
+      <div className="flex gap-2 mb-4">
+        <button
+          type="button"
+          onClick={() => setCardTable("tcg")}
+          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+            cardTable === "tcg"
+              ? "bg-green-600 text-white border-green-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Add TCG Card
+        </button>
+        <button
+          type="button"
+          onClick={() => setCardTable("pocket")}
+          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+            cardTable === "pocket"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Add Pocket Card
+        </button>
+      </div>
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-4">
           {error}
@@ -377,50 +488,79 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ── Required Fields ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={labelClass}>Name <span className="text-red-500">*</span></label>
-            <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+
+        {/* ── Required Fields (TCG) ── */}
+        {cardTable === 'tcg' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Name <span className="text-red-500">*</span></label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Set Series</label>
+              <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
+              <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
+              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Featured Region</label>
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Artist</label>
+              <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Source <span className="text-red-500">*</span></label>
+              <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
+                onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
+              <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
+            </div>
+            <div className="col-span-1 md:col-span-3">
+              <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
+              <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-1 md:col-span-3 pb-2">
+              <label className={labelClass}>Large Image URL [Optional]</label>
+              <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>Set Series</label>
-            <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
+        )}
+
+        {/* ── Required Fields (Pocket) ── */}
+        {cardTable === 'pocket' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Name <span className="text-red-500">*</span></label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
+              <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., A1" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
+              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="e.g., 001" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Featured Region</label>
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto" className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-1 md:col-span-3">
+              <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
+              <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
-            <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
-          </div>
-          <div>
-            <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
-            <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
-          </div>
-          <div>
-            <label className={labelClass}>Pokémon Region</label>
-            <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
-          </div>
-          <div>
-            <label className={labelClass}>Artist</label>
-            <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
-          </div>
-          <div>
-            <label className={labelClass}>Source <span className="text-red-500">*</span></label>
-            <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
-          </div>
-          <div className="flex items-center gap-2 pt-5">
-            <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
-              onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
-            <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
-          </div>
-          <div className="col-span-1 md:col-span-3">
-            <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
-            <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
-          </div>
-          <div className="col-span-1 md:col-span-3 pb-2">
-            <label className={labelClass}>Large Image URL [Optional]</label>
-            <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
-          </div>
-        </div>
+        )}
 
         {/* Image Preview */}
         {imageSmall && (
@@ -435,39 +575,114 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
         )}
 
-        {/* ── Card Details (collapsible) ── */}
-        <CollapsibleSection title="Card Details">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
-            <div>
-              <label className={labelClass}>Supertype</label>
-              <select value={supertype} onChange={(e) => setSupertype(e.target.value)} className={inputClass + " w-full"}>
-                <option value="Pokémon">Pokémon</option>
-                <option value="Trainer">Trainer</option>
-                <option value="Energy">Energy</option>
-              </select>
+        {/* ── Card Details (TCG, collapsible) ── */}
+        {cardTable === 'tcg' && (
+          <CollapsibleSection title="Card Details">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
+              <div>
+                <label className={labelClass}>Supertype</label>
+                <select value={supertype} onChange={(e) => setSupertype(e.target.value)} className={inputClass + " w-full"}>
+                  <option value="Pokémon">Pokémon</option>
+                  <option value="Trainer">Trainer</option>
+                  <option value="Energy">Energy</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Subtypes</label>
+                <MultiComboBox value={subtypes} onChange={setSubtypes} options={opts.subtypes || []} placeholder="Basic, Stage 1" />
+              </div>
+              <div>
+                <label className={labelClass}>Types</label>
+                <MultiComboBox value={types} onChange={setTypes} options={opts.types || []} placeholder="Lightning, Fire" />
+              </div>
+              <div>
+                <label className={labelClass}>HP</label>
+                <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="60" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Evolves From</label>
+                <input type="text" value={evolvesFrom} onChange={(e) => setEvolvesFrom(e.target.value)} placeholder="Pichu" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Evolution Line</label>
+                <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Rarity</label>
+                <ComboBox value={rarity} onChange={setRarity} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Special Rarity</label>
+                <input type="text" value={specialRarity} onChange={(e) => setSpecialRarity(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Alt Name</label>
+                <input type="text" value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Regulation Mark</label>
+                <input type="text" value={regulationMark} onChange={(e) => setRegulationMark(e.target.value)} placeholder="E" className={inputClass + " w-full"} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Subtypes</label>
-              <MultiComboBox value={subtypes} onChange={setSubtypes} options={opts.subtypes || []} placeholder="Basic, Stage 1" />
+          </CollapsibleSection>
+        )}
+
+        {/* ── Card Details (Pocket, collapsible) ── */}
+        {cardTable === 'pocket' && (
+          <CollapsibleSection title="Card Details">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
+              <div>
+                <label className={labelClass}>Card Type</label>
+                <select value={cardType} onChange={(e) => setCardType(e.target.value)} className={inputClass + " w-full"}>
+                  <option value="">—</option>
+                  <option value="pokémon">Pokémon</option>
+                  <option value="trainer">Trainer</option>
+                  <option value="energy">Energy</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Element</label>
+                <input type="text" value={element} onChange={(e) => setElement(e.target.value)} placeholder="Fire" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>HP</label>
+                <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="60" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Stage</label>
+                <input type="text" value={stage} onChange={(e) => setStage(e.target.value)} placeholder="basic" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Retreat Cost</label>
+                <input type="number" value={retreatCost} onChange={(e) => setRetreatCost(e.target.value)} placeholder="1" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Weakness</label>
+                <input type="text" value={weakness} onChange={(e) => setWeakness(e.target.value)} placeholder="Water" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Evolves From</label>
+                <input type="text" value={evolvesFrom} onChange={(e) => setEvolvesFrom(e.target.value)} placeholder="Charmander" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Packs</label>
+                <input type="text" value={packs} onChange={(e) => setPacks(e.target.value)} placeholder="Charizard, Pikachu" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Illustrator</label>
+                <ComboBox value={illustrator} onChange={setIllustrator} options={opts.artist || []} placeholder="illustrator name" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Evolution Line</label>
+                <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Charmander → Charmeleon → Charizard" className={inputClass + " w-full"} />
+              </div>
+              <div>
+                <label className={labelClass}>Rarity</label>
+                <input type="text" value={rarity} onChange={(e) => setRarity(e.target.value)} placeholder="◆◆◆" className={inputClass + " w-full"} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Types</label>
-              <MultiComboBox value={types} onChange={setTypes} options={opts.types || []} placeholder="Lightning, Fire" />
-            </div>
-            <div>
-              <label className={labelClass}>HP</label>
-              <input type="text" value={hp} onChange={(e) => setHp(e.target.value)} placeholder="60" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Evolves From</label>
-              <input type="text" value={evolvesFrom} onChange={(e) => setEvolvesFrom(e.target.value)} placeholder="Pichu" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Evolution Line</label>
-              <ComboBox value={evolutionLine} onChange={setEvolutionLine} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
-            </div>
-          </div>
-        </CollapsibleSection>
+          </CollapsibleSection>
+        )}
 
         {/* ── Annotations (collapsible) ── */}
         <CollapsibleSection title="Annotations">
@@ -478,28 +693,36 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Card Classification</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
-            <div>
-              <label className={labelClass}>Rarity</label>
-              <ComboBox value={rarity} onChange={setRarity} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Card Subcategory</label>
-              <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
-            </div>
-            <div>
-              <label className={labelClass}>Trainer Card Type</label>
-              <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Trainer Card Subgroup</label>
-              <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
-            </div>
-            <div>
-              <label className={labelClass}>Stamp</label>
-              <ComboBox value={stamp} onChange={setStamp}
-                options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
-                className={inputClass + " w-full"} />
-            </div>
+            {cardTable === 'tcg' && (
+              <>
+                <div>
+                  <label className={labelClass}>Card Subcategory</label>
+                  <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
+                </div>
+                <div>
+                  <label className={labelClass}>Trainer Card Type</label>
+                  <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
+                </div>
+                <div>
+                  <label className={labelClass}>Trainer Card Subgroup</label>
+                  <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
+                </div>
+                <div>
+                  <label className={labelClass}>Stamp</label>
+                  <ComboBox value={stamp} onChange={setStamp}
+                    options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
+                    className={inputClass + " w-full"} />
+                </div>
+                <div>
+                  <label className={labelClass}>Card Border</label>
+                  <ComboBox value={cardBorder} onChange={setCardBorder} options={opts.cardBorder || CARD_BORDER_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+                </div>
+                <div>
+                  <label className={labelClass}>Energy Type</label>
+                  <ComboBox value={energyType} onChange={setEnergyType} options={opts.energyType || ENERGY_TYPE_OPTIONS} placeholder="Basic" className={inputClass + " w-full"} />
+                </div>
+              </>
+            )}
 
             {/* ── Background Characters ── */}
             <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
@@ -631,6 +854,10 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
               <label className={labelClass}>Multi Card</label>
               <MultiComboBox value={multiCard} onChange={setMultiCard} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling" />
             </div>
+            <div>
+              <label className={labelClass}>Rival Group</label>
+              <ComboBox value={rivalGroup} onChange={setRivalGroup} options={opts.rivalGroup || RIVAL_GROUP_OPTIONS} placeholder="Team Rocket" className={inputClass + " w-full"} />
+            </div>
 
           </div>
         </CollapsibleSection>
@@ -716,7 +943,27 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
           </div>
         </CollapsibleSection>
 
+        {/* ── New Attributes (collapsible) ── */}
+        <CollapsibleSection title="New Attributes">
+          <div className="grid grid-cols-1 gap-3 pb-2">
+            <div>
+              <label className={labelClass}>Image Override URL</label>
+              <input type="url" value={imageOverride} onChange={(e) => setImageOverride(e.target.value)} placeholder="https://... (overrides image_small when set)" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Video URL</label>
+              <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." className={inputClass + " w-full"} />
+            </div>
+          </div>
+        </CollapsibleSection>
+
         {/* ── Submit ── */}
+        {!getToken() && (
+          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            No GitHub PAT configured — this card will only save locally to this browser.
+            Add a PAT in Settings to sync across devices.
+          </div>
+        )}
         <div className="flex gap-3 pt-2">
           <button
             type="submit"

@@ -14,7 +14,7 @@ import { executeSql, syncMutableTablesToIndexedDB } from "../db";
 import { getToken, getFileContents, updateFileContents } from "../lib/github";
 
 const EXAMPLES = [
-  { label: "All Columns (cards)", query: "SELECT * FROM cards LIMIT 5" },
+  { label: "All Columns (tcg_cards)", query: "SELECT * FROM tcg_cards LIMIT 5" },
   {
     label: "All Columns (pokemon_metadata)",
     query: "SELECT * FROM pokemon_metadata LIMIT 5",
@@ -27,12 +27,12 @@ const EXAMPLES = [
   {
     label: "Pokemon Type",
     query:
-      "SELECT id, name, set_name, number, image_small FROM cards WHERE types ILIKE '%Fire%' LIMIT 50",
+      "SELECT id, name, set_name, number, image_small FROM tcg_cards WHERE types ILIKE '%Fire%' LIMIT 50",
   },
   {
     label: "Pokemon Locations",
     query: `SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small, pm.encounter_location
-FROM cards c
+FROM tcg_cards c
 JOIN pokemon_metadata pm
   ON pm.pokedex_number = TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)
 WHERE pm.encounter_location IN ('Sinnoh Route 225 Area', 'Mt Coronet 1F Route 207')
@@ -41,19 +41,23 @@ LIMIT 50`,
   {
     label: "Card Artists",
     query:
-      "SELECT id, name, set_name, artist FROM cards WHERE artist ILIKE 'Sachiko Adachi'",
+      "SELECT id, name, set_name, artist FROM tcg_cards WHERE artist ILIKE 'Sachiko Adachi'",
   },
   {
-    label: "Background Characters (custom)",
+    label: "Background Characters",
     query: `SELECT id, name, set_name, image_small,
   background_pokemon, background_humans
-FROM custom_cards
+FROM tcg_cards
 WHERE background_pokemon ILIKE '%Pikachu%'
    OR background_humans ILIKE '%Pikachu%'`,
   },
   {
+    label: "Custom Cards",
+    query: "SELECT id, name, set_name, source, image_small FROM tcg_cards WHERE is_custom = TRUE",
+  },
+  {
     label: "Selected Cards",
-    query: "SELECT id, name, set_name FROM cards WHERE id IN {{selected}}",
+    query: "SELECT id, name, set_name FROM tcg_cards WHERE id IN {{selected}}",
   },
 ];
 
@@ -329,7 +333,7 @@ export default function SqlConsole({
                     const idList = ids.map((id) => `'${String(id).replace(/'/g, "''")}'`).join(", ");
                     const cardsResult = await executeSql(`
                       SELECT id, name, set_name, number, image_small
-                      FROM cards
+                      FROM tcg_cards
                       WHERE id IN (${idList})
                       LIMIT 200
                     `);
@@ -348,7 +352,7 @@ export default function SqlConsole({
                     // Fetch cards matching these pokedex numbers
                     const cardsResult = await executeSql(`
                       SELECT DISTINCT c.id, c.name, c.set_name, c.number, c.image_small
-                      FROM cards c
+                      FROM tcg_cards c
                       WHERE TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)
                             IN (${pokedexNums.join(",")})
                       LIMIT 200

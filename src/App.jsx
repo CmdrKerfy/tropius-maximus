@@ -10,7 +10,6 @@ import {
   fetchCards,
   fetchFilterOptions,
   fetchAttributes,
-  getCustomSourceNames,
   deleteCardsById,
 } from "./db";
 import { getToken, setToken, deleteCardsFromGitHub } from "./lib/github";
@@ -51,7 +50,7 @@ export default function App() {
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(40);
+  const [pageSize] = useState(42);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -80,6 +79,8 @@ export default function App() {
     element: "",
     card_type: "",
     stage: "",
+    weather: "",
+    environment: "",
     sort_by: "pokedex",
     sort_dir: "asc",
   });
@@ -90,9 +91,6 @@ export default function App() {
 
   // ── Attribute definitions (for the annotation editor) ───────────────
   const [attributes, setAttributes] = useState([]);
-
-  // ── Custom source names (from JSON) ────────────────────────────────
-  const [customSources, setCustomSources] = useState([]);
 
   // ── UI state ────────────────────────────────────────────────────────
   const [selectedCardId, setSelectedCardId] = useState(null);
@@ -113,8 +111,6 @@ export default function App() {
     fetchAttributes()
       .then(setAttributes)
       .catch((err) => console.error("Failed to load attributes:", err));
-
-    setCustomSources(getCustomSourceNames());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch cards whenever search, filters, or page changes ──────────
@@ -182,6 +178,8 @@ export default function App() {
           element: "",
           card_type: "",
           stage: "",
+          weather: "",
+          environment: "",
           sort_by: "name",
           sort_dir: "asc",
         });
@@ -263,10 +261,9 @@ export default function App() {
     }
   };
 
-  // Refresh cards, filters, and custom sources after adding a custom card.
+  // Refresh cards and filter options after adding a custom card.
   const handleCustomCardAdded = () => {
     loadCards();
-    setCustomSources(getCustomSourceNames());
     fetchFilterOptions(filters.source).then(setFilterOptions).catch(console.error);
   };
 
@@ -423,7 +420,6 @@ export default function App() {
             onChange={handleFilterChange}
             expanded={filtersExpanded}
             onToggleExpand={() => setFiltersExpanded((prev) => !prev)}
-            customSources={customSources}
           />
         )}
 
@@ -581,6 +577,12 @@ export default function App() {
               attributes={attributes}
               source={cardSource}
               onClose={() => setSelectedCardId(null)}
+              onCardDeleted={() => {
+                setSelectedCardId(null);
+                setSqlCards(null);
+                setPage(1);
+                loadCards();
+              }}
               hasPrev={currentIndex > 0}
               hasNext={currentIndex < cardIds.length - 1}
               onPrev={() => setSelectedCardId(cardIds[currentIndex - 1])}

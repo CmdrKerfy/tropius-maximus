@@ -97,7 +97,7 @@ def initialize_database() -> None:
     conn = get_connection()
 
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS cards (
+        CREATE TABLE IF NOT EXISTS tcg_cards (
             id            VARCHAR PRIMARY KEY,
             name          VARCHAR,
             supertype     VARCHAR,
@@ -115,7 +115,9 @@ def initialize_database() -> None:
             image_small   VARCHAR,
             image_large   VARCHAR,
             raw_data      JSON,
-            prices        JSON
+            prices        JSON,
+            source        VARCHAR DEFAULT 'TCG',
+            is_custom     BOOLEAN DEFAULT FALSE
         )
     """)
 
@@ -176,14 +178,17 @@ def initialize_database() -> None:
             image_url       VARCHAR,
             image_filename  VARCHAR,
             illustrator     VARCHAR,
-            raw_data        JSON
+            raw_data        JSON,
+            is_custom       BOOLEAN DEFAULT FALSE
         )
     """)
 
-    # Migrate: add illustrator column if it doesn't exist (schema upgrade)
+    # Migrate: add columns if they don't exist (schema upgrades)
     existing_cols = {row[0] for row in conn.execute("DESCRIBE pocket_cards").fetchall()}
     if "illustrator" not in existing_cols:
         conn.execute("ALTER TABLE pocket_cards ADD COLUMN illustrator VARCHAR")
+    if "is_custom" not in existing_cols:
+        conn.execute("ALTER TABLE pocket_cards ADD COLUMN is_custom BOOLEAN DEFAULT FALSE")
 
     conn.close()
 
@@ -277,7 +282,7 @@ def fetch_cards_from_api(set_id: str) -> list:
 def get_existing_card_count(conn, set_id: str) -> int:
     """Check how many cards already exist for a set in the database."""
     result = conn.execute(
-        "SELECT COUNT(*) FROM cards WHERE set_id = ?", [set_id]
+        "SELECT COUNT(*) FROM tcg_cards WHERE set_id = ?", [set_id]
     ).fetchone()
     return result[0] if result else 0
 
@@ -331,11 +336,12 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
             }
 
             conn.execute("""
-                INSERT OR REPLACE INTO cards
+                INSERT OR REPLACE INTO tcg_cards
                     (id, name, supertype, subtypes, hp, types, evolves_from,
                      rarity, artist, set_id, set_name, set_series, number,
-                     regulation_mark, image_small, image_large, raw_data, prices)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     regulation_mark, image_small, image_large, raw_data, prices,
+                     source, is_custom)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TCG', FALSE)
             """, [
                 card["id"],
                 card.get("name", ""),
