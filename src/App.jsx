@@ -85,7 +85,7 @@ export default function App() {
     sort_by: "pokedex",
     sort_dir: "asc",
   });
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   // ── Filter dropdown options (fetched once on mount) ─────────────────
   const [filterOptions, setFilterOptions] = useState(null);
