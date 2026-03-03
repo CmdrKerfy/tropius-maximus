@@ -502,7 +502,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Featured Region</label>
-              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto, Johto, Aquapolis, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Artist</label>
@@ -685,15 +685,15 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
               <>
                 <div>
                   <label className={labelClass}>Card Subcategory</label>
-                  <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
+                  <MultiComboBox value={cardSubcategory} onChange={setCardSubcategory} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Illustration Rare, etc." />
                 </div>
                 <div>
                   <label className={labelClass}>Card Border Color</label>
-                  <ComboBox value={cardBorder} onChange={setCardBorder} options={opts.cardBorder || CARD_BORDER_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+                  <ComboBox value={cardBorder} onChange={setCardBorder} options={opts.cardBorder || CARD_BORDER_OPTIONS} placeholder="Yellow, Silver, Blue, etc." className={inputClass + " w-full"} />
                 </div>
                 <div>
                   <label className={labelClass}>Stamp</label>
-                  <ComboBox value={stamp} onChange={setStamp} options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day" className={inputClass + " w-full"} />
+                  <ComboBox value={stamp} onChange={setStamp} options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Center, Game Stop, etc." className={inputClass + " w-full"} />
                 </div>
               </>
             )}
@@ -707,15 +707,15 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
                 </div>
                 <div>
                   <label className={labelClass}>Trainer Card Type</label>
-                  <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
+                  <ComboBox value={trainerCardType} onChange={setTrainerCardType} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Supporter, Item, Stadium, etc." className={inputClass + " w-full"} />
                 </div>
                 <div>
                   <label className={labelClass}>Trainer Card Subgroup</label>
-                  <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
+                  <MultiComboBox value={trainerCardSubgroup} onChange={setTrainerCardSubgroup} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter, Villain Team Items, etc." />
                 </div>
                 <div>
                   <label className={labelClass}>Energy Card Type</label>
-                  <ComboBox value={energyType} onChange={setEnergyType} options={opts.energyType || ENERGY_TYPE_OPTIONS} placeholder="Basic" className={inputClass + " w-full"} />
+                  <ComboBox value={energyType} onChange={setEnergyType} options={opts.energyType || ENERGY_TYPE_OPTIONS} placeholder="Basic, Special" className={inputClass + " w-full"} />
                 </div>
               </>
             )}
@@ -727,23 +727,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Card Location</label>
-              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
+              <ComboBox value={cardLocations} onChange={setCardLocations} options={opts.cardLocations || []} placeholder="Pallet Town, Route 110, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Environment</label>
-              <ComboBox value={environment} onChange={setEnvironment} options={opts.environment || []} placeholder="Indoors" className={inputClass + " w-full"} />
+              <ComboBox value={environment} onChange={setEnvironment} options={opts.environment || []} placeholder="Forest, Beach, Stadium, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Weather</label>
-              <ComboBox value={weather} onChange={setWeather} options={opts.weather || []} placeholder="Sunny" className={inputClass + " w-full"} />
+              <ComboBox value={weather} onChange={setWeather} options={opts.weather || []} placeholder="Sunny, Lightning, Clouds, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Background Details</label>
-              <MultiComboBox value={backgroundDetails} onChange={setBackgroundDetails} options={opts.backgroundDetails || []} placeholder="Trees, River" />
+              <MultiComboBox value={backgroundDetails} onChange={setBackgroundDetails} options={opts.backgroundDetails || []} placeholder="Island, Stump, Seafloor, Bridge, etc." />
             </div>
             <div>
               <label className={labelClass}>Holiday Theme</label>
-              <MultiComboBox value={holidayTheme} onChange={setHolidayTheme} options={opts.holidayTheme || HOLIDAY_THEME_OPTIONS} placeholder="Halloween" />
+              <MultiComboBox value={holidayTheme} onChange={setHolidayTheme} options={opts.holidayTheme || HOLIDAY_THEME_OPTIONS} placeholder="Halloween, Christmas, etc." />
             </div>
 
             {/* ── Main Subject ── */}
@@ -753,15 +753,15 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Actions</label>
-              <MultiComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Running" />
+              <MultiComboBox value={actions} onChange={setActions} options={opts.actions || []} placeholder="Dancing, Firefighters, On A Boat" />
             </div>
             <div>
               <label className={labelClass}>Pose</label>
-              <MultiComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Jumping" />
+              <MultiComboBox value={pose} onChange={setPose} options={opts.pose || []} placeholder="Flexing, Come At Me Bro, etc." />
             </div>
             <div>
               <label className={labelClass}>Emotion</label>
-              <MultiComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Happy" />
+              <MultiComboBox value={emotion} onChange={setEmotion} options={opts.emotion || []} placeholder="Crying, Scared, Angry, etc." />
             </div>
 
             {/* ── Background Items ── */}
@@ -771,23 +771,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Items</label>
-              <ComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
+              <ComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Clefairy Doll, Apple, Fossil, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Held Item</label>
-              <ComboBox value={heldItem} onChange={setHeldItem} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Berry" className={inputClass + " w-full"} />
+              <ComboBox value={heldItem} onChange={setHeldItem} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Berries (if present)</label>
-              <MultiComboBox value={berries} onChange={setBerries} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry" />
+              <MultiComboBox value={berries} onChange={setBerries} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry, Razz Berry, etc." />
             </div>
             <div>
               <label className={labelClass}>Pokeball Type (if present)</label>
-              <ComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball" className={inputClass + " w-full"} />
+              <ComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Evolution Items (if present)</label>
-              <MultiComboBox value={evolutionItems} onChange={setEvolutionItems} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Fire Stone" />
+              <MultiComboBox value={evolutionItems} onChange={setEvolutionItems} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Leaf Stone, Upgrade, etc." />
             </div>
 
             {/* ── Additional Characters ── */}
@@ -797,23 +797,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Background Pokemon</label>
-              <MultiComboBox value={backgroundPokemon} onChange={setBackgroundPokemon} options={opts.backgroundPokemon || []} placeholder="Bulbasaur, Squirtle" />
+              <MultiComboBox value={backgroundPokemon} onChange={setBackgroundPokemon} options={opts.backgroundPokemon || []} placeholder="Squirtle, Pikachu, etc." />
             </div>
             <div>
               <label className={labelClass}>Background People Type</label>
-              <MultiComboBox value={backgroundHumans} onChange={setBackgroundHumans} options={opts.backgroundHumans || BACKGROUND_PEOPLE_TYPE_OPTIONS} placeholder="Gym Leader, Trainer" />
+              <MultiComboBox value={backgroundHumans} onChange={setBackgroundHumans} options={opts.backgroundHumans || BACKGROUND_PEOPLE_TYPE_OPTIONS} placeholder="Gym Leader, Trainer, Civilian" />
             </div>
             <div>
               <label className={labelClass}>Background People Name</label>
-              <MultiComboBox value={additionalCharacters} onChange={setAdditionalCharacters} options={opts.additionalCharacters || []} placeholder="Ash, Misty" />
+              <MultiComboBox value={additionalCharacters} onChange={setAdditionalCharacters} options={opts.additionalCharacters || []} placeholder="Brock, Professor Oak, Delinquent" />
             </div>
             <div>
               <label className={labelClass}>Rival Faction</label>
-              <ComboBox value={rivalGroup} onChange={setRivalGroup} options={opts.rivalGroup || RIVAL_GROUP_OPTIONS} placeholder="Team Rocket" className={inputClass + " w-full"} />
+              <ComboBox value={rivalGroup} onChange={setRivalGroup} options={opts.rivalGroup || RIVAL_GROUP_OPTIONS} placeholder="Team Rocket, Team Aqua, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Additional Character Theme</label>
-              <ComboBox value={additionalCharacterTheme} onChange={setAdditionalCharacterTheme} options={ADDITIONAL_CHARACTER_THEME_OPTIONS} placeholder="Family First" className={inputClass + " w-full"} />
+              <ComboBox value={additionalCharacterTheme} onChange={setAdditionalCharacterTheme} options={ADDITIONAL_CHARACTER_THEME_OPTIONS} placeholder="Family First, Squad Gang, etc." className={inputClass + " w-full"} />
             </div>
 
             {/* ── Artistic Expression ── */}
@@ -823,19 +823,19 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Art Style</label>
-              <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="Chibi, Cartoon" />
+              <MultiComboBox value={artStyle} onChange={setArtStyle} options={opts.artStyle || []} placeholder="2D, Clay, Trippy Art, etc." />
             </div>
             <div>
               <label className={labelClass}>Camera Angle</label>
-              <ComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Front" className={inputClass + " w-full"} />
+              <ComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Aerial, Upside Down, etc." className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Perspective</label>
-              <ComboBox value={perspective} onChange={setPerspective} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
+              <ComboBox value={perspective} onChange={setPerspective} options={opts.perspective || []} placeholder="POV, Tiny, Rotate 90 Degrees" className={inputClass + " w-full"} />
             </div>
             <div>
               <label className={labelClass}>Multi Card</label>
-              <MultiComboBox value={multiCard} onChange={setMultiCard} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling" />
+              <MultiComboBox value={multiCard} onChange={setMultiCard} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling, Different Angles, etc." />
             </div>
 
           </div>
