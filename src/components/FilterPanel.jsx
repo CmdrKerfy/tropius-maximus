@@ -1,8 +1,5 @@
 /**
- * FilterPanel — Two-row filter layout + sort controls.
- *
- * Row 1: Source | Set | Artist | Supertype | Featured Region
- * Row 2: Specialty | Rarity | Evolution Line | Weather | Environment
+ * FilterPanel — Single flex-wrap row of filter dropdowns + sort controls.
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -163,6 +160,47 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     isActive(filters.specialty) || isActive(filters.element) || isActive(filters.card_type) ||
     isActive(filters.stage) || isActive(filters.weather) || isActive(filters.environment);
 
+  // Build lookup maps for chip labels.
+  const setNameById = {};
+  for (const { sets } of setGroups) {
+    for (const s of sets) setNameById[s.id] = s.name;
+  }
+  const evoLabelByValue = {};
+  for (const opt of evoOptions) evoLabelByValue[opt.value] = opt.label;
+
+  // Build one chip per active filter value.
+  const activeChips = [];
+  if (filters.source) {
+    activeChips.push({ key: `source-${filters.source}`, label: `Source: ${filters.source}`, onRemove: () => onChange({ source: "" }) });
+  }
+  if (filters.supertype) {
+    activeChips.push({ key: `supertype-${filters.supertype}`, label: filters.supertype, onRemove: () => onChange({ supertype: "" }) });
+  }
+  for (const v of filters.rarity || []) {
+    activeChips.push({ key: `rarity-${v}`, label: v, onRemove: () => onChange({ rarity: (filters.rarity || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.set_id || []) {
+    activeChips.push({ key: `set-${v}`, label: setNameById[v] || v, onRemove: () => onChange({ set_id: (filters.set_id || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.region || []) {
+    activeChips.push({ key: `region-${v}`, label: v, onRemove: () => onChange({ region: (filters.region || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.artist || []) {
+    activeChips.push({ key: `artist-${v}`, label: v, onRemove: () => onChange({ artist: (filters.artist || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.specialty || []) {
+    activeChips.push({ key: `specialty-${v}`, label: v, onRemove: () => onChange({ specialty: (filters.specialty || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.evolution_line || []) {
+    activeChips.push({ key: `evo-${v}`, label: evoLabelByValue[v] || v, onRemove: () => onChange({ evolution_line: (filters.evolution_line || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.weather || []) {
+    activeChips.push({ key: `weather-${v}`, label: v, onRemove: () => onChange({ weather: (filters.weather || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.environment || []) {
+    activeChips.push({ key: `environment-${v}`, label: v, onRemove: () => onChange({ environment: (filters.environment || []).filter((x) => x !== v) }) });
+  }
+
   return (
     <div className="mt-4">
       {/* Toggle button */}
@@ -184,13 +222,35 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
         )}
       </button>
 
+      {/* Active filter chips */}
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
+          {activeChips.map(({ key, label, onRemove }) => (
+            <span
+              key={key}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full border border-green-200"
+            >
+              <span className="truncate max-w-[160px]">{label}</span>
+              <button
+                type="button"
+                onClick={onRemove}
+                className="shrink-0 ml-0.5 text-green-600 hover:text-green-900 leading-none"
+                aria-label={`Remove ${label}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Collapsible filter rows */}
       <div
         className={`transition-all duration-200 ${
           expanded ? "max-h-screen opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
-        {/* Row 1: Source | Set | Artist | Supertype | Featured Region */}
+        {/* All filter dropdowns in one wrapped row */}
         <div className="flex flex-wrap gap-5 items-end pb-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
@@ -257,10 +317,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               />
             </div>
           )}
-        </div>
 
-        {/* Row 2: Specialty | Rarity | Evolution Line | Weather | Environment */}
-        <div className="flex flex-wrap gap-5 items-end pb-4 border-t border-gray-100 pt-4">
           {options.specialties?.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Specialty</label>

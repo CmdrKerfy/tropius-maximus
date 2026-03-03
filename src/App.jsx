@@ -64,8 +64,10 @@ export default function App() {
   const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   // ── Search and filter state ─────────────────────────────────────────
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState({
+  const FILTER_STORAGE_KEY = "tm_filters";
+  const SEARCH_STORAGE_KEY = "tm_search";
+
+  const DEFAULT_FILTERS = {
     source: "",
     supertype: "",
     rarity: [],
@@ -84,6 +86,18 @@ export default function App() {
     environment: [],
     sort_by: "pokedex",
     sort_dir: "asc",
+  };
+
+  const [searchQuery, setSearchQuery] = useState(
+    () => localStorage.getItem(SEARCH_STORAGE_KEY) || ""
+  );
+  const [filters, setFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+      return saved ? { ...DEFAULT_FILTERS, ...JSON.parse(saved) } : DEFAULT_FILTERS;
+    } catch {
+      return DEFAULT_FILTERS;
+    }
   });
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
@@ -142,6 +156,14 @@ export default function App() {
   useEffect(() => {
     loadCards();
   }, [loadCards]);
+
+  useEffect(() => {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    localStorage.setItem(SEARCH_STORAGE_KEY, searchQuery);
+  }, [searchQuery]);
 
   // ── Handlers ────────────────────────────────────────────────────────
 
