@@ -445,6 +445,7 @@ export default function App() {
               <CustomCardForm
                 onCardAdded={handleCustomCardAdded}
                 onClose={() => setShowCustomCardForm(false)}
+                onOpenPAT={() => setShowTokenInput(true)}
               />
             )}
 

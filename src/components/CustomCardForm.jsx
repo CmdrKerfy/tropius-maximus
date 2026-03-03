@@ -58,7 +58,7 @@ function CollapsibleSection({ title, defaultOpen = false, children }) {
   );
 }
 
-export default function CustomCardForm({ onCardAdded, onClose }) {
+export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
   // ── Card table picker ──
   const [cardTable, setCardTable] = useState("tcg");
 
@@ -921,8 +921,19 @@ export default function CustomCardForm({ onCardAdded, onClose }) {
         {/* ── Submit ── */}
         {!getToken() && (
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-            No GitHub PAT configured — this card will only save locally to this browser.
-            Add a PAT in Settings to sync across devices.
+            No GitHub PAT configured — this card will only save locally to this browser.{" "}
+            {onOpenPAT ? (
+              <button
+                type="button"
+                onClick={onOpenPAT}
+                className="font-medium hover:underline"
+              >
+                Add a PAT
+              </button>
+            ) : (
+              "Add a PAT in Settings"
+            )}{" "}
+            to sync across devices.
           </div>
         )}
         <div className="flex gap-3 pt-2">
