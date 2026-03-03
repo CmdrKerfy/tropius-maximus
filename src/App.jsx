@@ -267,7 +267,15 @@ export default function App() {
       setPushMessage(`${customCardsData.cards.length} card(s) pushed to GitHub.`);
     } catch (e) {
       setPushStatus("error");
-      setPushMessage(e.message);
+      const msg = e.message || "";
+      if (msg.includes("403")) {
+        setPushMessage(
+          "Permission denied (403). Your token needs Contents: Read and write access for this repo. " +
+          "Regenerate it at GitHub → Settings → Developer settings → Personal access tokens."
+        );
+      } else {
+        setPushMessage(msg);
+      }
     }
   };
 

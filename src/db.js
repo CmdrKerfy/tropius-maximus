@@ -982,13 +982,13 @@ export async function fetchCards(params = {}) {
 
     const tcgSelect = `
       SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, c.source AS _source,
-             c.number, c.hp, c.rarity
+             c.number, c.hp, c.rarity, c.is_custom
       FROM tcg_cards c ${pmJoin} ${tcgWhere}`;
 
     const pocketSelect = `
       SELECT pc.id, pc.name, ps.name AS set_name,
              pc.image_url AS image_small, pc.image_url AS image_large, 'Pocket' AS _source,
-             CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity
+             CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity, FALSE AS is_custom
       FROM pocket_cards pc
       LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
       ${pocketWhere}`;
@@ -1005,7 +1005,7 @@ export async function fetchCards(params = {}) {
     const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id", "number", "hp", "rarity"]);
     const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const dataResult = await conn.query(`
-      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity
+      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
       FROM (${unionSQL}) combined
       ORDER BY ${allSortBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
@@ -1018,6 +1018,7 @@ export async function fetchCards(params = {}) {
       image_small: r.image_small,
       image_large: r.image_large,
       _source: r._source,
+      is_custom: r.is_custom,
       annotations: {},
     }));
     return { cards, total, page: pageInt, page_size: pageSizeInt };

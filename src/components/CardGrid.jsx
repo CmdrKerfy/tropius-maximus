@@ -43,6 +43,12 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         <div className="absolute inset-0 bg-green-500/20 rounded-lg pointer-events-none z-[5]" />
       )}
 
+      {card.is_custom && (
+        <div className="absolute top-2 right-2 z-10 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded pointer-events-none">
+          Custom
+        </div>
+      )}
+
       <button
         onClick={() => onCardClick(card.id)}
         className={`w-full h-full group rounded-lg overflow-hidden shadow-sm hover:shadow-xl
