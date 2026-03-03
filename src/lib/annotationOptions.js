@@ -116,6 +116,14 @@ export const ADDITIONAL_CHARACTERS_OPTIONS = [
   "BFFs","Squad Gang","Trainer and Pokemon","Family First","Unexpected Partnerships",
 ];
 
+export const ADDITIONAL_CHARACTER_THEME_OPTIONS = [
+  "Family First","Squad Gang",
+];
+
+export const BACKGROUND_PEOPLE_TYPE_OPTIONS = [
+  "Gym Leader","Trainer","Civilian",
+];
+
 export const PERSPECTIVE_OPTIONS = [
   "Tiny","Gigantic","Rotate 90 Degrees","Exiting The Frame",
 ];
@@ -168,8 +176,7 @@ export const CARD_SUBCATEGORY_OPTIONS = [
 ];
 
 export const HELD_ITEM_OPTIONS = [
-  "Food","Stick","Rock","Berry","Egg","Flower","Ball","Treasure","Book",
-  "Something Shiny","pokeball","Other",
+  "Berry","Food","Flower","Pokeball",
 ];
 
 export const POKEBALL_OPTIONS = [
@@ -244,7 +251,7 @@ export const TOP_10_THEMES_OPTIONS = [
 
 export const WTPC_EPISODE_OPTIONS = Array.from({ length: 50 }, (_, i) => `Episode ${i + 1}`);
 
-export const CARD_BORDER_OPTIONS = ["Yellow", "Gray"];
+export const CARD_BORDER_OPTIONS = ["Yellow", "Silver", "Blue"];
 
 export const ENERGY_TYPE_OPTIONS = ["Basic", "Special"];
 

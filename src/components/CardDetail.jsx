@@ -20,6 +20,7 @@ import {
   VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
   VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS, STAMP_OPTIONS,
   CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
+  ADDITIONAL_CHARACTER_THEME_OPTIONS, BACKGROUND_PEOPLE_TYPE_OPTIONS,
 } from "../lib/annotationOptions";
 
 const COLOR_OPTIONS = [
@@ -40,7 +41,7 @@ const VIDEO_GAME_OPTIONS = [
 
 const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "art_style", "main_character", "background_pokemon", "background_humans",
-  "additional_characters", "background_details",
+  "additional_characters", "background_details", "additional_character_theme",
   "card_subcategory", "trainer_card_subgroup", "evolution_items",
   "berries", "holiday_theme", "multi_card",
   "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
@@ -265,73 +266,70 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
     const sections = [
       {
-        title: "Card Classification",
+        title: "Mon Classification",
         fields: [
           field("Set Name", annValue("set_name")),
           field("Rarity", annValue("rarity")),
           field("Card Subcategory", annValue("card_subcategory", true)),
+          field("Evolution Line", annValue("evolution_line")),
+          field("Card Border Color", annValue("card_border")),
+          field("Stamp", annValue("stamp")),
+        ],
+      },
+      {
+        title: "Other Card Classification",
+        fields: [
           field("Trainer Card Type", annValue("trainer_card_type")),
           field("Trainer Card Subgroup", annValue("trainer_card_subgroup", true)),
-          field("Stamp", annValue("stamp")),
-          field("Evolution Line", annValue("evolution_line")),
-          field("Featured Region", annValue("pkmn_region")),
-          field("Card Border", annValue("card_border")),
-          field("Energy Type", annValue("energy_type")),
-        ],
-      },
-      {
-        title: "Background Characters",
-        fields: [
-          field("Background Pokémon", annValue("background_pokemon", true)),
-          field("Background Humans", annValue("background_humans", true)),
-          field("Additional Characters", annValue("additional_characters", true)),
-        ],
-      },
-      {
-        title: "Subject",
-        fields: [
-          field("Emotion", annValue("emotion", true)),
-          field("Pose", annValue("pose", true)),
-          field("Actions", annValue("actions", true)),
-        ],
-      },
-      {
-        title: "Art Style",
-        fields: [
-          field("Art Style", annValue("art_style", true)),
-          field("Camera Angle", annValue("camera_angle")),
-          field("Perspective", annValue("perspective")),
-          field("Primary Color", annValue("primary_color")),
-          field("Secondary Color", annValue("secondary_color")),
-          field("Storytelling", annValue("storytelling")),
+          field("Energy Card Type", annValue("energy_type")),
         ],
       },
       {
         title: "Scene & Setting",
         fields: [
-          field("Card Region", annValue("card_region")),
+          field("Featured Region", annValue("pkmn_region")),
           field("Card Location", annValue("card_locations")),
-          field("Weather", annValue("weather")),
           field("Environment", annValue("environment")),
+          field("Weather", annValue("weather")),
           field("Background Details", annValue("background_details", true)),
+          field("Holiday Theme", annValue("holiday_theme", true)),
         ],
       },
       {
-        title: "Items",
+        title: "Main Subject",
+        fields: [
+          field("Actions", annValue("actions", true)),
+          field("Pose", annValue("pose", true)),
+          field("Emotion", annValue("emotion", true)),
+        ],
+      },
+      {
+        title: "Background Items",
         fields: [
           field("Items", annValue("items")),
           field("Held Item", annValue("held_item")),
-          field("Pokéball", annValue("pokeball")),
-          field("Evolution Items", annValue("evolution_items", true)),
-          field("Berries", annValue("berries", true)),
+          field("Berries (if present)", annValue("berries", true)),
+          field("Pokeball Type (if present)", annValue("pokeball")),
+          field("Evolution Items (if present)", annValue("evolution_items", true)),
         ],
       },
       {
-        title: "Themes",
+        title: "Additional Characters",
         fields: [
-          field("Holiday Theme", annValue("holiday_theme", true)),
+          field("Background Pokémon", annValue("background_pokemon", true)),
+          field("Background People Type", annValue("background_humans", true)),
+          field("Background People Name", annValue("additional_characters", true)),
+          field("Rival Faction", annValue("rival_group")),
+          field("Additional Character Theme", annValue("additional_character_theme", true)),
+        ],
+      },
+      {
+        title: "Artistic Expression",
+        fields: [
+          field("Art Style", annValue("art_style", true)),
+          field("Camera Angle", annValue("camera_angle")),
+          field("Perspective", annValue("perspective")),
           field("Multi Card", annValue("multi_card", true)),
-          field("Rival Group", annValue("rival_group")),
         ],
       },
       {
@@ -659,7 +657,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    Additional Information
+                    More Info
                   </button>
                   <button
                     onClick={() => setActiveTab("market")}
@@ -669,7 +667,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    Market Information
+                    Prices
                   </button>
                   <div className="ml-auto flex items-center gap-2 pb-2">
                     <button
@@ -751,9 +749,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         <CollapsibleSection title="Annotations" defaultOpen={false}>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
-                            {/* ── Card Classification ── */}
+                            {/* ── Mon Classification ── */}
                             <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Card Classification</span>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Mon Classification</span>
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div className="col-span-2 md:col-span-3">
@@ -775,6 +773,26 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <MultiComboBox value={annValue("card_subcategory", true)} onChange={(v) => saveAnnotation("card_subcategory", v)} options={opts.cardSubcategory || CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Alternate Arts" />
                             </div>
                             <div>
+                              <label className={labelClass}>Evolution Line</label>
+                              <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Card Border Color</label>
+                              <ComboBox value={annValue("card_border")} onChange={(v) => saveAnnotation("card_border", v)} options={opts.cardBorder || CARD_BORDER_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Stamp</label>
+                              <ComboBox value={annValue("stamp")} onChange={(v) => saveAnnotation("stamp", v)}
+                                options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
+                                className={inputClass + " w-full"} />
+                            </div>
+
+                            {/* ── Other Card Classification ── */}
+                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Other Card Classification</span>
+                              <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                            <div>
                               <label className={labelClass}>Trainer Card Type</label>
                               <ComboBox value={annValue("trainer_card_type")} onChange={(v) => saveAnnotation("trainer_card_type", v)} options={opts.trainerCardType || TRAINER_CARD_TYPE_OPTIONS} placeholder="Item" className={inputClass + " w-full"} />
                             </div>
@@ -783,31 +801,87 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <MultiComboBox value={annValue("trainer_card_subgroup", true)} onChange={(v) => saveAnnotation("trainer_card_subgroup", v)} options={opts.trainerCardSubgroup || TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter" />
                             </div>
                             <div>
-                              <label className={labelClass}>Stamp</label>
-                              <ComboBox value={annValue("stamp")} onChange={(v) => saveAnnotation("stamp", v)}
-                                options={opts.stamp || STAMP_OPTIONS} placeholder="Pokemon Day"
-                                className={inputClass + " w-full"} />
+                              <label className={labelClass}>Energy Card Type</label>
+                              <ComboBox value={annValue("energy_type")} onChange={(v) => saveAnnotation("energy_type", v)} options={opts.energyType || ENERGY_TYPE_OPTIONS} placeholder="Basic" className={inputClass + " w-full"} />
                             </div>
-                            <div>
-                              <label className={labelClass}>Evolution Line</label>
-                              <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={opts.evolutionLine || []} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
+
+                            {/* ── Scene & Setting ── */}
+                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Scene & Setting</span>
+                              <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
                               <label className={labelClass}>Featured Region</label>
                               <ComboBox value={annValue("pkmn_region")} onChange={(v) => saveAnnotation("pkmn_region", v)} options={opts.pkmnRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Card Border</label>
-                              <ComboBox value={annValue("card_border")} onChange={(v) => saveAnnotation("card_border", v)} options={opts.cardBorder || CARD_BORDER_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
+                              <label className={labelClass}>Card Location</label>
+                              <ComboBox value={annValue("card_locations")} onChange={(v) => saveAnnotation("card_locations", v)} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Energy Type</label>
-                              <ComboBox value={annValue("energy_type")} onChange={(v) => saveAnnotation("energy_type", v)} options={opts.energyType || ENERGY_TYPE_OPTIONS} placeholder="Basic" className={inputClass + " w-full"} />
+                              <label className={labelClass}>Environment</label>
+                              <ComboBox value={annValue("environment")} onChange={(v) => saveAnnotation("environment", v)} options={opts.environment || []} placeholder="Indoors" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Weather</label>
+                              <ComboBox value={annValue("weather")} onChange={(v) => saveAnnotation("weather", v)} options={opts.weather || []} placeholder="Sunny" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Background Details</label>
+                              <MultiComboBox value={annValue("background_details", true)} onChange={(v) => saveAnnotation("background_details", v)} options={opts.backgroundDetails || []} placeholder="Trees, River" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Holiday Theme</label>
+                              <MultiComboBox value={annValue("holiday_theme", true)} onChange={(v) => saveAnnotation("holiday_theme", v)} options={opts.holidayTheme || HOLIDAY_THEME_OPTIONS} placeholder="Halloween" />
                             </div>
 
-                            {/* ── Background Characters ── */}
+                            {/* ── Main Subject ── */}
                             <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Background Characters</span>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Main Subject</span>
+                              <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Actions</label>
+                              <MultiComboBox value={annValue("actions", true)} onChange={(v) => saveAnnotation("actions", v)} options={opts.actions || []} placeholder="Running" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Pose</label>
+                              <MultiComboBox value={annValue("pose", true)} onChange={(v) => saveAnnotation("pose", v)} options={opts.pose || []} placeholder="Jumping" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Emotion</label>
+                              <MultiComboBox value={annValue("emotion", true)} onChange={(v) => saveAnnotation("emotion", v)} options={opts.emotion || []} placeholder="Happy" />
+                            </div>
+
+                            {/* ── Background Items ── */}
+                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Background Items</span>
+                              <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Items</label>
+                              <ComboBox value={annValue("items")} onChange={(v) => saveAnnotation("items", v)} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Held Item</label>
+                              <ComboBox value={annValue("held_item")} onChange={(v) => saveAnnotation("held_item", v)} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Berry" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Berries (if present)</label>
+                              <MultiComboBox value={annValue("berries", true)} onChange={(v) => saveAnnotation("berries", v)} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Pokeball Type (if present)</label>
+                              <ComboBox value={annValue("pokeball")} onChange={(v) => saveAnnotation("pokeball", v)} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Evolution Items (if present)</label>
+                              <MultiComboBox value={annValue("evolution_items", true)} onChange={(v) => saveAnnotation("evolution_items", v)} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Fire Stone" />
+                            </div>
+
+                            {/* ── Additional Characters ── */}
+                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Additional Characters</span>
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
@@ -815,35 +889,25 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <MultiComboBox value={annValue("background_pokemon", true)} onChange={(v) => saveAnnotation("background_pokemon", v)} options={opts.backgroundPokemon || []} placeholder="Bulbasaur, Squirtle" />
                             </div>
                             <div>
-                              <label className={labelClass}>Background Humans</label>
-                              <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={opts.backgroundHumans || []} placeholder="Ash, Misty" />
+                              <label className={labelClass}>Background People Type</label>
+                              <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={opts.backgroundHumans || BACKGROUND_PEOPLE_TYPE_OPTIONS} placeholder="Gym Leader, Trainer" />
                             </div>
                             <div>
-                              <label className={labelClass}>Additional Characters</label>
-                              <MultiComboBox value={annValue("additional_characters", true)} onChange={(v) => saveAnnotation("additional_characters", v)} options={opts.additionalCharacters || []} placeholder="Friends, Rivals" />
+                              <label className={labelClass}>Background People Name</label>
+                              <MultiComboBox value={annValue("additional_characters", true)} onChange={(v) => saveAnnotation("additional_characters", v)} options={opts.additionalCharacters || []} placeholder="Ash, Misty" />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Rival Faction</label>
+                              <ComboBox value={annValue("rival_group")} onChange={(v) => saveAnnotation("rival_group", v)} options={opts.rivalGroup || RIVAL_GROUP_OPTIONS} placeholder="Team Rocket" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Additional Character Theme</label>
+                              <MultiComboBox value={annValue("additional_character_theme", true)} onChange={(v) => saveAnnotation("additional_character_theme", v)} options={opts.additionalCharacterTheme || ADDITIONAL_CHARACTER_THEME_OPTIONS} placeholder="Family First, Squad Gang" />
                             </div>
 
-                            {/* ── Subject ── */}
+                            {/* ── Artistic Expression ── */}
                             <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Subject</span>
-                              <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Emotion</label>
-                              <MultiComboBox value={annValue("emotion", true)} onChange={(v) => saveAnnotation("emotion", v)} options={opts.emotion || []} placeholder="Happy" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Pose</label>
-                              <MultiComboBox value={annValue("pose", true)} onChange={(v) => saveAnnotation("pose", v)} options={opts.pose || []} placeholder="Jumping" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Actions</label>
-                              <MultiComboBox value={annValue("actions", true)} onChange={(v) => saveAnnotation("actions", v)} options={opts.actions || []} placeholder="Running" />
-                            </div>
-
-                            {/* ── Art Style ── */}
-                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Art Style</span>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Artistic Expression</span>
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
@@ -859,86 +923,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <ComboBox value={annValue("perspective")} onChange={(v) => saveAnnotation("perspective", v)} options={opts.perspective || []} placeholder="" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Primary Color</label>
-                              <ComboBox value={annValue("primary_color")} onChange={(v) => saveAnnotation("primary_color", v)} options={COLOR_OPTIONS} placeholder="Yellow" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Secondary Color</label>
-                              <ComboBox value={annValue("secondary_color")} onChange={(v) => saveAnnotation("secondary_color", v)} options={COLOR_OPTIONS} placeholder="Brown" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Storytelling</label>
-                              <ComboBox value={annValue("storytelling")} onChange={(v) => saveAnnotation("storytelling", v)} options={opts.storytelling || []} placeholder="Celebration" className={inputClass + " w-full"} />
-                            </div>
-
-                            {/* ── Scene & Setting ── */}
-                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Scene & Setting</span>
-                              <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Card Region</label>
-                              <ComboBox value={annValue("card_region")} onChange={(v) => saveAnnotation("card_region", v)} options={opts.cardRegion || []} placeholder="Johto" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Card Location</label>
-                              <ComboBox value={annValue("card_locations")} onChange={(v) => saveAnnotation("card_locations", v)} options={opts.cardLocations || []} placeholder="Nagoya" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Weather</label>
-                              <ComboBox value={annValue("weather")} onChange={(v) => saveAnnotation("weather", v)} options={opts.weather || []} placeholder="Sunny" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Environment</label>
-                              <ComboBox value={annValue("environment")} onChange={(v) => saveAnnotation("environment", v)} options={opts.environment || []} placeholder="Indoors" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Background Details</label>
-                              <MultiComboBox value={annValue("background_details", true)} onChange={(v) => saveAnnotation("background_details", v)} options={opts.backgroundDetails || []} placeholder="Trees, River" />
-                            </div>
-
-                            {/* ── Items ── */}
-                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Items</span>
-                              <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Items</label>
-                              <ComboBox value={annValue("items")} onChange={(v) => saveAnnotation("items", v)} options={opts.items || []} placeholder="Poke Ball" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Held Item</label>
-                              <ComboBox value={annValue("held_item")} onChange={(v) => saveAnnotation("held_item", v)} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Berry" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Pokeball</label>
-                              <ComboBox value={annValue("pokeball")} onChange={(v) => saveAnnotation("pokeball", v)} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball" className={inputClass + " w-full"} />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Evolution Items</label>
-                              <MultiComboBox value={annValue("evolution_items", true)} onChange={(v) => saveAnnotation("evolution_items", v)} options={opts.evolutionItems || EVOLUTION_ITEMS_OPTIONS} placeholder="Fire Stone" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Berries</label>
-                              <MultiComboBox value={annValue("berries", true)} onChange={(v) => saveAnnotation("berries", v)} options={opts.berries || BERRIES_OPTIONS} placeholder="Oran Berry" />
-                            </div>
-
-                            {/* ── Themes ── */}
-                            <div className="col-span-2 md:col-span-3 flex items-center gap-2 pt-5 mt-3">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Themes</span>
-                              <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Holiday Theme</label>
-                              <MultiComboBox value={annValue("holiday_theme", true)} onChange={(v) => saveAnnotation("holiday_theme", v)} options={opts.holidayTheme || HOLIDAY_THEME_OPTIONS} placeholder="Halloween" />
-                            </div>
-                            <div>
                               <label className={labelClass}>Multi Card</label>
                               <MultiComboBox value={annValue("multi_card", true)} onChange={(v) => saveAnnotation("multi_card", v)} options={opts.multiCard || MULTI_CARD_OPTIONS} placeholder="Storytelling" />
-                            </div>
-                            <div>
-                              <label className={labelClass}>Rival Group</label>
-                              <ComboBox value={annValue("rival_group")} onChange={(v) => saveAnnotation("rival_group", v)} options={opts.rivalGroup || RIVAL_GROUP_OPTIONS} placeholder="Team Rocket" className={inputClass + " w-full"} />
                             </div>
 
                           </div>
