@@ -106,6 +106,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
+  const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
+  const [saveMessage, setSaveMessage] = useState("");
   const ghPushTimer = useRef(null);
 
   useEffect(() => {
@@ -204,6 +206,33 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         console.warn("CardDetail GitHub push failed:", err.message);
       }
     }, 1000);
+  };
+
+  const handleSaveChanges = async () => {
+    setSaveStatus("saving");
+    setSaveMessage("");
+    try {
+      const allAnnotations = await exportAllAnnotations();
+      const token = getToken();
+      if (token) {
+        const { sha } = await getAnnotationsFileContents(token);
+        await updateAnnotationsFileContents(
+          token,
+          allAnnotations,
+          sha,
+          `Save annotations for ${card?.name ?? "card"}`
+        );
+        setSaveStatus("saved");
+        setSaveMessage("Synced to GitHub");
+      } else {
+        setSaveStatus("saved");
+        setSaveMessage("Saved locally");
+      }
+    } catch (err) {
+      setSaveStatus("error");
+      setSaveMessage(err.message?.slice(0, 80) || "Save failed");
+    }
+    setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
   };
 
   const saveAnnotation = async (key, value) => {
@@ -670,6 +699,23 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     Prices
                   </button>
                   <div className="ml-auto flex items-center gap-2 pb-2">
+                    {isEditMode && (
+                      <>
+                        {saveStatus === "saved" && (
+                          <span className="text-xs text-green-600 font-medium">{saveMessage}</span>
+                        )}
+                        {saveStatus === "error" && (
+                          <span className="text-xs text-red-600 font-medium">{saveMessage}</span>
+                        )}
+                        <button
+                          onClick={handleSaveChanges}
+                          disabled={saveStatus === "saving"}
+                          className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50"
+                        >
+                          {saveStatus === "saving" ? "Saving…" : "Save Changes"}
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => {
                         if (!isEditMode) {
