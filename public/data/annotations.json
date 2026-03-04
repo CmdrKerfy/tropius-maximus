@@ -1,1 +1,1129 @@
-{}
+{
+  "base1-1": {
+    "unique_id": "base1-1",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "humanoid"
+  },
+  "base1-14": {
+    "unique_id": "base1-14",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "base1-15": {
+    "unique_id": "base1-15",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "pokemon_main": "",
+    "pokemon_bg": ""
+  },
+  "base1-24": {
+    "unique_id": "base1-24",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright"
+  },
+  "base1-30": {
+    "unique_id": "base1-30",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "base1-33": {
+    "unique_id": "base1-33",
+    "evolution_line": "weedle → kakuna → beedrill",
+    "color": "yellow",
+    "shape": "squiggle",
+    "location": "Eterna Forest Area"
+  },
+  "base1-40": {
+    "unique_id": "base1-40",
+    "evolution_line": "rattata → raticate",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 225 Area"
+  },
+  "base1-44": {
+    "unique_id": "base1-44",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area",
+    "video_url": "",
+    "video_title": ""
+  },
+  "base1-46": {
+    "unique_id": "base1-46",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Pallet Town Area"
+  },
+  "base1-52": {
+    "unique_id": "base1-52",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207"
+  },
+  "base1-57": {
+    "unique_id": "base1-57",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "base1-58": {
+    "unique_id": "base1-58",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "base1-59": {
+    "unique_id": "base1-59",
+    "evolution_line": "poliwag → poliwhirl → poliwrath → politoed",
+    "color": "blue",
+    "shape": "legs",
+    "location": "Sinnoh Route 225 Area"
+  },
+  "base1-63": {
+    "unique_id": "base1-63",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Seafoam Islands 1F"
+  },
+  "base2-36": {
+    "unique_id": "base2-36",
+    "evolution_line": "spearow → fearow",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Stark Mountain Area"
+  },
+  "base4-41": {
+    "unique_id": "base4-41",
+    "evolution_line": "spearow → fearow",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Stark Mountain Area"
+  },
+  "base4-54": {
+    "unique_id": "base4-54",
+    "evolution_line": "nidoran-m → nidorino → nidoking",
+    "color": "purple",
+    "shape": "quadruped",
+    "location": "Valor Lakefront Area"
+  },
+  "base4-86": {
+    "unique_id": "base4-86",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "base6-85": {
+    "unique_id": "base6-85",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "bw11-3": {
+    "unique_id": "bw11-3",
+    "evolution_line": "shuckle",
+    "color": "yellow",
+    "shape": "armor",
+    "location": "Sinnoh Route 224 Area"
+  },
+  "bwp-BW78": {
+    "unique_id": "bwp-BW78",
+    "evolution_line": "pichu → pikachu → raichu"
+  },
+  "col1-40": {
+    "unique_id": "col1-40",
+    "evolution_line": "chikorita → bayleef → meganium",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "dp3-99": {
+    "unique_id": "dp3-99",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "dp3-109": {
+    "unique_id": "dp3-109",
+    "evolution_line": "shuckle",
+    "color": "yellow",
+    "shape": "armor",
+    "location": "Sinnoh Route 224 Area"
+  },
+  "ecard1-64": {
+    "unique_id": "ecard1-64",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "quadruped"
+  },
+  "ex11-72": {
+    "unique_id": "ex11-72",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Stark Mountain Inside"
+  },
+  "ex14-18": {
+    "unique_id": "ex14-18",
+    "evolution_line": "spearow → fearow",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Stark Mountain Area"
+  },
+  "ex14-45": {
+    "unique_id": "ex14-45",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area"
+  },
+  "ex15-70": {
+    "unique_id": "ex15-70",
+    "evolution_line": "vulpix → ninetales",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 209 Area"
+  },
+  "ex16-4": {
+    "unique_id": "ex16-4",
+    "evolution_line": "shuppet → banette",
+    "color": "black",
+    "shape": "upright",
+    "location": "Stark Mountain Area"
+  },
+  "ex2-72": {
+    "unique_id": "ex2-72",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "ex6-55": {
+    "unique_id": "ex6-55",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area"
+  },
+  "g1-RC9": {
+    "unique_id": "g1-RC9",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "gym1-28": {
+    "unique_id": "gym1-28",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "gym2-49": {
+    "unique_id": "gym2-49",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "hgss1-46": {
+    "unique_id": "hgss1-46",
+    "evolution_line": "caterpie → metapod → butterfree",
+    "color": "green",
+    "shape": "squiggle",
+    "location": "Eterna Forest Area"
+  },
+  "hgss2-13": {
+    "unique_id": "hgss2-13",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "mcd14-5": {
+    "unique_id": "mcd14-5",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "mcd15-6": {
+    "unique_id": "mcd15-6",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "mcd16-6": {
+    "unique_id": "mcd16-6",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "mcd17-5": {
+    "unique_id": "mcd17-5",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "me1-1": {
+    "unique_id": "me1-1",
+    "evolution_line": "bulbasaur → ivysaur → venusaur"
+  },
+  "me1-133": {
+    "unique_id": "me1-133",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area"
+  },
+  "me2-60": {
+    "unique_id": "me2-60",
+    "evolution_line": "carvanha → sharpedo",
+    "color": "red",
+    "shape": "fish",
+    "location": "Great Marsh Area 1"
+  },
+  "me2-87": {
+    "unique_id": "me2-87"
+  },
+  "me2-89": {
+    "unique_id": "me2-89"
+  },
+  "me2-90": {
+    "unique_id": "me2-90"
+  },
+  "me2-98": {
+    "unique_id": "me2-98",
+    "evolution_line": "piplup → prinplup → empoleon",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Lake Verity Before Galactic Intervention"
+  },
+  "me2-118": {
+    "unique_id": "me2-118"
+  },
+  "neo1-9": {
+    "unique_id": "neo1-9",
+    "evolution_line": "lugia",
+    "color": "white",
+    "shape": "wings",
+    "location": "Whirl Islands B2F"
+  },
+  "neo1-17": {
+    "unique_id": "neo1-17",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "quadruped"
+  },
+  "pop5-16": {
+    "unique_id": "pop5-16",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "purple",
+    "shape": "quadruped",
+    "location": "Alola Route 4 Area"
+  },
+  "sm5-58": {
+    "unique_id": "sm5-58",
+    "evolution_line": "giratina",
+    "color": "black",
+    "shape": "tentacles",
+    "location": "Sinjoh Ruins Area"
+  },
+  "sm5-77": {
+    "unique_id": "sm5-77",
+    "evolution_line": "darkrai",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Newmoon Island Area"
+  },
+  "sm6-4": {
+    "unique_id": "sm6-4",
+    "evolution_line": "snover → abomasnow",
+    "color": "white",
+    "shape": "upright",
+    "location": "Mt Coronet Exterior Snowfall"
+  },
+  "sm6-110": {
+    "unique_id": "sm6-110"
+  },
+  "sm8-154": {
+    "unique_id": "sm8-154",
+    "evolution_line": "ditto",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area"
+  },
+  "sm8-161": {
+    "unique_id": "sm8-161",
+    "evolution_line": "kecleon",
+    "color": "green",
+    "shape": "upright",
+    "location": "Sinnoh Route 210 West Towards Celestic Town"
+  },
+  "sv1-210": {
+    "unique_id": "sv1-210",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 215 Area"
+  },
+  "sv10-60": {
+    "unique_id": "sv10-60",
+    "evolution_line": "snover → abomasnow",
+    "color": "white",
+    "shape": "upright",
+    "location": "Mt Coronet Exterior Snowfall"
+  },
+  "sv2-211": {
+    "unique_id": "sv2-211",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sv2-229": {
+    "unique_id": "sv2-229",
+    "evolution_line": "dunsparce → dudunsparce",
+    "color": "yellow",
+    "shape": "squiggle"
+  },
+  "sv3-207": {
+    "unique_id": "sv3-207",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 229 Area"
+  },
+  "sv3pt5-1": {
+    "unique_id": "sv3pt5-1",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area"
+  },
+  "swsh45-35": {
+    "unique_id": "swsh45-35",
+    "evolution_line": "morpeko",
+    "color": "yellow",
+    "shape": "humanoid"
+  },
+  "swsh6-10": {
+    "unique_id": "swsh6-10",
+    "evolution_line": "snover → abomasnow",
+    "color": "white",
+    "shape": "upright",
+    "location": "Mt Coronet Exterior Snowfall"
+  },
+  "swsh6-179": {
+    "unique_id": "swsh6-179",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Abundant Shrine Area"
+  },
+  "xy1-1": {
+    "unique_id": "xy1-1",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "xy1-29": {
+    "unique_id": "xy1-29",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "xy12-7": {
+    "unique_id": "xy12-7",
+    "evolution_line": "weedle → kakuna → beedrill",
+    "color": "yellow",
+    "shape": "bug-wings",
+    "location": "Ilex Forest Area"
+  },
+  "xy12-8": {
+    "unique_id": "xy12-8",
+    "evolution_line": "tangela → tangrowth",
+    "color": "blue",
+    "shape": "legs",
+    "location": "Great Marsh Area 1"
+  },
+  "xy12-10": {
+    "unique_id": "xy12-10",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright"
+  },
+  "xy12-28": {
+    "unique_id": "xy12-28",
+    "evolution_line": "seel → dewgong",
+    "color": "white",
+    "shape": "fish",
+    "location": "Sinnoh Sea Route 226 Area"
+  },
+  "xy12-30": {
+    "unique_id": "xy12-30",
+    "evolution_line": "staryu → starmie",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Canalave City Area"
+  },
+  "xy12-31": {
+    "unique_id": "xy12-31",
+    "evolution_line": "staryu → starmie",
+    "color": "purple",
+    "shape": "blob",
+    "location": "Kanto Sea Route 19 Area"
+  },
+  "xy12-32": {
+    "unique_id": "xy12-32",
+    "evolution_line": "staryu → starmie",
+    "color": "purple",
+    "shape": "blob",
+    "location": "Kanto Sea Route 19 Area"
+  },
+  "xy12-40": {
+    "unique_id": "xy12-40",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
+  },
+  "xy12-50": {
+    "unique_id": "xy12-50",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Stark Mountain Inside"
+  },
+  "xy12-52": {
+    "unique_id": "xy12-52",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F"
+  },
+  "xy12-62": {
+    "unique_id": "xy12-62",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Kanto Victory Road 1 3F"
+  },
+  "xy12-70": {
+    "unique_id": "xy12-70",
+    "evolution_line": "happiny → chansey → blissey",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Sinnoh Route 209 Area"
+  },
+  "xy12-109": {
+    "unique_id": "xy12-109",
+    "evolution_line": "exeggcute → exeggutor",
+    "color": "yellow",
+    "shape": "legs",
+    "location": "Kanto Route 23 Area"
+  },
+  "xy2-107": {
+    "unique_id": "xy2-107",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area"
+  },
+  "xy4-91": {
+    "unique_id": "xy4-91"
+  },
+  "xy4-117": {
+    "unique_id": "xy4-117"
+  },
+  "xy5-66": {
+    "unique_id": "xy5-66",
+    "evolution_line": "nidoran-f → nidorina → nidoqueen",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 201 Area"
+  },
+  "xyp-XY03": {
+    "unique_id": "xyp-XY03",
+    "evolution_line": "froakie → frogadier → greninja",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Aquacorde Town Area"
+  },
+  "xyp-XY04": {
+    "unique_id": "xyp-XY04",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "pink",
+    "shape": "quadruped"
+  },
+  "xyp-XY06": {
+    "unique_id": "xyp-XY06",
+    "evolution_line": "yveltal",
+    "color": "red",
+    "shape": "wings",
+    "location": "Ultra Space Wilds Cliff"
+  },
+  "xyp-XY07": {
+    "unique_id": "xyp-XY07",
+    "evolution_line": "xerneas",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Ultra Space Wilds Crag"
+  },
+  "xyp-XY08": {
+    "unique_id": "xyp-XY08",
+    "evolution_line": "yveltal",
+    "color": "red",
+    "shape": "wings",
+    "location": "Ultra Space Wilds Cliff"
+  },
+  "xyp-XY09": {
+    "unique_id": "xyp-XY09",
+    "evolution_line": "gible → gabite → garchomp",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "xyp-XY10": {
+    "unique_id": "xyp-XY10",
+    "evolution_line": "skrelp → dragalge",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Ambrette Town Area"
+  },
+  "xyp-XY11": {
+    "unique_id": "xyp-XY11",
+    "evolution_line": "skiddo → gogoat",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Kalos Route 5 Area"
+  },
+  "xyp-XY12": {
+    "unique_id": "xyp-XY12",
+    "evolution_line": "honedge → doublade → aegislash",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Kalos Route 6 Area"
+  },
+  "xyp-XY13": {
+    "unique_id": "xyp-XY13",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid"
+  },
+  "xyp-XY14": {
+    "unique_id": "xyp-XY14",
+    "evolution_line": "phantump → trevenant",
+    "color": "brown",
+    "shape": "tentacles",
+    "location": "Kalos Route 20 Area"
+  },
+  "xyp-XY15": {
+    "unique_id": "xyp-XY15",
+    "evolution_line": "swirlix → slurpuff",
+    "color": "white",
+    "shape": "humanoid"
+  },
+  "xyp-XY16": {
+    "unique_id": "xyp-XY16",
+    "evolution_line": "skiddo → gogoat",
+    "color": "brown",
+    "shape": "quadruped"
+  },
+  "xyp-XY17": {
+    "unique_id": "xyp-XY17",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area"
+  },
+  "xyp-XY18": {
+    "unique_id": "xyp-XY18",
+    "evolution_line": "chespin → quilladin → chesnaught",
+    "color": "green",
+    "shape": "upright",
+    "location": "Exeggutor Island Area"
+  },
+  "xyp-XY19": {
+    "unique_id": "xyp-XY19",
+    "evolution_line": "fennekin → braixen → delphox",
+    "color": "red",
+    "shape": "upright",
+    "location": "Ancient Poni Path Area"
+  },
+  "xyp-XY20": {
+    "unique_id": "xyp-XY20",
+    "evolution_line": "froakie → frogadier → greninja",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Poni Wilds Area"
+  },
+  "xyp-XY21": {
+    "unique_id": "xyp-XY21",
+    "evolution_line": "bronzor → bronzong",
+    "color": "green",
+    "shape": "arms",
+    "location": "Mt Coronet 2F"
+  },
+  "xyp-XY22": {
+    "unique_id": "xyp-XY22",
+    "evolution_line": "darkrai",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Newmoon Island Area"
+  },
+  "xyp-XY23": {
+    "unique_id": "xyp-XY23",
+    "evolution_line": "seedot → nuzleaf → shiftry",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Nature Sanctuary Area"
+  },
+  "xyp-XY24": {
+    "unique_id": "xyp-XY24",
+    "evolution_line": "froakie → frogadier → greninja",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Poni Wilds Area"
+  },
+  "xyp-XY25": {
+    "unique_id": "xyp-XY25",
+    "evolution_line": "sandile → krokorok → krookodile",
+    "color": "red",
+    "shape": "upright"
+  },
+  "xyp-XY26": {
+    "unique_id": "xyp-XY26",
+    "evolution_line": "litleo → pyroar",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Poni Plains Center"
+  },
+  "xyp-XY27": {
+    "unique_id": "xyp-XY27"
+  },
+  "xyp-XY28": {
+    "unique_id": "xyp-XY28",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "xyp-XY29": {
+    "unique_id": "xyp-XY29",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area"
+  },
+  "xyp-XY30": {
+    "unique_id": "xyp-XY30",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "xyp-XY31": {
+    "unique_id": "xyp-XY31",
+    "evolution_line": "xerneas",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Ultra Space Wilds Crag"
+  },
+  "xyp-XY32": {
+    "unique_id": "xyp-XY32",
+    "evolution_line": "yveltal",
+    "color": "red",
+    "shape": "wings",
+    "location": "Ultra Space Wilds Cliff"
+  },
+  "xyp-XY33": {
+    "unique_id": "xyp-XY33"
+  },
+  "xyp-XY34": {
+    "unique_id": "xyp-XY34",
+    "evolution_line": "beldum → metang → metagross",
+    "color": "blue",
+    "shape": "heads",
+    "location": "Giant Chasm Forest"
+  },
+  "xyp-XY35": {
+    "unique_id": "xyp-XY35",
+    "evolution_line": "beldum → metang → metagross",
+    "color": "blue",
+    "shape": "heads",
+    "location": "Giant Chasm Forest"
+  },
+  "xyp-XY40": {
+    "unique_id": "xyp-XY40",
+    "evolution_line": "ditto",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area"
+  },
+  "xyp-XY57": {
+    "unique_id": "xyp-XY57",
+    "evolution_line": "spearow → fearow",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Stark Mountain Area"
+  },
+  "xyp-XY60": {
+    "unique_id": "xyp-XY60",
+    "evolution_line": "magikarp → gyarados",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Canalave City Area"
+  },
+  "xyp-XY84": {
+    "unique_id": "xyp-XY84",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "xyp-XY97": {
+    "unique_id": "xyp-XY97",
+    "evolution_line": "aerodactyl",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Cinnabar Island Cinnabar Lab"
+  },
+  "xyp-XY98": {
+    "unique_id": "xyp-XY98",
+    "evolution_line": "aerodactyl",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Cinnabar Island Cinnabar Lab"
+  },
+  "xyp-XY106": {
+    "unique_id": "xyp-XY106",
+    "evolution_line": "magikarp → gyarados",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Canalave City Area"
+  },
+  "xyp-XY109": {
+    "unique_id": "xyp-XY109",
+    "evolution_line": "magikarp → gyarados",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Canalave City Area"
+  },
+  "xyp-XY122": {
+    "unique_id": "xyp-XY122",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "xyp-XY143": {
+    "unique_id": "xyp-XY143",
+    "evolution_line": "magikarp → gyarados",
+    "color": "red",
+    "shape": "fish",
+    "location": "Canalave City Area"
+  },
+  "xyp-XY152": {
+    "unique_id": "xyp-XY152",
+    "evolution_line": "zygarde",
+    "color": "green",
+    "shape": "squiggle",
+    "location": "Terminus Cave Zygardes Chamber"
+  },
+  "xyp-XY163": {
+    "unique_id": "xyp-XY163",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "heads",
+    "location": "Stark Mountain Area"
+  },
+  "xyp-XY177": {
+    "unique_id": "xyp-XY177"
+  },
+  "zsv10pt5-171": {
+    "unique_id": "zsv10pt5-171",
+    "evolution_line": "victini",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Liberty Garden Lighthouse Basement"
+  },
+  "basep-13": {
+    "unique_id": "basep-13",
+    "evolution_line": "bulbasaur → ivysaur → venusaur"
+  },
+  "basep-20": {
+    "unique_id": "basep-20",
+    "evolution_line": "psyduck → golduck"
+  },
+  "dp7-12": {
+    "unique_id": "dp7-12",
+    "evolution_line": "snover → abomasnow",
+    "color": "white",
+    "shape": "upright",
+    "location": "Mt Coronet Exterior Snowfall",
+    "environment": "Outdoors",
+    "weather": "Snow",
+    "background_details": [
+      "mountains"
+    ],
+    "emotion": "Angry"
+  },
+  "ex10-45": {
+    "unique_id": "ex10-45",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "quadruped"
+  },
+  "ex8-31": {
+    "unique_id": "ex8-31",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Mt Coronet 1F Route 207"
+  },
+  "neo2-8": {
+    "unique_id": "neo2-8",
+    "evolution_line": "poliwag → poliwhirl → poliwrath → politoed",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Unova Route 6 Area"
+  },
+  "pl4-37": {
+    "unique_id": "pl4-37",
+    "evolution_line": "geodude → graveler → golem",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Mt Coronet 2F"
+  },
+  "sm1-60": {
+    "unique_id": "sm1-60",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Kanto Route 11 Area"
+  },
+  "sm11-42": {
+    "unique_id": "sm11-42",
+    "evolution_line": "snover → abomasnow",
+    "color": "white",
+    "shape": "upright",
+    "location": "Mt Coronet Exterior Snowfall"
+  },
+  "sm11-54": {
+    "unique_id": "sm11-54",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sm11-220": {
+    "unique_id": "sm11-220",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sm11-221": {
+    "unique_id": "sm11-221",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sm11-241": {
+    "unique_id": "sm11-241",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sm2-30": {
+    "unique_id": "sm2-30",
+    "evolution_line": "wailmer → wailord",
+    "color": "blue",
+    "shape": "fish",
+    "location": "Sinnoh Sea Route 223 Area"
+  },
+  "sm35-29": {
+    "unique_id": "sm35-29",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "sm35-75": {
+    "unique_id": "sm35-75",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "smp-SM72": {
+    "unique_id": "smp-SM72",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "smp-SM169": {
+    "unique_id": "smp-SM169",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Pallet Town Area"
+  },
+  "smp-SM198": {
+    "unique_id": "smp-SM198",
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Cerulean City Area"
+  },
+  "sv4pt5-131": {
+    "unique_id": "sv4pt5-131",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "sv4pt5-132": {
+    "unique_id": "sv4pt5-132",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "svp-85": {
+    "unique_id": "svp-85",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "svp-117": {
+    "unique_id": "svp-117",
+    "evolution_line": "snorunt → glalie → froslass",
+    "color": "white",
+    "shape": "arms"
+  },
+  "swsh7-215": {
+    "unique_id": "swsh7-215",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "black",
+    "shape": "quadruped",
+    "location": "Alola Route 4 Area"
+  },
+  "xy9-82": {
+    "unique_id": "xy9-82",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Moon B2F"
+  },
+  "pl2-88": {
+    "unique_id": "pl2-88"
+  },
+  "swsh8-2": {
+    "unique_id": "swsh8-2",
+    "evolution_line": "caterpie → metapod → butterfree",
+    "color": "green",
+    "shape": "squiggle",
+    "location": "Eterna Forest Area"
+  },
+  "xy0-22": {
+    "unique_id": "xy0-22",
+    "evolution_line": "snubbull → granbull",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 209 Area"
+  },
+  "xy0-26": {
+    "unique_id": "xy0-26",
+    "evolution_line": "munchlax → snorlax",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Kanto Route 12 Area"
+  },
+  "xy11-1": {
+    "unique_id": "xy11-1",
+    "evolution_line": "tangela → tangrowth",
+    "color": "blue",
+    "shape": "legs",
+    "location": "Great Marsh Area 1"
+  },
+  "xy11-89": {
+    "unique_id": "xy11-89",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Vermilion City Area"
+  },
+  "sm115-4": {
+    "unique_id": "sm115-4",
+    "evolution_line": "paras → parasect",
+    "color": "red",
+    "shape": "armor",
+    "location": "Ilex Forest Area"
+  },
+  "sm115-38": {
+    "unique_id": "sm115-38",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207"
+  },
+  "sm9-33": {
+    "unique_id": "sm9-33",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "sm9-161": {
+    "unique_id": "sm9-161",
+    "evolution_line": "magikarp → gyarados",
+    "color": "red",
+    "shape": "fish",
+    "location": "Canalave City Area"
+  },
+  "xy8-76": {
+    "unique_id": "xy8-76",
+    "evolution_line": "sandshrew → sandslash",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 228 Area"
+  },
+  "xyp-JP279": {
+    "weather_environment": "Indoors",
+    "unique_id": "xyp-JP279"
+  },
+  "xyp-JP289": {
+    "weather_environment": "Sunny",
+    "unique_id": "xyp-JP289"
+  },
+  "vm-set3-28": {
+    "weather_environment": "Sunny",
+    "unique_id": "vm-set3-28"
+  },
+  "A1-115": {
+    "unique_id": "A1-115"
+  },
+  "A2-045": {
+    "unique_id": "A2-045"
+  },
+  "A2a-021": {
+    "unique_id": "A2a-021"
+  }
+}
