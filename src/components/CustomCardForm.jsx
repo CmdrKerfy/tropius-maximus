@@ -569,7 +569,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         {/* ── Card Details (TCG, collapsible) ── */}
         {cardTable === 'tcg' && (
-          <CollapsibleSection title="Card Details">
+          <CollapsibleSection title="Card Details" defaultOpen={true}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
               <div>
                 <label className={labelClass}>Supertype</label>
@@ -617,7 +617,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         {/* ── Card Details (Pocket, collapsible) ── */}
         {cardTable === 'pocket' && (
-          <CollapsibleSection title="Card Details">
+          <CollapsibleSection title="Card Details" defaultOpen={true}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
               <div>
                 <label className={labelClass}>Card Type</label>
@@ -673,7 +673,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         )}
 
         {/* ── Annotations (collapsible) ── */}
-        <CollapsibleSection title="Annotations">
+        <CollapsibleSection title="Annotations" defaultOpen={true}>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Mon Classification ── */}
@@ -842,7 +842,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         </CollapsibleSection>
 
         {/* ── Video (collapsible) ── */}
-        <CollapsibleSection title="Video">
+        <CollapsibleSection title="Video" defaultOpen={true}>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Video Games ── */}

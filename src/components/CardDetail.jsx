@@ -746,7 +746,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             Add a PAT in Settings to sync across devices.
                           </div>
                         )}
-                        <CollapsibleSection title="Annotations" defaultOpen={false}>
+                        <CollapsibleSection title="Annotations" defaultOpen={true}>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
                             {/* ── Mon Classification ── */}
@@ -930,7 +930,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                           </div>
                         </CollapsibleSection>
 
-                        <CollapsibleSection title="Video" defaultOpen={false}>
+                        <CollapsibleSection title="Video" defaultOpen={true}>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
                             {/* ── Video Games ── */}
