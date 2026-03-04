@@ -230,7 +230,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       }
     } catch (err) {
       setSaveStatus("error");
-      setSaveMessage(err.message?.slice(0, 80) || "Save failed");
+      const msg = err.message || "";
+      if (msg.includes("403")) {
+        setSaveMessage("Permission denied (403) — your PAT needs Contents: Read and write access. Regenerate it at GitHub → Settings → Developer settings → Personal access tokens.");
+      } else {
+        setSaveMessage(msg || "Save failed");
+      }
     }
     setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
   };
@@ -704,9 +709,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         {saveStatus === "saved" && (
                           <span className="text-xs text-green-600 font-medium">{saveMessage}</span>
                         )}
-                        {saveStatus === "error" && (
-                          <span className="text-xs text-red-600 font-medium">{saveMessage}</span>
-                        )}
                         <button
                           onClick={handleSaveChanges}
                           disabled={saveStatus === "saving"}
@@ -739,6 +741,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     )}
                   </div>
                 </div>
+
+                {/* Save error banner (shown below tab bar so long messages have room) */}
+                {isEditMode && saveStatus === "error" && (
+                  <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+                    {saveMessage}
+                  </div>
+                )}
 
                 {/* Info tab panel */}
                 {activeTab === "info" && (
