@@ -46,11 +46,66 @@ function sortCards(arr, sort_by, sort_dir) {
   });
 }
 
+const FILTER_STORAGE_KEY = "tm_filters";
+const SEARCH_STORAGE_KEY = "tm_search";
+
+const DEFAULT_FILTERS = {
+  source: "", supertype: "", rarity: [], set_id: [], region: [],
+  generation: "", color: "", artist: [], evolution_line: [],
+  trainer_type: "", specialty: [], element: [], card_type: [],
+  stage: [], weather: [], environment: [],
+  sort_by: "pokedex", sort_dir: "asc",
+};
+
+const ARRAY_FILTER_KEYS = new Set([
+  "rarity", "set_id", "region", "artist", "evolution_line",
+  "specialty", "element", "card_type", "stage", "weather", "environment",
+]);
+
+// Values to omit from URL (defaults → clean URL)
+const URL_FILTER_DEFAULTS = { sort_by: "pokedex", sort_dir: "asc" };
+
+function readUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const urlFilters = {};
+  for (const key of Object.keys(DEFAULT_FILTERS)) {
+    if (ARRAY_FILTER_KEYS.has(key)) {
+      const vals = params.getAll(key);
+      if (vals.length) urlFilters[key] = vals;
+    } else {
+      const val = params.get(key);
+      if (val !== null) urlFilters[key] = val;
+    }
+  }
+  return {
+    urlFilters,
+    searchQuery: params.has("q") ? params.get("q") : null, // null = not in URL
+    page: Math.max(1, parseInt(params.get("page") || "1", 10)),
+    selectedCardId: params.get("card") || null,
+  };
+}
+
+function buildUrlParams(filters, searchQuery, page, selectedCardId) {
+  const p = new URLSearchParams();
+  if (selectedCardId) p.set("card", selectedCardId);
+  if (searchQuery) p.set("q", searchQuery);
+  if (page > 1) p.set("page", String(page));
+  for (const [key, value] of Object.entries(filters)) {
+    if (ARRAY_FILTER_KEYS.has(key)) {
+      for (const v of value) p.append(key, v);
+    } else {
+      if (!value || value === URL_FILTER_DEFAULTS[key]) continue;
+      p.set(key, value);
+    }
+  }
+  return p;
+}
+
 export default function App() {
   // ── Card list state ─────────────────────────────────────────────────
   const [cards, setCards] = useState([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => readUrlState().page);
   const [pageSize] = useState(60);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,34 +119,14 @@ export default function App() {
   const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   // ── Search and filter state ─────────────────────────────────────────
-  const FILTER_STORAGE_KEY = "tm_filters";
-  const SEARCH_STORAGE_KEY = "tm_search";
-
-  const DEFAULT_FILTERS = {
-    source: "",
-    supertype: "",
-    rarity: [],
-    set_id: [],
-    region: [],
-    generation: "",
-    color: "",
-    artist: [],
-    evolution_line: [],
-    trainer_type: "",
-    specialty: [],
-    element: [],
-    card_type: [],
-    stage: [],
-    weather: [],
-    environment: [],
-    sort_by: "pokedex",
-    sort_dir: "asc",
-  };
-
-  const [searchQuery, setSearchQuery] = useState(
-    () => localStorage.getItem(SEARCH_STORAGE_KEY) || ""
-  );
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const { searchQuery: urlQ } = readUrlState();
+    if (urlQ !== null) return urlQ;
+    return localStorage.getItem(SEARCH_STORAGE_KEY) || "";
+  });
   const [filters, setFilters] = useState(() => {
+    const { urlFilters } = readUrlState();
+    if (Object.keys(urlFilters).length > 0) return { ...DEFAULT_FILTERS, ...urlFilters };
     try {
       const saved = localStorage.getItem(FILTER_STORAGE_KEY);
       return saved ? { ...DEFAULT_FILTERS, ...JSON.parse(saved) } : DEFAULT_FILTERS;
@@ -108,7 +143,8 @@ export default function App() {
   const [attributes, setAttributes] = useState([]);
 
   // ── UI state ────────────────────────────────────────────────────────
-  const [selectedCardId, setSelectedCardId] = useState(null);
+  const [selectedCardId, setSelectedCardId] = useState(() => readUrlState().selectedCardId);
+  const prevSelectedCardIdRef = useRef(selectedCardId);
   const [showSettings, setShowSettings] = useState(false);
   const [showSqlConsole, setShowSqlConsole] = useState(false);
   const [showCustomCardForm, setShowCustomCardForm] = useState(false);
@@ -165,6 +201,37 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(SEARCH_STORAGE_KEY, searchQuery);
   }, [searchQuery]);
+
+  // ── URL sync ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const prev = prevSelectedCardIdRef.current;
+    prevSelectedCardIdRef.current = selectedCardId;
+
+    const params = buildUrlParams(filters, searchQuery, page, selectedCardId);
+    const newSearch = params.toString() ? `?${params}` : "";
+    const newUrl = window.location.pathname + newSearch;
+
+    if (prev === null && selectedCardId !== null) {
+      // Opening a card from the grid → push so Back button closes it
+      history.pushState({ selectedCardId }, "", newUrl);
+    } else {
+      // Card-to-card, closing, or filter/search/page change → replace
+      history.replaceState({ selectedCardId }, "", newUrl);
+    }
+  }, [filters, searchQuery, page, selectedCardId]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const { urlFilters, searchQuery: urlQ, page: urlPage, selectedCardId: urlCard } = readUrlState();
+      prevSelectedCardIdRef.current = selectedCardId; // sync ref before state update
+      setFilters({ ...DEFAULT_FILTERS, ...urlFilters });
+      setSearchQuery(urlQ !== null ? urlQ : "");
+      setPage(urlPage);
+      setSelectedCardId(urlCard);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [selectedCardId]);
 
   // ── Handlers ────────────────────────────────────────────────────────
 
