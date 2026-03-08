@@ -93,7 +93,7 @@ function parseAnnotations(card) {
   return a;
 }
 
-export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext }) {
+export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -657,17 +657,38 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     </span>
                   ))}
                   {types.map((t) => (
-                    <span
-                      key={t}
-                      className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium"
-                    >
-                      {t}
-                    </span>
+                    !isEditMode && onFilterClick ? (
+                      <button
+                        key={t}
+                        onClick={() => onFilterClick("element", t)}
+                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium cursor-pointer hover:bg-blue-200 transition-colors"
+                      >
+                        {t}
+                      </button>
+                    ) : (
+                      <span
+                        key={t}
+                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium"
+                      >
+                        {t}
+                      </span>
+                    )
                   ))}
-                  {card.hp && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-sm font-medium">
-                      HP {card.hp}
-                    </span>
+                  {(ann.set_name || card.set_name) && !isEditMode && onFilterClick && (
+                    <button
+                      onClick={() => onFilterClick("set_id", card.set_id)}
+                      className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                    >
+                      {ann.set_name || card.set_name}
+                    </button>
+                  )}
+                  {card.artist && !isEditMode && onFilterClick && (
+                    <button
+                      onClick={() => onFilterClick("artist", card.artist)}
+                      className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-sm hover:bg-amber-200 transition-colors"
+                    >
+                      {card.artist}
+                    </button>
                   )}
                 </div>
 

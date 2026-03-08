@@ -725,6 +725,15 @@ export default function App() {
               hasNext={currentIndex < cardIds.length - 1}
               onPrev={() => setSelectedCardId(cardIds[currentIndex - 1])}
               onNext={() => setSelectedCardId(cardIds[currentIndex + 1])}
+              onFilterClick={(filterKey, filterValue) => {
+                setSelectedCardId(null);
+                setSearchQuery("");
+                setPage(1);
+                setFilters({
+                  ...DEFAULT_FILTERS,
+                  [filterKey]: ARRAY_FILTER_KEYS.has(filterKey) ? [filterValue] : filterValue,
+                });
+              }}
             />
           );
         })()}
