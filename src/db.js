@@ -961,11 +961,14 @@ export async function fetchCards(params = {}) {
     const tcgWhere = tcgConditions.length ? "WHERE " + tcgConditions.join(" AND ") : "";
 
     // Pocket branch: excluded if any filter with no Pocket equivalent is active
-    let pocketExcluded = !!(set_id.length || artist.length || trainer_type || specialty.length || generation || color || rarity.length || weather.length || environment.length);
+    let pocketExcluded = !!(trainer_type || specialty.length || generation || color || rarity.length || weather.length || environment.length);
     const pocketConditions = [];
     if (q)              pocketConditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
     { const s = inSQL(region, "pc.pkmn_region"); if (s) pocketConditions.push(s); }
     { const s = inSQL(evolution_line, "pc.evolution_line"); if (s) pocketConditions.push(s); }
+    { const s = inSQL(artist, "pc.illustrator"); if (s) pocketConditions.push(s); }
+    { const s = inSQL(set_id, "pc.set_id");      if (s) pocketConditions.push(s); }
+    { const s = inSQL(element, "pc.element");    if (s) pocketConditions.push(s); }
 
     if (supertype && !pocketExcluded) {
       const norm = supertype.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1033,6 +1036,7 @@ export async function fetchCards(params = {}) {
     { const s = inSQL(card_type, "pc.card_type"); if (s) conditions.push(s); }
     { const s = inSQL(element, "pc.element"); if (s) conditions.push(s); }
     { const s = inSQL(stage, "pc.stage"); if (s) conditions.push(s); }
+    { const s = inSQL(artist, "pc.illustrator"); if (s) conditions.push(s); }
 
     const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
@@ -1494,7 +1498,11 @@ export async function fetchFilterOptions(source = "TCG") {
           "SELECT DISTINCT color FROM pokemon_metadata WHERE color IS NOT NULL ORDER BY color"
         ),
         conn.query(
-          "SELECT DISTINCT artist FROM tcg_cards WHERE artist IS NOT NULL AND artist != '' ORDER BY artist"
+          `SELECT DISTINCT artist FROM (
+            SELECT artist FROM tcg_cards WHERE artist IS NOT NULL AND artist != ''
+            UNION
+            SELECT illustrator AS artist FROM pocket_cards WHERE illustrator IS NOT NULL AND illustrator != ''
+          ) ORDER BY artist`
         ),
         conn.query(
           "SELECT DISTINCT evolution_chain FROM pokemon_metadata WHERE evolution_chain IS NOT NULL ORDER BY evolution_chain"
