@@ -789,11 +789,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         Stage: <strong>{card.stage}</strong>
                       </p>
                     )}
-                    {card.packs && card.packs.length > 0 && (
-                      <p className="text-sm text-gray-600">
-                        Packs: <strong>{card.packs.join(", ")}</strong>
-                      </p>
-                    )}
+
                     {card.retreat_cost != null && card.retreat_cost > 0 && (
                       <p className="text-sm text-gray-600">
                         Retreat Cost: <strong>{card.retreat_cost}</strong>
