@@ -191,6 +191,22 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
   // Debounce GitHub push so a quick pass through many cards produces one commit and one workflow run.
   const GITHUB_PUSH_DEBOUNCE_MS = 5000;
+
+  // Push annotations to GitHub; on 409 (file changed), refetch SHA and retry once.
+  const pushAnnotationsToGitHub = async (token, allAnnotations, commitMessage) => {
+    let { sha } = await getAnnotationsFileContents(token);
+    try {
+      await updateAnnotationsFileContents(token, allAnnotations, sha, commitMessage);
+    } catch (err) {
+      if (err?.message?.includes("409")) {
+        const latest = await getAnnotationsFileContents(token);
+        await updateAnnotationsFileContents(token, allAnnotations, latest.sha, commitMessage);
+      } else {
+        throw err;
+      }
+    }
+  };
+
   const scheduleGitHubPush = () => {
     const token = getToken();
     if (!token) return;
@@ -198,11 +214,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     ghPushTimer.current = setTimeout(async () => {
       try {
         const allAnnotations = await exportAllAnnotations();
-        const { sha } = await getAnnotationsFileContents(token);
-        await updateAnnotationsFileContents(
+        await pushAnnotationsToGitHub(
           token,
           allAnnotations,
-          sha,
           `CardDetail: update annotations for ${card?.name ?? "card"}`
         );
       } catch (err) {
@@ -219,17 +233,16 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   };
 
   const handleSaveChanges = async () => {
+    clearTimeout(ghPushTimer.current); // avoid racing with debounced push
     setSaveStatus("saving");
     setSaveMessage("");
     try {
       const allAnnotations = await exportAllAnnotations();
       const token = getToken();
       if (token) {
-        const { sha } = await getAnnotationsFileContents(token);
-        await updateAnnotationsFileContents(
+        await pushAnnotationsToGitHub(
           token,
           allAnnotations,
-          sha,
           `Save annotations for ${card?.name ?? "card"}`
         );
         setSaveStatus("saved");
