@@ -2277,7 +2277,8 @@
     "color": "blue",
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
-    "weather": "smog"
+    "weather": "smog",
+    "card_locations": "post-apocalypse"
   },
   "base5-37": {
     "unique_id": "base5-37",
@@ -2317,7 +2318,29 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Vermilion City Area",
-    "camera_angle": "pro"
+    "camera_angle": "Profile"
+  },
+  "base5-43": {
+    "unique_id": "base5-43",
+    "evolution_line": "mankey → primeape → annihilape",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 225 Area",
+    "card_locations": "post-apocalypse"
+  },
+  "base5-45": {
+    "unique_id": "base5-45",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "blue",
+    "shape": "quadruped",
+    "card_locations": "Underwater"
+  },
+  "base5-46": {
+    "unique_id": "base5-46",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright",
+    "emotion": "Angry"
   },
   "basep-13": {
     "unique_id": "basep-13",
