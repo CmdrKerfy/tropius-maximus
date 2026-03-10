@@ -743,7 +743,10 @@
     "color": "red",
     "shape": "fish",
     "location": "Sendoff Spring Area",
-    "card_locations": "Underwater"
+    "card_locations": "Underwater",
+    "background_details": [
+      "seafloor"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
