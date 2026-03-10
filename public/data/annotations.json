@@ -1278,7 +1278,8 @@
     "emotion": "depressed",
     "actions": "hangin around",
     "background_details": [
-      "patterned background"
+      "patterned background",
+      "bandage"
     ],
     "background_pokemon": [
       "jigglypuff"
