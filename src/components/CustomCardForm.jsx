@@ -731,7 +731,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Environment</label>
-              <ComboBox value={environment} onChange={setEnvironment} options={opts.environment || []} placeholder="Forest, Beach, Stadium, etc." className={inputClass + " w-full"} />
+              <MultiComboBox value={environment} onChange={setEnvironment} options={opts.environment || []} placeholder="Forest, Beach, Stadium, etc." />
             </div>
             <div>
               <label className={labelClass}>Weather</label>

@@ -893,7 +893,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             </div>
                             <div>
                               <label className={labelClass}>Environment</label>
-                              <ComboBox value={annValue("environment")} onChange={(v) => saveAnnotation("environment", v)} options={opts.environment || []} placeholder="Forest, Beach, Stadium, etc." className={inputClass + " w-full"} />
+                              <MultiComboBox value={annValue("environment", true)} onChange={(v) => saveAnnotation("environment", v)} options={opts.environment || []} placeholder="Forest, Beach, Stadium, etc." />
                             </div>
                             <div>
                               <label className={labelClass}>Weather</label>
