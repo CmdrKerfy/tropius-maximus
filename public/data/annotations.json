@@ -420,7 +420,10 @@
   "base1-78": {
     "unique_id": "base1-78",
     "items": "Poke Ball",
-    "pokeball": "Pokeball"
+    "pokeball": "Pokeball",
+    "background_pokemon": [
+      "weedle"
+    ]
   },
   "base1-91": {
     "unique_id": "base1-91",
