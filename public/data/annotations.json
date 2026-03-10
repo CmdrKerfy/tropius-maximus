@@ -2182,7 +2182,10 @@
     "color": "pink",
     "shape": "upright",
     "location": "Slowpoke Well B1F",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "additional_characters": [
+      "Rocket Grunt"
+    ]
   },
   "base5-30": {
     "unique_id": "base5-30",
