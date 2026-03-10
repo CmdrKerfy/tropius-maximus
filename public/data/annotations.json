@@ -915,7 +915,9 @@
     "color": "red",
     "shape": "armor",
     "location": "Ilex Forest Area",
-    "art_style": []
+    "art_style": [
+      "Polygon Graphics"
+    ]
   },
   "base2-60": {
     "unique_id": "base2-60",
