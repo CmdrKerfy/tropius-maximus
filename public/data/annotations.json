@@ -316,7 +316,10 @@
     "shape": "upright",
     "location": "Seafoam Islands 1F",
     "pose": "",
-    "actions": "attacking"
+    "actions": "attacking",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "base1-91": {
     "unique_id": "base1-91",
