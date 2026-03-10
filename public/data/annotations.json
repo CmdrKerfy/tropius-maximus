@@ -2599,6 +2599,12 @@
       "unexpected partnerships"
     ]
   },
+  "base5-75": {
+    "unique_id": "base5-75",
+    "background_pokemon": [
+      "doduo"
+    ]
+  },
   "base5-83": {
     "unique_id": "base5-83",
     "evolution_line": "pichu → pikachu → raichu",
