@@ -501,7 +501,16 @@
       "patterned background"
     ],
     "trainer_card_type": "Supporter",
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "pokeball": "Pokeball"
+  },
+  "base1-92": {
+    "unique_id": "base1-92",
+    "trainer_card_type": "Item"
+  },
+  "base1-93": {
+    "unique_id": "base1-93",
+    "trainer_card_type": "Item"
   },
   "base2-36": {
     "unique_id": "base2-36",
