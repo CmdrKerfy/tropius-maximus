@@ -2171,7 +2171,26 @@
     "shape": "heads",
     "location": "Sinnoh Route 228 Area",
     "actions": "property damage",
-    "environment": "Indoors"
+    "environment": "Indoors",
+    "background_details": [
+      "bed"
+    ]
+  },
+  "base5-29": {
+    "unique_id": "base5-29",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Slowpoke Well B1F",
+    "rival_group": "Team Rocket"
+  },
+  "base5-30": {
+    "unique_id": "base5-30",
+    "evolution_line": "oddish → gloom → vileplume → bellossom",
+    "color": "red",
+    "shape": "humanoid",
+    "location": "Kanto Sea Route 21 Area",
+    "pose": "m'lady"
   },
   "basep-13": {
     "unique_id": "basep-13",
