@@ -2616,7 +2616,8 @@
       "gengar",
       "koffing"
     ],
-    "pose": "please don't hurt me"
+    "pose": "please don't hurt me",
+    "rival_group": "Team Rocket"
   },
   "base5-83": {
     "unique_id": "base5-83",
