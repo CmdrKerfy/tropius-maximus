@@ -2371,7 +2371,15 @@
     "shape": "upright",
     "location": "Pallet Town Area",
     "actions": "Pyros",
-    "camera_angle": "profile"
+    "camera_angle": "Profile"
+  },
+  "base5-52": {
+    "unique_id": "base5-52",
+    "evolution_line": "diglett → dugtrio",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Sinnoh Route 228 Area",
+    "actions": "property damage"
   },
   "basep-13": {
     "unique_id": "basep-13",
