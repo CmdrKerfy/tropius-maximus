@@ -2443,8 +2443,25 @@
     "location": "Sinnoh Route 225 Area",
     "pose": "winking",
     "art_style": [
-      "2D"
+      "2D",
+      "Hand Drawn"
     ]
+  },
+  "base5-62": {
+    "unique_id": "base5-62",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area",
+    "pose": "balancing on one leg"
+  },
+  "base5-63": {
+    "unique_id": "base5-63",
+    "evolution_line": "oddish → gloom → vileplume → bellossom",
+    "color": "blue",
+    "shape": "legs",
+    "location": "Sinnoh Route 224 Area",
+    "emotion": "disappointed"
   },
   "basep-13": {
     "unique_id": "basep-13",
