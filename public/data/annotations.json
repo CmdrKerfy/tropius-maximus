@@ -2361,7 +2361,8 @@
       "buildings",
       "rooftop"
     ],
-    "card_locations": "City"
+    "card_locations": "City",
+    "actions": "Sleeping"
   },
   "basep-13": {
     "unique_id": "basep-13",
