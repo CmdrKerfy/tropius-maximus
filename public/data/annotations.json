@@ -2562,6 +2562,9 @@
     "rival_group": "Team Rocket",
     "background_pokemon": [
       "meowth"
+    ],
+    "background_humans": [
+      "Trainer"
     ]
   },
   "base5-72": {
