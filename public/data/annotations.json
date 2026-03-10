@@ -2627,6 +2627,13 @@
     "environment": "Starry Night",
     "background_details": [
       "buildings"
+    ],
+    "rival_group": "Team Rocket"
+  },
+  "base5-78": {
+    "unique_id": "base5-78",
+    "background_details": [
+      "toxic"
     ]
   },
   "base5-83": {
