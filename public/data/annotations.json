@@ -2097,6 +2097,14 @@
     "shape": "humanoid",
     "location": "Liberty Garden Lighthouse Basement"
   },
+  "base5-2": {
+    "unique_id": "base5-2",
+    "evolution_line": "ekans → arbok",
+    "color": "purple",
+    "shape": "squiggle",
+    "location": "Great Marsh Area 1",
+    "pose": "tongue out"
+  },
   "base5-4": {
     "unique_id": "base5-4",
     "evolution_line": "charmander → charmeleon → charizard",
