@@ -1158,6 +1158,14 @@
     "environment": "",
     "card_locations": "ancient ruins"
   },
+  "base3-53": {
+    "unique_id": "base3-53",
+    "evolution_line": "psyduck → golduck",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "emotion": "confused"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
