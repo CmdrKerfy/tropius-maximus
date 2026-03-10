@@ -474,7 +474,14 @@
   },
   "base1-87": {
     "unique_id": "base1-87",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "background_pokemon": [
+      "dugtrio"
+    ]
+  },
+  "base1-88": {
+    "unique_id": "base1-88",
+    "trainer_card_type": "Supporter"
   },
   "base1-91": {
     "unique_id": "base1-91",
