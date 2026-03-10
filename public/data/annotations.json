@@ -2125,7 +2125,8 @@
     "additional_characters": [
       "Rocket Grunt"
     ],
-    "rival_group": "Ro"
+    "rival_group": "Team Rocket",
+    "camera_angle": "profi"
   },
   "basep-13": {
     "unique_id": "basep-13",
