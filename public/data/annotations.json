@@ -226,7 +226,8 @@
     "shape": "quadruped",
     "location": "Cerulean City Area",
     "video_url": "",
-    "video_title": ""
+    "video_title": "",
+    "actions": "attacking"
   },
   "base1-46": {
     "unique_id": "base1-46",
@@ -235,6 +236,16 @@
     "shape": "upright",
     "location": "Pallet Town Area"
   },
+  "base1-47": {
+    "unique_id": "base1-47",
+    "evolution_line": "diglett → dugtrio",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Sinnoh Route 228 Area",
+    "art_style": [
+      "Polygon Graphics"
+    ]
+  },
   "base1-48": {
     "unique_id": "base1-48",
     "evolution_line": "doduo → dodrio",
@@ -242,6 +253,26 @@
     "shape": "legs",
     "location": "Sinnoh Route 201 Area",
     "actions": "Running"
+  },
+  "base1-49": {
+    "unique_id": "base1-49",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 215 Area",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "base1-50": {
+    "unique_id": "base1-50",
+    "evolution_line": "gastly → haunter → gengar",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Eterna Forest Area",
+    "background_details": [
+      "graffiti"
+    ]
   },
   "base1-52": {
     "unique_id": "base1-52",
@@ -263,7 +294,8 @@
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "quadruped",
-    "location": "Trophy Garden Area"
+    "location": "Trophy Garden Area",
+    "card_locations": "for"
   },
   "base1-59": {
     "unique_id": "base1-59",
