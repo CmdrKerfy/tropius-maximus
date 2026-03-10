@@ -2461,7 +2461,10 @@
     "color": "blue",
     "shape": "legs",
     "location": "Sinnoh Route 224 Area",
-    "emotion": "disappointed"
+    "emotion": "disappointed",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
