@@ -821,6 +821,14 @@
     "actions": "",
     "pose": "this is my rock"
   },
+  "base2-51": {
+    "unique_id": "base2-51",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Pallet Town Area",
+    "actions": "We Have Liftoff"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
