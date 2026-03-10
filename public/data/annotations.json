@@ -2383,7 +2383,8 @@
     "background_details": [
       "car",
       "buildings"
-    ]
+    ],
+    "perspective": "Gigantic"
   },
   "basep-13": {
     "unique_id": "basep-13",
