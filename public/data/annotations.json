@@ -2556,6 +2556,10 @@
     ],
     "pose": "mouth agape"
   },
+  "base5-71": {
+    "unique_id": "base5-71",
+    "trainer_card_type": "Item"
+  },
   "base5-72": {
     "unique_id": "base5-72",
     "rival_group": "Team Rocket",
@@ -2566,7 +2570,8 @@
       "Trainer"
     ],
     "items": "Poke Ball",
-    "pokeball": "Ultra Ball"
+    "pokeball": "Ultra Ball",
+    "trainer_card_type": "Item"
   },
   "base5-73": {
     "unique_id": "base5-73",
@@ -2576,7 +2581,8 @@
     ],
     "additional_characters": [
       "Giovanni"
-    ]
+    ],
+    "trainer_card_type": "Item"
   },
   "base5-83": {
     "unique_id": "base5-83",
