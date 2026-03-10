@@ -2141,7 +2141,10 @@
   },
   "base5-15": {
     "unique_id": "base5-15",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "background_pokemon": [
+      "meowth"
+    ]
   },
   "base5-18": {
     "unique_id": "base5-18",
