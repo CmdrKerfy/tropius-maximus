@@ -2413,7 +2413,16 @@
     "color": "purple",
     "shape": "arms",
     "location": "Sinnoh Route 212 East Towards Pastoria City",
-    "actions": "hiding, peeping toms"
+    "actions": "hiding, peeping toms",
+    "pose": "welcome to my crib"
+  },
+  "base5-58": {
+    "unique_id": "base5-58",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Stark Mountain Inside",
+    "weather": "smog"
   },
   "basep-13": {
     "unique_id": "basep-13",
