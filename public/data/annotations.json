@@ -315,7 +315,8 @@
     "color": "blue",
     "shape": "upright",
     "location": "Seafoam Islands 1F",
-    "pose": ""
+    "pose": "",
+    "actions": "attacking"
   },
   "base1-91": {
     "unique_id": "base1-91",
