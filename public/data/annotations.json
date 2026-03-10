@@ -2170,7 +2170,8 @@
     "color": "brown",
     "shape": "heads",
     "location": "Sinnoh Route 228 Area",
-    "actions": "property damage"
+    "actions": "property damage",
+    "environment": "Indoors"
   },
   "basep-13": {
     "unique_id": "basep-13",
