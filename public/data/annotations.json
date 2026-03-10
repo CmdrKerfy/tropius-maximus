@@ -1034,8 +1034,17 @@
     "shape": "ball",
     "location": "Sinnoh Route 218 Area",
     "art_style": [
-      "Polygon Graphics"
+      "Polygon Graphics",
+      "checkerboard"
     ]
+  },
+  "base3-19": {
+    "unique_id": "base3-19",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "pose": "did I do that?"
   },
   "base4-41": {
     "unique_id": "base4-41",
