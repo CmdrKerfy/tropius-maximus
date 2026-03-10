@@ -1161,7 +1161,8 @@
     "shape": "arms",
     "location": "Sinnoh Route 212 East Towards Pastoria City",
     "background_details": [
-      "barrel"
+      "barrel",
+      "fence"
     ]
   },
   "base3-49": {
