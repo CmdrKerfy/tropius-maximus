@@ -1287,7 +1287,10 @@
   },
   "base3-62": {
     "unique_id": "base3-62",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "background_pokemon": [
+      "kabutops"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
