@@ -381,7 +381,8 @@
     ]
   },
   "base1-72": {
-    "unique_id": "base1-72"
+    "unique_id": "base1-72",
+    "trainer_card_type": "Item"
   },
   "base1-91": {
     "unique_id": "base1-91",
