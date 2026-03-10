@@ -2604,7 +2604,8 @@
     "background_pokemon": [
       "doduo"
     ],
-    "pose": "welcome to my crib"
+    "pose": "welcome to my crib",
+    "actions": "Dangerous Stunts"
   },
   "base5-83": {
     "unique_id": "base5-83",
