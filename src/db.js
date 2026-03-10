@@ -1007,8 +1007,17 @@ export async function fetchCards(params = {}) {
     if (!pocketExcluded) parts.push(pocketSelect);
     const unionSQL = parts.join(" UNION ALL ");
 
+    // Dedupe by id preferring custom card when same id exists as both API and custom (e.g. Pikachu xyp-JP279).
+    const dedupedSQL = `
+      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
+      FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY is_custom DESC) AS rn
+        FROM (${unionSQL}) combined
+      ) ranked
+      WHERE rn = 1`;
+
     const countResult = await conn.query(
-      `SELECT COUNT(*)::INTEGER AS cnt FROM (${unionSQL}) combined`
+      `SELECT COUNT(*)::INTEGER AS cnt FROM (${dedupedSQL}) counted`
     );
     const total = countResult.toArray()[0].cnt;
 
@@ -1016,7 +1025,7 @@ export async function fetchCards(params = {}) {
     const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const dataResult = await conn.query(`
       SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
-      FROM (${unionSQL}) combined
+      FROM (${dedupedSQL}) counted
       ORDER BY ${allSortBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);

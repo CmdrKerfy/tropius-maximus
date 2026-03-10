@@ -22,6 +22,9 @@ import {
 // for these to avoid ID collisions with real cards across annotation tables.
 const NON_CUSTOM_SOURCES = new Set(["TCG"]);
 
+// Prefix applied to card id when saving (hidden from user). Avoids collisions with API cards.
+const CUSTOM_CARD_ID_PREFIX = "custom-";
+
 // Hardcoded option sets
 const SHAPE_OPTIONS = [
   "ball", "squiggle", "fish", "arms", "blob", "upright", "legs",
@@ -266,8 +269,9 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
           throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
         }
 
+        const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
         const pocketCardJson = {
-          id,
+          id: cardId,
           name,
           set_id: setIdVal,
           number: number || "",
@@ -314,9 +318,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
 
+        const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
         // Build card object for custom_cards.json format
         const cardJson = {
-          id,
+          id: cardId,
           name,
           alt_name: altName || "",
           supertype: supertype || "",

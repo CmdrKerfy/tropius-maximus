@@ -1,7 +1,7 @@
 {
   "cards": [
     {
-      "id": "xyp-JP279",
+      "id": "custom-xyp-JP279",
       "name": "Pikachu",
       "alt_name": "ピカチュウ",
       "supertype": "Pokémon",
@@ -71,7 +71,7 @@
       "pkmn_region": "Johto"
     },
     {
-      "id": "xyp-JP289",
+      "id": "custom-xyp-JP289",
       "name": "Lass' Special",
       "alt_name": "ミニスカートのおすすめ",
       "supertype": "Trainer",
@@ -129,7 +129,7 @@
       "pkmn_region": ""
     },
     {
-      "id": "vm-set3-28",
+      "id": "custom-vm-set3-28",
       "name": "Machoke",
       "alt_name": "ゴーリキー",
       "supertype": "Pokemon",

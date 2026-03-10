@@ -317,14 +317,21 @@ export default function App() {
   const handleShowInGrid = (cards) => setSqlCards(cards);
 
   // Dedupe by id so each card appears once (fixes duplicate keys / stuck layout).
+  // When the same id appears twice (e.g. API + custom Pikachu), prefer the custom card so it shows in the grid.
   const displayedCards = useMemo(() => {
     const raw = sqlCards || cards;
-    const seen = new Set();
-    return raw.filter((c) => {
-      if (seen.has(c.id)) return false;
-      seen.add(c.id);
-      return true;
-    });
+    const byId = new Map();
+    const order = [];
+    for (const c of raw) {
+      const existing = byId.get(c.id);
+      if (!existing) {
+        byId.set(c.id, c);
+        order.push(c.id);
+      } else if (c.is_custom && !existing.is_custom) {
+        byId.set(c.id, c);
+      }
+    }
+    return order.map((id) => byId.get(id));
   }, [sqlCards, cards]);
 
   // ── Card selection handlers ──────────────────────────────────────

@@ -46,7 +46,7 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
   const isActive = values.length > 0;
 
   const btnCls =
-    "px-3 py-2 border rounded-lg bg-white text-sm text-left flex items-center gap-1.5 min-w-0 " +
+    "h-10 px-3 py-2 border rounded-lg bg-white text-sm text-left flex items-center gap-1.5 min-w-0 " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent " +
     (isActive ? "border-green-400 text-green-700 " : "border-gray-300 text-gray-900 ") +
     className;
@@ -147,7 +147,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
   });
 
   const selectClass =
-    "px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
+    "h-10 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
   const isTCG = filters.source !== "" && filters.source !== "Pocket" && filters.source !== "Custom";
@@ -260,11 +260,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           expanded ? "max-h-screen opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
-        {/* Filter dropdowns — two rows */}
-        <div className="flex flex-col gap-4 pb-4">
-        <div className="flex flex-wrap gap-5 items-end">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
+        {/* Filter dropdowns — grid for column alignment (7 cols = 2 rows when all filters present) */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-x-6 gap-y-4 pb-4">
+          <div className="flex flex-col min-w-0">
+            <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Source</label>
             <select
               value={filters.source}
               onChange={(e) => onChange({ source: e.target.value })}
@@ -278,32 +277,32 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </div>
 
           {options.sets?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Set</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Set</label>
               <MultiSelectDropdown
                 groups={setGroups}
                 values={filters.set_id || []}
                 onChange={(v) => onChange({ set_id: v })}
-                className="max-w-[180px]"
+                className="w-full min-w-0"
               />
             </div>
           )}
 
           {options.artists?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Artist</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Artist</label>
               <MultiSelectDropdown
                 options={options.artists}
                 values={filters.artist || []}
                 onChange={(v) => onChange({ artist: v })}
-                className="max-w-[180px]"
+                className="w-full min-w-0"
               />
             </div>
           )}
 
           {options.supertypes?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Supertype</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Supertype</label>
               <select
                 value={filters.supertype || ""}
                 onChange={(e) => onChange({ supertype: e.target.value })}
@@ -318,22 +317,21 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           )}
 
           {options.regions?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Featured Region</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Featured Region</label>
               <MultiSelectDropdown
                 options={options.regions}
                 values={filters.region || []}
                 onChange={(v) => onChange({ region: v })}
                 searchable={false}
+                className="w-full min-w-0"
               />
             </div>
           )}
-        </div>
 
-        <div className="flex flex-wrap gap-5 items-end">
           {options.background_pokemon?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Background Pokémon</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Background Pokémon</label>
               <MultiSelectDropdown
                 options={(options.background_pokemon || []).map((v) => ({
                   value: v,
@@ -341,94 +339,101 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 }))}
                 values={filters.background_pokemon || []}
                 onChange={(v) => onChange({ background_pokemon: v })}
-                className="max-w-[200px]"
-              />
-            </div>
-          )}
-
-          {options.specialties?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Specialty</label>
-              <MultiSelectDropdown
-                options={options.specialties}
-                values={filters.specialty || []}
-                onChange={(v) => onChange({ specialty: v })}
-              />
-            </div>
-          )}
-
-          {options.rarities?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Rarity</label>
-              <MultiSelectDropdown
-                options={options.rarities}
-                values={filters.rarity || []}
-                onChange={(v) => onChange({ rarity: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
 
           {evoOptions.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Evolution Line</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Evolution Line</label>
               <MultiSelectDropdown
                 options={evoOptions}
                 values={filters.evolution_line || []}
                 onChange={(v) => onChange({ evolution_line: v })}
-                className="max-w-[220px]"
+                className="w-full min-w-0"
+              />
+            </div>
+          )}
+
+          {options.rarities?.length > 0 && (
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Rarity</label>
+              <MultiSelectDropdown
+                options={options.rarities}
+                values={filters.rarity || []}
+                onChange={(v) => onChange({ rarity: v })}
+                className="w-full min-w-0"
+              />
+            </div>
+          )}
+
+          {options.specialties?.length > 0 && (
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Specialty</label>
+              <MultiSelectDropdown
+                options={options.specialties}
+                values={filters.specialty || []}
+                onChange={(v) => onChange({ specialty: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
 
           {options.weathers?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Weather</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Weather</label>
               <MultiSelectDropdown
                 options={options.weathers}
                 values={filters.weather || []}
                 onChange={(v) => onChange({ weather: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
 
           {options.environments?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Environment</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Environment</label>
               <MultiSelectDropdown
                 options={options.environments}
                 values={filters.environment || []}
                 onChange={(v) => onChange({ environment: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
+
           {options.actions?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Action</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Action</label>
               <MultiSelectDropdown
                 options={options.actions}
                 values={filters.actions || []}
                 onChange={(v) => onChange({ actions: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
+
           {options.poses?.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Pose</label>
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Pose</label>
               <MultiSelectDropdown
                 options={options.poses}
                 values={filters.pose || []}
                 onChange={(v) => onChange({ pose: v })}
+                className="w-full min-w-0"
               />
             </div>
           )}
         </div>
-        </div>
       </div>
 
       {/* Sort row (always visible) */}
-      <div className="flex flex-wrap gap-3 items-end border-t border-gray-200 pt-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Sort By</label>
+      <div className="flex flex-wrap gap-3 items-start border-t border-gray-200 pt-3">
+        <div className="flex flex-col">
+          <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
           <select
             value={filters.sort_by}
             onChange={(e) => onChange({ sort_by: e.target.value })}
@@ -445,8 +450,8 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </select>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Order</label>
+        <div className="flex flex-col">
+          <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Order</label>
           <select
             value={filters.sort_dir}
             onChange={(e) => onChange({ sort_dir: e.target.value })}
@@ -457,35 +462,38 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </select>
         </div>
 
-        <button
-          onClick={() =>
-            onChange({
-              supertype: "",
-              rarity: [],
-              set_id: [],
-              region: [],
-              generation: "",
-              color: "",
-              artist: [],
-              evolution_line: [],
-              trainer_type: "",
-              specialty: [],
-              background_pokemon: [],
-              element: [],
-              card_type: [],
-              stage: [],
-              weather: [],
-              environment: [],
-              actions: [],
-              pose: [],
-              sort_by: isTCG ? "pokedex" : "name",
-              sort_dir: "asc",
-            })
-          }
-          className="px-3 py-2 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
-        >
-          Clear Filters
-        </button>
+        <div className="flex flex-col">
+          <span className="block text-xs mb-1 invisible select-none" aria-hidden="true">Sort</span>
+          <button
+            onClick={() =>
+              onChange({
+                supertype: "",
+                rarity: [],
+                set_id: [],
+                region: [],
+                generation: "",
+                color: "",
+                artist: [],
+                evolution_line: [],
+                trainer_type: "",
+                specialty: [],
+                background_pokemon: [],
+                element: [],
+                card_type: [],
+                stage: [],
+                weather: [],
+                environment: [],
+                actions: [],
+                pose: [],
+                sort_by: isTCG ? "pokedex" : "name",
+                sort_dir: "asc",
+              })
+            }
+            className="h-10 px-3 py-2 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors flex items-center"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -2989,13 +2989,13 @@
     "shape": "upright",
     "location": "Sinnoh Route 228 Area"
   },
-  "xyp-JP279": {
+  "custom-xyp-JP279": {
     "weather_environment": "Indoors"
   },
-  "xyp-JP289": {
+  "custom-xyp-JP289": {
     "weather_environment": "Sunny"
   },
-  "vm-set3-28": {
+  "custom-vm-set3-28": {
     "weather_environment": "Sunny"
   },
   "custom-cn-exclusives-Chandelure": {
