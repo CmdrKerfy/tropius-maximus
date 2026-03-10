@@ -1276,7 +1276,10 @@
   "base3-61": {
     "unique_id": "base3-61",
     "emotion": "depressed",
-    "actions": "hangin around"
+    "actions": "hangin around",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
