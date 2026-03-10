@@ -2505,7 +2505,8 @@
       "boat",
       "fishing pole"
     ],
-    "actions": "sleeping, fishing"
+    "actions": "sleeping, fishing",
+    "environment": "sun"
   },
   "basep-13": {
     "unique_id": "basep-13",
