@@ -2516,7 +2516,10 @@
     "color": "blue",
     "shape": "upright",
     "location": "Seafoam Islands 1F",
-    "card_locations": "Underwater"
+    "card_locations": "Underwater",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
