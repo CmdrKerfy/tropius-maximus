@@ -2573,6 +2573,9 @@
     "rival_group": "Team Rocket",
     "background_humans": [
       "Trainer"
+    ],
+    "additional_characters": [
+      "Giovanni"
     ]
   },
   "base5-83": {
