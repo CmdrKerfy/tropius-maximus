@@ -858,7 +858,8 @@
     "color": "pink",
     "shape": "humanoid",
     "location": "Johto Route 34 Area",
-    "pose": "in a tree"
+    "pose": "in a tree",
+    "actions": "singing"
   },
   "base4-41": {
     "unique_id": "base4-41",
