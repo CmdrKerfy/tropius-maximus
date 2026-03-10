@@ -1172,6 +1172,14 @@
       "reflection"
     ]
   },
+  "base3-54": {
+    "unique_id": "base3-54",
+    "evolution_line": "shellder → cloyster",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Valley Windworks Area",
+    "card_locations": "Underwater"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
