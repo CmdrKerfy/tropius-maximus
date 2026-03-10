@@ -620,7 +620,10 @@
     "color": "pink",
     "shape": "humanoid",
     "location": "Sinnoh Route 218 Area",
-    "emotion": "Shy"
+    "emotion": "Shy",
+    "background_details": [
+      "purgatory"
+    ]
   },
   "base2-24": {
     "unique_id": "base2-24",
@@ -630,13 +633,26 @@
     "location": "Kanto Route 12 Area",
     "actions": "flying"
   },
+  "base2-26": {
+    "unique_id": "base2-26",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "green",
+    "shape": "bug-wings",
+    "location": "Sinnoh Route 210 South Towards Solaceon Town",
+    "background_details": [
+      "patterned background"
+    ]
+  },
   "base2-27": {
     "unique_id": "base2-27",
     "evolution_line": "munchlax → snorlax",
     "color": "black",
     "shape": "humanoid",
     "location": "Kanto Route 12 Area",
-    "actions": "waving"
+    "actions": "waving",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base2-32": {
     "unique_id": "base2-32",
@@ -687,7 +703,8 @@
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
     "background_details": [
-      "stump"
+      "stump",
+      "Trees"
     ],
     "art_style": [
       "Polygon Graphics"
@@ -699,7 +716,34 @@
     "color": "pink",
     "shape": "upright",
     "location": "Lake Valor Area",
-    "actions": "eating"
+    "actions": "eating",
+    "pose": "tongue out"
+  },
+  "base2-39": {
+    "unique_id": "base2-39",
+    "evolution_line": "cubone → marowak",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Rock Tunnel 1F",
+    "actions": "attacking the cameraman"
+  },
+  "base2-41": {
+    "unique_id": "base2-41",
+    "evolution_line": "paras → parasect",
+    "color": "red",
+    "shape": "armor",
+    "location": "Mt Silver 2F",
+    "background_details": [
+      "patterned background"
+    ]
+  },
+  "base2-46": {
+    "unique_id": "base2-46",
+    "evolution_line": "goldeen → seaking",
+    "color": "red",
+    "shape": "fish",
+    "location": "Sendoff Spring Area",
+    "card_locations": "Underwater"
   },
   "base4-41": {
     "unique_id": "base4-41",
