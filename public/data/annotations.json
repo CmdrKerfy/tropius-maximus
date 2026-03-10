@@ -2472,7 +2472,8 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Sinnoh Route 206 Area",
-    "pose": "staring contest"
+    "pose": "staring contest",
+    "camera_angle": "Zoomed In"
   },
   "basep-13": {
     "unique_id": "basep-13",
