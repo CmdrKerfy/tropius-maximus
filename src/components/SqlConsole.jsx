@@ -93,6 +93,8 @@ export default function SqlConsole({
   const [hasUncommittedChanges, setHasUncommittedChanges] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [commitMessage, setCommitMessage] = useState(null); // { type: 'success'|'error', text }
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState(null);
   // Expand {{selected}} template variable with actual card IDs
   const expandTemplate = useCallback(
     (sql) => {
@@ -121,6 +123,14 @@ export default function SqlConsole({
       return;
     }
 
+    // Intercept mutations with a confirmation dialog
+    const isMutation = /^\s*(UPDATE|INSERT|DELETE|DROP|ALTER|CREATE)/i.test(trimmed);
+    if (isMutation) {
+      setPendingQuery(expandTemplate(trimmed));
+      setShowConfirmDialog(true);
+      return;
+    }
+
     setRunning(true);
     setError(null);
     setResult(null);
@@ -139,13 +149,6 @@ export default function SqlConsole({
         if (/\bcards\b/.test(lower) || /\bpocket_cards\b/.test(lower) || /\bcustom_cards\b/.test(lower) || /\bannotations\b/.test(lower))
           changed.cards = true;
         if (changed.attributes || changed.cards) onDataChanged(changed);
-      }
-
-      // Flag uncommitted changes after any successful mutation
-      const isMutation = /^\s*(UPDATE|INSERT|DELETE|DROP|ALTER|CREATE)/i.test(trimmed);
-      if (isMutation) {
-        setHasUncommittedChanges(true);
-        setCommitMessage(null);
       }
     } catch (err) {
       setError(err.message);
@@ -185,6 +188,32 @@ export default function SqlConsole({
       setCommitting(false);
     }
   }, [onDataChanged]);
+
+  const confirmAndRun = useCallback(async () => {
+    setShowConfirmDialog(false);
+    if (!pendingQuery) return;
+    setRunning(true);
+    setError(null);
+    setResult(null);
+    try {
+      const data = await executeSql(pendingQuery);
+      setResult(data);
+      if (data.message && onDataChanged) {
+        const lower = pendingQuery.toLowerCase();
+        const changed = {};
+        if (/attribute_definitions/.test(lower)) changed.attributes = true;
+        if (/\bcards\b/.test(lower) || /\bpocket_cards\b/.test(lower) || /\bcustom_cards\b/.test(lower) || /\bannotations\b/.test(lower))
+          changed.cards = true;
+        if (changed.attributes || changed.cards) onDataChanged(changed);
+      }
+      await commitSqlChanges();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRunning(false);
+      setPendingQuery(null);
+    }
+  }, [pendingQuery, onDataChanged, commitSqlChanges]);
 
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -303,6 +332,39 @@ export default function SqlConsole({
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* Mutation confirmation dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl p-5 max-w-md w-full mx-4 border border-red-200">
+            <h3 className="font-semibold text-gray-900 mb-2">Confirm Database Change</h3>
+            <p className="text-sm text-gray-700 mb-1">
+              This query will <strong>permanently modify the database</strong> and cannot be undone.
+            </p>
+            {getToken() ? (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-4">
+                GitHub PAT is configured — changes will be <strong>pushed to GitHub</strong> automatically.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">Changes will be saved to local storage only (no GitHub PAT configured).</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setShowConfirmDialog(false); setPendingQuery(null); }}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAndRun}
+                className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+              >
+                Yes, Run Query
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
