@@ -2343,6 +2343,14 @@
     "emotion": "Angry",
     "actions": "chillin like a villain"
   },
+  "base5-48": {
+    "unique_id": "base5-48",
+    "evolution_line": "porygon → porygon2 → porygon-z",
+    "color": "pink",
+    "shape": "legs",
+    "location": "Kanto Route 7 Area",
+    "actions": "If I Fits I Sits"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
