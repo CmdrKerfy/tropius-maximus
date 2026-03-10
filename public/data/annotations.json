@@ -2351,6 +2351,16 @@
     "location": "Kanto Route 7 Area",
     "actions": "If I Fits I Sits"
   },
+  "base5-49": {
+    "unique_id": "base5-49",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 203 Area",
+    "background_details": [
+      "buildings"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
