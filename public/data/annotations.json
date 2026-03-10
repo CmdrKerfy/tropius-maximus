@@ -916,7 +916,8 @@
     "shape": "armor",
     "location": "Ilex Forest Area",
     "art_style": [
-      "Polygon Graphics"
+      "Polygon Graphics",
+      "2D"
     ]
   },
   "base2-60": {
