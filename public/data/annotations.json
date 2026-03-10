@@ -1141,7 +1141,21 @@
     "color": "purple",
     "shape": "heads",
     "location": "Stark Mountain Area",
-    "environment": "swa"
+    "environment": "swamp",
+    "background_details": [
+      "toxic"
+    ]
+  },
+  "base3-52": {
+    "unique_id": "base3-52",
+    "evolution_line": "omanyte → omastar",
+    "color": "blue",
+    "shape": "tentacles",
+    "location": "Cinnabar Island Cinnabar Lab",
+    "background_details": [
+      "ancient ruins"
+    ],
+    "environment": ""
   },
   "base4-41": {
     "unique_id": "base4-41",
