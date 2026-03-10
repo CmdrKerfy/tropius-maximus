@@ -2364,6 +2364,14 @@
     "card_locations": "City",
     "actions": "Sleeping"
   },
+  "base5-50": {
+    "unique_id": "base5-50",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Pallet Town Area",
+    "actions": "Pyros"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
