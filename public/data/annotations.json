@@ -2624,7 +2624,10 @@
   },
   "base5-77": {
     "unique_id": "base5-77",
-    "environment": "Starry Night"
+    "environment": "Starry Night",
+    "background_details": [
+      "buildings"
+    ]
   },
   "base5-83": {
     "unique_id": "base5-83",
