@@ -301,15 +301,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             ghCommitted = true;
           } catch (ghErr) {
             console.warn("GitHub commit failed:", ghErr.message);
-            setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+            const msg = ghErr?.message || "";
+            setError(
+              msg.includes("403")
+                ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+                : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+            );
           }
         }
 
-        setSuccess(
-          ghCommitted
-            ? `Pocket card "${name}" added and committed to GitHub!`
-            : `Pocket card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
-        );
+        if (ghCommitted) {
+          setSuccess(`Pocket card "${name}" added and committed to GitHub!`);
+        } else if (!token) {
+          setSuccess(
+            `Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
+          );
+        }
+        // When token existed but commit failed, we already setError — don't show success.
       } else {
         // TCG path
         if (!name || !number || !setNameVal || !imageSmall || !source) {
@@ -384,15 +392,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             ghCommitted = true;
           } catch (ghErr) {
             console.warn("GitHub commit failed:", ghErr.message);
-            setError(`Card added locally but GitHub commit failed: ${ghErr.message}`);
+            const msg = ghErr?.message || "";
+            setError(
+              msg.includes("403")
+                ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+                : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+            );
           }
         }
 
-        setSuccess(
-          ghCommitted
-            ? `Card "${name}" added and committed to GitHub!`
-            : `Card "${name}" added locally.${token ? "" : " Set a GitHub PAT to auto-commit."}`
-        );
+        if (ghCommitted) {
+          setSuccess(`Card "${name}" added and committed to GitHub!`);
+        } else if (!token) {
+          setSuccess(
+            `Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
+          );
+        }
+        // When token existed but commit failed, we already setError — don't show success.
       }
 
       // Refetch form options so dropdowns include the newly submitted values
@@ -474,8 +490,16 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-4">
-          {error}
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 rounded-lg px-3 py-2.5 mb-4 text-sm">
+          <p className="flex-1">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="shrink-0 text-red-600 hover:text-red-800 font-medium"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
         </div>
       )}
       {success && (

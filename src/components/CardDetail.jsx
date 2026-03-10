@@ -189,6 +189,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
   useEffect(() => () => clearTimeout(ghPushTimer.current), []);
 
+  // Debounce GitHub push so a quick pass through many cards produces one commit and one workflow run.
+  const GITHUB_PUSH_DEBOUNCE_MS = 5000;
   const scheduleGitHubPush = () => {
     const token = getToken();
     if (!token) return;
@@ -205,8 +207,15 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         );
       } catch (err) {
         console.warn("CardDetail GitHub push failed:", err.message);
+        const msg = err?.message || "";
+        setSaveStatus("error");
+        setSaveMessage(
+          msg.includes("403")
+            ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
+            : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
+        );
       }
-    }, 1000);
+    }, GITHUB_PUSH_DEBOUNCE_MS);
   };
 
   const handleSaveChanges = async () => {
@@ -225,20 +234,21 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         );
         setSaveStatus("saved");
         setSaveMessage("Synced to GitHub");
+        setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       } else {
         setSaveStatus("saved");
         setSaveMessage("Saved locally");
+        setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       }
     } catch (err) {
       setSaveStatus("error");
       const msg = err.message || "";
-      if (msg.includes("403")) {
-        setSaveMessage("Permission denied (403) — your PAT needs Contents: Read and write access. Regenerate it at GitHub → Settings → Developer settings → Personal access tokens.");
-      } else {
-        setSaveMessage(msg || "Save failed");
-      }
+      setSaveMessage(
+        msg.includes("403")
+          ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
+          : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
+      );
     }
-    setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
   };
 
   const saveAnnotation = async (key, value) => {
@@ -764,10 +774,18 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   </div>
                 </div>
 
-                {/* Save error banner (shown below tab bar so long messages have room) */}
-                {isEditMode && saveStatus === "error" && (
-                  <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
-                    {saveMessage}
+                {/* Sync error banner — stays until dismissed so user knows edits didn't reach the cloud */}
+                {saveStatus === "error" && saveMessage && (
+                  <div className="mt-2 flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                    <span className="flex-1">{saveMessage}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setSaveStatus(null); setSaveMessage(""); }}
+                      className="shrink-0 text-red-600 hover:text-red-800 font-medium"
+                      aria-label="Dismiss"
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 )}
 
