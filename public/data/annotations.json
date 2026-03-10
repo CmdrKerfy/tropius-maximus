@@ -2501,7 +2501,8 @@
     "location": "Sinnoh Route 205 East Towards Eterna City",
     "weather": "Sunny",
     "background_details": [
-      "That Ain't Right"
+      "That Ain't Right",
+      "boat"
     ],
     "actions": "sleeping, fishing"
   },
