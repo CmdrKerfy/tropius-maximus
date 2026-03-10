@@ -789,6 +789,14 @@
       "fence"
     ]
   },
+  "base2-48": {
+    "unique_id": "base2-48",
+    "evolution_line": "bellsprout → weepinbell → victreebel",
+    "color": "green",
+    "shape": "blob",
+    "location": "Sinnoh Route 224 Area",
+    "actions": "hangin around"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
