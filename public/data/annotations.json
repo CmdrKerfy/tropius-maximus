@@ -795,7 +795,10 @@
     "color": "green",
     "shape": "blob",
     "location": "Sinnoh Route 224 Area",
-    "actions": "hangin around"
+    "actions": "hangin around",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
