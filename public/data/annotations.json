@@ -2634,7 +2634,8 @@
     "unique_id": "base5-78",
     "background_details": [
       "toxic"
-    ]
+    ],
+    "actions": "polluting"
   },
   "base5-83": {
     "unique_id": "base5-83",
