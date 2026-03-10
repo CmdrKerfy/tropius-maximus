@@ -2265,7 +2265,10 @@
     "color": "red",
     "shape": "ball",
     "location": "Cerulean Cave 1F",
-    "card_locations": "City"
+    "card_locations": "City",
+    "background_details": [
+      "buildings"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
