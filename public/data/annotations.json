@@ -1246,6 +1246,12 @@
       "Squad Gang"
     ]
   },
+  "base3-58": {
+    "unique_id": "base3-58",
+    "background_pokemon": [
+      "poliwag"
+    ]
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
