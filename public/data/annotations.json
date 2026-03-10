@@ -1046,9 +1046,7 @@
     "location": "Kanto Route 12 Area",
     "pose": "did I do that?",
     "weather": "Heavens Shine Down",
-    "background_details": [
-      "[\\\"rainbow\\\""
-    ]
+    "background_details": []
   },
   "base4-41": {
     "unique_id": "base4-41",
