@@ -960,7 +960,82 @@
   "base2-64": {
     "unique_id": "base2-64",
     "trainer_card_type": "Item",
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "pokeball": "Pokeball"
+  },
+  "base3-1": {
+    "unique_id": "base3-1",
+    "evolution_line": "aerodactyl",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Cinnabar Island Cinnabar Lab",
+    "pose": "mouth agape",
+    "actions": "flying"
+  },
+  "base3-2": {
+    "unique_id": "base3-2",
+    "evolution_line": "articuno",
+    "color": "blue",
+    "shape": "wings",
+    "location": "Seafoam Islands B4F",
+    "actions": "flying"
+  },
+  "base3-3": {
+    "unique_id": "base3-3",
+    "evolution_line": "ditto",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area"
+  },
+  "base3-4": {
+    "unique_id": "base3-4",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "pose": "did I do that?"
+  },
+  "base3-7": {
+    "unique_id": "base3-7",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Kanto Victory Road 1 2F",
+    "actions": "kicking"
+  },
+  "base3-12": {
+    "unique_id": "base3-12",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top",
+    "actions": "flying"
+  },
+  "base3-15": {
+    "unique_id": "base3-15",
+    "evolution_line": "zapdos",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area",
+    "actions": "flying"
+  },
+  "base3-16": {
+    "unique_id": "base3-16",
+    "evolution_line": "aerodactyl",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Cinnabar Island Cinnabar Lab",
+    "actions": "flying"
+  },
+  "base3-18": {
+    "unique_id": "base3-18",
+    "evolution_line": "ditto",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area",
+    "art_style": [
+      "Polygon Graphics"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
