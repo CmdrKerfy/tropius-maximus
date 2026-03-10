@@ -531,7 +531,14 @@
     "background_pokemon": [
       "kakuna",
       "magnemite"
+    ],
+    "background_details": [
+      "purgatory"
     ]
+  },
+  "base1-96": {
+    "unique_id": "base1-96",
+    "energy_type": "Special"
   },
   "base2-36": {
     "unique_id": "base2-36",
