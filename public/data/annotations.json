@@ -959,7 +959,8 @@
   },
   "base2-64": {
     "unique_id": "base2-64",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "items": "Poke Ball"
   },
   "base4-41": {
     "unique_id": "base4-41",
