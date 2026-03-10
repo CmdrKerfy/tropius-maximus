@@ -107,9 +107,10 @@
     "shape": "upright",
     "location": "Sinnoh Route 222 Area",
     "background_details": [
-      "purgatory"
+      "purgatory",
+      "electricity"
     ],
-    "weather": "lightning"
+    "weather": ""
   },
   "base1-21": {
     "unique_id": "base1-21",
@@ -127,6 +128,14 @@
     "color": "red",
     "shape": "upright",
     "actions": "Slapping"
+  },
+  "base1-25": {
+    "unique_id": "base1-25",
+    "evolution_line": "seel → dewgong",
+    "color": "white",
+    "shape": "fish",
+    "location": "Sinnoh Victory Road Inside B1F",
+    "card_locations": "Underwater"
   },
   "base1-30": {
     "unique_id": "base1-30",
