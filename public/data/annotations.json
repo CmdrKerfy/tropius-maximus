@@ -737,13 +737,22 @@
       "patterned background"
     ]
   },
+  "base2-42": {
+    "unique_id": "base2-42",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "pose": "curled up"
+  },
   "base2-43": {
     "unique_id": "base2-43",
     "evolution_line": "mankey → primeape → annihilape",
     "color": "brown",
     "shape": "upright",
     "location": "Sinnoh Route 225 Area",
-    "emotion": "Angry"
+    "emotion": "Angry",
+    "actions": "Running"
   },
   "base2-45": {
     "unique_id": "base2-45",
