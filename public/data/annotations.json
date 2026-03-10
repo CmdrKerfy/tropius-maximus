@@ -529,7 +529,8 @@
     "items": "Poke Ball",
     "pokeball": "Pokeball",
     "background_pokemon": [
-      "kakuna"
+      "kakuna",
+      "magnemite"
     ]
   },
   "base2-36": {
