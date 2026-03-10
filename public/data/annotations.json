@@ -2389,6 +2389,14 @@
       "2D"
     ]
   },
+  "base5-53": {
+    "unique_id": "base5-53",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Mt Coronet 4F",
+    "pose": "curled up"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
