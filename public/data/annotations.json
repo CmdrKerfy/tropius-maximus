@@ -2162,7 +2162,8 @@
     "additional_characters": [
       "Ariana"
     ],
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "pokeball": "ultra"
   },
   "base5-18": {
     "unique_id": "base5-18",
