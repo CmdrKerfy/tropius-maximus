@@ -2395,7 +2395,8 @@
     "color": "blue",
     "shape": "squiggle",
     "location": "Mt Coronet 4F",
-    "pose": "curled up"
+    "pose": "curled up",
+    "actions": "watching plants"
   },
   "basep-13": {
     "unique_id": "basep-13",
