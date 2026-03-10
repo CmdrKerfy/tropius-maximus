@@ -1152,7 +1152,7 @@
     "color": "blue",
     "shape": "blob",
     "location": "Sinnoh Sea Route 226 Area",
-    "actions": "attacking, polluting"
+    "actions": "polluting"
   },
   "base3-52": {
     "unique_id": "base3-52",
@@ -1191,6 +1191,34 @@
       "Bubbles"
     ],
     "pose": "tongue out"
+  },
+  "base3-55": {
+    "unique_id": "base3-55",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 205 East Towards Eterna City",
+    "art_style": [
+      "2D"
+    ]
+  },
+  "base3-56": {
+    "unique_id": "base3-56",
+    "evolution_line": "tentacool → tentacruel",
+    "color": "blue",
+    "shape": "tentacles",
+    "location": "Canalave City Area",
+    "actions": "Beam Me Up Scotty"
+  },
+  "base3-57": {
+    "unique_id": "base3-57",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Oreburgh Mine 1F",
+    "additional_character_theme": [
+      "Squad Gang"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
