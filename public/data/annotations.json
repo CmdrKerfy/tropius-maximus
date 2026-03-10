@@ -889,6 +889,14 @@
       "treasure"
     ]
   },
+  "base2-57": {
+    "unique_id": "base2-57",
+    "evolution_line": "nidoran-f → nidorina → nidoqueen",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 201 Area",
+    "pose": "mouth agape"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
