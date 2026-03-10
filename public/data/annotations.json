@@ -797,8 +797,27 @@
     "location": "Sinnoh Route 224 Area",
     "actions": "hangin around",
     "background_details": [
-      "That Ain't Right"
+      "That Ain't Right",
+      "food"
     ]
+  },
+  "base2-49": {
+    "unique_id": "base2-49",
+    "evolution_line": "bellsprout → weepinbell → victreebel",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 224 Area",
+    "background_details": [
+      "seeds"
+    ]
+  },
+  "base2-50": {
+    "unique_id": "base2-50",
+    "evolution_line": "cubone → marowak",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 203 Area",
+    "environment": "Starry Night"
   },
   "base4-41": {
     "unique_id": "base4-41",
