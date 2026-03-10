@@ -370,7 +370,8 @@
   },
   "base1-71": {
     "unique_id": "base1-71",
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "pokeball": "Pokeball"
   },
   "base1-91": {
     "unique_id": "base1-91",
