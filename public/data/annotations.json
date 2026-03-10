@@ -295,7 +295,10 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Trophy Garden Area",
-    "card_locations": "Forest"
+    "card_locations": "Forest",
+    "background_details": [
+      "Trees"
+    ]
   },
   "base1-59": {
     "unique_id": "base1-59",
