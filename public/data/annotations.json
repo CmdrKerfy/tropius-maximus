@@ -944,7 +944,8 @@
     "location": "Sinnoh Route 225 Area",
     "background_details": [
       "That Ain't Right"
-    ]
+    ],
+    "actions": "attacking"
   },
   "base4-41": {
     "unique_id": "base4-41",
