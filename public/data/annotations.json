@@ -3,7 +3,8 @@
     "unique_id": "base1-1",
     "evolution_line": "abra → kadabra → alakazam",
     "color": "brown",
-    "shape": "humanoid"
+    "shape": "humanoid",
+    "card_border": "Yellow"
   },
   "base1-14": {
     "unique_id": "base1-14",
@@ -19,6 +20,16 @@
     "shape": "quadruped",
     "pokemon_main": "",
     "pokemon_bg": ""
+  },
+  "base1-18": {
+    "unique_id": "base1-18",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Mt Coronet 4F",
+    "background_details": [
+      "aurora"
+    ]
   },
   "base1-24": {
     "unique_id": "base1-24",
@@ -97,6 +108,14 @@
     "shape": "upright",
     "location": "Seafoam Islands 1F"
   },
+  "base1-91": {
+    "unique_id": "base1-91",
+    "background_details": [
+      "patterned background"
+    ],
+    "trainer_card_type": "Supporter",
+    "items": "Poke Ball"
+  },
   "base2-36": {
     "unique_id": "base2-36",
     "evolution_line": "spearow → fearow",
@@ -139,9 +158,35 @@
     "shape": "armor",
     "location": "Sinnoh Route 224 Area"
   },
+  "bw2-22": {
+    "unique_id": "bw2-22",
+    "evolution_line": "panpour → simipour",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Dreamyard Area"
+  },
+  "bw6-14": {
+    "unique_id": "bw6-14",
+    "evolution_line": "budew → roselia → roserade",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Unova Route 12 Area"
+  },
   "bwp-BW78": {
     "unique_id": "bwp-BW78",
     "evolution_line": "pichu → pikachu → raichu"
+  },
+  "col1-24": {
+    "unique_id": "col1-24",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207",
+    "video_title": "I FOUND EVERY POKEMON CARD IN JOHTO",
+    "pkmn_region": "Johto",
+    "pose": "Tongue",
+    "video_appearance": true,
+    "video_game": "HeartGold/SoulSilver"
   },
   "col1-40": {
     "unique_id": "col1-40",
@@ -190,6 +235,14 @@
     "shape": "quadruped",
     "location": "Cerulean City Area"
   },
+  "ex15-47": {
+    "unique_id": "ex15-47",
+    "evolution_line": "ekans → arbok",
+    "color": "purple",
+    "shape": "squiggle",
+    "location": "Sinnoh Route 212 East Towards Pastoria City",
+    "notes": ""
+  },
   "ex15-70": {
     "unique_id": "ex15-70",
     "evolution_line": "vulpix → ninetales",
@@ -210,6 +263,13 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Trophy Garden Area"
+  },
+  "ex4-86": {
+    "unique_id": "ex4-86",
+    "trainer_card_type": "Energy",
+    "card_subcategory": [
+      "Team Aqua"
+    ]
   },
   "ex6-55": {
     "unique_id": "ex6-55",
@@ -415,6 +475,12 @@
     "color": "green",
     "shape": "quadruped",
     "location": "Cerulean City Area"
+  },
+  "sv7-65": {
+    "unique_id": "sv7-65",
+    "evolution_line": "milcery → alcremie",
+    "color": "white",
+    "shape": "blob"
   },
   "swsh45-35": {
     "unique_id": "swsh45-35",
@@ -954,7 +1020,16 @@
     "evolution_line": "wailmer → wailord",
     "color": "blue",
     "shape": "fish",
-    "location": "Sinnoh Sea Route 223 Area"
+    "location": "Sinnoh Sea Route 223 Area",
+    "main_character": "Wailord",
+    "owned": true,
+    "art_style": "2D, hand drawn",
+    "pose": "",
+    "camera_angle": "",
+    "weather_environment": "Sunny, Clouds",
+    "background_details": "Island, Palm Trees",
+    "actions": "Swimming, We Have Liftoff",
+    "background_pokemon": []
   },
   "sm35-29": {
     "unique_id": "sm35-29",
@@ -1004,6 +1079,25 @@
     "color": "yellow",
     "shape": "upright",
     "location": "Cerulean Cave 1F"
+  },
+  "sv6pt5-98": {
+    "unique_id": "sv6pt5-98",
+    "trainer_card_type": "Energy",
+    "card_subcategory": [
+      "Gold"
+    ]
+  },
+  "svp-6": {
+    "unique_id": "svp-6",
+    "evolution_line": "pawmi → pawmo → pawmot",
+    "color": "yellow",
+    "shape": "upright",
+    "stamp": "Set",
+    "background_details": [
+      "Flower Power"
+    ],
+    "environment": "",
+    "pose": "belly up"
   },
   "svp-85": {
     "unique_id": "svp-85",
@@ -1098,6 +1192,29 @@
     "shape": "fish",
     "location": "Canalave City Area"
   },
+  "xy8-9": {
+    "unique_id": "xy8-9",
+    "evolution_line": "chespin → quilladin → chesnaught",
+    "color": "green",
+    "shape": "upright",
+    "location": "Aquacorde Town Area",
+    "held_item": "Berry",
+    "berries": [
+      "Razz"
+    ],
+    "background_pokemon": [
+      "snorlax"
+    ],
+    "actions": "climbing",
+    "multi_card": [
+      "Storytelling"
+    ],
+    "background_details": [
+      "Trees",
+      "berry"
+    ],
+    "environment": "Outdoors"
+  },
   "xy8-76": {
     "unique_id": "xy8-76",
     "evolution_line": "sandshrew → sandslash",
@@ -1106,16 +1223,248 @@
     "location": "Sinnoh Route 228 Area"
   },
   "xyp-JP279": {
-    "weather_environment": "Indoors",
-    "unique_id": "xyp-JP279"
+    "weather_environment": "Indoors"
   },
   "xyp-JP289": {
-    "weather_environment": "Sunny",
-    "unique_id": "xyp-JP289"
+    "weather_environment": "Sunny"
   },
   "vm-set3-28": {
-    "weather_environment": "Sunny",
-    "unique_id": "vm-set3-28"
+    "weather_environment": "Sunny"
+  },
+  "custom-cn-exclusives-Chandelure": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Cubone": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Eevee": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Gengar": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Meowth": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-arcanine-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-captain-pikachu": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-captain-pikachu-stamped": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-ceruledge": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-fuecoco": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-leafeon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-maushold-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-mew-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-1": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-2": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-3": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-4": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-quaxly": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-sprigatito": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-sylveon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-umbreon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-promos-custom-victini-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-promos-victini-ex-full-art": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-Pikachu-berkemeja-batik-1": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-2": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-3": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-4": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-Sachiko-EX": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-celebration-fanfare-2023": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-pikachu-summer-vacation-jp": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-kr-promos-Pikachu": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-kr-promos-Umbreon-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-kr-promos-ditto": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "koreanditto": {
+    "annotations": {}
+  },
+  "wseggbwreg": {
+    "annotations": {}
+  },
+  "wsjngwgnwrklgmwk;lfg,wefgw": {
+    "annotations": {
+      "weather_environment": "Clouds, Grass, Hills"
+    }
+  },
+  "xjp-XY-P": {
+    "annotations": {}
+  },
+  "P-A-054": {
+    "unique_id": "P-A-054",
+    "additional_characters": [
+      "Family First"
+    ],
+    "background_pokemon": [
+      "pawmi",
+      "pawmo"
+    ],
+    "evolution_line": "pawmi →  pawmo →  pawmot",
+    "card_subcategory": [
+      "Illustration Rare",
+      "Stamped Promo"
+    ],
+    "stamp": "Pocket Promo",
+    "pocket_exclusive": true,
+    "background_details": [
+      "stump",
+      "Trees"
+    ],
+    "actions": "static shock",
+    "environment": "Outdoors"
   },
   "A1-115": {
     "unique_id": "A1-115"
