@@ -957,6 +957,10 @@
       "Flower Power"
     ]
   },
+  "base2-64": {
+    "unique_id": "base2-64",
+    "trainer_card_type": "Item"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
