@@ -436,6 +436,21 @@
   },
   "base1-80": {
     "unique_id": "base1-80",
+    "trainer_card_type": "Item",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "base1-81": {
+    "unique_id": "base1-81",
+    "trainer_card_type": "Item"
+  },
+  "base1-82": {
+    "unique_id": "base1-82",
+    "trainer_card_type": "Item"
+  },
+  "base1-83": {
+    "unique_id": "base1-83",
     "trainer_card_type": "Item"
   },
   "base1-91": {
