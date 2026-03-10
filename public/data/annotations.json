@@ -161,7 +161,8 @@
     "evolution_line": "smoochum → jynx",
     "color": "red",
     "shape": "humanoid",
-    "location": "Snowpoint Temple B1F"
+    "location": "Snowpoint Temple B1F",
+    "pose": "bug eyed"
   },
   "base1-33": {
     "unique_id": "base1-33",
@@ -426,7 +427,12 @@
     ],
     "art_style": [
       "Polygon Graphics"
-    ]
+    ],
+    "pose": "bug eyed"
+  },
+  "base1-79": {
+    "unique_id": "base1-79",
+    "trainer_card_type": "Item"
   },
   "base1-91": {
     "unique_id": "base1-91",
