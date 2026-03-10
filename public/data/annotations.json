@@ -2422,7 +2422,26 @@
     "color": "purple",
     "shape": "ball",
     "location": "Stark Mountain Inside",
-    "weather": "smog"
+    "weather": "smog",
+    "camera_angle": "Aerial"
+  },
+  "base5-59": {
+    "unique_id": "base5-59",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "base5-61": {
+    "unique_id": "base5-61",
+    "evolution_line": "mankey → primeape → annihilape",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 225 Area",
+    "pose": "winking"
   },
   "basep-13": {
     "unique_id": "basep-13",
