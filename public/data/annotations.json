@@ -829,8 +829,27 @@
     "location": "Pallet Town Area",
     "actions": "We Have Liftoff",
     "background_details": [
-      "That Ain't Right"
+      "That Ain't Right",
+      "Flower Power"
     ]
+  },
+  "base2-52": {
+    "unique_id": "base2-52",
+    "evolution_line": "exeggcute → exeggutor",
+    "color": "pink",
+    "shape": "heads",
+    "location": "Johto Route 29 Area",
+    "background_details": [
+      "solid color"
+    ]
+  },
+  "base2-53": {
+    "unique_id": "base2-53",
+    "evolution_line": "goldeen → seaking",
+    "color": "red",
+    "shape": "fish",
+    "location": "Sendoff Spring Area",
+    "pose": "sexy and I know it"
   },
   "base4-41": {
     "unique_id": "base4-41",
