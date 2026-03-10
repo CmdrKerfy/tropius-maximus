@@ -852,6 +852,14 @@
     "pose": "sexy and I know it",
     "actions": "We Have Liftoff"
   },
+  "base2-54": {
+    "unique_id": "base2-54",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Johto Route 34 Area",
+    "pose": "in a tree"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
