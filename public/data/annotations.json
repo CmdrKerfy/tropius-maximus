@@ -3,8 +3,7 @@
     "unique_id": "base1-1",
     "evolution_line": "abra → kadabra → alakazam",
     "color": "brown",
-    "shape": "humanoid",
-    "card_border": "Yellow"
+    "shape": "humanoid"
   },
   "base1-3": {
     "unique_id": "base1-3",
@@ -126,8 +125,7 @@
     "unique_id": "base1-24",
     "evolution_line": "charmander → charmeleon → charizard",
     "color": "red",
-    "shape": "upright",
-    "actions": "Slapping"
+    "shape": "upright"
   },
   "base1-25": {
     "unique_id": "base1-25",
@@ -227,8 +225,7 @@
     "shape": "quadruped",
     "location": "Cerulean City Area",
     "video_url": "",
-    "video_title": "",
-    "actions": "attacking"
+    "video_title": ""
   },
   "base1-46": {
     "unique_id": "base1-46",
@@ -280,8 +277,7 @@
     "evolution_line": "machop → machoke → machamp",
     "color": "gray",
     "shape": "upright",
-    "location": "Mt Coronet 1F Route 207",
-    "pose": "young bucks who will grow strong"
+    "location": "Mt Coronet 1F Route 207"
   },
   "base1-57": {
     "unique_id": "base1-57",
@@ -295,13 +291,7 @@
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "quadruped",
-    "location": "Trophy Garden Area",
-    "card_locations": "Forest",
-    "background_details": [
-      "Trees",
-      "electricity"
-    ],
-    "weather": "Heavens Shine Down"
+    "location": "Trophy Garden Area"
   },
   "base1-59": {
     "unique_id": "base1-59",
@@ -315,12 +305,7 @@
     "evolution_line": "squirtle → wartortle → blastoise",
     "color": "blue",
     "shape": "upright",
-    "location": "Seafoam Islands 1F",
-    "pose": "",
-    "actions": "attacking",
-    "background_details": [
-      "Bubbles"
-    ]
+    "location": "Seafoam Islands 1F"
   },
   "base1-64": {
     "unique_id": "base1-64",
@@ -573,6 +558,12 @@
     "location": "Mt Moon B2F",
     "pose": "this is my rock"
   },
+  "base2-3": {
+    "unique_id": "base2-3",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "red",
+    "shape": "quadruped"
+  },
   "base2-6": {
     "unique_id": "base2-6",
     "evolution_line": "mime-jr → mr-mime → mr-rime",
@@ -614,6 +605,12 @@
     "background_details": [
       "patterned background"
     ]
+  },
+  "base2-19": {
+    "unique_id": "base2-19",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "red",
+    "shape": "quadruped"
   },
   "base2-22": {
     "unique_id": "base2-22",
@@ -694,8 +691,7 @@
     "evolution_line": "spearow → fearow",
     "color": "brown",
     "shape": "wings",
-    "location": "Stark Mountain Area",
-    "actions": "flying"
+    "location": "Stark Mountain Area"
   },
   "base2-37": {
     "unique_id": "base2-37",
@@ -873,11 +869,7 @@
     "evolution_line": "mankey → primeape → annihilape",
     "color": "brown",
     "shape": "upright",
-    "location": "Sinnoh Route 225 Area",
-    "actions": "Swinging, attacking the cameraman",
-    "background_details": [
-      "Trees"
-    ]
+    "location": "Sinnoh Route 225 Area"
   },
   "base2-56": {
     "unique_id": "base2-56",
@@ -1317,6 +1309,13 @@
     "shape": "wings",
     "location": "Sinnoh Route 229 Area"
   },
+  "base6-23": {
+    "unique_id": "base6-23",
+    "evolution_line": "exeggcute → exeggutor",
+    "color": "yellow",
+    "shape": "legs",
+    "location": "Kanto Route 23 Area"
+  },
   "base6-85": {
     "unique_id": "base6-85",
     "evolution_line": "pidgey → pidgeotto → pidgeot",
@@ -1345,6 +1344,13 @@
     "shape": "humanoid",
     "location": "Unova Route 12 Area"
   },
+  "bw6-27": {
+    "unique_id": "bw6-27",
+    "evolution_line": "feebas → milotic",
+    "color": "brown",
+    "shape": "fish",
+    "location": "Hoenn Route 119 Area"
+  },
   "bwp-BW78": {
     "unique_id": "bwp-BW78",
     "evolution_line": "pichu → pikachu → raichu"
@@ -1367,6 +1373,13 @@
     "color": "green",
     "shape": "quadruped"
   },
+  "dp3-50": {
+    "unique_id": "dp3-50",
+    "evolution_line": "mareep → flaaffy → ampharos",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area"
+  },
   "dp3-99": {
     "unique_id": "dp3-99",
     "evolution_line": "pidgey → pidgeotto → pidgeot",
@@ -1386,6 +1399,20 @@
     "evolution_line": "cyndaquil → quilava → typhlosion",
     "color": "yellow",
     "shape": "quadruped"
+  },
+  "ecard2-H7": {
+    "unique_id": "ecard2-H7",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
+  },
+  "ecard2-8": {
+    "unique_id": "ecard2-8",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
   },
   "ex11-72": {
     "unique_id": "ex11-72",
@@ -1415,6 +1442,13 @@
     "shape": "squiggle",
     "location": "Sinnoh Route 212 East Towards Pastoria City",
     "notes": ""
+  },
+  "ex15-49": {
+    "unique_id": "ex15-49",
+    "evolution_line": "feebas → milotic",
+    "color": "brown",
+    "shape": "fish",
+    "location": "Hoenn Route 119 Area"
   },
   "ex15-70": {
     "unique_id": "ex15-70",
@@ -1451,6 +1485,13 @@
     "shape": "quadruped",
     "location": "Cerulean City Area"
   },
+  "ex9-49": {
+    "unique_id": "ex9-49",
+    "evolution_line": "feebas → milotic",
+    "color": "brown",
+    "shape": "fish",
+    "location": "Hoenn Route 119 Area"
+  },
   "g1-RC9": {
     "unique_id": "g1-RC9",
     "evolution_line": "pichu → pikachu → raichu",
@@ -1460,6 +1501,13 @@
   },
   "gym1-28": {
     "unique_id": "gym1-28",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "gym2-11": {
+    "unique_id": "gym2-11",
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "upright",
@@ -1479,11 +1527,32 @@
     "shape": "squiggle",
     "location": "Eterna Forest Area"
   },
+  "hgss1-61": {
+    "unique_id": "hgss1-61",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "New Bark Town Area"
+  },
   "hgss2-13": {
     "unique_id": "hgss2-13",
     "evolution_line": "squirtle → wartortle → blastoise",
     "color": "blue",
     "shape": "upright"
+  },
+  "hgss3-38": {
+    "unique_id": "hgss3-38",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Slowpoke Well B1F"
+  },
+  "hgss3-83": {
+    "unique_id": "hgss3-83",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
   },
   "mcd14-5": {
     "unique_id": "mcd14-5",
@@ -1570,6 +1639,13 @@
     "shape": "quadruped",
     "location": "Alola Route 4 Area"
   },
+  "pop7-7": {
+    "unique_id": "pop7-7",
+    "evolution_line": "mareep → flaaffy → ampharos",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area"
+  },
   "sm5-58": {
     "unique_id": "sm5-58",
     "evolution_line": "giratina",
@@ -1608,6 +1684,12 @@
     "shape": "upright",
     "location": "Sinnoh Route 210 West Towards Celestic Town"
   },
+  "sm8-188a": {
+    "unique_id": "sm8-188a"
+  },
+  "sm8-213": {
+    "unique_id": "sm8-213"
+  },
   "sv1-210": {
     "unique_id": "sv1-210",
     "evolution_line": "drowzee → hypno",
@@ -1621,6 +1703,22 @@
     "color": "white",
     "shape": "upright",
     "location": "Mt Coronet Exterior Snowfall"
+  },
+  "sv10-190": {
+    "unique_id": "sv10-190",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "quadruped"
+  },
+  "sv10-229": {
+    "unique_id": "sv10-229",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top"
+  },
+  "sv10-236": {
+    "unique_id": "sv10-236"
   },
   "sv2-211": {
     "unique_id": "sv2-211",
@@ -1655,6 +1753,12 @@
     "color": "white",
     "shape": "blob"
   },
+  "swsh10-172": {
+    "unique_id": "swsh10-172",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid"
+  },
   "swsh45-35": {
     "unique_id": "swsh45-35",
     "evolution_line": "morpeko",
@@ -1674,6 +1778,13 @@
     "color": "pink",
     "shape": "upright",
     "location": "Abundant Shrine Area"
+  },
+  "swshp-SWSH020": {
+    "unique_id": "swshp-SWSH020",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
   },
   "xy1-1": {
     "unique_id": "xy1-1",
@@ -2700,6 +2811,13 @@
     "unique_id": "basep-20",
     "evolution_line": "psyduck → golduck"
   },
+  "cel25c-15_A3": {
+    "unique_id": "cel25c-15_A3",
+    "evolution_line": "zapdos",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
@@ -2719,6 +2837,27 @@
     "color": "yellow",
     "shape": "quadruped"
   },
+  "ex5-61": {
+    "unique_id": "ex5-61",
+    "evolution_line": "feebas → milotic",
+    "color": "brown",
+    "shape": "fish",
+    "location": "Hoenn Route 119 Area"
+  },
+  "ex8-23": {
+    "unique_id": "ex8-23",
+    "evolution_line": "sableye",
+    "color": "purple",
+    "shape": "humanoid",
+    "location": "Iron Island B1F Left"
+  },
+  "ex8-27": {
+    "unique_id": "ex8-27",
+    "evolution_line": "tropius",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Great Marsh Area 1"
+  },
   "ex8-31": {
     "unique_id": "ex8-31",
     "evolution_line": "zubat → golbat → crobat",
@@ -2732,6 +2871,26 @@
     "color": "green",
     "shape": "humanoid",
     "location": "Unova Route 6 Area"
+  },
+  "neo4-43": {
+    "unique_id": "neo4-43",
+    "evolution_line": "houndour → houndoom",
+    "color": "black",
+    "shape": "quadruped",
+    "location": "Valor Lakefront Area"
+  },
+  "neo4-52": {
+    "unique_id": "neo4-52",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "blue",
+    "shape": "quadruped"
+  },
+  "pl3-58": {
+    "unique_id": "pl3-58",
+    "evolution_line": "buizel → floatzel",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Fuego Ironworks Area"
   },
   "pl4-37": {
     "unique_id": "pl4-37",
@@ -2787,16 +2946,7 @@
     "evolution_line": "wailmer → wailord",
     "color": "blue",
     "shape": "fish",
-    "location": "Sinnoh Sea Route 223 Area",
-    "main_character": "Wailord",
-    "owned": true,
-    "art_style": "2D, hand drawn",
-    "pose": "",
-    "camera_angle": "",
-    "weather_environment": "Sunny, Clouds",
-    "background_details": "Island, Palm Trees",
-    "actions": "Swimming, We Have Liftoff",
-    "background_pokemon": []
+    "location": "Sinnoh Sea Route 223 Area"
   },
   "sm35-29": {
     "unique_id": "sm35-29",
@@ -2879,6 +3029,13 @@
     "color": "white",
     "shape": "arms"
   },
+  "swsh2-57": {
+    "unique_id": "swsh2-57",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
+  },
   "swsh7-215": {
     "unique_id": "swsh7-215",
     "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
@@ -2895,6 +3052,13 @@
   },
   "pl2-88": {
     "unique_id": "pl2-88"
+  },
+  "sm10-63": {
+    "unique_id": "sm10-63",
+    "evolution_line": "ekans → arbok",
+    "color": "purple",
+    "shape": "squiggle",
+    "location": "Great Marsh Area 1"
   },
   "swsh8-2": {
     "unique_id": "swsh8-2",
@@ -2990,225 +3154,17 @@
     "location": "Sinnoh Route 228 Area"
   },
   "custom-xyp-JP279": {
-    "weather_environment": "Indoors"
+    "weather_environment": "Indoors",
+    "unique_id": "custom-xyp-JP279",
+    "actions": [
+      "Jumping"
+    ]
   },
   "custom-xyp-JP289": {
     "weather_environment": "Sunny"
   },
   "custom-vm-set3-28": {
     "weather_environment": "Sunny"
-  },
-  "custom-cn-exclusives-Chandelure": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-Cubone": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-Eevee": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-Gengar": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-Meowth": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-arcanine-ex": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-captain-pikachu": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-captain-pikachu-stamped": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-ceruledge": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-fuecoco": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-leafeon": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-maushold-ex": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-mew-ex": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-pikachu-151-1": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-pikachu-151-2": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-pikachu-151-3": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-pikachu-151-4": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-quaxly": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-sprigatito": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-sylveon": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-exclusives-umbreon": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-promos-custom-victini-ex": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-cn-promos-victini-ex-full-art": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-in-promos-Pikachu-berkemeja-batik-1": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-in-promos-pikachu-berkemeja-batik-2": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-in-promos-pikachu-berkemeja-batik-3": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-in-promos-pikachu-berkemeja-batik-4": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-jp-promos-custom-Sachiko-EX": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-jp-promos-custom-celebration-fanfare-2023": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-jp-promos-custom-pikachu-summer-vacation-jp": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-kr-promos-Pikachu": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-kr-promos-Umbreon-ex": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "custom-kr-promos-ditto": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    }
-  },
-  "koreanditto": {
-    "annotations": {}
-  },
-  "wseggbwreg": {
-    "annotations": {}
-  },
-  "wsjngwgnwrklgmwk;lfg,wefgw": {
-    "annotations": {
-      "weather_environment": "Clouds, Grass, Hills"
-    }
-  },
-  "xjp-XY-P": {
-    "annotations": {}
   },
   "P-A-054": {
     "unique_id": "P-A-054",
@@ -3236,10 +3192,31 @@
   "A1-115": {
     "unique_id": "A1-115"
   },
+  "A1-236": {
+    "unique_id": "A1-236"
+  },
+  "A1-243": {
+    "unique_id": "A1-243"
+  },
+  "A1-263": {
+    "unique_id": "A1-263"
+  },
+  "A1-278": {
+    "unique_id": "A1-278"
+  },
   "A2-045": {
     "unique_id": "A2-045"
   },
   "A2a-021": {
     "unique_id": "A2a-021"
+  },
+  "A3-203": {
+    "unique_id": "A3-203"
+  },
+  "A3b-096": {
+    "unique_id": "A3b-096"
+  },
+  "A4-202": {
+    "unique_id": "A4-202"
   }
 }
