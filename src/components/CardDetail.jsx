@@ -46,6 +46,7 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "berries", "holiday_theme", "multi_card",
   "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
   "video_region", "video_location",
+  "pose", "emotion", "actions",
 ]);
 
 /**

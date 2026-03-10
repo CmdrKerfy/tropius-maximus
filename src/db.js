@@ -1778,13 +1778,25 @@ export async function fetchFormOptions() {
         REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
       )))) AS val FROM tcg_cards WHERE subtypes != '[]' AND subtypes != '' ORDER BY val`
     ),
-    // emotion: from tcg_cards
+    // emotion: from tcg_cards (handles both JSON array and legacy comma-separated)
     conn.query(
-      `SELECT DISTINCT emotion AS val FROM tcg_cards WHERE emotion IS NOT NULL AND emotion != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(emotion, '["', ''), '"]', ''),
+          ','
+        )) AS val FROM tcg_cards
+        WHERE emotion IS NOT NULL AND emotion != '' AND emotion != '[]'
+      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
     ),
-    // pose: from tcg_cards
+    // pose: from tcg_cards (handles both JSON array and legacy comma-separated)
     conn.query(
-      `SELECT DISTINCT pose AS val FROM tcg_cards WHERE pose IS NOT NULL AND pose != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(pose, '["', ''), '"]', ''),
+          ','
+        )) AS val FROM tcg_cards
+        WHERE pose IS NOT NULL AND pose != '' AND pose != '[]'
+      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
     ),
     // cameraAngle: from tcg_cards
     conn.query(
@@ -1814,9 +1826,15 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT items AS val FROM tcg_cards WHERE items IS NOT NULL AND items != '' ORDER BY val`
     ),
-    // actions: from tcg_cards
+    // actions: from tcg_cards (handles both JSON array and legacy comma-separated)
     conn.query(
-      `SELECT DISTINCT actions AS val FROM tcg_cards WHERE actions IS NOT NULL AND actions != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(actions, '["', ''), '"]', ''),
+          ','
+        )) AS val FROM tcg_cards
+        WHERE actions IS NOT NULL AND actions != '' AND actions != '[]'
+      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
     ),
     // videoTitle: from tcg_cards
     conn.query(
