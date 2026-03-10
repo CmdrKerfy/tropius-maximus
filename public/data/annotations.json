@@ -2381,7 +2381,8 @@
     "location": "Sinnoh Route 228 Area",
     "actions": "property damage, agents of destruction",
     "background_details": [
-      "car"
+      "car",
+      "buildings"
     ]
   },
   "basep-13": {
