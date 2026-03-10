@@ -1165,7 +1165,8 @@
       "fence",
       "moon"
     ],
-    "environment": "m"
+    "environment": "Full Moon",
+    "pose": "this is mine"
   },
   "base3-49": {
     "unique_id": "base3-49",
@@ -1222,6 +1223,9 @@
     "art_style": [
       "2D",
       "Hand Drawn"
+    ],
+    "background_details": [
+      "clouds"
     ]
   },
   "base3-56": {
