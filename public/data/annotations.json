@@ -520,6 +520,11 @@
   },
   "base1-94": {
     "unique_id": "base1-94",
+    "trainer_card_type": "Item",
+    "items": "Potion"
+  },
+  "base1-95": {
+    "unique_id": "base1-95",
     "trainer_card_type": "Item"
   },
   "base2-36": {
