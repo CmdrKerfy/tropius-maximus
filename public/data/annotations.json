@@ -1164,7 +1164,8 @@
       "barrel",
       "fence",
       "moon"
-    ]
+    ],
+    "environment": "m"
   },
   "base3-49": {
     "unique_id": "base3-49",
