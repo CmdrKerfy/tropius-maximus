@@ -2271,6 +2271,37 @@
       "glowing"
     ]
   },
+  "base5-36": {
+    "unique_id": "base5-36",
+    "evolution_line": "oddish → gloom → vileplume → bellossom",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 224 Area",
+    "weather": "smog"
+  },
+  "base5-37": {
+    "unique_id": "base5-37",
+    "evolution_line": "psyduck → golduck",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "actions": "Beam Me Up Scotty"
+  },
+  "base5-38": {
+    "unique_id": "base5-38",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "yellow",
+    "shape": "quadruped",
+    "weather": "Thunder"
+  },
+  "base5-39": {
+    "unique_id": "base5-39",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Victory Road 2F",
+    "actions": "Running"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
