@@ -15,7 +15,7 @@ import {
   VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
   VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
   STAMP_OPTIONS, CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
-  ADDITIONAL_CHARACTER_THEME_OPTIONS, BACKGROUND_PEOPLE_TYPE_OPTIONS,
+  ADDITIONAL_CHARACTER_THEME_OPTIONS,
 } from "../lib/annotationOptions";
 
 // Sources with existing card databases — Card ID auto-generation is skipped
@@ -801,7 +801,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Background People Type</label>
-              <MultiComboBox value={backgroundHumans} onChange={setBackgroundHumans} options={opts.backgroundHumans || BACKGROUND_PEOPLE_TYPE_OPTIONS} placeholder="Gym Leader, Trainer, Civilian" />
+              <MultiComboBox value={backgroundHumans} onChange={setBackgroundHumans} options={opts.backgroundHumans || []} placeholder="Gym Leader, Trainer, Civilian" />
             </div>
             <div>
               <label className={labelClass}>Background People Name</label>

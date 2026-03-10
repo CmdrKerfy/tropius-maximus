@@ -20,7 +20,7 @@ import {
   VIDEO_TYPE_OPTIONS, TOP_10_THEMES_OPTIONS, WTPC_EPISODE_OPTIONS,
   VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS, STAMP_OPTIONS,
   CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
-  ADDITIONAL_CHARACTER_THEME_OPTIONS, BACKGROUND_PEOPLE_TYPE_OPTIONS,
+  ADDITIONAL_CHARACTER_THEME_OPTIONS,
 } from "../lib/annotationOptions";
 
 const COLOR_OPTIONS = [
@@ -963,7 +963,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             </div>
                             <div>
                               <label className={labelClass}>Background People Type</label>
-                              <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={opts.backgroundHumans || BACKGROUND_PEOPLE_TYPE_OPTIONS} placeholder="Gym Leader, Trainer, Civilian" />
+                              <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={opts.backgroundHumans || []} placeholder="Gym Leader, Trainer, Civilian" />
                             </div>
                             <div>
                               <label className={labelClass}>Background People Name</label>

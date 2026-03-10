@@ -16,7 +16,7 @@ import {
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
   MULTI_CARD_OPTIONS, TRAINER_CARD_TYPE_OPTIONS, TRAINER_CARD_SUBGROUP_OPTIONS,
   VIDEO_TYPE_OPTIONS, VIDEO_REGION_OPTIONS, VIDEO_LOCATION_OPTIONS,
-  STAMP_OPTIONS, BACKGROUND_HUMANS_OPTIONS,
+  STAMP_OPTIONS,
   CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
 } from "./lib/annotationOptions.js";
 // Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
@@ -1924,11 +1924,8 @@ export async function fetchFormOptions() {
       const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
       return [...new Set([...fromPm, ...fromCustom])].sort();
     })(),
-    // background_humans: from custom cards + static trainer list
-    (async () => {
-      const fromCustom = await splitJsonArrayValues("background_humans");
-      return [...new Set([...BACKGROUND_HUMANS_OPTIONS, ...fromCustom])];
-    })(),
+    // background_humans: from custom cards only
+    splitJsonArrayValues("background_humans"),
     splitJsonArrayValues("additional_characters"),
     splitJsonArrayValues("background_details"),
     // evolution_line: full chains from tcg_cards + pokemon_metadata.evolution_chain
