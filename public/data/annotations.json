@@ -2121,7 +2121,11 @@
     "location": "Slowpoke Well B1F",
     "background_humans": [
       "Trainer"
-    ]
+    ],
+    "additional_characters": [
+      "Rocket Grunt"
+    ],
+    "rival_group": "Ro"
   },
   "basep-13": {
     "unique_id": "basep-13",
