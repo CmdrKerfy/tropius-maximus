@@ -737,13 +737,21 @@
       "patterned background"
     ]
   },
+  "base2-43": {
+    "unique_id": "base2-43",
+    "evolution_line": "mankey → primeape → annihilape",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 225 Area",
+    "emotion": "Angry"
+  },
   "base2-45": {
     "unique_id": "base2-45",
     "evolution_line": "rhyhorn → rhydon → rhyperior",
     "color": "gray",
     "shape": "upright",
     "location": "Sinnoh Victory Road 1F",
-    "actions": "attacking the cameraman"
+    "actions": "attacking the cameraman, Running"
   },
   "base2-46": {
     "unique_id": "base2-46",
