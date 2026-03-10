@@ -321,6 +321,14 @@
       "Bubbles"
     ]
   },
+  "base1-64": {
+    "unique_id": "base1-64",
+    "evolution_line": "staryu → starmie",
+    "color": "purple",
+    "shape": "blob",
+    "location": "Kanto Sea Route 19 Area",
+    "card_locations": "Underwater"
+  },
   "base1-65": {
     "unique_id": "base1-65",
     "evolution_line": "staryu → starmie",
@@ -347,7 +355,14 @@
     "shape": "quadruped",
     "location": "Sinnoh Route 209 Area",
     "background_details": [
-      "purgatory"
+      "purgatory",
+      "sparkles"
+    ]
+  },
+  "base1-70": {
+    "unique_id": "base1-70",
+    "background_pokemon": [
+      "clefairy"
     ]
   },
   "base1-91": {
