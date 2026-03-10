@@ -314,7 +314,8 @@
     "evolution_line": "squirtle → wartortle → blastoise",
     "color": "blue",
     "shape": "upright",
-    "location": "Seafoam Islands 1F"
+    "location": "Seafoam Islands 1F",
+    "pose": "bubb"
   },
   "base1-91": {
     "unique_id": "base1-91",
