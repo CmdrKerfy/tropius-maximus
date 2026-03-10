@@ -2475,6 +2475,16 @@
     "pose": "staring contest",
     "camera_angle": "Zoomed In"
   },
+  "base5-65": {
+    "unique_id": "base5-65",
+    "evolution_line": "psyduck → golduck",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "background_details": [
+      "electricity"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
