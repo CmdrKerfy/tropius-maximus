@@ -321,6 +321,24 @@
       "Bubbles"
     ]
   },
+  "base1-65": {
+    "unique_id": "base1-65",
+    "evolution_line": "staryu → starmie",
+    "color": "brown",
+    "shape": "blob",
+    "location": "Canalave City Area"
+  },
+  "base1-67": {
+    "unique_id": "base1-67",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area",
+    "background_details": [
+      "purgatory",
+      "neon"
+    ]
+  },
   "base1-91": {
     "unique_id": "base1-91",
     "background_details": [
