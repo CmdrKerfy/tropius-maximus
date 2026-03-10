@@ -498,7 +498,8 @@
   "base1-91": {
     "unique_id": "base1-91",
     "background_details": [
-      "patterned background"
+      "patterned background",
+      "brick wall"
     ],
     "trainer_card_type": "Supporter",
     "items": "Poke Ball",
@@ -1046,7 +1047,19 @@
     "location": "Kanto Route 12 Area",
     "pose": "did I do that?",
     "weather": "Heavens Shine Down",
-    "background_details": []
+    "background_details": [
+      "rainbow"
+    ]
+  },
+  "base3-33": {
+    "unique_id": "base3-33",
+    "evolution_line": "gastly → haunter → gengar",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Eterna Forest Area",
+    "background_details": [
+      "brick wall"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
