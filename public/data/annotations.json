@@ -2176,6 +2176,17 @@
       "bed"
     ]
   },
+  "base5-28": {
+    "unique_id": "base5-28",
+    "evolution_line": "magnemite → magneton → magnezone",
+    "color": "gray",
+    "shape": "heads",
+    "location": "Sinnoh Victory Road 2F",
+    "background_humans": [
+      "Tra"
+    ],
+    "rival_group": "Team Rocket"
+  },
   "base5-29": {
     "unique_id": "base5-29",
     "evolution_line": "slowpoke → slowbro → slowking",
