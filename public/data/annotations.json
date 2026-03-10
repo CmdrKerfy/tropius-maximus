@@ -366,7 +366,8 @@
     ],
     "art_style": [
       "Polygon Graphics"
-    ]
+    ],
+    "trainer_card_type": "Item"
   },
   "base1-71": {
     "unique_id": "base1-71",
@@ -374,7 +375,13 @@
     "pokeball": "Pokeball",
     "background_pokemon": [
       "magnemite"
+    ],
+    "background_details": [
+      "computer"
     ]
+  },
+  "base1-72": {
+    "unique_id": "base1-72"
   },
   "base1-91": {
     "unique_id": "base1-91",
