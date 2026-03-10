@@ -2584,6 +2584,10 @@
     ],
     "trainer_card_type": "Item"
   },
+  "base5-74": {
+    "unique_id": "base5-74",
+    "actions": "kicking"
+  },
   "base5-83": {
     "unique_id": "base5-83",
     "evolution_line": "pichu → pikachu → raichu",
