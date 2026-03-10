@@ -336,7 +336,18 @@
     "location": "Sinnoh Route 218 Area",
     "background_details": [
       "purgatory",
-      "neon"
+      "neon",
+      "electricity"
+    ]
+  },
+  "base1-68": {
+    "unique_id": "base1-68",
+    "evolution_line": "vulpix → ninetales",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 209 Area",
+    "background_details": [
+      "purgatory"
     ]
   },
   "base1-91": {
