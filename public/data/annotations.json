@@ -408,7 +408,10 @@
   },
   "base1-77": {
     "unique_id": "base1-77",
-    "trainer_card_type": "Supporter"
+    "trainer_card_type": "Supporter",
+    "background_pokemon": [
+      "farfetchd"
+    ]
   },
   "base1-91": {
     "unique_id": "base1-91",
