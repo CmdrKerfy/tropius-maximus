@@ -140,6 +140,16 @@
       "Bubbles"
     ]
   },
+  "base1-27": {
+    "unique_id": "base1-27",
+    "evolution_line": "farfetchd → sirfetchd",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 221 Area",
+    "background_details": [
+      "patterned background"
+    ]
+  },
   "base1-30": {
     "unique_id": "base1-30",
     "evolution_line": "bulbasaur → ivysaur → venusaur",
