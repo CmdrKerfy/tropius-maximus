@@ -482,7 +482,8 @@
   "base1-88": {
     "unique_id": "base1-88",
     "trainer_card_type": "Supporter",
-    "actions": "reading"
+    "actions": "reading",
+    "items": "b"
   },
   "base1-91": {
     "unique_id": "base1-91",
