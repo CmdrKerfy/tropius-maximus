@@ -1146,6 +1146,14 @@
       "toxic"
     ]
   },
+  "base3-49": {
+    "unique_id": "base3-49",
+    "evolution_line": "horsea → seadra → kingdra",
+    "color": "blue",
+    "shape": "blob",
+    "location": "Sinnoh Sea Route 226 Area",
+    "actions": "attacking"
+  },
   "base3-52": {
     "unique_id": "base3-52",
     "evolution_line": "omanyte → omastar",
@@ -1181,7 +1189,8 @@
     "card_locations": "Underwater",
     "background_details": [
       "Bubbles"
-    ]
+    ],
+    "pose": "tongue out"
   },
   "base4-41": {
     "unique_id": "base4-41",
