@@ -2617,7 +2617,14 @@
       "koffing"
     ],
     "pose": "please don't hurt me",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "art_style": [
+      "you've changed"
+    ]
+  },
+  "base5-77": {
+    "unique_id": "base5-77",
+    "environment": "Starry Night"
   },
   "base5-83": {
     "unique_id": "base5-83",
