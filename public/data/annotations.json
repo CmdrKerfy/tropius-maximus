@@ -393,6 +393,10 @@
     "unique_id": "base1-74",
     "trainer_card_type": "Item"
   },
+  "base1-75": {
+    "unique_id": "base1-75",
+    "trainer_card_type": "Supporter"
+  },
   "base1-91": {
     "unique_id": "base1-91",
     "background_details": [
