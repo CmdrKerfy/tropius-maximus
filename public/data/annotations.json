@@ -1178,7 +1178,10 @@
     "color": "purple",
     "shape": "ball",
     "location": "Valley Windworks Area",
-    "card_locations": "Underwater"
+    "card_locations": "Underwater",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
