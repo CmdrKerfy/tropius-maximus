@@ -2466,6 +2466,14 @@
       "That Ain't Right"
     ]
   },
+  "base5-64": {
+    "unique_id": "base5-64",
+    "evolution_line": "ponyta → rapidash",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 206 Area",
+    "pose": "staring contest"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
