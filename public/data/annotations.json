@@ -1435,6 +1435,16 @@
     "shape": "ball",
     "location": "Stark Mountain Inside"
   },
+  "ex12-60": {
+    "unique_id": "ex12-60",
+    "evolution_line": "omanyte → omastar",
+    "color": "blue",
+    "shape": "tentacles",
+    "location": "Cinnabar Island Cinnabar Lab",
+    "emotion": [
+      "crying"
+    ]
+  },
   "ex14-18": {
     "unique_id": "ex14-18",
     "evolution_line": "spearow → fearow",
