@@ -2311,6 +2311,14 @@
     "emotion": "Angry",
     "actions": "Showing off my Talent"
   },
+  "base5-42": {
+    "unique_id": "base5-42",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "camera_angle": "pro"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
