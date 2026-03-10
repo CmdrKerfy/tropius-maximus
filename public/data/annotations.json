@@ -805,8 +805,7 @@
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
     "background_details": [
-      "seeds",
-      "dandelions"
+      "seeds"
     ]
   },
   "base2-50": {
