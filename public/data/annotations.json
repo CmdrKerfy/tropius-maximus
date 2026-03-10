@@ -2499,7 +2499,10 @@
     "color": "pink",
     "shape": "quadruped",
     "location": "Sinnoh Route 205 East Towards Eterna City",
-    "weather": "Sunny"
+    "weather": "Sunny",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
