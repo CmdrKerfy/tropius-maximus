@@ -389,6 +389,10 @@
     "trainer_card_type": "Supporter",
     "pose": "please don't hurt me"
   },
+  "base1-74": {
+    "unique_id": "base1-74",
+    "trainer_card_type": "Item"
+  },
   "base1-91": {
     "unique_id": "base1-91",
     "background_details": [
