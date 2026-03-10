@@ -1256,7 +1256,8 @@
       "cubone"
     ],
     "trainer_card_type": "Supporter",
-    "pose": "tongue out"
+    "pose": "tongue out",
+    "actions": "licking"
   },
   "base4-41": {
     "unique_id": "base4-41",
