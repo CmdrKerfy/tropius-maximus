@@ -395,7 +395,10 @@
   },
   "base1-75": {
     "unique_id": "base1-75",
-    "trainer_card_type": "Supporter"
+    "trainer_card_type": "Supporter",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base1-91": {
     "unique_id": "base1-91",
