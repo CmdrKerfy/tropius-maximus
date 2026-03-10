@@ -664,7 +664,8 @@
     "location": "Kanto Route 23 Area",
     "actions": "chillin like a villain",
     "weather": "sunset",
-    "environment": "Sunset"
+    "environment": "Sunset",
+    "card_locations": "Beach"
   },
   "base2-36": {
     "unique_id": "base2-36",
