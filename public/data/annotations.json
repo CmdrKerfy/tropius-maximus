@@ -363,6 +363,9 @@
     "unique_id": "base1-70",
     "background_pokemon": [
       "clefairy"
+    ],
+    "art_style": [
+      "Polygon Graphics"
     ]
   },
   "base1-91": {
