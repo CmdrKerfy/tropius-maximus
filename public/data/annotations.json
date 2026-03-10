@@ -2519,7 +2519,24 @@
     "card_locations": "Underwater",
     "background_details": [
       "Bubbles"
-    ]
+    ],
+    "camera_angle": "backshot"
+  },
+  "base5-69": {
+    "unique_id": "base5-69",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Sinnoh Route 218 Area",
+    "camera_angle": "Underbelly"
+  },
+  "base5-70": {
+    "unique_id": "base5-70",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Oreburgh Mine 1F",
+    "environment": "Night"
   },
   "basep-13": {
     "unique_id": "basep-13",
