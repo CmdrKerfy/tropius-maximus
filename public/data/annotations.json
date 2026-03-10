@@ -859,7 +859,21 @@
     "shape": "humanoid",
     "location": "Johto Route 34 Area",
     "pose": "in a tree",
-    "actions": "singing"
+    "actions": "singing",
+    "background_details": [
+      "Trees"
+    ],
+    "art_style": [
+      "off color"
+    ]
+  },
+  "base2-55": {
+    "unique_id": "base2-55",
+    "evolution_line": "mankey → primeape → annihilape",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 225 Area",
+    "actions": ""
   },
   "base4-41": {
     "unique_id": "base4-41",
