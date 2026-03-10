@@ -2103,7 +2103,7 @@
     "color": "purple",
     "shape": "squiggle",
     "location": "Great Marsh Area 1",
-    "pose": "tongue out"
+    "pose": "mouth agape, tongue out"
   },
   "base5-4": {
     "unique_id": "base5-4",
@@ -2112,6 +2112,16 @@
     "shape": "upright",
     "location": "Kanto Route 12 Area",
     "camera_angle": "backshot"
+  },
+  "base5-12": {
+    "unique_id": "base5-12",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Slowpoke Well B1F",
+    "background_humans": [
+      "Trainer"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
