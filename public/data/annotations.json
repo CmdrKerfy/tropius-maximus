@@ -1255,7 +1255,8 @@
       "weedle",
       "cubone"
     ],
-    "trainer_card_type": "Supporter"
+    "trainer_card_type": "Supporter",
+    "pose": "tongue out"
   },
   "base4-41": {
     "unique_id": "base4-41",
