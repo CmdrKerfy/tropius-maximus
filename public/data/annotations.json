@@ -22,7 +22,7 @@
     "color": "red",
     "shape": "upright",
     "location": "Kanto Route 12 Area",
-    "pose": "mouth agape"
+    "pose": "mouth agape, tongue out"
   },
   "base1-6": {
     "unique_id": "base1-6",
@@ -31,6 +31,21 @@
     "shape": "squiggle",
     "location": "Canalave City Area",
     "pose": "mouth agape"
+  },
+  "base1-7": {
+    "unique_id": "base1-7",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Kanto Victory Road 1 3F",
+    "pose": "Punch stance"
+  },
+  "base1-8": {
+    "unique_id": "base1-8",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid",
+    "pose": "Flexing"
   },
   "base1-12": {
     "unique_id": "base1-12",
@@ -41,6 +56,14 @@
     "art_style": [
       "2D"
     ]
+  },
+  "base1-13": {
+    "unique_id": "base1-13",
+    "evolution_line": "poliwag → poliwhirl → poliwrath → politoed",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Cerulean Cave 1F",
+    "emotion": "Angry"
   },
   "base1-14": {
     "unique_id": "base1-14",
@@ -69,6 +92,26 @@
     "weather": "Aurora Borealis",
     "actions": "Swimming",
     "camera_angle": "Water Level"
+  },
+  "base1-20": {
+    "unique_id": "base1-20",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "base1-21": {
+    "unique_id": "base1-21",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base1-24": {
     "unique_id": "base1-24",
