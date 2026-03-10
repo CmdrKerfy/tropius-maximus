@@ -1262,6 +1262,10 @@
       "unexpected partnerships"
     ]
   },
+  "base3-59": {
+    "unique_id": "base3-59",
+    "trainer_card_type": "Item"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
