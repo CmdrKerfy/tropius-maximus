@@ -2267,7 +2267,8 @@
     "location": "Cerulean Cave 1F",
     "card_locations": "City",
     "background_details": [
-      "buildings"
+      "buildings",
+      "glowing"
     ]
   },
   "basep-13": {
