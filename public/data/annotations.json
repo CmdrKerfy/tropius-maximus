@@ -483,7 +483,8 @@
     "unique_id": "base1-88",
     "trainer_card_type": "Supporter",
     "actions": "reading",
-    "items": ""
+    "items": "",
+    "held_item": "book"
   },
   "base1-91": {
     "unique_id": "base1-91",
