@@ -135,7 +135,10 @@
     "color": "white",
     "shape": "fish",
     "location": "Sinnoh Victory Road Inside B1F",
-    "card_locations": "Underwater"
+    "card_locations": "Underwater",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "base1-30": {
     "unique_id": "base1-30",
