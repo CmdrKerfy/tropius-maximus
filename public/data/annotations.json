@@ -909,6 +909,24 @@
       "Polygon Graphics"
     ]
   },
+  "base2-59": {
+    "unique_id": "base2-59",
+    "evolution_line": "paras → parasect",
+    "color": "red",
+    "shape": "armor",
+    "location": "Ilex Forest Area",
+    "art_style": []
+  },
+  "base2-60": {
+    "unique_id": "base2-60",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "art_style": [
+      "2D"
+    ]
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
