@@ -93,6 +93,13 @@
     "actions": "Swimming",
     "camera_angle": "Water Level"
   },
+  "base1-19": {
+    "unique_id": "base1-19",
+    "evolution_line": "diglett → dugtrio",
+    "color": "brown",
+    "shape": "heads",
+    "location": "Sinnoh Route 228 Area"
+  },
   "base1-20": {
     "unique_id": "base1-20",
     "evolution_line": "elekid → electabuzz → electivire",
@@ -118,7 +125,8 @@
     "unique_id": "base1-24",
     "evolution_line": "charmander → charmeleon → charizard",
     "color": "red",
-    "shape": "upright"
+    "shape": "upright",
+    "actions": "Slapping"
   },
   "base1-30": {
     "unique_id": "base1-30",
