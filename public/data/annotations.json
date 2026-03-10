@@ -2404,8 +2404,16 @@
     "color": "yellow",
     "shape": "humanoid",
     "location": "Sinnoh Route 215 Area",
-    "perspective": "symmetrical",
+    "perspective": "",
     "camera_angle": "Symmetrical"
+  },
+  "base5-57": {
+    "unique_id": "base5-57",
+    "evolution_line": "grimer → muk",
+    "color": "purple",
+    "shape": "arms",
+    "location": "Sinnoh Route 212 East Towards Pastoria City",
+    "actions": "hiding"
   },
   "basep-13": {
     "unique_id": "basep-13",
