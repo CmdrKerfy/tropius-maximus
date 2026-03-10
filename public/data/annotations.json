@@ -486,6 +486,14 @@
     "items": "book",
     "held_item": "book"
   },
+  "base1-89": {
+    "unique_id": "base1-89",
+    "trainer_card_type": "Item"
+  },
+  "base1-90": {
+    "unique_id": "base1-90",
+    "trainer_card_type": "Item"
+  },
   "base1-91": {
     "unique_id": "base1-91",
     "background_details": [
