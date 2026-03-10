@@ -1155,7 +1155,8 @@
     "background_details": [
       "ancient ruins"
     ],
-    "environment": ""
+    "environment": "",
+    "card_locations": "ancient ruins"
   },
   "base4-41": {
     "unique_id": "base4-41",
