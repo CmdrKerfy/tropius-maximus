@@ -817,7 +817,8 @@
     "color": "brown",
     "shape": "upright",
     "location": "Sinnoh Route 203 Area",
-    "environment": "Starry Night"
+    "environment": "Starry Night",
+    "actions": "Rock Smashing"
   },
   "base4-41": {
     "unique_id": "base4-41",
