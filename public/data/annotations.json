@@ -818,7 +818,8 @@
     "shape": "upright",
     "location": "Sinnoh Route 203 Area",
     "environment": "Starry Night",
-    "actions": ""
+    "actions": "",
+    "pose": "this is my rock"
   },
   "base4-41": {
     "unique_id": "base4-41",
