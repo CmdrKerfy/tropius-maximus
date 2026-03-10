@@ -6,6 +6,42 @@
     "shape": "humanoid",
     "card_border": "Yellow"
   },
+  "base1-3": {
+    "unique_id": "base1-3",
+    "evolution_line": "happiny → chansey → blissey",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Sinnoh Route 209 Area",
+    "art_style": [
+      "2D"
+    ]
+  },
+  "base1-4": {
+    "unique_id": "base1-4",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "pose": "mouth agape"
+  },
+  "base1-6": {
+    "unique_id": "base1-6",
+    "evolution_line": "magikarp → gyarados",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Canalave City Area",
+    "pose": "mouth agape"
+  },
+  "base1-12": {
+    "unique_id": "base1-12",
+    "evolution_line": "vulpix → ninetales",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Kanto Route 7 Area",
+    "art_style": [
+      "2D"
+    ]
+  },
   "base1-14": {
     "unique_id": "base1-14",
     "evolution_line": "pichu → pikachu → raichu",
