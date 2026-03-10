@@ -1152,7 +1152,7 @@
     "color": "blue",
     "shape": "blob",
     "location": "Sinnoh Sea Route 226 Area",
-    "actions": "attacking"
+    "actions": "attacking, polluting"
   },
   "base3-52": {
     "unique_id": "base3-52",
