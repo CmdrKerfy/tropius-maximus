@@ -527,7 +527,10 @@
     "unique_id": "base1-95",
     "trainer_card_type": "Item",
     "items": "Poke Ball",
-    "pokeball": "Pokeball"
+    "pokeball": "Pokeball",
+    "background_pokemon": [
+      "kakuna"
+    ]
   },
   "base2-36": {
     "unique_id": "base2-36",
