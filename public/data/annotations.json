@@ -297,7 +297,8 @@
     "location": "Trophy Garden Area",
     "card_locations": "Forest",
     "background_details": [
-      "Trees"
+      "Trees",
+      "electricity"
     ],
     "weather": "Heavens Shine Down"
   },
