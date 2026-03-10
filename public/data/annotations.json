@@ -1268,7 +1268,14 @@
   },
   "base3-60": {
     "unique_id": "base3-60",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "art_style": [
+      "blurry"
+    ]
+  },
+  "base3-61": {
+    "unique_id": "base3-61",
+    "emotion": "Jaded"
   },
   "base4-41": {
     "unique_id": "base4-41",
