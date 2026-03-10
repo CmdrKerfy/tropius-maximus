@@ -2605,7 +2605,8 @@
       "doduo"
     ],
     "pose": "welcome to my crib",
-    "actions": "Dangerous Stunts"
+    "actions": "Dangerous Stunts",
+    "trainer_card_type": "Item"
   },
   "base5-83": {
     "unique_id": "base5-83",
