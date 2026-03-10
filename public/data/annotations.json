@@ -2176,6 +2176,31 @@
       "bed"
     ]
   },
+  "base5-24": {
+    "unique_id": "base5-24",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Mt Coronet 1F Route 207",
+    "card_locations": "Cave"
+  },
+  "base5-26": {
+    "unique_id": "base5-26",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Kanto Route 11 Area",
+    "background_details": [
+      "patterned background"
+    ]
+  },
+  "base5-27": {
+    "unique_id": "base5-27",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid",
+    "pose": "Come At Me Bro"
+  },
   "base5-28": {
     "unique_id": "base5-28",
     "evolution_line": "magnemite → magneton → magnezone",
@@ -2208,6 +2233,39 @@
     "shape": "humanoid",
     "location": "Kanto Sea Route 21 Area",
     "pose": "m'lady"
+  },
+  "base5-31": {
+    "unique_id": "base5-31",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "heads",
+    "location": "Stark Mountain Area",
+    "pose": "derp"
+  },
+  "base5-32": {
+    "unique_id": "base5-32",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "actions": "Pyros"
+  },
+  "base5-33": {
+    "unique_id": "base5-33",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Mt Coronet 4F",
+    "background_details": [
+      "crystals"
+    ]
+  },
+  "base5-34": {
+    "unique_id": "base5-34",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F",
+    "card_locations": "City"
   },
   "basep-13": {
     "unique_id": "basep-13",
