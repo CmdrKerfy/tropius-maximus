@@ -662,7 +662,8 @@
     "color": "yellow",
     "shape": "legs",
     "location": "Kanto Route 23 Area",
-    "actions": "chillin like a villain"
+    "actions": "chillin like a villain",
+    "weather": "sunset"
   },
   "base2-36": {
     "unique_id": "base2-36",
