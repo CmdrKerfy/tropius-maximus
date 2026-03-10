@@ -1051,6 +1051,22 @@
       "rainbow"
     ]
   },
+  "base3-25": {
+    "unique_id": "base3-25",
+    "evolution_line": "lapras",
+    "color": "blue",
+    "shape": "fish",
+    "location": "Sinnoh Victory Road Inside B1F",
+    "pose": "mouth agape"
+  },
+  "base3-28": {
+    "unique_id": "base3-28",
+    "evolution_line": "grimer → muk",
+    "color": "purple",
+    "shape": "arms",
+    "location": "Celadon City Area",
+    "pose": "mouth agape"
+  },
   "base3-33": {
     "unique_id": "base3-33",
     "evolution_line": "gastly → haunter → gengar",
@@ -1060,6 +1076,14 @@
     "background_details": [
       "brick wall"
     ]
+  },
+  "base3-34": {
+    "unique_id": "base3-34",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Mt Coronet 1F Route 207",
+    "pose": "mouth agape"
   },
   "base3-35": {
     "unique_id": "base3-35",
@@ -1093,6 +1117,14 @@
     "location": "Cherrygrove City Area",
     "actions": "attacking the cameraman"
   },
+  "base3-43": {
+    "unique_id": "base3-43",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Slowpoke Well B1F",
+    "pose": "mouth agape"
+  },
   "base3-44": {
     "unique_id": "base3-44",
     "evolution_line": "tentacool → tentacruel",
@@ -1102,6 +1134,14 @@
     "background_details": [
       "electricity"
     ]
+  },
+  "base3-45": {
+    "unique_id": "base3-45",
+    "evolution_line": "koffing → weezing",
+    "color": "purple",
+    "shape": "heads",
+    "location": "Stark Mountain Area",
+    "environment": "swa"
   },
   "base4-41": {
     "unique_id": "base4-41",
