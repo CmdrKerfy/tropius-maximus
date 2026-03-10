@@ -743,7 +743,10 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Vermilion City Area",
-    "pose": "curled up"
+    "pose": "curled up",
+    "background_details": [
+      "Trees"
+    ]
   },
   "base2-43": {
     "unique_id": "base2-43",
