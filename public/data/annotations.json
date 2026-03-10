@@ -746,6 +746,9 @@
     "pose": "curled up",
     "background_details": [
       "Trees"
+    ],
+    "art_style": [
+      "off color"
     ]
   },
   "base2-43": {
@@ -774,6 +777,16 @@
     "card_locations": "Underwater",
     "background_details": [
       "seafloor"
+    ]
+  },
+  "base2-47": {
+    "unique_id": "base2-47",
+    "evolution_line": "tauros",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 209 Area",
+    "background_details": [
+      "fence"
     ]
   },
   "base4-41": {
