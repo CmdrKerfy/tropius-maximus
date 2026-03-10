@@ -5,7 +5,7 @@
  * Data comes from DuckDB-WASM (db.js) instead of a backend API.
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   fetchCards,
   fetchFilterOptions,
@@ -52,14 +52,14 @@ const SEARCH_STORAGE_KEY = "tm_search";
 const DEFAULT_FILTERS = {
   source: "", supertype: "", rarity: [], set_id: [], region: [],
   generation: "", color: "", artist: [], evolution_line: [],
-  trainer_type: "", specialty: [], element: [], card_type: [],
-  stage: [], weather: [], environment: [],
+  trainer_type: "", specialty: [], background_pokemon: [], element: [], card_type: [],
+  stage: [], weather: [], environment: [], actions: [], pose: [],
   sort_by: "pokedex", sort_dir: "asc",
 };
 
 const ARRAY_FILTER_KEYS = new Set([
   "rarity", "set_id", "region", "artist", "evolution_line",
-  "specialty", "element", "card_type", "stage", "weather", "environment",
+  "specialty", "background_pokemon", "element", "card_type", "stage", "weather", "environment", "actions", "pose",
 ]);
 
 // Values to omit from URL (defaults → clean URL)
@@ -269,11 +269,14 @@ export default function App() {
           evolution_line: [],
           trainer_type: "",
           specialty: [],
+          background_pokemon: [],
           element: [],
           card_type: [],
           stage: [],
           weather: [],
           environment: [],
+          actions: [],
+          pose: [],
           sort_by: "name",
           sort_dir: "asc",
         });
@@ -283,7 +286,13 @@ export default function App() {
         .then(setFilterOptions)
         .catch((err) => console.error("Failed to load filter options:", err));
     } else {
-      setFilters((prev) => ({ ...prev, ...newFilters }));
+      const normalized = { ...newFilters };
+      for (const key of ARRAY_FILTER_KEYS) {
+        if (key in normalized && Array.isArray(normalized[key])) {
+          normalized[key] = [...new Set(normalized[key])];
+        }
+      }
+      setFilters((prev) => ({ ...prev, ...normalized }));
 
       // If only sort_by/sort_dir changed and SQL results are displayed,
       // re-sort them client-side rather than clearing them.
@@ -307,6 +316,17 @@ export default function App() {
 
   const handleShowInGrid = (cards) => setSqlCards(cards);
 
+  // Dedupe by id so each card appears once (fixes duplicate keys / stuck layout).
+  const displayedCards = useMemo(() => {
+    const raw = sqlCards || cards;
+    const seen = new Set();
+    return raw.filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [sqlCards, cards]);
+
   // ── Card selection handlers ──────────────────────────────────────
   const handleToggleCardSelection = (cardId) => {
     setSelectedCardIds((prev) => {
@@ -316,9 +336,9 @@ export default function App() {
     });
   };
 
-  const handleSelectAllVisible = () => {
-    setSelectedCardIds(new Set((sqlCards || cards).map((c) => c.id)));
-  };
+  const handleSelectAllVisible = useCallback(() => {
+    setSelectedCardIds(new Set(displayedCards.map((c) => c.id)));
+  }, [displayedCards]);
 
   const handleClearSelection = () => setSelectedCardIds(new Set());
 
@@ -628,7 +648,6 @@ export default function App() {
 
         {/* Delete confirmation dialog */}
         {showDeleteConfirm && (() => {
-          const displayedCards = sqlCards || cards;
           const nonCustomCount = displayedCards.filter(
             (c) => selectedCardIds.has(c.id) && (c._source === "TCG" || c._source === "Pocket")
           ).length;
@@ -685,7 +704,7 @@ export default function App() {
         {/* Card grid */}
         {(!error || sqlCards) && (
           <CardGrid
-            cards={sqlCards || cards}
+            cards={displayedCards}
             loading={sqlCards ? false : loading}
             onCardClick={(id) => setSelectedCardId(id)}
             selectedCardIds={selectedCardIds}
@@ -705,7 +724,6 @@ export default function App() {
 
         {/* Card detail modal */}
         {selectedCardId && (() => {
-          const displayedCards = sqlCards || cards;
           const cardIds = displayedCards.map(c => c.id);
           const currentIndex = cardIds.indexOf(selectedCardId);
           const cardSource = filters.source || displayedCards[currentIndex]?._source || "TCG";

@@ -24,7 +24,7 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
   const getLabel = (o) => (o && typeof o === "object" ? o.label : o);
 
   const toggle = (val) =>
-    onChange(values.includes(val) ? values.filter((v) => v !== val) : [...values, val]);
+    onChange(values.includes(val) ? values.filter((v) => v !== val) : [...values.filter((v) => v !== val), val]);
 
   const findLabel = (val) => {
     if (groups) {
@@ -157,7 +157,7 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
     isActive(filters.supertype) || isActive(filters.rarity) || isActive(filters.set_id) ||
     isActive(filters.region) || isActive(filters.generation) || isActive(filters.artist) ||
     isActive(filters.evolution_line) || isActive(filters.trainer_type) ||
-    isActive(filters.specialty) || isActive(filters.element) || isActive(filters.card_type) ||
+    isActive(filters.specialty) || isActive(filters.background_pokemon) || isActive(filters.element) || isActive(filters.card_type) ||
     isActive(filters.stage) || isActive(filters.weather) || isActive(filters.environment);
 
   // Build lookup maps for chip labels.
@@ -191,6 +191,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
   for (const v of filters.specialty || []) {
     activeChips.push({ key: `specialty-${v}`, label: v, onRemove: () => onChange({ specialty: (filters.specialty || []).filter((x) => x !== v) }) });
   }
+  for (const v of filters.background_pokemon || []) {
+    const label = v.charAt(0).toUpperCase() + v.slice(1);
+    activeChips.push({ key: `bgpkmn-${v}`, label: `BG: ${label}`, onRemove: () => onChange({ background_pokemon: (filters.background_pokemon || []).filter((x) => x !== v) }) });
+  }
   for (const v of filters.evolution_line || []) {
     activeChips.push({ key: `evo-${v}`, label: evoLabelByValue[v] || v, onRemove: () => onChange({ evolution_line: (filters.evolution_line || []).filter((x) => x !== v) }) });
   }
@@ -199,6 +203,12 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
   }
   for (const v of filters.environment || []) {
     activeChips.push({ key: `environment-${v}`, label: v, onRemove: () => onChange({ environment: (filters.environment || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.actions || []) {
+    activeChips.push({ key: `actions-${v}`, label: v, onRemove: () => onChange({ actions: (filters.actions || []).filter((x) => x !== v) }) });
+  }
+  for (const v of filters.pose || []) {
+    activeChips.push({ key: `pose-${v}`, label: v, onRemove: () => onChange({ pose: (filters.pose || []).filter((x) => x !== v) }) });
   }
 
   return (
@@ -250,8 +260,9 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           expanded ? "max-h-screen opacity-100 overflow-visible" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
-        {/* All filter dropdowns in one wrapped row */}
-        <div className="flex flex-wrap gap-5 items-end pb-4">
+        {/* Filter dropdowns — two rows */}
+        <div className="flex flex-col gap-4 pb-4">
+        <div className="flex flex-wrap gap-5 items-end">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
             <select
@@ -317,6 +328,23 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               />
             </div>
           )}
+        </div>
+
+        <div className="flex flex-wrap gap-5 items-end">
+          {options.background_pokemon?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Background Pokémon</label>
+              <MultiSelectDropdown
+                options={(options.background_pokemon || []).map((v) => ({
+                  value: v,
+                  label: v.charAt(0).toUpperCase() + v.slice(1),
+                }))}
+                values={filters.background_pokemon || []}
+                onChange={(v) => onChange({ background_pokemon: v })}
+                className="max-w-[200px]"
+              />
+            </div>
+          )}
 
           {options.specialties?.length > 0 && (
             <div>
@@ -373,6 +401,27 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               />
             </div>
           )}
+          {options.actions?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Action</label>
+              <MultiSelectDropdown
+                options={options.actions}
+                values={filters.actions || []}
+                onChange={(v) => onChange({ actions: v })}
+              />
+            </div>
+          )}
+          {options.poses?.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Pose</label>
+              <MultiSelectDropdown
+                options={options.poses}
+                values={filters.pose || []}
+                onChange={(v) => onChange({ pose: v })}
+              />
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
@@ -421,11 +470,14 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
               evolution_line: [],
               trainer_type: "",
               specialty: [],
+              background_pokemon: [],
               element: [],
               card_type: [],
               stage: [],
               weather: [],
               environment: [],
+              actions: [],
+              pose: [],
               sort_by: isTCG ? "pokedex" : "name",
               sort_dir: "asc",
             })

@@ -920,11 +920,14 @@ export async function fetchCards(params = {}) {
     evolution_line = [],
     trainer_type = "",
     specialty = [],
+    background_pokemon = [],
     element = [],
     card_type = [],
     stage = [],
     weather = [],
     environment = [],
+    actions = [],
+    pose = [],
     source = "TCG",
     sort_by = "name",
     sort_dir = "asc",
@@ -945,30 +948,34 @@ export async function fetchCards(params = {}) {
 
     // TCG branch (tcg_cards covers both API and custom TCG cards)
     const tcgConditions = [];
-    if (q)              tcgConditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (q)              tcgConditions.push(`(c.name ILIKE ${escapeStr("%" + q + "%")} OR c.background_pokemon ILIKE ${escapeStr("%" + q + "%")})`);
     if (supertype)      tcgConditions.push(supertypeSQL(supertype));
     { const s = inSQL(rarity, "c.rarity"); if (s) tcgConditions.push(s); }
     { const s = inSQL(set_id, "c.set_id"); if (s) tcgConditions.push(s); }
     { const s = inSQL(artist, "c.artist"); if (s) tcgConditions.push(s); }
     if (trainer_type)   tcgConditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
     if (specialty.length) tcgConditions.push(`(${specialty.map(s => `c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(s) + '%')}`).join(" OR ")})`);
+    if (background_pokemon.length) tcgConditions.push(`(${background_pokemon.map(p => `c.background_pokemon ILIKE ${escapeStr('%"' + p.toLowerCase() + '"%')}`).join(" OR ")})`);
     { const s = inSQL(region, "c.pkmn_region"); if (s) tcgConditions.push(s); }
     if (generation)     { const g = parseInt(generation); if (g > 0) tcgConditions.push(`pm.generation = ${g}`); }
     if (color)          tcgConditions.push(`pm.color = ${escapeStr(color)}`);
     { const s = inSQL(evolution_line, "pm.evolution_chain"); if (s) tcgConditions.push(s); }
     { const s = inSQL(weather, "c.weather"); if (s) tcgConditions.push(s); }
     { const s = inSQL(environment, "c.environment"); if (s) tcgConditions.push(s); }
+    if (actions.length) tcgConditions.push(`(${actions.map(a => `c.actions ILIKE ${escapeStr('%' + a + '%')}`).join(" OR ")})`);
+    if (pose.length) tcgConditions.push(`(${pose.map(p => `c.pose ILIKE ${escapeStr('%' + p + '%')}`).join(" OR ")})`);
     const tcgWhere = tcgConditions.length ? "WHERE " + tcgConditions.join(" AND ") : "";
 
     // Pocket branch: excluded if any filter with no Pocket equivalent is active
-    let pocketExcluded = !!(trainer_type || specialty.length || generation || color || rarity.length || weather.length || environment.length);
+    let pocketExcluded = !!(trainer_type || specialty.length || generation || color || rarity.length || weather.length || environment.length || actions.length || pose.length);
     const pocketConditions = [];
-    if (q)              pocketConditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (q)              pocketConditions.push(`(pc.name ILIKE ${escapeStr("%" + q + "%")} OR pc.background_pokemon ILIKE ${escapeStr("%" + q + "%")})`);
     { const s = inSQL(region, "pc.pkmn_region"); if (s) pocketConditions.push(s); }
     { const s = inSQL(evolution_line, "pc.evolution_line"); if (s) pocketConditions.push(s); }
     { const s = inSQL(artist, "pc.illustrator"); if (s) pocketConditions.push(s); }
     { const s = inSQL(set_id, "pc.set_id");      if (s) pocketConditions.push(s); }
     { const s = inSQL(element, "pc.element");    if (s) pocketConditions.push(s); }
+    if (background_pokemon.length) pocketConditions.push(`(${background_pokemon.map(p => `pc.background_pokemon ILIKE ${escapeStr('%"' + p.toLowerCase() + '"%')}`).join(" OR ")})`);
 
     if (supertype && !pocketExcluded) {
       const norm = supertype.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1030,13 +1037,14 @@ export async function fetchCards(params = {}) {
   // ── Pocket source ──────────────────────────────────────────────────
   if (source === "Pocket") {
     const conditions = [];
-    if (q) conditions.push(`pc.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (q) conditions.push(`(pc.name ILIKE ${escapeStr("%" + q + "%")} OR pc.background_pokemon ILIKE ${escapeStr("%" + q + "%")})`);
     { const s = inSQL(rarity, "pc.rarity"); if (s) conditions.push(s); }
     { const s = inSQL(set_id, "pc.set_id"); if (s) conditions.push(s); }
     { const s = inSQL(card_type, "pc.card_type"); if (s) conditions.push(s); }
     { const s = inSQL(element, "pc.element"); if (s) conditions.push(s); }
     { const s = inSQL(stage, "pc.stage"); if (s) conditions.push(s); }
     { const s = inSQL(artist, "pc.illustrator"); if (s) conditions.push(s); }
+    if (background_pokemon.length) conditions.push(`(${background_pokemon.map(p => `pc.background_pokemon ILIKE ${escapeStr('%"' + p.toLowerCase() + '"%')}`).join(" OR ")})`);
 
     const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
@@ -1107,13 +1115,16 @@ export async function fetchCards(params = {}) {
   // ── Custom Cards (all is_custom = TRUE cards) ──────────────────────
   if (source === "Custom") {
     const conditions = ["c.is_custom = TRUE"];
-    if (q)         conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+    if (q)         conditions.push(`(c.name ILIKE ${escapeStr("%" + q + "%")} OR c.background_pokemon ILIKE ${escapeStr("%" + q + "%")})`);
     if (supertype) conditions.push(supertypeSQL(supertype));
     { const s = inSQL(artist, "c.artist"); if (s) conditions.push(s); }
     { const s = inSQL(rarity, "c.rarity"); if (s) conditions.push(s); }
     { const s = inSQL(set_id, "c.set_id"); if (s) conditions.push(s); }
     { const s = inSQL(weather, "c.weather"); if (s) conditions.push(s); }
     { const s = inSQL(environment, "c.environment"); if (s) conditions.push(s); }
+    if (actions.length) conditions.push(`(${actions.map(a => `c.actions ILIKE ${escapeStr('%' + a + '%')}`).join(" OR ")})`);
+    if (pose.length) conditions.push(`(${pose.map(p => `c.pose ILIKE ${escapeStr('%' + p + '%')}`).join(" OR ")})`);
+    if (background_pokemon.length) conditions.push(`(${background_pokemon.map(p => `c.background_pokemon ILIKE ${escapeStr('%"' + p.toLowerCase() + '"%')}`).join(" OR ")})`);
     const where = "WHERE " + conditions.join(" AND ");
 
     const countResult = await conn.query(
@@ -1162,19 +1173,22 @@ export async function fetchCards(params = {}) {
   } else {
     conditions.push(`c.source = ${escapeStr(source)}`);
   }
-  if (q)            conditions.push(`c.name ILIKE ${escapeStr("%" + q + "%")}`);
+  if (q)            conditions.push(`(c.name ILIKE ${escapeStr("%" + q + "%")} OR c.background_pokemon ILIKE ${escapeStr("%" + q + "%")})`);
   if (supertype)    conditions.push(supertypeSQL(supertype));
   { const s = inSQL(rarity, "c.rarity"); if (s) conditions.push(s); }
   { const s = inSQL(set_id, "c.set_id"); if (s) conditions.push(s); }
   { const s = inSQL(artist, "c.artist"); if (s) conditions.push(s); }
   if (trainer_type) conditions.push(`c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(trainer_type) + '%')}`);
   if (specialty.length) conditions.push(`(${specialty.map(s => `c.subtypes ILIKE ${escapeStr('%' + encodeUnicode(s) + '%')}`).join(" OR ")})`);
+  if (background_pokemon.length) conditions.push(`(${background_pokemon.map(p => `c.background_pokemon ILIKE ${escapeStr('%"' + p.toLowerCase() + '"%')}`).join(" OR ")})`);
   { const s = inSQL(region, "c.pkmn_region"); if (s) conditions.push(s); }
   if (generation)   { const genInt = parseInt(generation) || 0; if (genInt > 0) conditions.push(`pm.generation = ${genInt}`); }
   if (color)        conditions.push(`pm.color = ${escapeStr(color)}`);
   { const s = inSQL(evolution_line, "pm.evolution_chain"); if (s) conditions.push(s); }
   { const s = inSQL(weather, "c.weather"); if (s) conditions.push(s); }
   { const s = inSQL(environment, "c.environment"); if (s) conditions.push(s); }
+  if (actions.length) conditions.push(`(${actions.map(a => `c.actions ILIKE ${escapeStr('%' + a + '%')}`).join(" OR ")})`);
+  if (pose.length) conditions.push(`(${pose.map(p => `c.pose ILIKE ${escapeStr('%' + p + '%')}`).join(" OR ")})`);
 
   const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
 
@@ -1469,7 +1483,7 @@ function supertypeSQL(supertype) {
 export async function fetchFilterOptions(source = "TCG") {
   // ── All sources ────────────────────────────────────────────────────
   if (source === "") {
-    const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult, weathersResult, environmentsResult] =
+    const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult, weathersResult, environmentsResult, actionsResult, posesResult, bgPokemonResult] =
       await Promise.all([
         conn.query(
           "SELECT DISTINCT supertype FROM tcg_cards WHERE supertype != '' ORDER BY supertype"
@@ -1531,6 +1545,21 @@ export async function fetchFilterOptions(source = "TCG") {
         conn.query(
           "SELECT DISTINCT environment FROM tcg_cards WHERE environment IS NOT NULL AND environment != '' ORDER BY environment"
         ),
+        conn.query(
+          "SELECT DISTINCT TRIM(unnest(string_split(actions, ','))) AS val FROM tcg_cards WHERE actions IS NOT NULL AND actions != '' ORDER BY val"
+        ),
+        conn.query(
+          "SELECT DISTINCT TRIM(unnest(string_split(pose, ','))) AS val FROM tcg_cards WHERE pose IS NOT NULL AND pose != '' ORDER BY val"
+        ),
+        conn.query(`
+          SELECT DISTINCT TRIM(val) AS val FROM (
+            SELECT unnest(string_split(REPLACE(REPLACE(background_pokemon, '["', ''), '"]', ''), '","')) AS val
+            FROM tcg_cards WHERE background_pokemon IS NOT NULL AND background_pokemon != '' AND background_pokemon != '[]'
+            UNION
+            SELECT unnest(string_split(REPLACE(REPLACE(background_pokemon, '["', ''), '"]', ''), '","')) AS val
+            FROM pocket_cards WHERE background_pokemon IS NOT NULL AND background_pokemon != '' AND background_pokemon != '[]'
+          ) WHERE TRIM(val) != '' ORDER BY val
+        `),
       ]);
 
     const supertypes = mergeSupertypes(stResult.toArray().map((r) => r.supertype));
@@ -1553,16 +1582,22 @@ export async function fetchFilterOptions(source = "TCG") {
     const weathers = [...new Set([...WEATHER_OPTIONS, ...dbWeathers])];
     const dbEnvironments = environmentsResult.toArray().map((r) => r.environment).filter(Boolean);
     const environments = [...new Set([...ENVIRONMENT_OPTIONS, ...dbEnvironments])];
+    const dbActions = actionsResult.toArray().map((r) => r.val).filter(Boolean);
+    const actions = [...new Set([...ACTIONS_OPTIONS, ...dbActions])];
+    const dbPoses = posesResult.toArray().map((r) => r.val).filter(Boolean);
+    const poses = [...new Set([...POSE_OPTIONS, ...dbPoses])];
+    const background_pokemon = bgPokemonResult.toArray().map((r) => r.val).filter(Boolean);
 
     return {
       supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties,
-      card_types: [], elements: [], stages: [], weathers, environments,
+      background_pokemon,
+      card_types: [], elements: [], stages: [], weathers, environments, actions, poses,
     };
   }
 
   // ── Pocket source ──────────────────────────────────────────────────
   if (source === "Pocket") {
-    const [cardTypesResult, raritiesResult, setsResult, elementsResult, stagesResult] =
+    const [cardTypesResult, raritiesResult, setsResult, elementsResult, stagesResult, bgPokemonResult] =
       await Promise.all([
         conn.query(
           "SELECT DISTINCT card_type FROM pocket_cards WHERE card_type IS NOT NULL AND card_type != '' ORDER BY card_type"
@@ -1587,6 +1622,12 @@ export async function fetchFilterOptions(source = "TCG") {
         conn.query(
           "SELECT DISTINCT stage FROM pocket_cards WHERE stage IS NOT NULL AND stage != '' ORDER BY stage"
         ),
+        conn.query(`
+          SELECT DISTINCT TRIM(val) AS val FROM (
+            SELECT unnest(string_split(REPLACE(REPLACE(background_pokemon, '["', ''), '"]', ''), '","')) AS val
+            FROM pocket_cards WHERE background_pokemon IS NOT NULL AND background_pokemon != '' AND background_pokemon != '[]'
+          ) WHERE TRIM(val) != '' ORDER BY val
+        `),
       ]);
 
     return {
@@ -1600,18 +1641,21 @@ export async function fetchFilterOptions(source = "TCG") {
       evolution_lines: [],
       trainer_types: [],
       specialties: [],
+      background_pokemon: bgPokemonResult.toArray().map((r) => r.val).filter(Boolean),
       // Pocket-specific
       card_types: cardTypesResult.toArray().map((r) => r.card_type),
       elements: elementsResult.toArray().map((r) => r.element),
       stages: stagesResult.toArray().map((r) => r.stage),
       weathers: [],
       environments: [],
+      actions: [],
+      poses: [],
     };
   }
 
   // ── Custom Cards (is_custom = TRUE) ────────────────────────────────
   if (source === "Custom") {
-    const [stResult, raritiesResult, setsResult, artistsResult] = await Promise.all([
+    const [stResult, raritiesResult, setsResult, artistsResult, bgPokemonResult] = await Promise.all([
       conn.query(
         `SELECT DISTINCT supertype FROM tcg_cards WHERE is_custom = TRUE AND supertype IS NOT NULL AND supertype != '' ORDER BY supertype`
       ),
@@ -1624,6 +1668,12 @@ export async function fetchFilterOptions(source = "TCG") {
       conn.query(
         `SELECT DISTINCT artist FROM tcg_cards WHERE is_custom = TRUE AND artist IS NOT NULL AND artist != '' ORDER BY artist`
       ),
+      conn.query(`
+        SELECT DISTINCT TRIM(val) AS val FROM (
+          SELECT unnest(string_split(REPLACE(REPLACE(background_pokemon, '["', ''), '"]', ''), '","')) AS val
+          FROM tcg_cards WHERE is_custom = TRUE AND background_pokemon IS NOT NULL AND background_pokemon != '' AND background_pokemon != '[]'
+        ) WHERE TRIM(val) != '' ORDER BY val
+      `),
     ]);
 
     return {
@@ -1637,11 +1687,14 @@ export async function fetchFilterOptions(source = "TCG") {
       evolution_lines: [],
       trainer_types: [],
       specialties: [],
+      background_pokemon: bgPokemonResult.toArray().map((r) => r.val).filter(Boolean),
       card_types: [],
       elements: [],
       stages: [],
       weathers: [],
       environments: [],
+      actions: [],
+      poses: [],
     };
   }
 
@@ -1651,7 +1704,7 @@ export async function fetchFilterOptions(source = "TCG") {
     ? `(source = 'TCG' OR (is_custom = TRUE AND source != 'Pocket'))`
     : `source = ${escapeStr(source)}`;
 
-  const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult, weathersResult, environmentsResult] =
+  const [stResult, raritiesResult, setsResult, regionsResult, generationsResult, colorsResult, artistsResult, evolutionLinesResult, trainerTypesResult, specialtiesResult, weathersResult, environmentsResult, actionsResult, posesResult, bgPokemonResult] =
     await Promise.all([
       conn.query(
         `SELECT DISTINCT supertype FROM tcg_cards WHERE ${srcFilter} AND supertype != '' ORDER BY supertype`
@@ -1703,6 +1756,18 @@ export async function fetchFilterOptions(source = "TCG") {
       conn.query(
         `SELECT DISTINCT environment FROM tcg_cards WHERE ${srcFilter} AND environment IS NOT NULL AND environment != '' ORDER BY environment`
       ),
+      conn.query(
+        `SELECT DISTINCT TRIM(unnest(string_split(actions, ','))) AS val FROM tcg_cards WHERE ${srcFilter} AND actions IS NOT NULL AND actions != '' ORDER BY val`
+      ),
+      conn.query(
+        `SELECT DISTINCT TRIM(unnest(string_split(pose, ','))) AS val FROM tcg_cards WHERE ${srcFilter} AND pose IS NOT NULL AND pose != '' ORDER BY val`
+      ),
+      conn.query(`
+        SELECT DISTINCT TRIM(val) AS val FROM (
+          SELECT unnest(string_split(REPLACE(REPLACE(background_pokemon, '["', ''), '"]', ''), '","')) AS val
+          FROM tcg_cards WHERE ${srcFilter} AND background_pokemon IS NOT NULL AND background_pokemon != '' AND background_pokemon != '[]'
+        ) WHERE TRIM(val) != '' ORDER BY val
+      `),
     ]);
 
   const supertypes = mergeSupertypes(stResult.toArray().map((r) => r.supertype));
@@ -1734,11 +1799,17 @@ export async function fetchFilterOptions(source = "TCG") {
   const weathers = [...new Set([...WEATHER_OPTIONS, ...dbWeathers])];
   const dbEnvironments = environmentsResult.toArray().map((r) => r.environment).filter(Boolean);
   const environments = [...new Set([...ENVIRONMENT_OPTIONS, ...dbEnvironments])];
+  const dbActions = actionsResult.toArray().map((r) => r.val).filter(Boolean);
+  const actions = [...new Set([...ACTIONS_OPTIONS, ...dbActions])];
+  const dbPoses = posesResult.toArray().map((r) => r.val).filter(Boolean);
+  const poses = [...new Set([...POSE_OPTIONS, ...dbPoses])];
+  const background_pokemon = bgPokemonResult.toArray().map((r) => r.val).filter(Boolean);
 
   return {
     supertypes, rarities, sets, regions, generations, colors, artists, evolution_lines, trainer_types, specialties,
+    background_pokemon,
     // Empty Pocket-only fields
-    card_types: [], elements: [], stages: [], weathers, environments,
+    card_types: [], elements: [], stages: [], weathers, environments, actions, poses,
   };
 }
 
