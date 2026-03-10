@@ -1257,7 +1257,10 @@
     ],
     "trainer_card_type": "Supporter",
     "pose": "tongue out",
-    "actions": "licking"
+    "actions": "licking",
+    "additional_character_theme": [
+      "unexpected partnerships"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
