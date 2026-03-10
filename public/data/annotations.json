@@ -1285,6 +1285,10 @@
       "jigglypuff"
     ]
   },
+  "base3-62": {
+    "unique_id": "base3-62",
+    "trainer_card_type": "Item"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
