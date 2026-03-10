@@ -916,7 +916,6 @@
     "shape": "armor",
     "location": "Ilex Forest Area",
     "art_style": [
-      "Polygon Graphics",
       "2D"
     ]
   },
@@ -928,6 +927,23 @@
     "location": "Trophy Garden Area",
     "art_style": [
       "2D"
+    ]
+  },
+  "base2-61": {
+    "unique_id": "base2-61",
+    "evolution_line": "rhyhorn → rhydon → rhyperior",
+    "color": "gray",
+    "shape": "quadruped",
+    "location": "Sinnoh Victory Road 1F"
+  },
+  "base2-62": {
+    "unique_id": "base2-62",
+    "evolution_line": "spearow → fearow",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Sinnoh Route 225 Area",
+    "background_details": [
+      "That Ain't Right"
     ]
   },
   "base4-41": {
