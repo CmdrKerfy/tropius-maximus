@@ -185,7 +185,8 @@
     "shape": "fish",
     "location": "Canalave City Area",
     "background_details": [],
-    "card_locations": "Underwater"
+    "card_locations": "Underwater",
+    "actions": "fishing"
   },
   "base1-39": {
     "unique_id": "base1-39",
