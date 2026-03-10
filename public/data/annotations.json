@@ -2504,10 +2504,19 @@
       "That Ain't Right",
       "boat",
       "fishing pole",
-      "clouds"
+      "clouds",
+      "lake"
     ],
     "actions": "sleeping, fishing",
     "environment": ""
+  },
+  "base5-68": {
+    "unique_id": "base5-68",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Seafoam Islands 1F",
+    "card_locations": "under"
   },
   "basep-13": {
     "unique_id": "basep-13",
