@@ -564,6 +564,13 @@
     "color": "red",
     "shape": "quadruped"
   },
+  "base2-5": {
+    "unique_id": "base2-5",
+    "evolution_line": "kangaskhan",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Rock Tunnel 1F"
+  },
   "base2-6": {
     "unique_id": "base2-6",
     "evolution_line": "mime-jr → mr-mime → mr-rime",
@@ -805,7 +812,8 @@
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
     "background_details": [
-      "seeds"
+      "seeds",
+      "dandelions"
     ]
   },
   "base2-50": {
@@ -1393,6 +1401,12 @@
     "color": "yellow",
     "shape": "armor",
     "location": "Sinnoh Route 224 Area"
+  },
+  "dp4-98": {
+    "unique_id": "dp4-98",
+    "background_pokemon": [
+      "lopunny"
+    ]
   },
   "ecard1-64": {
     "unique_id": "ecard1-64",
