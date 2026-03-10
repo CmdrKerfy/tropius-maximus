@@ -2113,6 +2113,14 @@
     "location": "Kanto Route 12 Area",
     "camera_angle": "backshot"
   },
+  "base5-9": {
+    "unique_id": "base5-9",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Kanto Route 11 Area",
+    "actions": "Multiplying"
+  },
   "base5-12": {
     "unique_id": "base5-12",
     "evolution_line": "slowpoke → slowbro → slowking",
@@ -2126,7 +2134,7 @@
       "Rocket Grunt"
     ],
     "rival_group": "Team Rocket",
-    "camera_angle": "profi"
+    "camera_angle": "Profile"
   },
   "basep-13": {
     "unique_id": "basep-13",
