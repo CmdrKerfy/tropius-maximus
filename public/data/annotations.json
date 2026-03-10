@@ -30,7 +30,8 @@
     "background_details": [
       "aurora"
     ],
-    "weather": "Aurora Borealis"
+    "weather": "Aurora Borealis",
+    "actions": "swi"
   },
   "base1-24": {
     "unique_id": "base1-24",
