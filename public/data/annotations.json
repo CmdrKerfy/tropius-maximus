@@ -423,6 +423,9 @@
     "pokeball": "Pokeball",
     "background_pokemon": [
       "weedle"
+    ],
+    "art_style": [
+      "Polygon Graphics"
     ]
   },
   "base1-91": {
