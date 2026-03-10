@@ -2155,7 +2155,10 @@
   },
   "base5-16": {
     "unique_id": "base5-16",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "background_humans": [
+      "Trainer"
+    ]
   },
   "base5-18": {
     "unique_id": "base5-18",
