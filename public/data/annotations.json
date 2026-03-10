@@ -2308,7 +2308,8 @@
     "color": "gray",
     "shape": "humanoid",
     "location": "Mt Coronet 2F",
-    "emotion": "Angry"
+    "emotion": "Angry",
+    "actions": "Showing off my Talent"
   },
   "basep-13": {
     "unique_id": "basep-13",
