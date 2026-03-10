@@ -1146,6 +1146,24 @@
       "toxic"
     ]
   },
+  "base3-47": {
+    "unique_id": "base3-47",
+    "evolution_line": "geodude → graveler → golem",
+    "color": "brown",
+    "shape": "arms",
+    "location": "Oreburgh Mine 1F",
+    "actions": "attacking the cameraman"
+  },
+  "base3-48": {
+    "unique_id": "base3-48",
+    "evolution_line": "grimer → muk",
+    "color": "purple",
+    "shape": "arms",
+    "location": "Sinnoh Route 212 East Towards Pastoria City",
+    "background_details": [
+      "barrel"
+    ]
+  },
   "base3-49": {
     "unique_id": "base3-49",
     "evolution_line": "horsea → seadra → kingdra",
@@ -1199,7 +1217,8 @@
     "shape": "quadruped",
     "location": "Sinnoh Route 205 East Towards Eterna City",
     "art_style": [
-      "2D"
+      "2D",
+      "Hand Drawn"
     ]
   },
   "base3-56": {
