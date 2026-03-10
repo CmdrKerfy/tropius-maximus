@@ -188,7 +188,8 @@
       "fishing pole"
     ],
     "card_locations": "Underwater",
-    "actions": "fishing"
+    "actions": "fishing",
+    "pose": "mouth agape"
   },
   "base1-39": {
     "unique_id": "base1-39",
