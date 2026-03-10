@@ -101,7 +101,8 @@
     "location": "Sinnoh Route 222 Area",
     "background_details": [
       "purgatory"
-    ]
+    ],
+    "weather": "light"
   },
   "base1-21": {
     "unique_id": "base1-21",
