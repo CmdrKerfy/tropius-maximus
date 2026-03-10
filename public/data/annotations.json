@@ -510,6 +510,16 @@
   },
   "base1-93": {
     "unique_id": "base1-93",
+    "trainer_card_type": "Item",
+    "background_pokemon": [
+      "weedle"
+    ],
+    "art_style": [
+      "blurry"
+    ]
+  },
+  "base1-94": {
+    "unique_id": "base1-94",
     "trainer_card_type": "Item"
   },
   "base2-36": {
