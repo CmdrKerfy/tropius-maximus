@@ -2404,7 +2404,8 @@
     "color": "yellow",
     "shape": "humanoid",
     "location": "Sinnoh Route 215 Area",
-    "perspective": "symmetrical"
+    "perspective": "symmetrical",
+    "camera_angle": "Symmetrical"
   },
   "basep-13": {
     "unique_id": "basep-13",
