@@ -2139,6 +2139,39 @@
     "rival_group": "Team Rocket",
     "camera_angle": "Profile"
   },
+  "base5-18": {
+    "unique_id": "base5-18",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "humanoid",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "base5-19": {
+    "unique_id": "base5-19",
+    "evolution_line": "ekans → arbok",
+    "color": "purple",
+    "shape": "squiggle",
+    "location": "Great Marsh Area 1",
+    "pose": "mouth agape, tongue out"
+  },
+  "base5-21": {
+    "unique_id": "base5-21",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "camera_angle": "backshot"
+  },
+  "base5-23": {
+    "unique_id": "base5-23",
+    "evolution_line": "diglett → dugtrio",
+    "color": "brown",
+    "shape": "heads",
+    "location": "Sinnoh Route 228 Area",
+    "actions": "property damage"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
