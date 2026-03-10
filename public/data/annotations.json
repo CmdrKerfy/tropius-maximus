@@ -2606,7 +2606,12 @@
     ],
     "pose": "welcome to my crib",
     "actions": "Dangerous Stunts",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "rival_group": "Team Rocket"
+  },
+  "base5-76": {
+    "unique_id": "base5-76",
+    "trainer_card_type": "Supporter"
   },
   "base5-83": {
     "unique_id": "base5-83",
