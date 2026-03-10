@@ -1061,6 +1061,48 @@
       "brick wall"
     ]
   },
+  "base3-35": {
+    "unique_id": "base3-35",
+    "evolution_line": "psyduck → golduck",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "pose": "Come At Me Bro"
+  },
+  "base3-36": {
+    "unique_id": "base3-36",
+    "evolution_line": "geodude → graveler → golem",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Johto Safari Zone Zone Peak",
+    "actions": "keep rollin"
+  },
+  "base3-37": {
+    "unique_id": "base3-37",
+    "evolution_line": "geodude → graveler → golem",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Mt Coronet 2F",
+    "pose": "Come At Me Bro"
+  },
+  "base3-38": {
+    "unique_id": "base3-38",
+    "evolution_line": "krabby → kingler",
+    "color": "red",
+    "shape": "armor",
+    "location": "Cherrygrove City Area",
+    "actions": "attacking the cameraman"
+  },
+  "base3-44": {
+    "unique_id": "base3-44",
+    "evolution_line": "tentacool → tentacruel",
+    "color": "blue",
+    "shape": "tentacles",
+    "location": "Canalave City Area",
+    "background_details": [
+      "electricity"
+    ]
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
