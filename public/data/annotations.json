@@ -827,7 +827,10 @@
     "color": "brown",
     "shape": "quadruped",
     "location": "Pallet Town Area",
-    "actions": "We Have Liftoff"
+    "actions": "We Have Liftoff",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
