@@ -2358,7 +2358,8 @@
     "shape": "upright",
     "location": "Sinnoh Route 203 Area",
     "background_details": [
-      "buildings"
+      "buildings",
+      "rooftop"
     ]
   },
   "basep-13": {
