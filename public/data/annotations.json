@@ -3156,9 +3156,7 @@
   "custom-xyp-JP279": {
     "weather_environment": "Indoors",
     "unique_id": "custom-xyp-JP279",
-    "actions": [
-      "Jumping"
-    ]
+    "actions": []
   },
   "custom-xyp-JP289": {
     "weather_environment": "Sunny"
