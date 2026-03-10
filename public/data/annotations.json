@@ -29,7 +29,8 @@
     "location": "Mt Coronet 4F",
     "background_details": [
       "aurora"
-    ]
+    ],
+    "weather": "aur"
   },
   "base1-24": {
     "unique_id": "base1-24",
