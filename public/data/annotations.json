@@ -2637,6 +2637,10 @@
     ],
     "actions": "polluting"
   },
+  "base5-79": {
+    "unique_id": "base5-79",
+    "rival_group": "Team Rocket"
+  },
   "base5-83": {
     "unique_id": "base5-83",
     "evolution_line": "pichu → pikachu → raichu",
