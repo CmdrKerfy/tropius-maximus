@@ -2506,7 +2506,7 @@
       "fishing pole"
     ],
     "actions": "sleeping, fishing",
-    "environment": "sun"
+    "environment": ""
   },
   "basep-13": {
     "unique_id": "basep-13",
