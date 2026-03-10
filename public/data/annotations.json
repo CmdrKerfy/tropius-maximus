@@ -737,6 +737,14 @@
       "patterned background"
     ]
   },
+  "base2-45": {
+    "unique_id": "base2-45",
+    "evolution_line": "rhyhorn → rhydon → rhyperior",
+    "color": "gray",
+    "shape": "upright",
+    "location": "Sinnoh Victory Road 1F",
+    "actions": "attacking the cameraman"
+  },
   "base2-46": {
     "unique_id": "base2-46",
     "evolution_line": "goldeen → seaking",
