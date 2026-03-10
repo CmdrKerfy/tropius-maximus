@@ -2360,7 +2360,8 @@
     "background_details": [
       "buildings",
       "rooftop"
-    ]
+    ],
+    "card_locations": "City"
   },
   "basep-13": {
     "unique_id": "basep-13",
