@@ -2558,7 +2558,8 @@
   },
   "base5-71": {
     "unique_id": "base5-71",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "rival_group": "Team Rocket"
   },
   "base5-72": {
     "unique_id": "base5-72",
@@ -2639,7 +2640,23 @@
   },
   "base5-79": {
     "unique_id": "base5-79",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "background_pokemon": [
+      "snorlax"
+    ],
+    "actions": "Sleeping"
+  },
+  "base5-80": {
+    "unique_id": "base5-80",
+    "energy_type": "Special"
+  },
+  "base5-81": {
+    "unique_id": "base5-81",
+    "energy_type": "Special"
+  },
+  "base5-82": {
+    "unique_id": "base5-82",
+    "energy_type": "Special"
   },
   "base5-83": {
     "unique_id": "base5-83",
