@@ -1164,7 +1164,10 @@
     "color": "yellow",
     "shape": "upright",
     "location": "Eterna City Area",
-    "emotion": "confused"
+    "emotion": "confused",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "base4-41": {
     "unique_id": "base4-41",
