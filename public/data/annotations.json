@@ -184,9 +184,7 @@
     "color": "red",
     "shape": "fish",
     "location": "Canalave City Area",
-    "background_details": [
-      "fish"
-    ]
+    "background_details": []
   },
   "base1-39": {
     "unique_id": "base1-39",
