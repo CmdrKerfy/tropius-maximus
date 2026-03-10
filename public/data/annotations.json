@@ -2302,6 +2302,14 @@
     "location": "Sinnoh Victory Road 2F",
     "actions": "Running"
   },
+  "base5-40": {
+    "unique_id": "base5-40",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid",
+    "location": "Mt Coronet 2F",
+    "emotion": "Angry"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
