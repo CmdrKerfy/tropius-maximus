@@ -2611,7 +2611,10 @@
   },
   "base5-76": {
     "unique_id": "base5-76",
-    "trainer_card_type": "Supporter"
+    "trainer_card_type": "Supporter",
+    "background_pokemon": [
+      "gengar"
+    ]
   },
   "base5-83": {
     "unique_id": "base5-83",
