@@ -2139,6 +2139,10 @@
     "rival_group": "Team Rocket",
     "camera_angle": "Profile"
   },
+  "base5-15": {
+    "unique_id": "base5-15",
+    "rival_group": "Team Rocket"
+  },
   "base5-18": {
     "unique_id": "base5-18",
     "evolution_line": "abra → kadabra → alakazam",
@@ -2539,7 +2543,15 @@
     "environment": "Night",
     "background_details": [
       "moon"
-    ]
+    ],
+    "pose": "mouth agape"
+  },
+  "base5-83": {
+    "unique_id": "base5-83",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Cerulean Cave 1F"
   },
   "basep-13": {
     "unique_id": "basep-13",
