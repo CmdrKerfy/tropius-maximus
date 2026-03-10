@@ -2570,7 +2570,10 @@
   },
   "base5-73": {
     "unique_id": "base5-73",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "background_humans": [
+      "Trainer"
+    ]
   },
   "base5-83": {
     "unique_id": "base5-83",
