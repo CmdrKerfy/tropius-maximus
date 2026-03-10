@@ -2556,6 +2556,10 @@
     ],
     "pose": "mouth agape"
   },
+  "base5-72": {
+    "unique_id": "base5-72",
+    "rival_group": "Team Rocket"
+  },
   "base5-83": {
     "unique_id": "base5-83",
     "evolution_line": "pichu → pikachu → raichu",
