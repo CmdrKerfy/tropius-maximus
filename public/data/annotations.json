@@ -31,7 +31,8 @@
       "aurora"
     ],
     "weather": "Aurora Borealis",
-    "actions": "Swimming"
+    "actions": "Swimming",
+    "camera_angle": "Water Level"
   },
   "base1-24": {
     "unique_id": "base1-24",
