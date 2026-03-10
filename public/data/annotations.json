@@ -2103,7 +2103,7 @@
     "color": "red",
     "shape": "upright",
     "location": "Kanto Route 12 Area",
-    "camera_angle": "bac"
+    "camera_angle": "backshot"
   },
   "basep-13": {
     "unique_id": "basep-13",
