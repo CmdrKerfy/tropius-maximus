@@ -2398,6 +2398,14 @@
     "pose": "curled up",
     "actions": "watching plants"
   },
+  "base5-54": {
+    "unique_id": "base5-54",
+    "evolution_line": "drowzee → hypno",
+    "color": "yellow",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 215 Area",
+    "perspective": "symmetrical"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
