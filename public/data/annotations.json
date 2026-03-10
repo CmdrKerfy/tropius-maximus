@@ -2536,7 +2536,10 @@
     "color": "purple",
     "shape": "wings",
     "location": "Oreburgh Mine 1F",
-    "environment": "Night"
+    "environment": "Night",
+    "background_details": [
+      "moon"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
