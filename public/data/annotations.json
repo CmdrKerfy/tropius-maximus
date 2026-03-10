@@ -2119,7 +2119,10 @@
     "color": "yellow",
     "shape": "humanoid",
     "location": "Kanto Route 11 Area",
-    "actions": "Multiplying"
+    "actions": "Multiplying",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base5-12": {
     "unique_id": "base5-12",
