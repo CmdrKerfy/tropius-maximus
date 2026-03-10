@@ -665,7 +665,10 @@
     "actions": "chillin like a villain",
     "weather": "",
     "environment": "Sunset",
-    "card_locations": "Beach"
+    "card_locations": "Beach",
+    "background_details": [
+      "That Ain't Right"
+    ]
   },
   "base2-36": {
     "unique_id": "base2-36",
