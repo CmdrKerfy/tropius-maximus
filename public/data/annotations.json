@@ -412,7 +412,10 @@
     "background_pokemon": [
       "farfetchd"
     ],
-    "items": "Leek"
+    "items": "Leek",
+    "background_details": [
+      "patterned background"
+    ]
   },
   "base1-91": {
     "unique_id": "base1-91",
