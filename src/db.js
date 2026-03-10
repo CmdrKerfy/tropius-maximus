@@ -1355,6 +1355,7 @@ export async function fetchCard(id, source = "TCG") {
   }
 
   // ── TCG + custom sources (all non-Pocket sources route to tcg_cards) ─
+  // Include promoted annotation columns so custom card attributes (pose, actions, etc.) are returned
   const result = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.evolves_from,
            c.rarity, c.special_rarity, c.alt_name, c.artist,
@@ -1362,7 +1363,18 @@ export async function fetchCard(id, source = "TCG") {
            c.regulation_mark, c.image_small, c.image_large,
            c.raw_data, c.annotations, c.prices,
            c.source, c.is_custom,
-           pm.evolution_chain, pm.genus, pm.shape, pm.color AS pm_color, pm.encounter_location
+           c.art_style, c.main_character, c.background_pokemon, c.background_humans,
+           c.additional_characters, c.background_details, c.card_subcategory,
+           c.evolution_items, c.berries, c.holiday_theme, c.multi_card, c.trainer_card_subgroup,
+           c.video_type, c.video_region, c.video_location,
+           c.emotion, c.pose, c.camera_angle, c.items, c.actions, c.perspective,
+           c.weather, c.environment, c.storytelling, c.card_locations, c.pkmn_region, c.card_region,
+           c.primary_color, c.secondary_color, COALESCE(c.shape, pm.shape) AS shape,
+           c.video_game, c.video_game_location, c.video_url, c.video_title, c.unique_id, c.notes,
+           c.evolution_line, c.held_item, c.pokeball, c.trainer_card_type, c.stamp, c.card_border,
+           c.energy_type, c.rival_group, c.image_override, c.top_10_themes, c.wtpc_episode,
+           c.video_appearance, c.shorts_appearance, c.region_appearance, c.thumbnail_used, c.owned, c.pocket_exclusive,
+           pm.evolution_chain, pm.genus, pm.color AS pm_color, pm.encounter_location
     FROM tcg_cards c
     LEFT JOIN pokemon_metadata pm
       ON pm.pokedex_number = TRY_CAST(
