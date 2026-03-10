@@ -947,6 +947,16 @@
     ],
     "actions": "attacking"
   },
+  "base2-63": {
+    "unique_id": "base2-63",
+    "evolution_line": "venonat → venomoth",
+    "color": "purple",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 229 Area",
+    "background_details": [
+      "Flower Power"
+    ]
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
