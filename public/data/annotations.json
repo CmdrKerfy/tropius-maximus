@@ -2384,7 +2384,10 @@
       "car",
       "buildings"
     ],
-    "perspective": "Gigantic"
+    "perspective": "Gigantic",
+    "art_style": [
+      "2D"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
