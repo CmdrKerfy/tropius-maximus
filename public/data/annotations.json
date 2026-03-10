@@ -849,7 +849,8 @@
     "color": "red",
     "shape": "fish",
     "location": "Sendoff Spring Area",
-    "pose": "sexy and I know it"
+    "pose": "sexy and I know it",
+    "actions": "We Have Liftoff"
   },
   "base4-41": {
     "unique_id": "base4-41",
