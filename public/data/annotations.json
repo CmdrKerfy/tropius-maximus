@@ -873,7 +873,18 @@
     "color": "brown",
     "shape": "upright",
     "location": "Sinnoh Route 225 Area",
-    "actions": "Swinging, attacking the cameraman"
+    "actions": "Swinging, attacking the cameraman",
+    "background_details": [
+      "Trees"
+    ]
+  },
+  "base2-56": {
+    "unique_id": "base2-56",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area",
+    "items": "tre"
   },
   "base4-41": {
     "unique_id": "base4-41",
