@@ -178,6 +178,16 @@
     "location": "Mt Coronet 2F",
     "pose": "Flexing"
   },
+  "base1-35": {
+    "unique_id": "base1-35",
+    "evolution_line": "magikarp → gyarados",
+    "color": "red",
+    "shape": "fish",
+    "location": "Canalave City Area",
+    "background_details": [
+      "fish"
+    ]
+  },
   "base1-39": {
     "unique_id": "base1-39",
     "evolution_line": "porygon → porygon2 → porygon-z",
@@ -186,6 +196,9 @@
     "location": "Kanto Route 7 Area",
     "art_style": [
       "Polygon Graphics"
+    ],
+    "background_details": [
+      "Trees"
     ]
   },
   "base1-40": {
