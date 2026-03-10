@@ -2370,7 +2370,8 @@
     "color": "red",
     "shape": "upright",
     "location": "Pallet Town Area",
-    "actions": "Pyros"
+    "actions": "Pyros",
+    "camera_angle": "profile"
   },
   "basep-13": {
     "unique_id": "basep-13",
