@@ -897,6 +897,14 @@
     "location": "Sinnoh Route 201 Area",
     "pose": "mouth agape"
   },
+  "base2-58": {
+    "unique_id": "base2-58",
+    "evolution_line": "oddish → gloom → vileplume → bellossom",
+    "color": "blue",
+    "shape": "legs",
+    "location": "Sinnoh Route 224 Area",
+    "environment": "Night"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
