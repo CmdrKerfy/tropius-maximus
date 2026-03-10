@@ -184,7 +184,9 @@
     "color": "red",
     "shape": "fish",
     "location": "Canalave City Area",
-    "background_details": [],
+    "background_details": [
+      "fishing pole"
+    ],
     "card_locations": "Underwater",
     "actions": "fishing"
   },
