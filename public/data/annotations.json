@@ -1144,7 +1144,8 @@
     "environment": "swamp",
     "background_details": [
       "toxic"
-    ]
+    ],
+    "weather": "smo"
   },
   "base3-47": {
     "unique_id": "base3-47",
@@ -2164,6 +2165,10 @@
     ],
     "items": "Poke Ball",
     "pokeball": "Ultra Ball"
+  },
+  "base5-17": {
+    "unique_id": "base5-17",
+    "energy_type": "Special"
   },
   "base5-18": {
     "unique_id": "base5-18",
