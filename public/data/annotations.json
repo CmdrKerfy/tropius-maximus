@@ -211,6 +211,14 @@
     "shape": "quadruped",
     "location": "Sinnoh Route 225 Area"
   },
+  "base1-43": {
+    "unique_id": "base1-43",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 203 Area",
+    "actions": "chillin like a villain"
+  },
   "base1-44": {
     "unique_id": "base1-44",
     "evolution_line": "bulbasaur → ivysaur → venusaur",
@@ -227,12 +235,21 @@
     "shape": "upright",
     "location": "Pallet Town Area"
   },
+  "base1-48": {
+    "unique_id": "base1-48",
+    "evolution_line": "doduo → dodrio",
+    "color": "brown",
+    "shape": "legs",
+    "location": "Sinnoh Route 201 Area",
+    "actions": "Running"
+  },
   "base1-52": {
     "unique_id": "base1-52",
     "evolution_line": "machop → machoke → machamp",
     "color": "gray",
     "shape": "upright",
-    "location": "Mt Coronet 1F Route 207"
+    "location": "Mt Coronet 1F Route 207",
+    "pose": "young bucks who will grow strong"
   },
   "base1-57": {
     "unique_id": "base1-57",
