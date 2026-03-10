@@ -1293,7 +1293,7 @@
       "omanyte",
       "aerodactyl"
     ],
-    "card_locations": "under"
+    "card_locations": "underground"
   },
   "base4-41": {
     "unique_id": "base4-41",
@@ -2096,6 +2096,14 @@
     "color": "yellow",
     "shape": "humanoid",
     "location": "Liberty Garden Lighthouse Basement"
+  },
+  "base5-4": {
+    "unique_id": "base5-4",
+    "evolution_line": "charmander → charmeleon → charizard",
+    "color": "red",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "camera_angle": "bac"
   },
   "basep-13": {
     "unique_id": "basep-13",
