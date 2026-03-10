@@ -2483,7 +2483,23 @@
     "location": "Eterna City Area",
     "background_details": [
       "electricity"
-    ]
+    ],
+    "actions": "hands on head"
+  },
+  "base5-66": {
+    "unique_id": "base5-66",
+    "evolution_line": "rattata → raticate",
+    "color": "purple",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 225 Area"
+  },
+  "base5-67": {
+    "unique_id": "base5-67",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 205 East Towards Eterna City",
+    "weather": "Sunny"
   },
   "basep-13": {
     "unique_id": "basep-13",
