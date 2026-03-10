@@ -2558,7 +2558,10 @@
   },
   "base5-72": {
     "unique_id": "base5-72",
-    "rival_group": "Team Rocket"
+    "rival_group": "Team Rocket",
+    "additional_characters": [
+      "Ariana"
+    ]
   },
   "base5-83": {
     "unique_id": "base5-83",
