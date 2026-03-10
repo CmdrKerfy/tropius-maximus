@@ -411,7 +411,8 @@
     "trainer_card_type": "Supporter",
     "background_pokemon": [
       "farfetchd"
-    ]
+    ],
+    "items": "Leek"
   },
   "base1-91": {
     "unique_id": "base1-91",
