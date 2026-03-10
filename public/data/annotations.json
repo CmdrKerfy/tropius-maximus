@@ -540,12 +540,137 @@
     "unique_id": "base1-96",
     "energy_type": "Special"
   },
+  "base1-97": {
+    "unique_id": "base1-97",
+    "energy_type": "Basic"
+  },
+  "base1-98": {
+    "unique_id": "base1-98",
+    "energy_type": "Basic"
+  },
+  "base1-99": {
+    "unique_id": "base1-99",
+    "energy_type": "Basic"
+  },
+  "base1-100": {
+    "unique_id": "base1-100",
+    "energy_type": "Basic"
+  },
+  "base1-101": {
+    "unique_id": "base1-101",
+    "energy_type": "Basic"
+  },
+  "base1-102": {
+    "unique_id": "base1-102",
+    "energy_type": "Basic"
+  },
+  "base2-1": {
+    "unique_id": "base2-1",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Moon B2F",
+    "pose": "this is my rock"
+  },
+  "base2-6": {
+    "unique_id": "base2-6",
+    "evolution_line": "mime-jr → mr-mime → mr-rime",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 218 Area",
+    "emotion": "Shy"
+  },
+  "base2-8": {
+    "unique_id": "base2-8",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area",
+    "actions": "flying"
+  },
+  "base2-11": {
+    "unique_id": "base2-11",
+    "evolution_line": "munchlax → snorlax",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Kanto Route 12 Area",
+    "actions": "waving"
+  },
+  "base2-16": {
+    "unique_id": "base2-16",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Cerulean Cave 2F",
+    "pose": "balancing on one leg"
+  },
+  "base2-18": {
+    "unique_id": "base2-18",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F",
+    "background_details": [
+      "patterned background"
+    ]
+  },
+  "base2-22": {
+    "unique_id": "base2-22",
+    "evolution_line": "mime-jr → mr-mime → mr-rime",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 218 Area",
+    "emotion": "Shy"
+  },
+  "base2-24": {
+    "unique_id": "base2-24",
+    "evolution_line": "pidgey → pidgeotto → pidgeot",
+    "color": "brown",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area",
+    "actions": "flying"
+  },
+  "base2-27": {
+    "unique_id": "base2-27",
+    "evolution_line": "munchlax → snorlax",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Kanto Route 12 Area",
+    "actions": "waving"
+  },
+  "base2-32": {
+    "unique_id": "base2-32",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Cerulean Cave 2F",
+    "pose": "balancing on one leg"
+  },
+  "base2-33": {
+    "unique_id": "base2-33",
+    "evolution_line": "caterpie → metapod → butterfree",
+    "color": "white",
+    "shape": "bug-wings",
+    "location": "Ilex Forest Area",
+    "background_details": [
+      "Flower Power"
+    ]
+  },
+  "base2-35": {
+    "unique_id": "base2-35",
+    "evolution_line": "exeggcute → exeggutor",
+    "color": "yellow",
+    "shape": "legs",
+    "location": "Kanto Route 23 Area",
+    "actions": "chillin like a villain"
+  },
   "base2-36": {
     "unique_id": "base2-36",
     "evolution_line": "spearow → fearow",
     "color": "brown",
     "shape": "wings",
-    "location": "Stark Mountain Area"
+    "location": "Stark Mountain Area",
+    "actions": "flying"
   },
   "base4-41": {
     "unique_id": "base4-41",
