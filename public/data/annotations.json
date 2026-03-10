@@ -2565,7 +2565,8 @@
     "background_humans": [
       "Trainer"
     ],
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "pokeball": "Ultra Ball"
   },
   "base5-83": {
     "unique_id": "base5-83",
