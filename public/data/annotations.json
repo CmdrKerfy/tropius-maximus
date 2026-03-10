@@ -2185,6 +2185,9 @@
     "rival_group": "Team Rocket",
     "additional_characters": [
       "Rocket Grunt"
+    ],
+    "background_humans": [
+      "Trainer"
     ]
   },
   "base5-30": {
