@@ -688,7 +688,18 @@
     "location": "Sinnoh Route 224 Area",
     "background_details": [
       "stump"
+    ],
+    "art_style": [
+      "Polygon Graphics"
     ]
+  },
+  "base2-38": {
+    "unique_id": "base2-38",
+    "evolution_line": "lickitung → lickilicky",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Lake Valor Area",
+    "actions": "eating"
   },
   "base4-41": {
     "unique_id": "base4-41",
