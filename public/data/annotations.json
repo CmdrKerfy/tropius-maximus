@@ -3265,6 +3265,14 @@
       "glowing"
     ]
   },
+  "basep-51": {
+    "unique_id": "basep-51",
+    "evolution_line": "ponyta → rapidash",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Mt Silver Outside",
+    "camera_angle": "Underbelly"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
