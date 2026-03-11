@@ -3193,6 +3193,16 @@
       "attacking the cameraman"
     ]
   },
+  "basep-46": {
+    "unique_id": "basep-46",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area",
+    "background_details": [
+      "computer"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
