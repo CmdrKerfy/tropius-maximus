@@ -3229,7 +3229,8 @@
     "location": "Seafoam Islands B4F",
     "pose": [
       "top of the mountain"
-    ]
+    ],
+    "perspective": "profile"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
