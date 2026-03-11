@@ -2874,7 +2874,8 @@
     "held_item": "",
     "pokeball": "Pokeball",
     "background_details": [
-      "electricity"
+      "electricity",
+      "computer"
     ]
   },
   "basep-17": {
