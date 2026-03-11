@@ -3189,7 +3189,8 @@
     "unique_id": "basep-41",
     "card_locations": "City",
     "background_pokemon": [
-      "charizard"
+      "charizard",
+      "pikachu"
     ]
   },
   "basep-43": {
