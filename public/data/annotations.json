@@ -3271,7 +3271,10 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Mt Silver Outside",
-    "camera_angle": "Underbelly"
+    "camera_angle": "Underbelly",
+    "actions": [
+      "Pyros"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
