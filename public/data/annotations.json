@@ -2810,6 +2810,23 @@
       "winking"
     ]
   },
+  "basep-11": {
+    "unique_id": "basep-11",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Pallet Town Area"
+  },
+  "basep-12": {
+    "unique_id": "basep-12",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "actions": [
+      "Beam Me Up Scotty"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
