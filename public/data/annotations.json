@@ -3189,7 +3189,8 @@
     "shape": "bug-wings",
     "location": "Sinnoh Route 210 South Towards Solaceon Town",
     "actions": [
-      "flying"
+      "flying",
+      "attacking the cameraman"
     ]
   },
   "dp7-12": {
