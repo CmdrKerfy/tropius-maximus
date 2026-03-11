@@ -3131,6 +3131,9 @@
     "actions": [
       "attacking",
       "spinning"
+    ],
+    "pose": [
+      "Upside Down"
     ]
   },
   "dp7-12": {
