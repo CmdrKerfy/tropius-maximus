@@ -3243,7 +3243,10 @@
       "Text",
       "moon"
     ],
-    "environment": "Starry Night"
+    "environment": "Starry Night",
+    "background_pokemon": [
+      "eevee"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
