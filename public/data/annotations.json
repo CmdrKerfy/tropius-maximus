@@ -2862,7 +2862,10 @@
   },
   "basep-16": {
     "unique_id": "basep-16",
-    "trainer_card_type": "Item"
+    "trainer_card_type": "Item",
+    "background_pokemon": [
+      "onix"
+    ]
   },
   "basep-17": {
     "unique_id": "basep-17",
