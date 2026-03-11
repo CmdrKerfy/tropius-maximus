@@ -51,7 +51,16 @@ function encodeUnicode(str) {
 
 function normalizeToArray(val) {
   if (val === null || val === undefined) return null;
-  if (Array.isArray(val)) return val;
+  if (Array.isArray(val)) {
+    // Unwrap single-element array where the element is itself a JSON array string (double-encoding)
+    if (val.length === 1 && typeof val[0] === 'string' && val[0].startsWith('[')) {
+      try {
+        const inner = JSON.parse(val[0]);
+        if (Array.isArray(inner)) return inner;
+      } catch { /* keep original */ }
+    }
+    return val;
+  }
   if (typeof val === 'string' && val !== '') return [val];
   return null;
 }
@@ -179,10 +188,11 @@ const PROMOTED_ARRAY_FIELDS = new Set([
   "card_subcategory","evolution_items","berries","holiday_theme","multi_card","trainer_card_subgroup",
   "video_type","video_region","video_location",
   "items","held_item","pokeball",
+  "emotion","pose","actions",
 ]);
 
 const PROMOTED_STRING_FIELDS = [
-  "emotion","pose","camera_angle","actions","perspective",
+  "camera_angle","perspective",
   "weather","environment","storytelling","card_locations","pkmn_region","card_region",
   "primary_color","secondary_color","shape",
   "video_game","video_game_location","video_url","video_title","unique_id","notes","evolution_line",
@@ -212,8 +222,19 @@ function buildPromotedAnnotations(row) {
     }
   }
   for (const key of PROMOTED_STRING_FIELDS) {
-    const val = row[key];
-    if (val) result[key] = val;
+    let val = row[key];
+    if (!val) continue;
+    // Normalize: if stored as JSON array string (e.g. '["Sweat"]'), parse so UI gets array
+    const trimmed = typeof val === "string" ? val.trim() : val;
+    if (typeof trimmed === "string" && trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          val = parsed;
+        }
+      } catch { /* keep original val */ }
+    }
+    result[key] = val;
   }
   for (const key of PROMOTED_BOOL_FIELDS) {
     if (row[key] === true) result[key] = true;
@@ -610,8 +631,8 @@ export async function initDB() {
           ${escapeStr(arrayVal('background_pokemon'))}, ${escapeStr(arrayVal('background_humans'))},
           ${escapeStr(arrayVal('additional_characters'))}, ${escapeStr(evolutionLine)},
           ${escapeStr(arrayVal('background_details'))},
-          ${escapeStr(strVal('emotion'))}, ${escapeStr(strVal('pose'))},
-          ${escapeStr(strVal('actions'))}, ${escapeStr(strVal('camera_angle'))},
+          ${escapeStr(arrayVal('emotion'))}, ${escapeStr(arrayVal('pose'))},
+          ${escapeStr(arrayVal('actions'))}, ${escapeStr(strVal('camera_angle'))},
           ${escapeStr(strVal('perspective'))},
           ${escapeStr(strVal('primary_color'))}, ${escapeStr(strVal('secondary_color'))},
           ${escapeStr(strVal('storytelling'))},
@@ -1878,25 +1899,25 @@ export async function fetchFormOptions() {
         REPLACE(REPLACE(subtypes, '[', ''), ']', ''), ','
       )))) AS val FROM tcg_cards WHERE subtypes != '[]' AND subtypes != '' ORDER BY val`
     ),
-    // emotion: from tcg_cards (handles both JSON array and legacy comma-separated)
+    // emotion: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+      `SELECT DISTINCT TRIM(val) AS val FROM (
         SELECT unnest(string_split(
           REPLACE(REPLACE(emotion, '["', ''), '"]', ''),
-          ','
+          '","'
         )) AS val FROM tcg_cards
         WHERE emotion IS NOT NULL AND emotion != '' AND emotion != '[]'
-      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
-    // pose: from tcg_cards (handles both JSON array and legacy comma-separated)
+    // pose: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+      `SELECT DISTINCT TRIM(val) AS val FROM (
         SELECT unnest(string_split(
           REPLACE(REPLACE(pose, '["', ''), '"]', ''),
-          ','
+          '","'
         )) AS val FROM tcg_cards
         WHERE pose IS NOT NULL AND pose != '' AND pose != '[]'
-      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
     // cameraAngle: from tcg_cards
     conn.query(
@@ -1922,19 +1943,25 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT card_locations AS val FROM tcg_cards WHERE card_locations IS NOT NULL AND card_locations != '' ORDER BY val`
     ),
-    // items: from tcg_cards
+    // items: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT items AS val FROM tcg_cards WHERE items IS NOT NULL AND items != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(val) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(items, '["', ''), '"]', ''),
+          '","'
+        )) AS val FROM tcg_cards
+        WHERE items IS NOT NULL AND items != '' AND items != '[]'
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
-    // actions: from tcg_cards (handles both JSON array and legacy comma-separated)
+    // actions: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT TRIM(REPLACE(val, '"', '')) AS val FROM (
+      `SELECT DISTINCT TRIM(val) AS val FROM (
         SELECT unnest(string_split(
           REPLACE(REPLACE(actions, '["', ''), '"]', ''),
-          ','
+          '","'
         )) AS val FROM tcg_cards
         WHERE actions IS NOT NULL AND actions != '' AND actions != '[]'
-      ) WHERE TRIM(REPLACE(val, '"', '')) != '' ORDER BY val`
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
     // videoTitle: from tcg_cards
     conn.query(
@@ -1962,13 +1989,25 @@ export async function fetchFormOptions() {
     conn.query(
       `SELECT DISTINCT source AS val FROM tcg_cards WHERE is_custom = TRUE AND source IS NOT NULL AND source != '' ORDER BY val`
     ),
-    // heldItem: from tcg_cards
+    // heldItem: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT held_item AS val FROM tcg_cards WHERE held_item IS NOT NULL AND held_item != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(val) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(held_item, '["', ''), '"]', ''),
+          '","'
+        )) AS val FROM tcg_cards
+        WHERE held_item IS NOT NULL AND held_item != '' AND held_item != '[]'
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
-    // pokeball: from tcg_cards
+    // pokeball: from tcg_cards (JSON array column — split to individual options)
     conn.query(
-      `SELECT DISTINCT pokeball AS val FROM tcg_cards WHERE pokeball IS NOT NULL AND pokeball != '' ORDER BY val`
+      `SELECT DISTINCT TRIM(val) AS val FROM (
+        SELECT unnest(string_split(
+          REPLACE(REPLACE(pokeball, '["', ''), '"]', ''),
+          '","'
+        )) AS val FROM tcg_cards
+        WHERE pokeball IS NOT NULL AND pokeball != '' AND pokeball != '[]'
+      ) WHERE TRIM(val) != '' ORDER BY val`
     ),
     // trainerCardType: from tcg_cards
     conn.query(
@@ -1992,7 +2031,11 @@ export async function fetchFormOptions() {
     ),
   ]);
 
-  const toArr = (result) => result.toArray().map((r) => r.val).filter(Boolean);
+  // Filter out any value that looks like a raw JSON array (starts with '[') —
+  // these are corrupted/double-encoded values that should never appear as options.
+  const isCleanOption = (v) => v && !String(v).startsWith('[');
+
+  const toArr = (result) => result.toArray().map((r) => r.val).filter(isCleanOption);
 
   // For multi-value fields stored as JSON arrays or comma-separated, we need to split them
   const splitJsonArrayValues = async (column, table = "tcg_cards") => {
@@ -2005,7 +2048,7 @@ export async function fetchFormOptions() {
         WHERE ${column} IS NOT NULL AND ${column} != '' AND ${column} != '[]'
       ) WHERE TRIM(val) != '' ORDER BY val`
     );
-    return result.toArray().map((r) => r.val).filter(Boolean);
+    return result.toArray().map((r) => r.val).filter(isCleanOption);
   };
 
   const [artStyle, mainCharacter, backgroundPokemon, backgroundHumans,

@@ -60,7 +60,7 @@
       "pocket_exclusive": false,
       "owned": false,
       "unique_id": "custom-xyp-JP279",
-      "notes": "Pikachu is a yellow mouse-like PokÃ©mon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
+      "notes": "Pikachu is a yellow mouse-like Pokémon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -79,7 +79,7 @@
         "unique_id": "custom-xyp-JP279",
         "actions": []
       },
-      "supertype": "PokÃ©mon",
+      "supertype": "Pokémon",
       "subtypes": [
         "Basic"
       ],
@@ -90,7 +90,7 @@
       "evolves_from": "Pichu",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "ãã«ãã¥ã¦",
+      "alt_name": "ピカチュウ",
       "artist": "Naoki Saito",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -182,7 +182,7 @@
       "evolves_from": "",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "ããã¹ã«ã¼ãã®ãããã",
+      "alt_name": "ミニスカートのおすすめ",
       "artist": "Yusuke Ohmura",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -278,7 +278,7 @@
       "evolves_from": "Machop",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "ã´ã¼ãªã­ã¼",
+      "alt_name": "ゴーリキー",
       "artist": "Tomokazu Komiya",
       "set_id": "vm-s3",
       "set_name": "Vending Machine Set 3",
@@ -380,19 +380,23 @@
       "art_style": [],
       "main_character": [],
       "background_pokemon": [
-        "[\"tropius\",\"kecleon\"]"
+        "tropius",
+        "kecleon"
       ],
       "background_humans": [],
       "additional_characters": [],
       "evolution_line": "pichu →  pikachu →  raichu",
       "background_details": [
-        "[\"Sweat\"]"
+        "Sweat"
       ],
       "emotion": "",
       "pose": "tongue out",
       "camera_angle": "",
       "items": [],
-      "actions": "Taxi!,eating",
+      "actions": [
+        "Taxi!",
+        "eating"
+      ],
       "perspective": "",
       "weather": "",
       "environment": "",
@@ -426,7 +430,7 @@
       "pokeball": [],
       "evolution_items": [],
       "berries": [
-        "[\"Colbur\"]"
+        "Colbur"
       ],
       "holiday_theme": [],
       "multi_card": [],
