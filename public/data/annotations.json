@@ -3063,7 +3063,8 @@
     "location": "Sinnoh Route 208 Area",
     "card_locations": "ancient ruins",
     "background_details": [
-      "ancient ruins"
+      "ancient ruins",
+      "clouds"
     ],
     "actions": [
       "pondering life"
