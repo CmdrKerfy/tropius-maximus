@@ -3055,6 +3055,14 @@
       "patterned background"
     ]
   },
+  "basep-32": {
+    "unique_id": "basep-32",
+    "evolution_line": "smeargle",
+    "color": "white",
+    "shape": "upright",
+    "location": "Sinnoh Route 208 Area",
+    "card_locations": "anc"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
