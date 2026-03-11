@@ -1431,9 +1431,9 @@ export async function fetchCard(id, source = "TCG") {
       ? JSON.parse(r.prices)
       : r.prices || {};
 
-  // Auto-populate unique_id if empty
+  // Auto-populate unique_id if empty (or wrong for custom cards)
   let needsPatch = false;
-  if (!annotations.unique_id) {
+  if (r.is_custom ? annotations.unique_id !== r.id : !annotations.unique_id) {
     annotations.unique_id = r.id;
     needsPatch = true;
   }

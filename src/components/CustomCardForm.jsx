@@ -200,7 +200,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
     return arr.length > 0 ? JSON.stringify(arr) : "";
   };
 
-  const buildSharedAnnotationFields = () => {
+  const buildSharedAnnotationFields = (cardId) => {
     const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
     return {
       owned,
@@ -221,7 +221,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       wtpc_episode: toArray(wtpcEpisode),
       video_region: toArray(videoRegion),
       video_location: toArray(videoLocation),
-      unique_id: id,
+      unique_id: cardId,
       evolution_line: (evolutionLine || "").toLowerCase(),
       emotion: toArray(emotion),
       pose: toArray(pose),
@@ -262,14 +262,13 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
     setCreating(true);
 
     try {
-      const sharedFields = buildSharedAnnotationFields();
-
       if (cardTable === 'pocket') {
         if (!name || !number || !setIdVal || !imageSmall) {
           throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
         }
 
         const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+        const sharedFields = buildSharedAnnotationFields(cardId);
         const pocketCardJson = {
           id: cardId,
           name,
@@ -327,6 +326,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
 
         const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+        const sharedFields = buildSharedAnnotationFields(cardId);
         // Build card object for custom_cards.json format
         const cardJson = {
           id: cardId,
