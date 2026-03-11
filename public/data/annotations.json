@@ -2872,7 +2872,10 @@
     "items": "Poke Ball",
     "berries": [],
     "held_item": "",
-    "pokeball": "Pokeball"
+    "pokeball": "Pokeball",
+    "background_details": [
+      "electricity"
+    ]
   },
   "basep-17": {
     "unique_id": "basep-17",
