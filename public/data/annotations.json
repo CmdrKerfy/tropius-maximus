@@ -3284,6 +3284,9 @@
     "location": "Bell Tower Roof",
     "actions": [
       "flying"
+    ],
+    "pose": [
+      "mouth agape"
     ]
   },
   "dp7-12": {
