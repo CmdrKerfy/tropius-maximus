@@ -3123,6 +3123,15 @@
       "BFFs"
     ]
   },
+  "basep-37": {
+    "unique_id": "basep-37",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "upright",
+    "actions": [
+      "attacking"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
