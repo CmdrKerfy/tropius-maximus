@@ -3177,7 +3177,8 @@
     "unique_id": "basep-40",
     "art_style": [
       "Polygon Graphics"
-    ]
+    ],
+    "trainer_card_type": "Item"
   },
   "basep-43": {
     "unique_id": "basep-43",
