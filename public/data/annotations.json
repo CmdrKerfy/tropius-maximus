@@ -3249,7 +3249,8 @@
     ],
     "actions": [
       "Sleeping"
-    ]
+    ],
+    "camera_angle": "pro"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
