@@ -2730,6 +2730,16 @@
       "purgatory"
     ]
   },
+  "basep-4": {
+    "unique_id": "basep-4",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "background_details": [
+      "electricity"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
