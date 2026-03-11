@@ -3179,7 +3179,8 @@
       "Polygon Graphics"
     ],
     "trainer_card_type": "Item",
-    "items": "Poke Doll"
+    "items": "Poke Ball",
+    "pokeball": "Pokeball"
   },
   "basep-43": {
     "unique_id": "basep-43",
