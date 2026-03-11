@@ -3160,6 +3160,13 @@
     "location": "Cinnabar Island Cinnabar Lab",
     "card_subcategory": [
       "Illustration Rare"
+    ],
+    "background_pokemon": [
+      "tropius",
+      "omanyte",
+      "shieldon",
+      "bastiodon",
+      "tirtouga"
     ]
   },
   "swsh2-57": {
