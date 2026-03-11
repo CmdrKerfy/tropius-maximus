@@ -2879,6 +2879,16 @@
       "chaos"
     ]
   },
+  "basep-19": {
+    "unique_id": "basep-19",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 203 Area",
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ]
+  },
   "basep-20": {
     "unique_id": "basep-20",
     "evolution_line": "psyduck → golduck"
