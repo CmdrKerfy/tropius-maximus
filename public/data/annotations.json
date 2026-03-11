@@ -2750,7 +2750,11 @@
     "color": "brown",
     "shape": "upright",
     "location": "Kanto Route 12 Area",
-    "stamp": "Pokemon Movie"
+    "stamp": "Pokemon Movie",
+    "art_style": [
+      "2D",
+      "hand drawn"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
