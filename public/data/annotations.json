@@ -3185,6 +3185,10 @@
       "chansey"
     ]
   },
+  "basep-41": {
+    "unique_id": "basep-41",
+    "card_locations": "cit"
+  },
   "basep-43": {
     "unique_id": "basep-43",
     "evolution_line": "machop → machoke → machamp",
