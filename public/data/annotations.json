@@ -2763,6 +2763,16 @@
       "They're Like People"
     ]
   },
+  "basep-6": {
+    "unique_id": "basep-6",
+    "evolution_line": "growlithe → arcanine",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "pose": [
+      "mouth agape"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
