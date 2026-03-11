@@ -2860,6 +2860,21 @@
       "Polygon Graphics"
     ]
   },
+  "basep-17": {
+    "unique_id": "basep-17",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "camera_angle": "off"
+  },
+  "basep-18": {
+    "unique_id": "basep-18",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area"
+  },
   "basep-20": {
     "unique_id": "basep-20",
     "evolution_line": "psyduck → golduck"
