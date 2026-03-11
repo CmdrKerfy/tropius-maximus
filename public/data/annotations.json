@@ -3115,6 +3115,9 @@
     "location": "Johto Route 34 Area",
     "background_details": [
       "Trees"
+    ],
+    "actions": [
+      "singing"
     ]
   },
   "dp7-12": {
