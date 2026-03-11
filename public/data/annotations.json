@@ -2786,6 +2786,30 @@
     "perspective": "",
     "camera_angle": ""
   },
+  "basep-8": {
+    "unique_id": "basep-8",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area"
+  },
+  "basep-9": {
+    "unique_id": "basep-9",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area"
+  },
+  "basep-10": {
+    "unique_id": "basep-10",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area",
+    "pose": [
+      "winking"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
