@@ -2954,6 +2954,9 @@
     "location": "Trophy Garden Area",
     "card_subcategory": [
       "Trainer's Pokemon"
+    ],
+    "background_details": [
+      "food"
     ]
   },
   "dp7-12": {
