@@ -20,7 +20,7 @@
         "Charmander",
         "Squirtle"
       ],
-      "evolution_line": "pichu Ã¢ÂÂ pikachu Ã¢ÂÂ raichu",
+      "evolution_line": "pichu ÃÂ¢ÃÂÃÂ pikachu ÃÂ¢ÃÂÃÂ raichu",
       "background_details": [
         "Trophy",
         "Throne",
@@ -60,7 +60,7 @@
       "pocket_exclusive": false,
       "owned": false,
       "unique_id": "custom-xyp-JP279",
-      "notes": "Pikachu is a yellow mouse-like PokÃÂ©mon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
+      "notes": "Pikachu is a yellow mouse-like PokÃÂÃÂ©mon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -79,7 +79,7 @@
         "unique_id": "custom-xyp-JP279",
         "actions": []
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [
         "Basic"
       ],
@@ -90,7 +90,7 @@
       "evolves_from": "Pichu",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂÃ£ÂÂ«Ã£ÂÂÃ£ÂÂ¥Ã£ÂÂ¦",
+      "alt_name": "ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ«ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ¥ÃÂ£ÃÂÃÂ¦",
       "artist": "Naoki Saito",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -182,7 +182,7 @@
       "evolves_from": "",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂÃ£ÂÂÃ£ÂÂ¹Ã£ÂÂ«Ã£ÂÂ¼Ã£ÂÂÃ£ÂÂ®Ã£ÂÂÃ£ÂÂÃ£ÂÂÃ£ÂÂ",
+      "alt_name": "ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ¹ÃÂ£ÃÂÃÂ«ÃÂ£ÃÂÃÂ¼ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ®ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ",
       "artist": "Yusuke Ohmura",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -278,7 +278,7 @@
       "evolves_from": "Machop",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂ´Ã£ÂÂ¼Ã£ÂÂªÃ£ÂÂ­Ã£ÂÂ¼",
+      "alt_name": "ÃÂ£ÃÂÃÂ´ÃÂ£ÃÂÃÂ¼ÃÂ£ÃÂÃÂªÃÂ£ÃÂÃÂ­ÃÂ£ÃÂÃÂ¼",
       "artist": "Tomokazu Komiya",
       "set_id": "vm-s3",
       "set_name": "Vending Machine Set 3",
@@ -298,7 +298,7 @@
       "background_pokemon": [],
       "background_humans": [],
       "additional_characters": [],
-      "evolution_line": "gastly Ã¢ÂÂ  haunter Ã¢ÂÂ  gengar",
+      "evolution_line": "gastly ÃÂ¢ÃÂÃÂ  haunter ÃÂ¢ÃÂÃÂ  gengar",
       "background_details": [
         "purgatory"
       ],
@@ -351,7 +351,7 @@
       "annotations": {
         "additional_character_theme": []
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [
         "Stage 2"
       ],
@@ -385,7 +385,7 @@
       ],
       "background_humans": [],
       "additional_characters": [],
-      "evolution_line": "pichu Ã¢ÂÂ  pikachu Ã¢ÂÂ  raichu",
+      "evolution_line": "pichu ÃÂ¢ÃÂÃÂ  pikachu ÃÂ¢ÃÂÃÂ  raichu",
       "background_details": [
         "Sweat"
       ],
@@ -440,10 +440,10 @@
       "annotations": {
         "annotations": {},
         "unique_id": "custom-xjp-227/SM-P",
-        "evolution_line": "pichu Ã¢ÂÂ  pikachu Ã¢ÂÂ  raichu",
+        "evolution_line": "pichu ÃÂ¢ÃÂÃÂ  pikachu ÃÂ¢ÃÂÃÂ  raichu",
         "artist": "Naoki Saito"
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [
         "Basic"
       ],
@@ -3276,7 +3276,7 @@
       "annotations": {
         "annotations": {}
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [
         "Basic"
       ],
@@ -3385,7 +3385,7 @@
       "evolves_from": "Machop",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂ´Ã£ÂÂ¼Ã£ÂÂªÃ£ÂÂ­Ã£ÂÂ¼",
+      "alt_name": "ÃÂ£ÃÂÃÂ´ÃÂ£ÃÂÃÂ¼ÃÂ£ÃÂÃÂªÃÂ£ÃÂÃÂ­ÃÂ£ÃÂÃÂ¼",
       "artist": "Tomokazu Komiya",
       "set_id": "vm-s3",
       "set_name": "Vending Machine Set 3",
@@ -3464,7 +3464,7 @@
       "annotations": {
         "annotations": {}
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [],
       "hp": "",
       "types": [],
@@ -3594,7 +3594,7 @@
       ],
       "background_humans": [],
       "additional_characters": [],
-      "evolution_line": "inkay Ã¢ÂÂ  malamar",
+      "evolution_line": "inkay ÃÂ¢ÃÂÃÂ  malamar",
       "background_details": [
         "Boat",
         "River",
@@ -3654,7 +3654,7 @@
       "annotations": {
         "annotations": {}
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [],
       "hp": "60",
       "types": [
@@ -3693,7 +3693,7 @@
         "Charmander",
         "Squirtle"
       ],
-      "evolution_line": "pichu Ã¢ÂÂ pikachu Ã¢ÂÂ raichu",
+      "evolution_line": "pichu ÃÂ¢ÃÂÃÂ pikachu ÃÂ¢ÃÂÃÂ raichu",
       "background_details": [
         "Trophy",
         "Throne",
@@ -3733,7 +3733,7 @@
       "pocket_exclusive": false,
       "owned": false,
       "unique_id": "xyp-JP279",
-      "notes": "Pikachu is a yellow mouse-like PokÃÂ©mon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
+      "notes": "Pikachu is a yellow mouse-like PokÃÂÃÂ©mon with a lightning bolt shaped mark on its cheeks. It is a short, chubby, and has short, pointed, brown ears and large copper-brown eyes. It has a rounded, pointed snout with a small black nose and two small, pointed teeth visible in its upper jaw.",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -3752,7 +3752,7 @@
           "weather_environment": "Indoors"
         }
       },
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [
         "Basic"
       ],
@@ -3763,7 +3763,7 @@
       "evolves_from": "Pichu",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂÃ£ÂÂ«Ã£ÂÂÃ£ÂÂ¥Ã£ÂÂ¦",
+      "alt_name": "ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ«ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ¥ÃÂ£ÃÂÃÂ¦",
       "artist": "Naoki Saito",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -3857,7 +3857,7 @@
       "evolves_from": "",
       "rarity": "Promo",
       "special_rarity": "",
-      "alt_name": "Ã£ÂÂÃ£ÂÂÃ£ÂÂ¹Ã£ÂÂ«Ã£ÂÂ¼Ã£ÂÂÃ£ÂÂ®Ã£ÂÂÃ£ÂÂÃ£ÂÂÃ£ÂÂ",
+      "alt_name": "ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ¹ÃÂ£ÃÂÃÂ«ÃÂ£ÃÂÃÂ¼ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ®ÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂÃÂ£ÃÂÃÂ",
       "artist": "Yusuke Ohmura",
       "set_id": "xyp",
       "set_name": "20th Anniversary Festa",
@@ -3926,7 +3926,7 @@
       "energy_type": "",
       "rival_group": "",
       "annotations": {},
-      "supertype": "PokÃÂ©mon",
+      "supertype": "PokÃÂÃÂ©mon",
       "subtypes": [],
       "hp": "",
       "types": [],
@@ -3947,7 +3947,7 @@
       "id": "custom-bjp-139",
       "name": "Omastar",
       "alt_name": "",
-      "supertype": "PokÃ©mon",
+      "supertype": "PokÃÂ©mon",
       "subtypes": [],
       "hp": null,
       "types": [],
@@ -4018,7 +4018,7 @@
       "id": "custom-bjp-076",
       "name": "Golem",
       "alt_name": "",
-      "supertype": "Pokémon",
+      "supertype": "PokÃ©mon",
       "subtypes": [],
       "hp": null,
       "types": [],
@@ -4054,6 +4054,77 @@
       "video_region": [],
       "video_location": [],
       "unique_id": "custom-bjp-076",
+      "evolution_line": "",
+      "emotion": [],
+      "pose": [],
+      "camera_angle": "",
+      "items": [],
+      "actions": [],
+      "additional_characters": [],
+      "perspective": "",
+      "weather": "",
+      "environment": "",
+      "background_details": [],
+      "card_locations": "",
+      "pkmn_region": "",
+      "card_subcategory": [],
+      "held_item": [],
+      "pokeball": [],
+      "evolution_items": [],
+      "berries": [],
+      "holiday_theme": [],
+      "multi_card": [],
+      "trainer_card_type": "",
+      "trainer_card_subgroup": [],
+      "pocket_exclusive": false,
+      "stamp": "",
+      "card_border": "",
+      "energy_type": "",
+      "rival_group": "",
+      "additional_character_theme": [],
+      "image_override": "",
+      "video_url": ""
+    },
+    {
+      "id": "custom-bjp-079",
+      "name": "Slowpoke",
+      "alt_name": "",
+      "supertype": "Pokémon",
+      "subtypes": [],
+      "hp": null,
+      "types": [],
+      "evolves_from": null,
+      "rarity": "",
+      "special_rarity": "",
+      "artist": "",
+      "set_id": "bjp",
+      "set_name": "Base Japanese Promos",
+      "set_series": "",
+      "number": "079",
+      "regulation_mark": "",
+      "image_small": "https://images.scrydex.com/pokemon/miscp_ja-9/large",
+      "image_large": "https://images.scrydex.com/pokemon/miscp_ja-9/large",
+      "source": "Japan Exclusive",
+      "_table": "tcg",
+      "owned": false,
+      "notes": "",
+      "art_style": [],
+      "main_character": [],
+      "background_pokemon": [],
+      "background_humans": null,
+      "shape": "",
+      "video_game": [],
+      "video_game_location": [],
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_title": [],
+      "video_type": [],
+      "top_10_themes": [],
+      "wtpc_episode": [],
+      "video_region": [],
+      "video_location": [],
+      "unique_id": "custom-bjp-079",
       "evolution_line": "",
       "emotion": [],
       "pose": [],
