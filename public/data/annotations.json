@@ -3656,13 +3656,13 @@
     "shape": "upright",
     "location": "Sinnoh Route 228 Area"
   },
-  "xyp-JP279": {
+  "custom-xyp-JP279": {
     "weather_environment": "Indoors"
   },
-  "xyp-JP289": {
+  "custom-xyp-JP289": {
     "weather_environment": "Sunny"
   },
-  "vm-set3-28": {
+  "custom-vm-set3-28": {
     "weather_environment": "Sunny"
   },
   "custom-cn-exclusives-Chandelure": {
@@ -3866,6 +3866,11 @@
   "koreanditto": {
     "annotations": {}
   },
+  "vm-set3-28": {
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
+  },
   "wseggbwreg": {
     "annotations": {}
   },
@@ -3876,6 +3881,16 @@
   },
   "xjp-XY-P": {
     "annotations": {}
+  },
+  "xyp-JP279": {
+    "annotations": {
+      "weather_environment": "Indoors"
+    }
+  },
+  "xyp-JP289": {
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
   },
   "P-A-054": {
     "unique_id": "P-A-054",
