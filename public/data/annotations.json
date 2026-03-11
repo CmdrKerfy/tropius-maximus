@@ -3200,7 +3200,8 @@
     "shape": "upright",
     "location": "Sinnoh Route 222 Area",
     "background_details": [
-      "computer"
+      "computer",
+      "electricity"
     ]
   },
   "dp7-12": {
