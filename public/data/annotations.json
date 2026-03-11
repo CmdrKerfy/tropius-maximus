@@ -3208,6 +3208,16 @@
       "Flexing"
     ]
   },
+  "basep-47": {
+    "unique_id": "basep-47",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area",
+    "pose": [
+      "this is my rock"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
