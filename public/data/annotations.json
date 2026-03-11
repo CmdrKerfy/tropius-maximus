@@ -3233,6 +3233,16 @@
     "perspective": "",
     "camera_angle": "Profile"
   },
+  "basep-49": {
+    "unique_id": "basep-49",
+    "evolution_line": "munchlax → snorlax",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Kanto Route 12 Area",
+    "background_details": [
+      "Text"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
