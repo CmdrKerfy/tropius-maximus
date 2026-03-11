@@ -2825,7 +2825,8 @@
     "location": "Cerulean Cave B1F",
     "actions": [
       "Beam Me Up Scotty"
-    ]
+    ],
+    "card_locations": "f"
   },
   "basep-13": {
     "unique_id": "basep-13",
