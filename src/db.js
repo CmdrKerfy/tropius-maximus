@@ -1024,10 +1024,14 @@ export async function fetchCards(params = {}) {
 
     const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id", "number", "hp", "rarity"]);
     const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
+    const allOrderBy =
+      allSortBy === "number"
+        ? "TRY_CAST(list_element(string_split(CAST(COALESCE(number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
+        : allSortBy;
     const dataResult = await conn.query(`
       SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
       FROM (${dedupedSQL}) counted
-      ORDER BY ${allSortBy} ${safeSortDir}
+      ORDER BY ${allOrderBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);
 
@@ -1144,7 +1148,10 @@ export async function fetchCards(params = {}) {
 
     const CUSTOM_ALLOWED_SORT = new Set(["name", "hp", "set_name", "rarity", "number", "set_id", "supertype", "id"]);
     const safeSortBy = CUSTOM_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
-    const sortExpr = safeSortBy === "number" ? "TRY_CAST(c.number AS INTEGER)" : `c.${safeSortBy}`;
+    const sortExpr =
+      safeSortBy === "number"
+        ? "TRY_CAST(list_element(string_split(CAST(COALESCE(c.number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
+        : `c.${safeSortBy}`;
 
     const dataResult = await conn.query(`
       SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
@@ -1205,7 +1212,7 @@ export async function fetchCards(params = {}) {
   const safeSortBy = ALLOWED_SORT.has(sort_by) ? sort_by : "name";
   let sortExpr;
   if (safeSortBy === "number") {
-    sortExpr = "TRY_CAST(c.number AS INTEGER)";
+    sortExpr = "TRY_CAST(list_element(string_split(CAST(COALESCE(c.number, '') AS VARCHAR), '/'), 1) AS INTEGER)";
   } else if (safeSortBy === "pokedex") {
     sortExpr = "TRY_CAST(c.raw_data::JSON->'nationalPokedexNumbers'->>0 AS INTEGER)";
   } else if (safeSortBy === "price") {
