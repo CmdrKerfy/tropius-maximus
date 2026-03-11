@@ -2873,7 +2873,8 @@
     "evolution_line": "meowth → persian → perrserker",
     "color": "yellow",
     "shape": "quadruped",
-    "location": "Johto Route 35 Area"
+    "location": "Johto Route 35 Area",
+    "rival_group": "rock"
   },
   "basep-20": {
     "unique_id": "basep-20",
