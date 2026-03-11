@@ -2850,6 +2850,16 @@
       "purgatory"
     ]
   },
+  "basep-15": {
+    "unique_id": "basep-15",
+    "evolution_line": "porygon → porygon2 → porygon-z",
+    "color": "pink",
+    "shape": "legs",
+    "location": "Kanto Route 7 Area",
+    "art_style": [
+      "Polygon Graphics"
+    ]
+  },
   "basep-20": {
     "unique_id": "basep-20",
     "evolution_line": "psyduck → golduck"
