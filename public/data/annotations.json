@@ -2877,6 +2877,9 @@
     "rival_group": "Team Rocket",
     "background_details": [
       "chaos"
+    ],
+    "card_subcategory": [
+      "Trainer's Pokemon"
     ]
   },
   "basep-19": {
@@ -2891,7 +2894,13 @@
   },
   "basep-20": {
     "unique_id": "basep-20",
-    "evolution_line": "psyduck → golduck"
+    "evolution_line": "psyduck → golduck",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "background_details": [
+      "Question Marks"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
