@@ -3173,6 +3173,12 @@
     "shape": "ball",
     "location": "Eterna Forest Area"
   },
+  "basep-40": {
+    "unique_id": "basep-40",
+    "art_style": [
+      "Polygon Graphics"
+    ]
+  },
   "basep-43": {
     "unique_id": "basep-43",
     "evolution_line": "machop → machoke → machamp",
