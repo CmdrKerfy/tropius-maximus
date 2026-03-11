@@ -2866,7 +2866,7 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Vermilion City Area",
-    "camera_angle": "off"
+    "camera_angle": "off center"
   },
   "basep-18": {
     "unique_id": "basep-18",
