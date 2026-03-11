@@ -2719,6 +2719,14 @@
       "purgatory"
     ]
   },
+  "basep-3": {
+    "unique_id": "basep-3",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "stamp": "Pokemon"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
