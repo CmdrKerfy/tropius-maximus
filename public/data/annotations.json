@@ -2708,6 +2708,14 @@
       "Polygon Graphics"
     ]
   },
+  "basep-2": {
+    "unique_id": "basep-2",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area",
+    "stamp": "Pokemon Movie"
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
