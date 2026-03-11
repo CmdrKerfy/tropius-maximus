@@ -3073,6 +3073,13 @@
       "eyes closed"
     ]
   },
+  "basep-33": {
+    "unique_id": "basep-33",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "red",
+    "shape": "bug-wings",
+    "card_locations": ""
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
