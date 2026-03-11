@@ -3210,7 +3210,10 @@
   "basep-42": {
     "unique_id": "basep-42",
     "trainer_card_type": "Stadium",
-    "environment": "Full Moon"
+    "environment": "Full Moon",
+    "art_style": [
+      "Polygon Graphics"
+    ]
   },
   "basep-43": {
     "unique_id": "basep-43",
