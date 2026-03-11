@@ -3031,6 +3031,16 @@
       "Jumping"
     ]
   },
+  "basep-30": {
+    "unique_id": "basep-30",
+    "evolution_line": "togepi → togetic → togekiss",
+    "color": "white",
+    "shape": "humanoid",
+    "location": "Sinnoh Sea Route 230 Area",
+    "emotion": [
+      "Happy"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
