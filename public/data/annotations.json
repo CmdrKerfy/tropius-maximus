@@ -3160,7 +3160,8 @@
     "shape": "humanoid",
     "background_pokemon": [
       "doduo",
-      "voltorb"
+      "voltorb",
+      "hitmonchan"
     ]
   },
   "dp7-12": {
