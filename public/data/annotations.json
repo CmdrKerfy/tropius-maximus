@@ -2758,7 +2758,10 @@
     "actions": [
       "flying"
     ],
-    "items": ""
+    "items": "",
+    "pose": [
+      "They're Like People"
+    ]
   },
   "basep-13": {
     "unique_id": "basep-13",
