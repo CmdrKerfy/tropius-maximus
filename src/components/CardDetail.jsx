@@ -237,6 +237,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     clearTimeout(ghPushTimer.current); // avoid racing with debounced push
     setSaveStatus("saving");
     setSaveMessage("");
+    setIsEditMode(false);
+    setActiveTab("info");
     try {
       const allAnnotations = await exportAllAnnotations();
       const token = getToken();
@@ -707,12 +709,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                       {ann.set_name || card.set_name}
                     </button>
                   )}
-                  {card.artist && !isEditMode && onFilterClick && (
+                  {(ann.artist || card.artist) && !isEditMode && onFilterClick && (
                     <button
-                      onClick={() => onFilterClick("artist", card.artist)}
+                      onClick={() => onFilterClick("artist", ann.artist || card.artist)}
                       className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-sm hover:bg-amber-200 transition-colors"
                     >
-                      {card.artist}
+                      {ann.artist || card.artist}
                     </button>
                   )}
                 </div>
@@ -771,6 +773,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                           setActiveTab("attributes");
                         } else {
                           setIsEditMode(false);
+                          setActiveTab("info");
                         }
                       }}
                       className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 font-medium"
@@ -813,7 +816,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                       )}
                       {card.rarity && ` · ${card.rarity}`}
-                      {card.artist && ` · Artist: ${card.artist}`}
+                      {(ann.artist || card.artist) && ` · Artist: ${ann.artist || card.artist}`}
                     </div>
 
                     {/* Pocket-specific fields */}
@@ -872,6 +875,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             <div>
                               <label className={labelClass}>Rarity</label>
                               <ComboBox value={annValue("rarity") || card.rarity || ""} onChange={(v) => saveAnnotation("rarity", v)} options={opts.rarity || []} placeholder="Promo" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Artist</label>
+                              <ComboBox value={annValue("artist") || card.artist || ""} onChange={(v) => saveAnnotation("artist", v)} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
                             </div>
                             <div>
                               <label className={labelClass}>Card Subcategory</label>
