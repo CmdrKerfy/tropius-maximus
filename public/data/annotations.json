@@ -2773,6 +2773,16 @@
       "mouth agape"
     ]
   },
+  "basep-7": {
+    "unique_id": "basep-7",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Johto Route 34 Area",
+    "art_style": [
+      "Polygon Graphics"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
