@@ -3294,6 +3294,14 @@
     ],
     "camera_angle": "Underbelly"
   },
+  "basep-53": {
+    "unique_id": "basep-53",
+    "evolution_line": "suicune",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Kanto Route 25 Area",
+    "stamp": "Pokemon"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
