@@ -5,6 +5,12 @@
     "color": "brown",
     "shape": "humanoid"
   },
+  "base1-2": {
+    "unique_id": "base1-2",
+    "evolution_line": "squirtle → wartortle → blastoise",
+    "color": "blue",
+    "shape": "upright"
+  },
   "base1-3": {
     "unique_id": "base1-3",
     "evolution_line": "happiny → chansey → blissey",
@@ -300,6 +306,13 @@
     "shape": "legs",
     "location": "Sinnoh Route 225 Area"
   },
+  "base1-61": {
+    "unique_id": "base1-61",
+    "evolution_line": "rattata → raticate",
+    "color": "purple",
+    "shape": "quadruped",
+    "location": "Sinnoh Route 225 Area"
+  },
   "base1-63": {
     "unique_id": "base1-63",
     "evolution_line": "squirtle → wartortle → blastoise",
@@ -560,6 +573,13 @@
     "location": "Mt Moon B2F",
     "pose": "this is my rock"
   },
+  "base2-2": {
+    "unique_id": "base2-2",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
+  },
   "base2-3": {
     "unique_id": "base2-3",
     "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
@@ -765,6 +785,13 @@
     "location": "Sinnoh Route 225 Area",
     "emotion": "Angry",
     "actions": "Running"
+  },
+  "base2-44": {
+    "unique_id": "base2-44",
+    "evolution_line": "ponyta → rapidash",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Mt Silver Outside"
   },
   "base2-45": {
     "unique_id": "base2-45",
@@ -1298,6 +1325,12 @@
     ],
     "card_locations": "underground"
   },
+  "base4-1": {
+    "unique_id": "base4-1",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "humanoid"
+  },
   "base4-41": {
     "unique_id": "base4-41",
     "evolution_line": "spearow → fearow",
@@ -1311,6 +1344,13 @@
     "color": "purple",
     "shape": "quadruped",
     "location": "Valor Lakefront Area"
+  },
+  "base4-66": {
+    "unique_id": "base4-66",
+    "evolution_line": "bellsprout → weepinbell → victreebel",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Sinnoh Route 224 Area"
   },
   "base4-86": {
     "unique_id": "base4-86",
@@ -1537,23 +1577,127 @@
     "evolution_line": "moltres",
     "color": "yellow",
     "shape": "wings",
-    "location": "Mt Silver Top",
-    "card_subcategory": [
-      "Trainer's Pokemon"
-    ]
+    "location": "Mt Silver Top"
+  },
+  "gym1-2": {
+    "unique_id": "gym1-2",
+    "evolution_line": "rhyhorn → rhydon → rhyperior",
+    "color": "gray",
+    "shape": "upright",
+    "location": "Sinnoh Victory Road 1F"
+  },
+  "gym1-3": {
+    "unique_id": "gym1-3",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Moon B2F"
   },
   "gym1-10": {
     "unique_id": "gym1-10",
     "evolution_line": "tentacool → tentacruel",
     "color": "blue",
     "shape": "tentacles",
-    "location": "Canalave City Area",
-    "card_subcategory": [
-      "Trainer's Pokemon"
-    ],
-    "emotion": [
-      "Angry"
-    ]
+    "location": "Canalave City Area"
+  },
+  "gym1-11": {
+    "unique_id": "gym1-11",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Kanto Victory Road 1 3F"
+  },
+  "gym1-12": {
+    "unique_id": "gym1-12",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top"
+  },
+  "gym1-13": {
+    "unique_id": "gym1-13",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "green",
+    "shape": "bug-wings",
+    "location": "Sinnoh Route 210 South Towards Solaceon Town"
+  },
+  "gym1-14": {
+    "unique_id": "gym1-14",
+    "evolution_line": "gastly → haunter → gengar",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Old Chateau 2F Right Room"
+  },
+  "gym1-15": {
+    "unique_id": "gym1-15"
+  },
+  "gym1-16": {
+    "unique_id": "gym1-16"
+  },
+  "gym1-17": {
+    "unique_id": "gym1-17"
+  },
+  "gym1-18": {
+    "unique_id": "gym1-18"
+  },
+  "gym1-19": {
+    "unique_id": "gym1-19"
+  },
+  "gym1-20": {
+    "unique_id": "gym1-20",
+    "evolution_line": "geodude → graveler → golem",
+    "color": "brown",
+    "shape": "humanoid",
+    "location": "Johto Safari Zone Zone Peak"
+  },
+  "gym1-21": {
+    "unique_id": "gym1-21",
+    "evolution_line": "onix → steelix",
+    "color": "gray",
+    "shape": "squiggle",
+    "location": "Oreburgh Mine 1F"
+  },
+  "gym1-22": {
+    "unique_id": "gym1-22",
+    "evolution_line": "rhyhorn → rhydon → rhyperior",
+    "color": "gray",
+    "shape": "quadruped",
+    "location": "Sinnoh Victory Road 1F"
+  },
+  "gym1-23": {
+    "unique_id": "gym1-23",
+    "evolution_line": "sandshrew → sandslash",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 228 Area"
+  },
+  "gym1-24": {
+    "unique_id": "gym1-24",
+    "evolution_line": "zubat → golbat → crobat",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Oreburgh Mine 1F"
+  },
+  "gym1-25": {
+    "unique_id": "gym1-25",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207"
+  },
+  "gym1-26": {
+    "unique_id": "gym1-26",
+    "evolution_line": "bellsprout → weepinbell → victreebel",
+    "color": "green",
+    "shape": "blob",
+    "location": "Kanto Sea Route 21 Area"
+  },
+  "gym1-27": {
+    "unique_id": "gym1-27",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area"
   },
   "gym1-28": {
     "unique_id": "gym1-28",
@@ -1562,29 +1706,118 @@
     "shape": "upright",
     "location": "Cerulean Cave 1F"
   },
+  "gym1-29": {
+    "unique_id": "gym1-29",
+    "evolution_line": "shellder → cloyster",
+    "color": "purple",
+    "shape": "ball",
+    "location": "Seafoam Islands B3F"
+  },
+  "gym1-30": {
+    "unique_id": "gym1-30",
+    "evolution_line": "goldeen → seaking",
+    "color": "red",
+    "shape": "fish",
+    "location": "Sendoff Spring Area"
+  },
+  "gym1-100": {
+    "unique_id": "gym1-100"
+  },
+  "gym1-101": {
+    "unique_id": "gym1-101"
+  },
+  "gym1-102": {
+    "unique_id": "gym1-102"
+  },
+  "gym1-103": {
+    "unique_id": "gym1-103"
+  },
+  "gym1-104": {
+    "unique_id": "gym1-104"
+  },
+  "gym1-105": {
+    "unique_id": "gym1-105"
+  },
+  "gym1-106": {
+    "unique_id": "gym1-106"
+  },
+  "gym1-107": {
+    "unique_id": "gym1-107"
+  },
+  "gym1-108": {
+    "unique_id": "gym1-108"
+  },
+  "gym1-109": {
+    "unique_id": "gym1-109"
+  },
+  "gym1-110": {
+    "unique_id": "gym1-110"
+  },
+  "gym1-111": {
+    "unique_id": "gym1-111"
+  },
+  "gym1-112": {
+    "unique_id": "gym1-112"
+  },
+  "gym1-113": {
+    "unique_id": "gym1-113"
+  },
+  "gym1-114": {
+    "unique_id": "gym1-114"
+  },
+  "gym1-115": {
+    "unique_id": "gym1-115"
+  },
+  "gym1-116": {
+    "unique_id": "gym1-116"
+  },
+  "gym1-117": {
+    "unique_id": "gym1-117"
+  },
+  "gym1-118": {
+    "unique_id": "gym1-118"
+  },
+  "gym1-119": {
+    "unique_id": "gym1-119"
+  },
+  "gym1-120": {
+    "unique_id": "gym1-120"
+  },
+  "gym1-121": {
+    "unique_id": "gym1-121"
+  },
+  "gym1-122": {
+    "unique_id": "gym1-122"
+  },
+  "gym1-123": {
+    "unique_id": "gym1-123"
+  },
+  "gym1-124": {
+    "unique_id": "gym1-124"
+  },
+  "gym1-125": {
+    "unique_id": "gym1-125"
+  },
+  "gym1-126": {
+    "unique_id": "gym1-126"
+  },
   "gym1-127": {
-    "unique_id": "gym1-127",
-    "energy_type": "Basic"
+    "unique_id": "gym1-127"
   },
   "gym1-128": {
-    "unique_id": "gym1-128",
-    "energy_type": "Basic"
+    "unique_id": "gym1-128"
   },
   "gym1-129": {
-    "unique_id": "gym1-129",
-    "energy_type": "Basic"
+    "unique_id": "gym1-129"
   },
   "gym1-130": {
-    "unique_id": "gym1-130",
-    "energy_type": "Basic"
+    "unique_id": "gym1-130"
   },
   "gym1-131": {
-    "unique_id": "gym1-131",
-    "energy_type": "Basic"
+    "unique_id": "gym1-131"
   },
   "gym1-132": {
-    "unique_id": "gym1-132",
-    "energy_type": "Basic"
+    "unique_id": "gym1-132"
   },
   "gym2-11": {
     "unique_id": "gym2-11",
@@ -1706,6 +1939,57 @@
   "me2-118": {
     "unique_id": "me2-118"
   },
+  "neo1-1": {
+    "unique_id": "neo1-1",
+    "evolution_line": "mareep → flaaffy → ampharos",
+    "color": "yellow",
+    "shape": "upright"
+  },
+  "neo1-2": {
+    "unique_id": "neo1-2",
+    "evolution_line": "azurill → marill → azumarill",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Sinnoh Victory Road B1F"
+  },
+  "neo1-3": {
+    "unique_id": "neo1-3",
+    "evolution_line": "oddish → gloom → vileplume → bellossom",
+    "color": "green",
+    "shape": "humanoid"
+  },
+  "neo1-4": {
+    "unique_id": "neo1-4",
+    "evolution_line": "totodile → croconaw → feraligatr",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "neo1-5": {
+    "unique_id": "neo1-5",
+    "evolution_line": "totodile → croconaw → feraligatr",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "neo1-6": {
+    "unique_id": "neo1-6",
+    "evolution_line": "heracross",
+    "color": "blue",
+    "shape": "humanoid",
+    "location": "Johto Route 29 Area"
+  },
+  "neo1-7": {
+    "unique_id": "neo1-7",
+    "evolution_line": "hoppip → skiploom → jumpluff",
+    "color": "blue",
+    "shape": "upright"
+  },
+  "neo1-8": {
+    "unique_id": "neo1-8",
+    "evolution_line": "horsea → seadra → kingdra",
+    "color": "blue",
+    "shape": "blob",
+    "location": "P2 Laboratory Area"
+  },
   "neo1-9": {
     "unique_id": "neo1-9",
     "evolution_line": "lugia",
@@ -1713,11 +1997,80 @@
     "shape": "wings",
     "location": "Whirl Islands B2F"
   },
+  "neo1-10": {
+    "unique_id": "neo1-10",
+    "evolution_line": "chikorita → bayleef → meganium",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "neo1-11": {
+    "unique_id": "neo1-11",
+    "evolution_line": "chikorita → bayleef → meganium",
+    "color": "green",
+    "shape": "quadruped"
+  },
+  "neo1-12": {
+    "unique_id": "neo1-12",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
+  "neo1-13": {
+    "unique_id": "neo1-13",
+    "evolution_line": "skarmory",
+    "color": "gray",
+    "shape": "wings",
+    "location": "Stark Mountain Area"
+  },
+  "neo1-14": {
+    "unique_id": "neo1-14",
+    "evolution_line": "slowpoke → slowbro → slowking",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Abundant Shrine Area"
+  },
+  "neo1-15": {
+    "unique_id": "neo1-15",
+    "evolution_line": "onix → steelix",
+    "color": "gray",
+    "shape": "squiggle",
+    "location": "Sinnoh Victory Road 1F"
+  },
+  "neo1-16": {
+    "unique_id": "neo1-16",
+    "evolution_line": "togepi → togetic → togekiss",
+    "color": "white",
+    "shape": "humanoid"
+  },
   "neo1-17": {
     "unique_id": "neo1-17",
     "evolution_line": "cyndaquil → quilava → typhlosion",
     "color": "yellow",
     "shape": "quadruped"
+  },
+  "neo1-18": {
+    "unique_id": "neo1-18",
+    "evolution_line": "cyndaquil → quilava → typhlosion",
+    "color": "yellow",
+    "shape": "quadruped"
+  },
+  "neo1-19": {
+    "unique_id": "neo1-19"
+  },
+  "neo1-20": {
+    "unique_id": "neo1-20",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207"
+  },
+  "neo1-21": {
+    "unique_id": "neo1-21",
+    "evolution_line": "phanpy → donphan",
+    "color": "gray",
+    "shape": "quadruped",
+    "location": "Johto Route 45 Area"
   },
   "pop5-16": {
     "unique_id": "pop5-16",
@@ -1739,7 +2092,7 @@
     "color": "white",
     "shape": "upright",
     "location": "Mt Coronet Exterior Snowfall",
-    "environment": "Outdoors"
+    "environment": ""
   },
   "sm5-58": {
     "unique_id": "sm5-58",
@@ -1814,6 +2167,13 @@
   },
   "sv10-236": {
     "unique_id": "sv10-236"
+  },
+  "sv2-7": {
+    "unique_id": "sv2-7",
+    "evolution_line": "tropius",
+    "color": "green",
+    "shape": "quadruped",
+    "location": "Great Marsh Area 1"
   },
   "sv2-211": {
     "unique_id": "sv2-211",
@@ -2311,6 +2671,12 @@
     "shape": "humanoid",
     "location": "Liberty Garden Lighthouse Basement"
   },
+  "base5-1": {
+    "unique_id": "base5-1",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "humanoid"
+  },
   "base5-2": {
     "unique_id": "base5-2",
     "evolution_line": "ekans → arbok",
@@ -2326,6 +2692,13 @@
     "shape": "upright",
     "location": "Kanto Route 12 Area",
     "camera_angle": "backshot"
+  },
+  "base5-8": {
+    "unique_id": "base5-8",
+    "evolution_line": "magikarp → gyarados",
+    "color": "blue",
+    "shape": "squiggle",
+    "location": "Canalave City Area"
   },
   "base5-9": {
     "unique_id": "base5-9",
@@ -2954,12 +3327,7 @@
     "evolution_line": "feebas → milotic",
     "color": "brown",
     "shape": "fish",
-    "location": "Hoenn Route 119 Area",
-    "background_pokemon": [
-      "wingull",
-      "pelipper",
-      "tropius"
-    ]
+    "location": "Hoenn Route 119 Area"
   },
   "ex8-23": {
     "unique_id": "ex8-23",
@@ -3317,6 +3685,12 @@
   },
   "custom-bjp-094": {
     "additional_character_theme": []
+  },
+  "custom-xjp-227/SM-P": {
+    "annotations": {},
+    "unique_id": "custom-xjp-227/SM-P",
+    "evolution_line": "pichu →  pikachu →  raichu",
+    "artist": "Naoki Saito"
   },
   "P-A-054": {
     "unique_id": "P-A-054",
