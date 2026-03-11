@@ -3004,6 +3004,16 @@
     "location": "Trophy Garden Area",
     "camera_angle": "Nature Photographer"
   },
+  "basep-28": {
+    "unique_id": "basep-28",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "pose": [
+      "They're Like People"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
