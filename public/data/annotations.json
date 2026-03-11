@@ -2870,9 +2870,8 @@
       "bellsprout"
     ],
     "items": "Poke Ball",
-    "berries": [
-      "Cheri"
-    ]
+    "berries": [],
+    "held_item": "Berry"
   },
   "basep-17": {
     "unique_id": "basep-17",
