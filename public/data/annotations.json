@@ -3170,6 +3170,10 @@
       "archeops",
       "rampardos",
       "cranidos"
+    ],
+    "actions": [
+      "flying",
+      "Swimming"
     ]
   },
   "swsh2-57": {
