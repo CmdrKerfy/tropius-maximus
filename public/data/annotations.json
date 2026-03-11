@@ -3209,7 +3209,8 @@
   },
   "basep-42": {
     "unique_id": "basep-42",
-    "trainer_card_type": "Stadium"
+    "trainer_card_type": "Stadium",
+    "environment": "Full Moon"
   },
   "basep-43": {
     "unique_id": "basep-43",
