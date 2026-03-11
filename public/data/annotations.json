@@ -3196,6 +3196,9 @@
     "actions": [
       "flying",
       "Taxi!"
+    ],
+    "pose": [
+      "mouth agape"
     ]
   },
   "basep-43": {
