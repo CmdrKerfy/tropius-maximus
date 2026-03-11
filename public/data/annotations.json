@@ -3078,7 +3078,10 @@
     "evolution_line": "scyther → scizor → kleavor",
     "color": "red",
     "shape": "bug-wings",
-    "card_locations": "The Void"
+    "card_locations": "The Void",
+    "pose": [
+      "Punch stance"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
