@@ -2833,7 +2833,22 @@
   },
   "basep-13": {
     "unique_id": "basep-13",
-    "evolution_line": "bulbasaur → ivysaur → venusaur"
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "pose": [
+      "mouth agape"
+    ]
+  },
+  "basep-14": {
+    "unique_id": "basep-14",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "background_details": [
+      "purgatory"
+    ]
   },
   "basep-20": {
     "unique_id": "basep-20",
