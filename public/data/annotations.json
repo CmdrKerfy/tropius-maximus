@@ -2782,7 +2782,8 @@
     "art_style": [
       "Polygon Graphics"
     ],
-    "perspective": ""
+    "perspective": "",
+    "camera_angle": "re"
   },
   "basep-13": {
     "unique_id": "basep-13",
