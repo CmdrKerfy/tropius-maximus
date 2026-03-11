@@ -2757,7 +2757,8 @@
     ],
     "actions": [
       "flying"
-    ]
+    ],
+    "items": ""
   },
   "basep-13": {
     "unique_id": "basep-13",
