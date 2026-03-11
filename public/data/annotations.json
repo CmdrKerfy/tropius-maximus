@@ -3216,6 +3216,19 @@
     "location": "Faraway Island Area",
     "pose": [
       "this is my rock"
+    ],
+    "art_style": [
+      "One of A Kind Backgrounds"
+    ]
+  },
+  "basep-48": {
+    "unique_id": "basep-48",
+    "evolution_line": "articuno",
+    "color": "blue",
+    "shape": "wings",
+    "location": "Seafoam Islands B4F",
+    "pose": [
+      "top of the mountain"
     ]
   },
   "dp7-12": {
