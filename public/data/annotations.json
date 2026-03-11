@@ -3182,6 +3182,16 @@
       "Pyros"
     ]
   },
+  "basep-45": {
+    "unique_id": "basep-45",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "green",
+    "shape": "bug-wings",
+    "location": "Sinnoh Route 210 South Towards Solaceon Town",
+    "actions": [
+      "Running"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
