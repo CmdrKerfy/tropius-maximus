@@ -2869,7 +2869,10 @@
       "snorlax",
       "bellsprout"
     ],
-    "items": "Poke Ball"
+    "items": "Poke Ball",
+    "berries": [
+      "Cheri"
+    ]
   },
   "basep-17": {
     "unique_id": "basep-17",
