@@ -2737,7 +2737,11 @@
     "shape": "quadruped",
     "location": "Trophy Garden Area",
     "background_details": [
-      "electricity"
+      "electricity",
+      "purgatory"
+    ],
+    "actions": [
+      "in the sky"
     ]
   },
   "basep-13": {
