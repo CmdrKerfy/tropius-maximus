@@ -3246,6 +3246,9 @@
     "environment": "Starry Night",
     "background_pokemon": [
       "eevee"
+    ],
+    "actions": [
+      "Sleeping"
     ]
   },
   "dp7-12": {
