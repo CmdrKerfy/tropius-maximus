@@ -2875,7 +2875,8 @@
     "pokeball": "Pokeball",
     "background_details": [
       "electricity",
-      "computer"
+      "computer",
+      "solid color"
     ]
   },
   "basep-17": {
