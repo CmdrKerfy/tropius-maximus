@@ -3194,7 +3194,8 @@
       "pichu"
     ],
     "actions": [
-      "flying"
+      "flying",
+      "Taxi!"
     ]
   },
   "basep-43": {
