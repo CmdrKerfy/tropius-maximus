@@ -3188,7 +3188,9 @@
     "color": "green",
     "shape": "bug-wings",
     "location": "Sinnoh Route 210 South Towards Solaceon Town",
-    "actions": []
+    "actions": [
+      "flying"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
