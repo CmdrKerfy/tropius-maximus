@@ -2963,6 +2963,14 @@
       "Happy"
     ]
   },
+  "basep-25": {
+    "unique_id": "basep-25",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "items": "ba"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
