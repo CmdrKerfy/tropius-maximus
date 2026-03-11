@@ -3136,6 +3136,16 @@
       "Upside Down"
     ]
   },
+  "basep-38": {
+    "unique_id": "basep-38",
+    "evolution_line": "unown",
+    "color": "black",
+    "shape": "ball",
+    "location": "Solaceon Ruins 2F",
+    "additional_character_theme": [
+      "Squad Gang"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
