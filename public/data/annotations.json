@@ -3255,6 +3255,16 @@
       "curled up"
     ]
   },
+  "basep-50": {
+    "unique_id": "basep-50",
+    "evolution_line": "celebi",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Ilex Forest Area",
+    "background_details": [
+      "glowing"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
