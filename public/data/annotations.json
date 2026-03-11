@@ -3230,7 +3230,8 @@
     "pose": [
       "top of the mountain"
     ],
-    "perspective": ""
+    "perspective": "",
+    "camera_angle": "pro"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
