@@ -3240,7 +3240,8 @@
     "shape": "humanoid",
     "location": "Kanto Route 12 Area",
     "background_details": [
-      "Text"
+      "Text",
+      "moon"
     ]
   },
   "dp7-12": {
