@@ -2946,6 +2946,16 @@
       "Part of the Bigger Picture"
     ]
   },
+  "basep-24": {
+    "unique_id": "basep-24",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
