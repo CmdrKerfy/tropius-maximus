@@ -2864,7 +2864,8 @@
     "unique_id": "basep-16",
     "trainer_card_type": "Item",
     "background_pokemon": [
-      "onix"
+      "onix",
+      "magnemite"
     ]
   },
   "basep-17": {
