@@ -2869,10 +2869,10 @@
       "snorlax",
       "bellsprout"
     ],
-    "items": "Full Heal",
+    "items": "Poke Ball",
     "berries": [],
     "held_item": "",
-    "pokeball": ""
+    "pokeball": "Pokeball"
   },
   "basep-17": {
     "unique_id": "basep-17",
