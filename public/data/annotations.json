@@ -3021,6 +3021,16 @@
       "Hand Drawn"
     ]
   },
+  "basep-29": {
+    "unique_id": "basep-29",
+    "evolution_line": "azurill → marill → azumarill",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Great Marsh Area 1",
+    "actions": [
+      "Jumping"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
