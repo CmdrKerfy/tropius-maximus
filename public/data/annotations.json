@@ -2972,6 +2972,9 @@
     "items": "",
     "background_details": [
       "balloons"
+    ],
+    "actions": [
+      "flying"
     ]
   },
   "dp7-12": {
