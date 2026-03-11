@@ -2781,7 +2781,8 @@
     "location": "Johto Route 34 Area",
     "art_style": [
       "Polygon Graphics"
-    ]
+    ],
+    "perspective": ""
   },
   "basep-13": {
     "unique_id": "basep-13",
