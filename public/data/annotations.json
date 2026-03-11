@@ -3180,7 +3180,10 @@
     ],
     "trainer_card_type": "Item",
     "items": "Poke Ball",
-    "pokeball": "Pokeball"
+    "pokeball": "Pokeball",
+    "background_pokemon": [
+      "chansey"
+    ]
   },
   "basep-43": {
     "unique_id": "basep-43",
