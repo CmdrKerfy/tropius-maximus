@@ -3192,6 +3192,9 @@
       "charizard",
       "pikachu",
       "pichu"
+    ],
+    "actions": [
+      "flying"
     ]
   },
   "basep-43": {
