@@ -2905,7 +2905,17 @@
     "emotion": [
       "confused"
     ],
-    "perspective": "Confusing"
+    "perspective": "Confusing Perspective"
+  },
+  "basep-21": {
+    "unique_id": "basep-21",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top",
+    "actions": [
+      "fly"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
