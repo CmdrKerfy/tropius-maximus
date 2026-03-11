@@ -2871,7 +2871,8 @@
     ],
     "items": "Poke Ball",
     "berries": [],
-    "held_item": ""
+    "held_item": "",
+    "pokeball": "Pokeball"
   },
   "basep-17": {
     "unique_id": "basep-17",
