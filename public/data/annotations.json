@@ -3002,7 +3002,7 @@
     "color": "yellow",
     "shape": "quadruped",
     "location": "Trophy Garden Area",
-    "camera_angle": "n"
+    "camera_angle": "na"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
