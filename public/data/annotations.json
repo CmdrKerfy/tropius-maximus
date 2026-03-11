@@ -3172,6 +3172,16 @@
       "Hand Drawn"
     ]
   },
+  "basep-44": {
+    "unique_id": "basep-44",
+    "evolution_line": "magby → magmar → magmortar",
+    "color": "red",
+    "shape": "upright",
+    "location": "Fuego Ironworks Area",
+    "actions": [
+      "Pyros"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
