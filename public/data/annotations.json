@@ -2987,6 +2987,9 @@
     "location": "Trophy Garden Area",
     "background_details": [
       "electricity"
+    ],
+    "actions": [
+      "attacking"
     ]
   },
   "dp7-12": {
