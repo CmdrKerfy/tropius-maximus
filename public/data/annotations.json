@@ -2914,7 +2914,36 @@
     "shape": "wings",
     "location": "Mt Silver Top",
     "actions": [
-      "fly"
+      "flying",
+      "Pyros"
+    ],
+    "multi_card": [
+      "Part of the Bigger Picture"
+    ]
+  },
+  "basep-22": {
+    "unique_id": "basep-22",
+    "evolution_line": "articuno",
+    "color": "blue",
+    "shape": "wings",
+    "location": "Seafoam Islands B4F",
+    "actions": [
+      "flying"
+    ],
+    "multi_card": [
+      "Part of the Bigger Picture"
+    ]
+  },
+  "basep-23": {
+    "unique_id": "basep-23",
+    "evolution_line": "zapdos",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area",
+    "perspective": "",
+    "camera_angle": "Profile",
+    "multi_card": [
+      "Part of the Bigger Picture"
     ]
   },
   "dp7-12": {
