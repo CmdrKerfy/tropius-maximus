@@ -3159,7 +3159,8 @@
     "color": "gray",
     "shape": "humanoid",
     "background_pokemon": [
-      "doduo"
+      "doduo",
+      "voltorb"
     ]
   },
   "dp7-12": {
