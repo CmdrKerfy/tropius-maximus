@@ -3276,6 +3276,16 @@
       "Pyros"
     ]
   },
+  "basep-52": {
+    "unique_id": "basep-52",
+    "evolution_line": "ho-oh",
+    "color": "red",
+    "shape": "wings",
+    "location": "Bell Tower Roof",
+    "actions": [
+      "flying"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
