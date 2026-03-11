@@ -3045,6 +3045,16 @@
       "balancing on one leg"
     ]
   },
+  "basep-31": {
+    "unique_id": "basep-31",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207",
+    "background_details": [
+      "patterned background"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
