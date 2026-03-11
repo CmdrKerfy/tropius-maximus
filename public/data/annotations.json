@@ -3146,6 +3146,22 @@
       "Squad Gang"
     ]
   },
+  "basep-39": {
+    "unique_id": "basep-39",
+    "evolution_line": "misdreavus → mismagius",
+    "color": "gray",
+    "shape": "ball",
+    "location": "Eterna Forest Area"
+  },
+  "basep-43": {
+    "unique_id": "basep-43",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid",
+    "background_pokemon": [
+      "doduo"
+    ]
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
