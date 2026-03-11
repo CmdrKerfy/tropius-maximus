@@ -3204,7 +3204,8 @@
     ],
     "background_details": [
       "Pokeball Logo"
-    ]
+    ],
+    "trainer_card_type": "Stadium"
   },
   "basep-43": {
     "unique_id": "basep-43",
