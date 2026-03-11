@@ -2996,6 +2996,14 @@
       "video game"
     ]
   },
+  "basep-27": {
+    "unique_id": "basep-27",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "camera_angle": "aer"
+  },
   "dp7-12": {
     "unique_id": "dp7-12",
     "evolution_line": "snover → abomasnow",
