@@ -3202,7 +3202,8 @@
     "background_details": [
       "computer",
       "electricity"
-    ]
+    ],
+    "environment": "Indoors"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
