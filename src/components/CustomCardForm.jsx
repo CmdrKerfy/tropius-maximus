@@ -226,7 +226,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       emotion: toArray(emotion),
       pose: toArray(pose),
       camera_angle: cameraAngle || "",
-      items: items || "",
+      items: toArray(items),
       actions: toArray(actions),
       additional_characters: toArray(additionalCharacters),
       perspective: perspective || "",
@@ -236,8 +236,8 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       card_locations: cardLocations || "",
       pkmn_region: pkmnRegion || "",
       card_subcategory: toArray(cardSubcategory),
-      held_item: heldItem || "",
-      pokeball: pokeball || "",
+      held_item: toArray(heldItem),
+      pokeball: toArray(pokeball),
       evolution_items: toArray(evolutionItems),
       berries: toArray(berries),
       holiday_theme: toArray(holidayTheme),
@@ -366,6 +366,9 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
           background_details: arrayStr(backgroundDetails),
           image_large: imageLarge || imageSmall,
           card_subcategory:      arrayStr(cardSubcategory),
+          items:                 arrayStr(items),
+          held_item:             arrayStr(heldItem),
+          pokeball:              arrayStr(pokeball),
           evolution_items:       arrayStr(evolutionItems),
           berries:               arrayStr(berries),
           holiday_theme:         arrayStr(holidayTheme),
@@ -800,11 +803,11 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Items</label>
-              <ComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Clefairy Doll, Apple, Fossil, etc." className={inputClass + " w-full"} />
+              <MultiComboBox value={items} onChange={setItems} options={opts.items || []} placeholder="Clefairy Doll, Apple, Fossil, etc." />
             </div>
             <div>
               <label className={labelClass}>Held Item</label>
-              <ComboBox value={heldItem} onChange={setHeldItem} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." className={inputClass + " w-full"} />
+              <MultiComboBox value={heldItem} onChange={setHeldItem} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." />
             </div>
             <div>
               <label className={labelClass}>Berries (if present)</label>
@@ -812,7 +815,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
             <div>
               <label className={labelClass}>Pokeball Type (if present)</label>
-              <ComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." className={inputClass + " w-full"} />
+              <MultiComboBox value={pokeball} onChange={setPokeball} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." />
             </div>
             <div>
               <label className={labelClass}>Evolution Items (if present)</label>

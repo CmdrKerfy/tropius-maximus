@@ -47,6 +47,7 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
   "video_region", "video_location",
   "pose", "emotion", "actions",
+  "items", "held_item", "pokeball",
 ]);
 
 /**
@@ -364,10 +365,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       {
         title: "Background Items",
         fields: [
-          field("Items", annValue("items")),
-          field("Held Item", annValue("held_item")),
+          field("Items", annValue("items", true)),
+          field("Held Item", annValue("held_item", true)),
           field("Berries (if present)", annValue("berries", true)),
-          field("Pokeball Type (if present)", annValue("pokeball")),
+          field("Pokeball Type (if present)", annValue("pokeball", true)),
           field("Evolution Items (if present)", annValue("evolution_items", true)),
         ],
       },
@@ -964,11 +965,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             </div>
                             <div>
                               <label className={labelClass}>Items</label>
-                              <ComboBox value={annValue("items")} onChange={(v) => saveAnnotation("items", v)} options={opts.items || []} placeholder="Clefairy Doll, Apple, Fossil, etc." className={inputClass + " w-full"} />
+                              <MultiComboBox value={annValue("items", true)} onChange={(v) => saveAnnotation("items", v)} options={opts.items || []} placeholder="Clefairy Doll, Apple, Fossil, etc." />
                             </div>
                             <div>
                               <label className={labelClass}>Held Item</label>
-                              <ComboBox value={annValue("held_item")} onChange={(v) => saveAnnotation("held_item", v)} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." className={inputClass + " w-full"} />
+                              <MultiComboBox value={annValue("held_item", true)} onChange={(v) => saveAnnotation("held_item", v)} options={opts.heldItem || HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." />
                             </div>
                             <div>
                               <label className={labelClass}>Berries (if present)</label>
@@ -976,7 +977,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             </div>
                             <div>
                               <label className={labelClass}>Pokeball Type (if present)</label>
-                              <ComboBox value={annValue("pokeball")} onChange={(v) => saveAnnotation("pokeball", v)} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." className={inputClass + " w-full"} />
+                              <MultiComboBox value={annValue("pokeball", true)} onChange={(v) => saveAnnotation("pokeball", v)} options={opts.pokeball || POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." />
                             </div>
                             <div>
                               <label className={labelClass}>Evolution Items (if present)</label>
