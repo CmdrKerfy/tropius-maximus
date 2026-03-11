@@ -3203,7 +3203,10 @@
       "computer",
       "electricity"
     ],
-    "environment": "Indoors"
+    "environment": "Indoors",
+    "pose": [
+      "Flexing"
+    ]
   },
   "dp7-12": {
     "unique_id": "dp7-12",
