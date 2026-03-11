@@ -2868,7 +2868,8 @@
       "magnemite",
       "snorlax",
       "bellsprout"
-    ]
+    ],
+    "items": "poke"
   },
   "basep-17": {
     "unique_id": "basep-17",
