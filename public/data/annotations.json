@@ -3242,7 +3242,8 @@
     "background_details": [
       "Text",
       "moon"
-    ]
+    ],
+    "environment": "Starry Nightc"
   },
   "dp7-12": {
     "unique_id": "dp7-12",
