@@ -3129,7 +3129,8 @@
     "color": "brown",
     "shape": "upright",
     "actions": [
-      "attacking"
+      "attacking",
+      "spinning"
     ]
   },
   "dp7-12": {
