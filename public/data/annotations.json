@@ -423,7 +423,8 @@
     "unique_id": "base1-80",
     "trainer_card_type": "Item",
     "background_details": [
-      "purgatory"
+      "purgatory",
+      "Text"
     ]
   },
   "base1-81": {
@@ -444,7 +445,8 @@
     "unique_id": "base1-84",
     "trainer_card_type": "Item",
     "background_details": [
-      "purgatory"
+      "purgatory",
+      "Text"
     ]
   },
   "base1-85": {
@@ -1428,6 +1430,13 @@
     "shape": "ball",
     "location": "Cerulean Cave 1F"
   },
+  "ecard3-36": {
+    "unique_id": "ecard3-36",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
+    "location": "Cerulean Cave 1F"
+  },
   "ex11-72": {
     "unique_id": "ex11-72",
     "evolution_line": "koffing → weezing",
@@ -1523,12 +1532,59 @@
     "shape": "upright",
     "location": "Cerulean Cave 1F"
   },
+  "gym1-1": {
+    "unique_id": "gym1-1",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top",
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ]
+  },
+  "gym1-10": {
+    "unique_id": "gym1-10",
+    "evolution_line": "tentacool → tentacruel",
+    "color": "blue",
+    "shape": "tentacles",
+    "location": "Canalave City Area",
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ],
+    "emotion": [
+      "Angry"
+    ]
+  },
   "gym1-28": {
     "unique_id": "gym1-28",
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "upright",
     "location": "Cerulean Cave 1F"
+  },
+  "gym1-127": {
+    "unique_id": "gym1-127",
+    "energy_type": "Basic"
+  },
+  "gym1-128": {
+    "unique_id": "gym1-128",
+    "energy_type": "Basic"
+  },
+  "gym1-129": {
+    "unique_id": "gym1-129",
+    "energy_type": "Basic"
+  },
+  "gym1-130": {
+    "unique_id": "gym1-130",
+    "energy_type": "Basic"
+  },
+  "gym1-131": {
+    "unique_id": "gym1-131",
+    "energy_type": "Basic"
+  },
+  "gym1-132": {
+    "unique_id": "gym1-132",
+    "energy_type": "Basic"
   },
   "gym2-11": {
     "unique_id": "gym2-11",
@@ -1576,6 +1632,13 @@
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "upright",
+    "location": "Cerulean Cave 1F"
+  },
+  "hgss4-93": {
+    "unique_id": "hgss4-93",
+    "evolution_line": "voltorb → electrode",
+    "color": "red",
+    "shape": "ball",
     "location": "Cerulean Cave 1F"
   },
   "mcd14-5": {
@@ -1784,6 +1847,13 @@
     "evolution_line": "milcery → alcremie",
     "color": "white",
     "shape": "blob"
+  },
+  "sv9-2": {
+    "unique_id": "sv9-2",
+    "evolution_line": "caterpie → metapod → butterfree",
+    "color": "green",
+    "shape": "squiggle",
+    "location": "Eterna Forest Area"
   },
   "swsh10-172": {
     "unique_id": "swsh10-172",
@@ -2839,6 +2909,16 @@
     "unique_id": "basep-13",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
   },
+  "basep-16": {
+    "unique_id": "basep-16",
+    "items": [
+      "Poke Ball",
+      "Full Heal",
+      "Pluspower",
+      "Defender",
+      "Leek"
+    ]
+  },
   "basep-20": {
     "unique_id": "basep-20",
     "evolution_line": "psyduck → golduck"
@@ -2874,7 +2954,12 @@
     "evolution_line": "feebas → milotic",
     "color": "brown",
     "shape": "fish",
-    "location": "Hoenn Route 119 Area"
+    "location": "Hoenn Route 119 Area",
+    "background_pokemon": [
+      "wingull",
+      "pelipper",
+      "tropius"
+    ]
   },
   "ex8-23": {
     "unique_id": "ex8-23",
@@ -3015,6 +3100,12 @@
     "shape": "quadruped",
     "location": "Cerulean City Area"
   },
+  "sv4pt5-82": {
+    "unique_id": "sv4pt5-82",
+    "background_pokemon": [
+      "tropius"
+    ]
+  },
   "sv4pt5-131": {
     "unique_id": "sv4pt5-131",
     "evolution_line": "pichu → pikachu → raichu",
@@ -3060,6 +3151,16 @@
     "evolution_line": "snorunt → glalie → froslass",
     "color": "white",
     "shape": "arms"
+  },
+  "swsh11-180": {
+    "unique_id": "swsh11-180",
+    "evolution_line": "aerodactyl",
+    "color": "purple",
+    "shape": "wings",
+    "location": "Cinnabar Island Cinnabar Lab",
+    "card_subcategory": [
+      "Illustration Rare"
+    ]
   },
   "swsh2-57": {
     "unique_id": "swsh2-57",
@@ -3198,6 +3299,9 @@
   },
   "custom-vm-set3-28": {
     "weather_environment": "Sunny"
+  },
+  "custom-bjp-094": {
+    "additional_character_theme": []
   },
   "P-A-054": {
     "unique_id": "P-A-054",
