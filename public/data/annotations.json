@@ -3,7 +3,8 @@
     "unique_id": "base1-1",
     "evolution_line": "abra → kadabra → alakazam",
     "color": "brown",
-    "shape": "humanoid"
+    "shape": "humanoid",
+    "card_border": "Yellow"
   },
   "base1-2": {
     "unique_id": "base1-2",
@@ -131,7 +132,8 @@
     "unique_id": "base1-24",
     "evolution_line": "charmander → charmeleon → charizard",
     "color": "red",
-    "shape": "upright"
+    "shape": "upright",
+    "actions": "Slapping"
   },
   "base1-25": {
     "unique_id": "base1-25",
@@ -231,7 +233,8 @@
     "shape": "quadruped",
     "location": "Cerulean City Area",
     "video_url": "",
-    "video_title": ""
+    "video_title": "",
+    "actions": "attacking"
   },
   "base1-46": {
     "unique_id": "base1-46",
@@ -283,7 +286,8 @@
     "evolution_line": "machop → machoke → machamp",
     "color": "gray",
     "shape": "upright",
-    "location": "Mt Coronet 1F Route 207"
+    "location": "Mt Coronet 1F Route 207",
+    "pose": "young bucks who will grow strong"
   },
   "base1-57": {
     "unique_id": "base1-57",
@@ -297,7 +301,13 @@
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "quadruped",
-    "location": "Trophy Garden Area"
+    "location": "Trophy Garden Area",
+    "card_locations": "Forest",
+    "background_details": [
+      "Trees",
+      "electricity"
+    ],
+    "weather": "Heavens Shine Down"
   },
   "base1-59": {
     "unique_id": "base1-59",
@@ -318,7 +328,12 @@
     "evolution_line": "squirtle → wartortle → blastoise",
     "color": "blue",
     "shape": "upright",
-    "location": "Seafoam Islands 1F"
+    "location": "Seafoam Islands 1F",
+    "pose": "",
+    "actions": "attacking",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "base1-64": {
     "unique_id": "base1-64",
@@ -436,8 +451,7 @@
     "unique_id": "base1-80",
     "trainer_card_type": "Item",
     "background_details": [
-      "purgatory",
-      "Text"
+      "purgatory"
     ]
   },
   "base1-81": {
@@ -458,8 +472,7 @@
     "unique_id": "base1-84",
     "trainer_card_type": "Item",
     "background_details": [
-      "purgatory",
-      "Text"
+      "purgatory"
     ]
   },
   "base1-85": {
@@ -633,7 +646,8 @@
     "location": "Cerulean Cave 1F",
     "background_details": [
       "patterned background"
-    ]
+    ],
+    "image_override": "https://pkmncards.com/wp-content/uploads/electrode-jungle-ju-18-normal.jpg"
   },
   "base2-19": {
     "unique_id": "base2-19",
@@ -720,7 +734,8 @@
     "evolution_line": "spearow → fearow",
     "color": "brown",
     "shape": "wings",
-    "location": "Stark Mountain Area"
+    "location": "Stark Mountain Area",
+    "actions": "flying"
   },
   "base2-37": {
     "unique_id": "base2-37",
@@ -841,8 +856,7 @@
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
     "background_details": [
-      "seeds",
-      "dandelions"
+      "seeds"
     ]
   },
   "base2-50": {
@@ -906,7 +920,11 @@
     "evolution_line": "mankey → primeape → annihilape",
     "color": "brown",
     "shape": "upright",
-    "location": "Sinnoh Route 225 Area"
+    "location": "Sinnoh Route 225 Area",
+    "actions": "Swinging, attacking the cameraman",
+    "background_details": [
+      "Trees"
+    ]
   },
   "base2-56": {
     "unique_id": "base2-56",
@@ -1174,7 +1192,10 @@
     "background_details": [
       "toxic"
     ],
-    "weather": "smog"
+    "weather": "smog",
+    "actions": [
+      "polluting"
+    ]
   },
   "base3-47": {
     "unique_id": "base3-47",
@@ -1393,6 +1414,12 @@
     "color": "green",
     "shape": "humanoid",
     "location": "Unova Route 12 Area"
+  },
+  "bw6-21": {
+    "unique_id": "bw6-21",
+    "evolution_line": "magby → magmar → magmortar",
+    "color": "red",
+    "shape": "upright"
   },
   "bw6-27": {
     "unique_id": "bw6-27",
@@ -2071,6 +2098,9 @@
     "color": "gray",
     "shape": "quadruped",
     "location": "Johto Route 45 Area"
+  },
+  "np-28": {
+    "unique_id": "np-28"
   },
   "pop5-16": {
     "unique_id": "pop5-16",
@@ -3153,7 +3183,7 @@
     "color": "purple",
     "shape": "wings",
     "location": "Oreburgh Mine 1F",
-    "environment": "Night",
+    "environment": "Night, Crescent Moon",
     "background_details": [
       "moon"
     ],
@@ -3238,7 +3268,7 @@
   },
   "base5-77": {
     "unique_id": "base5-77",
-    "environment": "Starry Night",
+    "environment": "Starry Night, Crescent Moon",
     "background_details": [
       "buildings"
     ],
@@ -3278,23 +3308,677 @@
     "shape": "upright",
     "location": "Cerulean Cave 1F"
   },
+  "basep-1": {
+    "unique_id": "basep-1",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "background_details": [
+      "patterned background"
+    ],
+    "art_style": [
+      "Polygon Graphics"
+    ]
+  },
+  "basep-2": {
+    "unique_id": "basep-2",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area",
+    "stamp": "Pokemon Movie",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "basep-3": {
+    "unique_id": "basep-3",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "stamp": "Pokemon Movie",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "basep-4": {
+    "unique_id": "basep-4",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "background_details": [
+      "electricity",
+      "purgatory"
+    ],
+    "actions": [
+      "in the sky"
+    ]
+  },
+  "basep-5": {
+    "unique_id": "basep-5",
+    "evolution_line": "dratini → dragonair → dragonite",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Kanto Route 12 Area",
+    "stamp": "Pokemon Movie",
+    "art_style": [
+      "2D",
+      "hand drawn"
+    ],
+    "actions": [
+      "flying"
+    ],
+    "items": "",
+    "pose": [
+      "They're Like People"
+    ]
+  },
+  "basep-6": {
+    "unique_id": "basep-6",
+    "evolution_line": "growlithe → arcanine",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "pose": [
+      "mouth agape"
+    ]
+  },
+  "basep-7": {
+    "unique_id": "basep-7",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Johto Route 34 Area",
+    "art_style": [
+      "Polygon Graphics",
+      "That Reminds Me Of Something"
+    ],
+    "perspective": "",
+    "camera_angle": ""
+  },
+  "basep-8": {
+    "unique_id": "basep-8",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area"
+  },
+  "basep-9": {
+    "unique_id": "basep-9",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area"
+  },
+  "basep-10": {
+    "unique_id": "basep-10",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area",
+    "pose": [
+      "winking"
+    ]
+  },
+  "basep-11": {
+    "unique_id": "basep-11",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Pallet Town Area"
+  },
+  "basep-12": {
+    "unique_id": "basep-12",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "actions": [
+      "Beam Me Up Scotty"
+    ],
+    "card_locations": "Forest",
+    "background_details": [
+      "Trees"
+    ]
+  },
   "basep-13": {
     "unique_id": "basep-13",
-    "evolution_line": "bulbasaur → ivysaur → venusaur"
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "pose": [
+      "mouth agape"
+    ]
+  },
+  "basep-14": {
+    "unique_id": "basep-14",
+    "evolution_line": "mewtwo",
+    "color": "purple",
+    "shape": "upright",
+    "location": "Cerulean Cave B1F",
+    "background_details": [
+      "purgatory"
+    ]
+  },
+  "basep-15": {
+    "unique_id": "basep-15",
+    "evolution_line": "porygon → porygon2 → porygon-z",
+    "color": "pink",
+    "shape": "legs",
+    "location": "Kanto Route 7 Area",
+    "art_style": [
+      "Polygon Graphics"
+    ]
   },
   "basep-16": {
     "unique_id": "basep-16",
-    "items": [
-      "Poke Ball",
-      "Full Heal",
-      "Pluspower",
-      "Defender",
-      "Leek"
+    "trainer_card_type": "Item",
+    "background_pokemon": [
+      "onix",
+      "magnemite",
+      "snorlax",
+      "bellsprout"
+    ],
+    "items": "Poke Ball",
+    "berries": [],
+    "held_item": "",
+    "pokeball": "Pokeball",
+    "background_details": [
+      "electricity",
+      "computer",
+      "solid color"
+    ],
+    "rival_group": "Team Rocket"
+  },
+  "basep-17": {
+    "unique_id": "basep-17",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Vermilion City Area",
+    "camera_angle": "off center"
+  },
+  "basep-18": {
+    "unique_id": "basep-18",
+    "evolution_line": "meowth → persian → perrserker",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Johto Route 35 Area",
+    "rival_group": "Team Rocket",
+    "background_details": [
+      "chaos"
+    ],
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ]
+  },
+  "basep-19": {
+    "unique_id": "basep-19",
+    "evolution_line": "abra → kadabra → alakazam",
+    "color": "brown",
+    "shape": "upright",
+    "location": "Sinnoh Route 203 Area",
+    "card_subcategory": [
+      "Trainer's Pokemon"
     ]
   },
   "basep-20": {
     "unique_id": "basep-20",
-    "evolution_line": "psyduck → golduck"
+    "evolution_line": "psyduck → golduck",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "background_details": [
+      "Question Marks",
+      "lake"
+    ],
+    "emotion": [
+      "confused"
+    ],
+    "perspective": "Confusing Perspective"
+  },
+  "basep-21": {
+    "unique_id": "basep-21",
+    "evolution_line": "moltres",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Mt Silver Top",
+    "actions": [
+      "flying",
+      "Pyros"
+    ],
+    "multi_card": [
+      "Part of the Bigger Picture"
+    ]
+  },
+  "basep-22": {
+    "unique_id": "basep-22",
+    "evolution_line": "articuno",
+    "color": "blue",
+    "shape": "wings",
+    "location": "Seafoam Islands B4F",
+    "actions": [
+      "flying"
+    ],
+    "multi_card": [
+      "Part of the Bigger Picture"
+    ]
+  },
+  "basep-23": {
+    "unique_id": "basep-23",
+    "evolution_line": "zapdos",
+    "color": "yellow",
+    "shape": "wings",
+    "location": "Kanto Route 12 Area",
+    "perspective": "",
+    "camera_angle": "Profile",
+    "multi_card": [
+      "Part of the Bigger Picture"
+    ]
+  },
+  "basep-24": {
+    "unique_id": "basep-24",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "card_subcategory": [
+      "Trainer's Pokemon"
+    ],
+    "background_details": [
+      "food",
+      "present"
+    ],
+    "emotion": [
+      "Happy"
+    ]
+  },
+  "basep-25": {
+    "unique_id": "basep-25",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "items": "",
+    "background_details": [
+      "balloons"
+    ],
+    "actions": [
+      "flying",
+      "in the sky"
+    ],
+    "weather": "Clouds"
+  },
+  "basep-26": {
+    "unique_id": "basep-26",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "background_details": [
+      "electricity"
+    ],
+    "actions": [
+      "attacking"
+    ],
+    "art_style": [
+      "Polygon Graphics",
+      "video game"
+    ]
+  },
+  "basep-27": {
+    "unique_id": "basep-27",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "camera_angle": "Nature Photographer"
+  },
+  "basep-28": {
+    "unique_id": "basep-28",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "pose": [
+      "They're Like People"
+    ],
+    "actions": [
+      "surfing"
+    ],
+    "art_style": [
+      "2D",
+      "Hand Drawn"
+    ]
+  },
+  "basep-29": {
+    "unique_id": "basep-29",
+    "evolution_line": "azurill → marill → azumarill",
+    "color": "blue",
+    "shape": "upright",
+    "location": "Great Marsh Area 1",
+    "actions": [
+      "Jumping"
+    ]
+  },
+  "basep-30": {
+    "unique_id": "basep-30",
+    "evolution_line": "togepi → togetic → togekiss",
+    "color": "white",
+    "shape": "humanoid",
+    "location": "Sinnoh Sea Route 230 Area",
+    "emotion": [
+      "Happy"
+    ],
+    "pose": [
+      "eyes closed",
+      "balancing on one leg"
+    ]
+  },
+  "basep-31": {
+    "unique_id": "basep-31",
+    "evolution_line": "cleffa → clefairy → clefable",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Mt Coronet 1F Route 207",
+    "background_details": [
+      "patterned background"
+    ]
+  },
+  "basep-32": {
+    "unique_id": "basep-32",
+    "evolution_line": "smeargle",
+    "color": "white",
+    "shape": "upright",
+    "location": "Sinnoh Route 208 Area",
+    "card_locations": "ancient ruins",
+    "background_details": [
+      "ancient ruins",
+      "clouds"
+    ],
+    "actions": [
+      "pondering life"
+    ],
+    "pose": [
+      "eyes closed"
+    ]
+  },
+  "basep-33": {
+    "unique_id": "basep-33",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "red",
+    "shape": "bug-wings",
+    "card_locations": "The Void",
+    "pose": [
+      "Punch stance"
+    ]
+  },
+  "basep-34": {
+    "unique_id": "basep-34",
+    "evolution_line": "entei",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Roaming Kanto Area",
+    "card_subcategory": [
+      "Reverse Holo Promo"
+    ],
+    "camera_angle": "Zoomed In"
+  },
+  "basep-35": {
+    "unique_id": "basep-35",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area",
+    "card_subcategory": [
+      "Reverse Holo Promo"
+    ],
+    "art_style": [
+      "IRL Background"
+    ]
+  },
+  "basep-36": {
+    "unique_id": "basep-36",
+    "evolution_line": "igglybuff → jigglypuff → wigglytuff",
+    "color": "pink",
+    "shape": "humanoid",
+    "location": "Johto Route 34 Area",
+    "background_details": [
+      "Trees"
+    ],
+    "actions": [
+      "singing"
+    ],
+    "additional_character_theme": [
+      "BFFs"
+    ]
+  },
+  "basep-37": {
+    "unique_id": "basep-37",
+    "evolution_line": "tyrogue → hitmonlee → hitmonchan → hitmontop",
+    "color": "brown",
+    "shape": "upright",
+    "actions": [
+      "attacking",
+      "spinning"
+    ],
+    "pose": [
+      "Upside Down"
+    ]
+  },
+  "basep-38": {
+    "unique_id": "basep-38",
+    "evolution_line": "unown",
+    "color": "black",
+    "shape": "ball",
+    "location": "Solaceon Ruins 2F",
+    "additional_character_theme": [
+      "Squad Gang"
+    ]
+  },
+  "basep-39": {
+    "unique_id": "basep-39",
+    "evolution_line": "misdreavus → mismagius",
+    "color": "gray",
+    "shape": "ball",
+    "location": "Eterna Forest Area"
+  },
+  "basep-40": {
+    "unique_id": "basep-40",
+    "art_style": [
+      "Polygon Graphics"
+    ],
+    "trainer_card_type": "Item",
+    "items": "Poke Ball",
+    "pokeball": "Pokeball",
+    "background_pokemon": [
+      "chansey"
+    ]
+  },
+  "basep-41": {
+    "unique_id": "basep-41",
+    "card_locations": "City",
+    "background_pokemon": [
+      "charizard",
+      "pikachu",
+      "pichu"
+    ],
+    "actions": [
+      "flying",
+      "Taxi!"
+    ],
+    "pose": [
+      "mouth agape",
+      "tongue out",
+      "wheeeeee"
+    ],
+    "background_details": [
+      "Pokeball Logo"
+    ],
+    "trainer_card_type": "Stadium"
+  },
+  "basep-42": {
+    "unique_id": "basep-42",
+    "trainer_card_type": "Stadium",
+    "environment": "Full Moon",
+    "art_style": [
+      "Polygon Graphics"
+    ],
+    "background_details": [
+      "Trees"
+    ]
+  },
+  "basep-43": {
+    "unique_id": "basep-43",
+    "evolution_line": "machop → machoke → machamp",
+    "color": "gray",
+    "shape": "humanoid",
+    "background_pokemon": [
+      "doduo",
+      "voltorb",
+      "hitmonchan",
+      "pikachu",
+      "jigglypuff"
+    ],
+    "actions": [
+      "Showing off my Talent"
+    ],
+    "art_style": [
+      "Hand Drawn"
+    ]
+  },
+  "basep-44": {
+    "unique_id": "basep-44",
+    "evolution_line": "magby → magmar → magmortar",
+    "color": "red",
+    "shape": "upright",
+    "location": "Fuego Ironworks Area",
+    "actions": [
+      "Pyros"
+    ]
+  },
+  "basep-45": {
+    "unique_id": "basep-45",
+    "evolution_line": "scyther → scizor → kleavor",
+    "color": "green",
+    "shape": "bug-wings",
+    "location": "Sinnoh Route 210 South Towards Solaceon Town",
+    "actions": [
+      "flying",
+      "attacking the cameraman"
+    ]
+  },
+  "basep-46": {
+    "unique_id": "basep-46",
+    "evolution_line": "elekid → electabuzz → electivire",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Sinnoh Route 222 Area",
+    "background_details": [
+      "computer",
+      "electricity"
+    ],
+    "environment": "Indoors",
+    "pose": [
+      "Flexing"
+    ]
+  },
+  "basep-47": {
+    "unique_id": "basep-47",
+    "evolution_line": "mew",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Faraway Island Area",
+    "pose": [
+      "this is my rock"
+    ],
+    "art_style": [
+      "One of A Kind Backgrounds"
+    ]
+  },
+  "basep-48": {
+    "unique_id": "basep-48",
+    "evolution_line": "articuno",
+    "color": "blue",
+    "shape": "wings",
+    "location": "Seafoam Islands B4F",
+    "pose": [
+      "top of the mountain"
+    ],
+    "perspective": "",
+    "camera_angle": "Profile"
+  },
+  "basep-49": {
+    "unique_id": "basep-49",
+    "evolution_line": "munchlax → snorlax",
+    "color": "black",
+    "shape": "humanoid",
+    "location": "Kanto Route 12 Area",
+    "background_details": [
+      "Text",
+      "moon"
+    ],
+    "environment": "Starry Night, Crescent Moon",
+    "background_pokemon": [
+      "eevee"
+    ],
+    "actions": [
+      "Sleeping"
+    ],
+    "camera_angle": "Profile",
+    "pose": [
+      "curled up"
+    ]
+  },
+  "basep-50": {
+    "unique_id": "basep-50",
+    "evolution_line": "celebi",
+    "color": "green",
+    "shape": "humanoid",
+    "location": "Ilex Forest Area",
+    "background_details": [
+      "glowing"
+    ]
+  },
+  "basep-51": {
+    "unique_id": "basep-51",
+    "evolution_line": "ponyta → rapidash",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Mt Silver Outside",
+    "camera_angle": "Underbelly",
+    "actions": [
+      "Pyros"
+    ]
+  },
+  "basep-52": {
+    "unique_id": "basep-52",
+    "evolution_line": "ho-oh",
+    "color": "red",
+    "shape": "wings",
+    "location": "Bell Tower Roof",
+    "actions": [
+      "flying"
+    ],
+    "pose": [
+      "mouth agape",
+      "tongue out"
+    ],
+    "background_details": [
+      "rainbow"
+    ],
+    "camera_angle": "Underbelly"
+  },
+  "basep-53": {
+    "unique_id": "basep-53",
+    "evolution_line": "suicune",
+    "color": "blue",
+    "shape": "quadruped",
+    "location": "Kanto Route 25 Area",
+    "stamp": "Pokemon Movie"
   },
   "cel25c-15_A3": {
     "unique_id": "cel25c-15_A3",
@@ -3356,6 +4040,13 @@
     "color": "green",
     "shape": "humanoid",
     "location": "Unova Route 6 Area"
+  },
+  "neo2-38": {
+    "unique_id": "neo2-38",
+    "evolution_line": "eevee → vaporeon → jolteon → flareon → espeon → umbreon → leafeon → glaceon → sylveon",
+    "color": "brown",
+    "shape": "quadruped",
+    "location": "Pallet Town Area"
   },
   "neo4-43": {
     "unique_id": "neo4-43",
@@ -3431,7 +4122,16 @@
     "evolution_line": "wailmer → wailord",
     "color": "blue",
     "shape": "fish",
-    "location": "Sinnoh Sea Route 223 Area"
+    "location": "Sinnoh Sea Route 223 Area",
+    "main_character": "Wailord",
+    "owned": true,
+    "art_style": "2D, hand drawn",
+    "pose": "",
+    "camera_angle": "",
+    "weather_environment": "Sunny, Clouds",
+    "background_details": "Island, Palm Trees",
+    "actions": "Swimming, We Have Liftoff",
+    "background_pokemon": []
   },
   "sm35-29": {
     "unique_id": "sm35-29",
@@ -3691,6 +4391,282 @@
     "unique_id": "custom-xjp-227/SM-P",
     "evolution_line": "pichu →  pikachu →  raichu",
     "artist": "Naoki Saito"
+  },
+  "custom-cn-exclusives-Chandelure": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Cubone": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Eevee": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Gengar": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-Meowth": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-arcanine-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-captain-pikachu": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-captain-pikachu-stamped": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-ceruledge": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-fuecoco": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-leafeon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-maushold-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-mew-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-1": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-2": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-3": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-pikachu-151-4": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-quaxly": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-sprigatito": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-sylveon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-exclusives-umbreon": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-promos-custom-victini-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-cn-promos-victini-ex-full-art": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-Pikachu-berkemeja-batik-1": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-2": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-3": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-in-promos-pikachu-berkemeja-batik-4": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-Sachiko-EX": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-celebration-fanfare-2023": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-pikachu-summer-vacation-jp": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    },
+    "unique_id": "custom-jp-promos-custom-pikachu-summer-vacation-jp"
+  },
+  "custom-kr-promos-Pikachu": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-kr-promos-Umbreon-ex": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-kr-promos-ditto": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "koreanditto": {
+    "annotations": {}
+  },
+  "vm-set3-28": {
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
+  },
+  "wseggbwreg": {
+    "annotations": {}
+  },
+  "wsjngwgnwrklgmwk;lfg,wefgw": {
+    "annotations": {
+      "weather_environment": "Clouds, Grass, Hills"
+    }
+  },
+  "xjp-XY-P": {
+    "annotations": {}
+  },
+  "xyp-JP279": {
+    "annotations": {
+      "weather_environment": "Indoors"
+    }
+  },
+  "xyp-JP289": {
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
+  },
+  "custom-bjp-065": {
+    "annotations": {}
+  },
+  "custom-bjp-139": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-076": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-079": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-0": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-0000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00000000000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-053": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-143": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-151": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-150": {
+    "additional_character_theme": []
+  },
+  "custom-dbsp-0": {
+    "set_name": "DP Japanese Promos"
+  },
+  "custom-nd-00": {
+    "set_name": "Neo Genesis"
   },
   "P-A-054": {
     "unique_id": "P-A-054",
