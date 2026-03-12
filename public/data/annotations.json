@@ -2284,6 +2284,12 @@
     "color": "green",
     "shape": "quadruped"
   },
+  "xy1-17": {
+    "unique_id": "xy1-17",
+    "evolution_line": "scatterbug → spewpa → vivillon",
+    "color": "white",
+    "shape": "bug-wings"
+  },
   "xy1-29": {
     "unique_id": "xy1-29",
     "evolution_line": "squirtle → wartortle → blastoise",
@@ -4662,11 +4668,8 @@
   "custom-bjp-150": {
     "additional_character_theme": []
   },
-  "custom-dbsp-0": {
-    "set_name": "DP Japanese Promos"
-  },
-  "custom-nd-00": {
-    "set_name": "Neo Genesis"
+  "custom-xjp-0000000": {
+    "set_name": "Pokemon Art Academy"
   },
   "P-A-054": {
     "unique_id": "P-A-054",
