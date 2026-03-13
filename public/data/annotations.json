@@ -4370,7 +4370,8 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-Eevee"
   },
   "custom-cn-exclusives-Gengar": {
     "annotations": {
@@ -4388,7 +4389,9 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-arcanine-ex",
+    "artist": "Gemi"
   },
   "custom-cn-exclusives-captain-pikachu": {
     "annotations": {
@@ -4400,7 +4403,9 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-captain-pikachu-stamped",
+    "artist": ""
   },
   "custom-cn-exclusives-ceruledge": {
     "annotations": {
@@ -4436,7 +4441,8 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-pikachu-151-1"
   },
   "custom-cn-exclusives-pikachu-151-2": {
     "annotations": {
@@ -4551,10 +4557,12 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-kr-promos-ditto"
   },
   "koreanditto": {
-    "annotations": {}
+    "annotations": {},
+    "artist": "Lee Mina"
   },
   "vm-set3-28": {
     "weather_environment": "Sunny",
