@@ -156,6 +156,18 @@ function escapeStr(s) {
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
 
+/** For JSON columns only: never emit empty string (invalid JSON). Use '{}' as minimum. */
+function escapeJson(val) {
+  let s = "{}";
+  if (val != null && typeof val === "object") {
+    try {
+      const raw = JSON.stringify(val);
+      if (raw && raw.length > 0) s = raw;
+    } catch (_) { /* keep '{}' */ }
+  }
+  return "'" + s.replace(/'/g, "''") + "'";
+}
+
 // Generate SQL IN/= clause for a multi-value filter array, or null if empty.
 function inSQL(vals, col) {
   if (!Array.isArray(vals) || vals.length === 0) return null;
@@ -679,10 +691,7 @@ export async function initDB() {
           ${boolVal('pocket_exclusive')}, ${boolVal('owned')},
           ${escapeStr(strVal('unique_id'))}, ${escapeStr(strVal('notes'))},
           ${escapeStr(strVal('image_override'))},
-          ${(function () {
-            const j = typeof annotations === "object" && annotations !== null ? JSON.stringify(annotations) : "{}";
-            return escapeStr(j || "{}");
-          })()}`;
+          ${escapeJson(annotations)}`;
 
         if (isPocket) {
           await conn.query(`
@@ -744,7 +753,7 @@ export async function initDB() {
     if (annResp.ok) {
       const annData = await annResp.json();
       for (const [cardId, data] of Object.entries(annData)) {
-        const escaped = escapeStr(JSON.stringify(data));
+        const escaped = escapeJson(data);
         const escapedId = escapeStr(cardId);
         const promotedSet = buildPromotedSetClause(data);
         const extraSet = promotedSet ? `, ${promotedSet}` : '';
@@ -853,7 +862,7 @@ async function hydrateFromIndexedDB() {
   // Hydrate annotations — write both JSON blob AND promoted columns (only one table will match per ID)
   const annotations = await idbGetAll(STORE_ANNOTATIONS);
   for (const row of annotations) {
-    const escaped = escapeStr(JSON.stringify(row.data));
+    const escaped = escapeJson(row.data);
     const escapedId = escapeStr(row.id);
     const promotedSet = buildPromotedSetClause(row.data);
     const extraSet = promotedSet ? `, ${promotedSet}` : '';
@@ -875,8 +884,8 @@ async function hydrateFromIndexedDB() {
           ${escapeStr(attr.key)},
           ${escapeStr(attr.label)},
           ${escapeStr(attr.value_type)},
-          ${escapeStr(JSON.stringify(attr.options))},
-          ${escapeStr(JSON.stringify(attr.default_value))},
+          ${escapeJson(attr.options)},
+          ${escapeJson(attr.default_value)},
           FALSE,
           ${parseInt(attr.sort_order) || 100}
         )
@@ -2253,7 +2262,7 @@ export async function patchAnnotations(cardId, annotations) {
   }
 
   // Write to DuckDB — dual-write: JSON blob + promoted columns on both tables (only one will match)
-  const escaped = escapeStr(JSON.stringify(current));
+  const escaped = escapeJson(current);
   const escapedId = escapeStr(cardId);
   const promotedSet = buildPromotedSetClause(annotations);
   const extraSet = promotedSet ? ', ' + promotedSet : '';
@@ -2332,8 +2341,8 @@ export async function createAttribute(attr) {
       ${escapeStr(key)},
       ${escapeStr(label)},
       ${escapeStr(value_type)},
-      ${escapeStr(JSON.stringify(options))},
-      ${escapeStr(JSON.stringify(default_value))},
+      ${escapeJson(options)},
+      ${escapeJson(default_value)},
       FALSE,
       ${maxOrder + 1}
     )
@@ -2789,7 +2798,7 @@ async function _insertTcgCard(card) {
       ${boolVal('pocket_exclusive')}, ${boolVal('owned')},
       ${escapeStr(strVal('unique_id'))}, ${escapeStr(strVal('notes'))},
       ${escapeStr(strVal('image_override'))},
-      ${escapeStr(JSON.stringify(annotations))}
+      ${escapeJson(annotations)}
     )
   `);
 }
@@ -2855,7 +2864,7 @@ async function _insertPocketCard(card) {
       ${boolVal('pocket_exclusive')}, ${boolVal('owned')},
       ${escapeStr(strVal('unique_id'))}, ${escapeStr(strVal('notes'))},
       ${escapeStr(strVal('image_override'))},
-      ${escapeStr(JSON.stringify(annotations))}
+      ${escapeJson(annotations)}
     )
   `);
 }
