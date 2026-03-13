@@ -1129,7 +1129,7 @@ export async function fetchCards(params = {}) {
       return {
         id: r.id,
         name: r.name,
-        supertype: r.supertype,
+        supertype: normalizeSupertypeDisplay(r.supertype || ""),
         subtypes: "[]",
         hp: r.hp,
         types: r.types,
@@ -1187,7 +1187,7 @@ export async function fetchCards(params = {}) {
     const cards = dataResult.toArray().map((r) => ({
       id: r.id,
       name: r.name,
-      supertype: r.supertype || "",
+      supertype: normalizeSupertypeDisplay(r.supertype || ""),
       subtypes: r.subtypes || "[]",
       hp: r.hp,
       types: r.types || "[]",
@@ -1281,7 +1281,7 @@ export async function fetchCards(params = {}) {
   const cards = rows.map((r) => ({
     id: r.id,
     name: r.name,
-    supertype: r.supertype || "",
+    supertype: normalizeSupertypeDisplay(r.supertype || ""),
     subtypes: r.subtypes || "[]",
     hp: r.hp,
     types: r.types || "[]",
@@ -1355,7 +1355,7 @@ export async function fetchCard(id, source = "TCG") {
     return {
       id: r.id,
       name: r.name,
-      supertype: r.card_type || "",
+      supertype: normalizeSupertypeDisplay(r.card_type || ""),
       subtypes: "[]",
       hp: r.hp,
       types,
@@ -1481,7 +1481,7 @@ export async function fetchCard(id, source = "TCG") {
     id: r.id,
     name: r.name,
     alt_name: r.alt_name || null,
-    supertype: r.supertype || "",
+    supertype: normalizeSupertypeDisplay(r.supertype || ""),
     subtypes: r.subtypes || "[]",
     hp: r.hp,
     types: r.types || "[]",
@@ -1507,23 +1507,34 @@ export async function fetchCard(id, source = "TCG") {
   };
 }
 
-// Normalize supertypes: merge "Pokemon" (no accent) into "Pokémon" (with accent) and deduplicate.
+// Normalize supertypes: merge "Pokemon" (no accent), mojibake "PokÃ©mon", and other
+// corrupted variants into "Pokémon", and deduplicate.
+function normalizeSupertypeDisplay(s) {
+  if (!s || typeof s !== "string") return s;
+  const norm = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (norm === "pokemon") return "Pokémon";
+  // Collapse mojibake/corrupted "Pokémon" (e.g. PokÃ©mon, PokÃÂÃÂ©mon): letters-only "pokmon" or "pokemon"
+  const alphaOnly = s.replace(/[^a-zA-Z]/g, "").toLowerCase();
+  if (alphaOnly === "pokemon" || alphaOnly === "pokmon") return "Pokémon";
+  return s;
+}
+
 function mergeSupertypes(arr) {
   const seen = new Set();
-  return arr.map((s) => {
-    const norm = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return norm === "pokemon" ? "Pokémon" : s;
-  }).filter((s) => {
+  return arr.map((s) => normalizeSupertypeDisplay(s)).filter((s) => {
     if (seen.has(s)) return false;
     seen.add(s);
     return true;
   });
 }
 
-// Build a SQL condition for the supertype column that matches both "Pokémon" and "Pokemon".
+// Build a SQL condition for the supertype column that matches "Pokémon", "Pokemon", and mojibake variants.
 function supertypeSQL(supertype) {
   const norm = supertype.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (norm === "pokemon") return `c.supertype IN ('Pokémon', 'Pokemon')`;
+  if (norm === "pokemon") {
+    // Match canonical forms and any corrupted "Pokémon" (e.g. PokÃ©mon) that still starts with Pok and ends with mon
+    return `(c.supertype IN ('Pokémon', 'Pokemon') OR (c.supertype LIKE 'Pok%mon' AND LENGTH(c.supertype) < 60))`;
+  }
   return `c.supertype = ${escapeStr(supertype)}`;
 }
 
@@ -2515,7 +2526,7 @@ export async function syncMutableTablesToIndexedDB() {
     };
     if (tableHint === 'tcg') {
       Object.assign(card, {
-        supertype: row.supertype || "",
+        supertype: normalizeSupertypeDisplay(row.supertype || ""),
         subtypes: parseArr(row.subtypes),
         hp: row.hp || "",
         types: parseArr(row.types),

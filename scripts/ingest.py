@@ -34,7 +34,9 @@ Environment:
 import argparse
 import json
 import os
+import re
 import time
+import unicodedata
 from typing import Optional
 
 import httpx
@@ -90,6 +92,39 @@ def get_region_generation(pokedex_num: int) -> tuple:
 def get_connection() -> duckdb.DuckDBPyConnection:
     """Open (or create) the DuckDB database file and return a connection."""
     return duckdb.connect(DB_PATH)
+
+
+def normalize_supertype(s: str) -> str:
+    """Return canonical supertype: 'Pokémon' for any Pokémon variant (including mojibake), else unchanged."""
+    if not s or not isinstance(s, str):
+        return s or ""
+    # NFD + strip combining characters, then lowercase
+    norm = unicodedata.normalize("NFD", s)
+    norm = re.sub(r"[\u0300-\u036f]", "", norm).lower()
+    if norm == "pokemon":
+        return "Pokémon"
+    # Mojibake/corrupted "Pokémon": letters-only "pokmon" or "pokemon"
+    alpha_only = re.sub(r"[^a-zA-Z]", "", s).lower()
+    if alpha_only in ("pokemon", "pokmon"):
+        return "Pokémon"
+    return s
+
+
+def normalize_supertypes_in_db(conn: duckdb.DuckDBPyConnection) -> int:
+    """Update tcg_cards: set supertype = 'Pokémon' for every row whose supertype is a variant. Returns number of distinct variants fixed."""
+    rows = conn.execute(
+        "SELECT DISTINCT supertype FROM tcg_cards WHERE supertype IS NOT NULL AND supertype != ''"
+    ).fetchall()
+    variants_fixed = 0
+    for (val,) in rows:
+        if val == "Pokémon":
+            continue
+        if normalize_supertype(val) == "Pokémon":
+            conn.execute(
+                "UPDATE tcg_cards SET supertype = 'Pokémon' WHERE supertype = ?", [val]
+            )
+            variants_fixed += 1
+    return variants_fixed
 
 
 def initialize_database() -> None:
@@ -377,7 +412,7 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
             """, [
                 card["id"],
                 card.get("name", ""),
-                card.get("supertype", ""),
+                normalize_supertype(card.get("supertype", "") or ""),
                 json.dumps(card.get("subtypes", [])),
                 card.get("hp", ""),
                 json.dumps(card.get("types", [])),
@@ -401,6 +436,11 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
         # Rate limit: be gentle with the API
         if i < len(set_ids):
             time.sleep(0.5)
+
+    # Standardize any remaining Pokémon supertype variants (e.g. mojibake) to 'Pokémon'
+    fixed = normalize_supertypes_in_db(conn)
+    if fixed:
+        print(f"Normalized {fixed} supertype value(s) to 'Pokémon'.")
 
     conn.close()
     parts = [f"Ingested {total_ingested} cards total."]
@@ -806,7 +846,19 @@ def main():
         action="store_true",
         help="Clear the permanently-failed sets list before running.",
     )
+    parser.add_argument(
+        "--normalize-only",
+        dest="normalize_only",
+        action="store_true",
+        help="Only normalize Pokémon supertype variants in tcg_cards to 'Pokémon', then exit.",
+    )
     args = parser.parse_args()
+    if args.normalize_only:
+        conn = get_connection()
+        n = normalize_supertypes_in_db(conn)
+        conn.close()
+        print(f"Normalized {n} supertype variant(s) to 'Pokémon'.")
+        return
     if args.clear_failed:
         conn = get_connection()
         deleted = conn.execute("DELETE FROM failed_sets").rowcount

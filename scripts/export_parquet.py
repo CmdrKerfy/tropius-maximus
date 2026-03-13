@@ -1,20 +1,55 @@
 """
 Export DuckDB tables to Parquet files for the static site.
 
-Reads scripts/pokemon.duckdb and writes:
-  - public/data/cards.parquet  (all card columns, ZSTD compressed)
-  - public/data/sets.parquet   (all set columns, ZSTD compressed)
+Reads public/data/pokemon.duckdb and writes Parquet files. Before exporting,
+automatically normalizes Pokémon supertype variants in tcg_cards to 'Pokémon'.
 
 Usage:
     python export_parquet.py
 """
 
 import os
+import re
+import unicodedata
 import duckdb
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(SCRIPT_DIR, "..", "public", "data", "pokemon.duckdb")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "public", "data")
+
+
+def _normalize_supertype(s: str) -> str:
+    """Return 'Pokémon' for any Pokémon variant (including mojibake), else unchanged."""
+    if not s or not isinstance(s, str):
+        return s or ""
+    norm = unicodedata.normalize("NFD", s)
+    norm = re.sub(r"[\u0300-\u036f]", "", norm).lower()
+    if norm == "pokemon":
+        return "Pokémon"
+    alpha_only = re.sub(r"[^a-zA-Z]", "", s).lower()
+    if alpha_only in ("pokemon", "pokmon"):
+        return "Pokémon"
+    return s
+
+
+def _normalize_supertypes_in_db(conn: duckdb.DuckDBPyConnection) -> int:
+    """Set supertype = 'Pokémon' for every tcg_cards row whose supertype is a variant. Returns count of variants fixed."""
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT supertype FROM tcg_cards WHERE supertype IS NOT NULL AND supertype != ''"
+        ).fetchall()
+    except Exception:
+        return 0
+    n = 0
+    for (val,) in rows:
+        if val == "Pokémon":
+            continue
+        if _normalize_supertype(val) == "Pokémon":
+            conn.execute(
+                "UPDATE tcg_cards SET supertype = 'Pokémon' WHERE supertype = ?", [val]
+            )
+            n += 1
+    return n
 
 
 def safe_export(conn, table, query, output_path, label):
@@ -40,7 +75,10 @@ def safe_export(conn, table, query, output_path, label):
 
 def export():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    conn = duckdb.connect(DB_PATH, read_only=True)
+    conn = duckdb.connect(DB_PATH)  # read-write so we can normalize before export
+    fixed = _normalize_supertypes_in_db(conn)
+    if fixed:
+        print(f"  Normalized {fixed} supertype variant(s) to 'Pokémon'.")
 
     safe_export(conn, "tcg_cards",
                 "SELECT id, name, supertype, subtypes, hp, types, evolves_from, rarity, artist, set_id, set_name, set_series, number, regulation_mark, image_small, image_large, raw_data, prices FROM tcg_cards WHERE NOT is_custom",
