@@ -4339,12 +4339,6 @@
     "unique_id": "custom-xyp-JP279",
     "actions": []
   },
-  "custom-xyp-JP289": {
-    "weather_environment": "Sunny"
-  },
-  "custom-vm-set3-28": {
-    "weather_environment": "Sunny"
-  },
   "custom-bjp-094": {
     "additional_character_theme": []
   },
@@ -4423,7 +4417,8 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-leafeon"
   },
   "custom-cn-exclusives-maushold-ex": {
     "annotations": {
@@ -4526,7 +4521,8 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-jp-promos-custom-Sachiko-EX"
   },
   "custom-jp-promos-custom-celebration-fanfare-2023": {
     "annotations": {
@@ -4553,13 +4549,6 @@
       "annotations": {}
     }
   },
-  "custom-kr-promos-ditto": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    },
-    "unique_id": "custom-kr-promos-ditto"
-  },
   "koreanditto": {
     "annotations": {},
     "artist": "Lee Mina"
@@ -4569,7 +4558,8 @@
     "unique_id": "vm-set3-28"
   },
   "wseggbwreg": {
-    "annotations": {}
+    "annotations": {},
+    "artist": "TOKIYA"
   },
   "wsjngwgnwrklgmwk;lfg,wefgw": {
     "annotations": {
