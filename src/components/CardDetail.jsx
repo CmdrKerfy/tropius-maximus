@@ -172,8 +172,19 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     return val;
   };
 
-  // Extract useful data from the raw API payload.
-  const raw = card ? (typeof card.raw_data === "string" ? JSON.parse(card.raw_data) : card.raw_data) : null;
+  // Extract useful data from the raw API payload (guard empty string — invalid JSON).
+  let raw = null;
+  if (card) {
+    if (typeof card.raw_data === "string") {
+      try {
+        raw = card.raw_data.trim() ? JSON.parse(card.raw_data) : null;
+      } catch {
+        raw = null;
+      }
+    } else {
+      raw = card.raw_data || null;
+    }
+  }
   const attacks = raw?.attacks || [];
   const weaknesses = raw?.weaknesses || [];
   const resistances = raw?.resistances || [];

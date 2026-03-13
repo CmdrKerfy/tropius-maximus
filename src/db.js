@@ -168,6 +168,19 @@ function escapeJson(val) {
   return "'" + s.replace(/'/g, "''") + "'";
 }
 
+/** Parse string from JSON column; empty string is invalid JSON, so return fallback. */
+function safeParseJson(val, fallback = {}) {
+  if (val == null) return fallback;
+  if (typeof val !== "string") return val;
+  const trimmed = val.trim();
+  if (trimmed.length === 0) return fallback;
+  try {
+    return JSON.parse(val);
+  } catch (_) {
+    return fallback;
+  }
+}
+
 // Generate SQL IN/= clause for a multi-value filter array, or null if empty.
 function inSQL(vals, col) {
   if (!Array.isArray(vals) || vals.length === 0) return null;
@@ -1160,10 +1173,7 @@ export async function fetchCards(params = {}) {
 
     const rows = dataResult.toArray();
     const cards = rows.map((r) => {
-      const annotations =
-        typeof r.annotations === "string"
-          ? JSON.parse(r.annotations)
-          : r.annotations || {};
+      const annotations = safeParseJson(r.annotations, {});
       return {
         id: r.id,
         name: r.name,
@@ -1363,14 +1373,10 @@ export async function fetchCard(id, source = "TCG") {
     if (rows.length === 0) throw new Error("Card not found");
 
     const r = rows[0];
-    const raw_data =
-      typeof r.raw_data === "string" ? JSON.parse(r.raw_data) : r.raw_data || {};
-    let annotations =
-      typeof r.annotations === "string"
-        ? JSON.parse(r.annotations)
-        : r.annotations || {};
-    const packs =
-      typeof r.packs === "string" ? JSON.parse(r.packs) : r.packs || [];
+    const raw_data = safeParseJson(r.raw_data, {});
+    let annotations = safeParseJson(r.annotations, {});
+    const packsRaw = safeParseJson(r.packs, []);
+    const packs = Array.isArray(packsRaw) ? packsRaw : [];
 
     // Auto-populate unique_id if empty
     let needsPatch = false;
@@ -1454,20 +1460,14 @@ export async function fetchCard(id, source = "TCG") {
   if (rows.length === 0) throw new Error("Card not found");
 
   const r = rows[0];
-  const raw_data =
-    typeof r.raw_data === "string" ? JSON.parse(r.raw_data || "{}") : r.raw_data || {};
+  const raw_data = safeParseJson(r.raw_data, {});
   // Build annotations from promoted columns first, then merge JSON blob on top
   const promoted = buildPromotedAnnotations(r);
   let annotations = {
     ...promoted,
-    ...(typeof r.annotations === "string"
-      ? JSON.parse(r.annotations)
-      : r.annotations || {}),
+    ...safeParseJson(r.annotations, {}),
   };
-  const prices =
-    typeof r.prices === "string"
-      ? JSON.parse(r.prices)
-      : r.prices || {};
+  const prices = safeParseJson(r.prices, {});
 
   // Auto-populate unique_id if empty (or wrong for custom cards)
   let needsPatch = false;
@@ -2241,7 +2241,7 @@ export async function fetchAnnotations(cardId) {
   if (rows.length === 0) throw new Error("Card not found");
 
   const val = rows[0].annotations;
-  return typeof val === "string" ? JSON.parse(val) : val || {};
+  return safeParseJson(val, {});
 }
 
 /**
@@ -2286,14 +2286,8 @@ function parseAttrRow(r) {
     key: r.key,
     label: r.label,
     value_type: r.value_type,
-    options:
-      typeof r.options === "string" && r.options !== "null"
-        ? JSON.parse(r.options)
-        : null,
-    default_value:
-      typeof r.default_value === "string" && r.default_value !== "null"
-        ? JSON.parse(r.default_value)
-        : null,
+    options: safeParseJson(r.options, null),
+    default_value: safeParseJson(r.default_value, null),
     is_builtin: r.is_builtin,
     sort_order: typeof r.sort_order === "bigint" ? Number(r.sort_order) : r.sort_order,
   };
@@ -2477,7 +2471,7 @@ export async function exportAllAnnotations() {
   ]);
   for (const result of queries) {
     for (const row of result.toArray()) {
-      const data = typeof row.annotations === "string" ? JSON.parse(row.annotations) : row.annotations || {};
+      const data = safeParseJson(row.annotations, {});
       if (Object.keys(data).length > 0) results[row.id] = data;
     }
   }
@@ -2501,10 +2495,7 @@ export async function syncMutableTablesToIndexedDB() {
 
   for (const result of annQueries) {
     for (const row of result.toArray()) {
-      const data =
-        typeof row.annotations === "string"
-          ? JSON.parse(row.annotations)
-          : row.annotations || {};
+      const data = safeParseJson(row.annotations, {});
       if (Object.keys(data).length > 0) {
         await idbPut(STORE_ANNOTATIONS, { id: row.id, data });
         results.annotationsSynced++;
@@ -2522,7 +2513,7 @@ export async function syncMutableTablesToIndexedDB() {
 
   // Helper to build a serializable card object from a DB row
   function rowToCardJson(row, tableHint) {
-    const ann = typeof row.annotations === "string" ? JSON.parse(row.annotations) : row.annotations || {};
+    const ann = safeParseJson(row.annotations, {});
     const card = {
       id: row.id || "",
       name: row.name || "",
