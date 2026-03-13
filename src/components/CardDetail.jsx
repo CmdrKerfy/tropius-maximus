@@ -95,7 +95,7 @@ function parseAnnotations(card) {
   return a;
 }
 
-export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick }) {
+export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -111,6 +111,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
   const [saveMessage, setSaveMessage] = useState("");
   const ghPushTimer = useRef(null);
+  const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
 
   useEffect(() => {
     fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
@@ -192,6 +193,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
 
   // Debounce GitHub push so a quick pass through many cards produces one commit and one workflow run.
   const GITHUB_PUSH_DEBOUNCE_MS = 5000;
+  const GITHUB_PUSH_RETRY_WHEN_BUSY_MS = 2000; // if a push is in progress, retry after this
 
   // Push annotations to GitHub; on 409 (file changed), refetch SHA and retry once.
   const pushAnnotationsToGitHub = async (token, allAnnotations, commitMessage) => {
@@ -208,37 +210,72 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     }
   };
 
+  const runScheduledPush = async () => {
+    const token = getToken();
+    if (!token) return;
+    if (ghPushInProgressRef.current) {
+      // Another push is in progress (e.g. user edited another card). Retry shortly so no edits are lost.
+      ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
+      return;
+    }
+    ghPushInProgressRef.current = true;
+    setSaveStatus("saving");
+    setSaveMessage("");
+    onSyncStarted?.();
+    try {
+      const allAnnotations = await exportAllAnnotations();
+      await pushAnnotationsToGitHub(
+        token,
+        allAnnotations,
+        "CardDetail: update annotations"
+      );
+      setSaveStatus("saved");
+      setSaveMessage("Synced to GitHub");
+      onSyncCompleted?.(Object.keys(allAnnotations));
+      setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
+    } catch (err) {
+      console.warn("CardDetail GitHub push failed:", err.message);
+      const msg = err?.message || "";
+      setSaveStatus("error");
+      setSaveMessage(
+        msg.includes("403")
+          ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
+          : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
+      );
+      onSyncFailed?.();
+    } finally {
+      ghPushInProgressRef.current = false;
+    }
+  };
+
   const scheduleGitHubPush = () => {
     const token = getToken();
     if (!token) return;
+    if (card?.id && onSyncQueued) onSyncQueued(card.id);
+    setSaveStatus("queued");
+    setSaveMessage("Changes successfully added to the queue.");
     clearTimeout(ghPushTimer.current);
-    ghPushTimer.current = setTimeout(async () => {
-      try {
-        const allAnnotations = await exportAllAnnotations();
-        await pushAnnotationsToGitHub(
-          token,
-          allAnnotations,
-          `CardDetail: update annotations for ${card?.name ?? "card"}`
-        );
-      } catch (err) {
-        console.warn("CardDetail GitHub push failed:", err.message);
-        const msg = err?.message || "";
-        setSaveStatus("error");
-        setSaveMessage(
-          msg.includes("403")
-            ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
-            : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
-        );
-      }
-    }, GITHUB_PUSH_DEBOUNCE_MS);
+    ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_DEBOUNCE_MS);
   };
 
   const handleSaveChanges = async () => {
-    clearTimeout(ghPushTimer.current); // avoid racing with debounced push
+    if (ghPushInProgressRef.current) {
+      // A push is already in progress. Schedule one to run right after so this card's edits are not lost.
+      if (card?.id && onSyncQueued) onSyncQueued(card.id);
+      setSaveStatus("queued");
+      setSaveMessage("Sync in progress — your changes will be included in the next push.");
+      clearTimeout(ghPushTimer.current);
+      ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
+      return;
+    }
+    ghPushInProgressRef.current = true;
+    clearTimeout(ghPushTimer.current); // cancel debounced push so we do one commit
+    if (card?.id && onSyncQueued) onSyncQueued(card.id); // so banner shows this card while syncing
     setSaveStatus("saving");
     setSaveMessage("");
     setIsEditMode(false);
     setActiveTab("info");
+    onSyncStarted?.();
     try {
       const allAnnotations = await exportAllAnnotations();
       const token = getToken();
@@ -250,6 +287,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         );
         setSaveStatus("saved");
         setSaveMessage("Synced to GitHub");
+        onSyncCompleted?.(Object.keys(allAnnotations));
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       } else {
         setSaveStatus("saved");
@@ -264,6 +302,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
           ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
           : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
       );
+      onSyncFailed?.();
+    } finally {
+      ghPushInProgressRef.current = false;
     }
   };
 
@@ -754,8 +795,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   <div className="ml-auto flex items-center gap-2 pb-2">
                     {isEditMode && (
                       <>
-                        {saveStatus === "saved" && (
-                          <span className="text-xs text-green-600 font-medium">{saveMessage}</span>
+                        {(saveStatus === "saved" || saveStatus === "queued") && saveMessage && (
+                          <span className={`text-xs font-medium ${saveStatus === "saved" ? "text-green-600" : "text-gray-600"}`}>{saveMessage}</span>
                         )}
                         <button
                           onClick={handleSaveChanges}

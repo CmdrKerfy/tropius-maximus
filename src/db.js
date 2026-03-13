@@ -1528,6 +1528,27 @@ function mergeSupertypes(arr) {
   });
 }
 
+// Fix common UTF-8/Latin-1 mojibake in strings (e.g. Ã© → é, ÃÂ stripped).
+function fixMojibake(s) {
+  if (!s || typeof s !== "string") return s;
+  return s.replace(/ÃÂ/g, "").replace(/Ã©/g, "é");
+}
+
+// Normalize evolution line options: fix mojibake and dedupe so corrupted variants collapse.
+function mergeEvolutionLines(arr) {
+  const seen = new Set();
+  return arr
+    .map((s) => fixMojibake(String(s).trim()))
+    .filter(Boolean)
+    .filter((s) => {
+      const key = s.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort();
+}
+
 // Build a SQL condition for the supertype column that matches "Pokémon", "Pokemon", and mojibake variants.
 function supertypeSQL(supertype) {
   const norm = supertype.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -1633,7 +1654,7 @@ export async function fetchFilterOptions(source = "TCG") {
     );
     const colors = colorsResult.toArray().map((r) => r.color);
     const artists = artistsResult.toArray().map((r) => r.artist);
-    const evolution_lines = evolutionLinesResult.toArray().map((r) => r.evolution_chain);
+    const evolution_lines = mergeEvolutionLines(evolutionLinesResult.toArray().map((r) => r.evolution_chain));
     const decodeUnicode = (str) => {
       try { return JSON.parse(`"${str}"`); } catch { return str; }
     };
@@ -1845,7 +1866,7 @@ export async function fetchFilterOptions(source = "TCG") {
   );
   const colors = colorsResult.toArray().map((r) => r.color);
   const artists = artistsResult.toArray().map((r) => r.artist);
-  const evolution_lines = evolutionLinesResult.toArray().map((r) => r.evolution_chain);
+  const evolution_lines = mergeEvolutionLines(evolutionLinesResult.toArray().map((r) => r.evolution_chain));
   // Decode Unicode escape sequences (e.g., \u00e9 -> é)
   const decodeUnicode = (str) => {
     try {
@@ -2082,7 +2103,7 @@ export async function fetchFormOptions() {
     splitJsonArrayValues("background_humans"),
     splitJsonArrayValues("additional_characters"),
     splitJsonArrayValues("background_details"),
-    // evolution_line: full chains from tcg_cards + pokemon_metadata.evolution_chain
+    // evolution_line: full chains from tcg_cards + pokemon_metadata.evolution_chain (mojibake fixed, deduped)
     (async () => {
       const [customResult, pmResult] = await Promise.all([
         conn.query(
@@ -2098,7 +2119,7 @@ export async function fetchFormOptions() {
       ]);
       const fromCustom = customResult.toArray().map((r) => r.val?.toLowerCase()).filter(Boolean);
       const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
-      return [...new Set([...fromPm, ...fromCustom])].sort();
+      return mergeEvolutionLines([...fromPm, ...fromCustom]);
     })(),
     splitJsonArrayValues("card_subcategory"),
     splitJsonArrayValues("evolution_items"),
