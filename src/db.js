@@ -152,6 +152,7 @@ function idbClearStore(storeName) {
 // ── SQL escape helpers ─────────────────────────────────────────────────
 
 function escapeStr(s) {
+  if (s == null || s === undefined) return "''";
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
 
@@ -678,7 +679,10 @@ export async function initDB() {
           ${boolVal('pocket_exclusive')}, ${boolVal('owned')},
           ${escapeStr(strVal('unique_id'))}, ${escapeStr(strVal('notes'))},
           ${escapeStr(strVal('image_override'))},
-          ${escapeStr(JSON.stringify(annotations))}`;
+          ${(function () {
+            const j = typeof annotations === "object" && annotations !== null ? JSON.stringify(annotations) : "{}";
+            return escapeStr(j || "{}");
+          })()}`;
 
         if (isPocket) {
           await conn.query(`
