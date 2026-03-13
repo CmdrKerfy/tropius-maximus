@@ -6,10 +6,11 @@ export default function MultiComboBox({ value, onChange, options = [], placehold
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
+  const opts = Array.isArray(options) ? options : [];
   // Parse comma-separated string into array of trimmed non-empty values
   const tags = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
-  const remaining = options.filter(
+  const remaining = opts.filter(
     (opt) => !tags.some((t) => t.toLowerCase() === opt.toLowerCase())
   );
   const filtered = remaining.filter(

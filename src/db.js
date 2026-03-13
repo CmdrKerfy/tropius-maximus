@@ -313,13 +313,19 @@ export async function initDB() {
   }
 
   let workerBlobUrl;
+  const mainWorkerUrl = toAbsoluteUrl(bundle.mainWorker);
   if (import.meta.env.DEV) {
-    const cdnWorkerUrl = duckdb.getJsDelivrBundles().mvp.mainWorker;
-    workerBlobUrl = URL.createObjectURL(
-      new Blob([`importScripts("${cdnWorkerUrl}");`], { type: "text/javascript" })
-    );
+    try {
+      const workerScript = await fetch(mainWorkerUrl).then((r) => r.text());
+      const scriptWithoutSourcemap = workerScript.replace(/\n?\/\/# sourceMappingURL=.*$/m, "");
+      workerBlobUrl = URL.createObjectURL(
+        new Blob([scriptWithoutSourcemap], { type: "application/javascript" })
+      );
+    } catch (e) {
+      URL.revokeObjectURL(wasmBlobUrl);
+      throw new Error("DuckDB init: failed to fetch worker (dev) — " + (e?.message || e));
+    }
   } else {
-    const mainWorkerUrl = toAbsoluteUrl(bundle.mainWorker);
     let workerScript;
     try {
       workerScript = await fetch(mainWorkerUrl).then((r) => r.text());

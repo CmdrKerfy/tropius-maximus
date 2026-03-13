@@ -6,7 +6,8 @@ export default function ComboBox({ value, onChange, options = [], placeholder = 
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
-  const filtered = options.filter(
+  const opts = Array.isArray(options) ? options : [];
+  const filtered = opts.filter(
     (opt) => opt.toLowerCase().includes((filter || value || "").toLowerCase())
   );
 

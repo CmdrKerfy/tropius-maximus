@@ -5,7 +5,7 @@
  * Data comes from DuckDB-WASM (db.js) instead of a backend API.
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Component } from "react";
 import {
   fetchCards,
   fetchFilterOptions,
@@ -48,6 +48,45 @@ function sortCards(arr, sort_by, sort_dir) {
 
 const FILTER_STORAGE_KEY = "tm_filters";
 const SEARCH_STORAGE_KEY = "tm_search";
+
+/** Catches render errors in card detail modal so the app doesn't go blank. */
+class CardDetailErrorBoundary extends Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("CardDetail error:", error, info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h2>
+            <p className="text-sm text-gray-600 mb-4 font-mono break-all">
+              {this.state.error?.message ?? String(this.state.error)}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                this.setState({ error: null });
+                this.props.onClose?.();
+              }}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DEFAULT_FILTERS = {
   source: "", supertype: "", rarity: [], set_id: [], region: [],
@@ -827,6 +866,7 @@ export default function App() {
           const currentIndex = cardIds.indexOf(selectedCardId);
           const cardSource = filters.source || displayedCards[currentIndex]?._source || "TCG";
           return (
+            <CardDetailErrorBoundary onClose={() => setSelectedCardId(null)}>
             <CardDetail
               cardId={selectedCardId}
               attributes={attributes}
@@ -857,6 +897,7 @@ export default function App() {
               onSyncFailed={handleSyncFailed}
               onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
             />
+            </CardDetailErrorBoundary>
           );
         })()}
       </main>
