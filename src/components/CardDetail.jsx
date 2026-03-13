@@ -95,7 +95,7 @@ function parseAnnotations(card) {
   return a;
 }
 
-export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed }) {
+export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed, onRegisterSyncRunner }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,6 +112,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [saveMessage, setSaveMessage] = useState("");
   const ghPushTimer = useRef(null);
   const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
+  const runSyncNowRef = useRef(null);
 
   useEffect(() => {
     fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
@@ -136,7 +137,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         if (imageEnlarged) {
           setImageEnlarged(false);
         } else {
-          onClose();
+          handleClose();
         }
       }
       if (!imageEnlarged && !editingImage) {
@@ -149,7 +150,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose, imageEnlarged, editingImage, hasPrev, hasNext, onPrev, onNext]);
+  }, [handleClose, imageEnlarged, editingImage, hasPrev, hasNext, onPrev, onNext]);
 
   // Prevent body scroll while modal is open.
   useEffect(() => {
@@ -229,21 +230,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         allAnnotations,
         "CardDetail: update annotations"
       );
-      setSaveStatus("saved");
-      setSaveMessage("Synced to GitHub");
-      onSyncCompleted?.(Object.keys(allAnnotations));
-      setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
-    } catch (err) {
-      console.warn("CardDetail GitHub push failed:", err.message);
-      const msg = err?.message || "";
-      setSaveStatus("error");
-      setSaveMessage(
-        msg.includes("403")
-          ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
-          : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
-      );
-      onSyncFailed?.();
-    } finally {
+        setSaveStatus("saved");
+        setSaveMessage("Synced.");
+        onSyncCompleted?.(Object.keys(allAnnotations));
+        setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
+      } catch (err) {
+        console.warn("CardDetail GitHub push failed:", err.message);
+        const msg = err?.message || "";
+        setSaveStatus("error");
+        setSaveMessage(msg.includes("403") ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
+        onSyncFailed?.(msg.includes("403"));
+      } finally {
       ghPushInProgressRef.current = false;
     }
   };
@@ -253,24 +250,23 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (!token) return;
     if (card?.id && onSyncQueued) onSyncQueued(card.id);
     setSaveStatus("queued");
-    setSaveMessage("Changes successfully added to the queue.");
+    setSaveMessage("Saved.");
     clearTimeout(ghPushTimer.current);
     ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_DEBOUNCE_MS);
   };
 
-  const handleSaveChanges = async () => {
+  const runSyncNow = async () => {
     if (ghPushInProgressRef.current) {
-      // A push is already in progress. Schedule one to run right after so this card's edits are not lost.
       if (card?.id && onSyncQueued) onSyncQueued(card.id);
       setSaveStatus("queued");
-      setSaveMessage("Sync in progress — your changes will be included in the next push.");
+      setSaveMessage("Saved.");
       clearTimeout(ghPushTimer.current);
       ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
       return;
     }
     ghPushInProgressRef.current = true;
-    clearTimeout(ghPushTimer.current); // cancel debounced push so we do one commit
-    if (card?.id && onSyncQueued) onSyncQueued(card.id); // so banner shows this card while syncing
+    clearTimeout(ghPushTimer.current);
+    if (card?.id && onSyncQueued) onSyncQueued(card.id);
     setSaveStatus("saving");
     setSaveMessage("");
     setIsEditMode(false);
@@ -283,29 +279,43 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         await pushAnnotationsToGitHub(
           token,
           allAnnotations,
-          `Save annotations for ${card?.name ?? "card"}`
+          "Sync annotations"
         );
         setSaveStatus("saved");
-        setSaveMessage("Synced to GitHub");
+        setSaveMessage("Synced.");
         onSyncCompleted?.(Object.keys(allAnnotations));
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       } else {
         setSaveStatus("saved");
-        setSaveMessage("Saved locally");
+        setSaveMessage("Saved.");
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       }
     } catch (err) {
       setSaveStatus("error");
       const msg = err.message || "";
-      setSaveMessage(
-        msg.includes("403")
-          ? "Your changes are saved on this device, but we couldn't sync to the cloud (permission denied). Check your PAT in Settings."
-          : "Your changes are saved on this device, but syncing to the cloud failed. Don't leave until you retry or your edits may not appear on other devices."
-      );
-      onSyncFailed?.();
+      setSaveMessage(msg.includes("403") ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
+      onSyncFailed?.(msg.includes("403"));
     } finally {
       ghPushInProgressRef.current = false;
     }
+  };
+
+  const handleSaveChanges = runSyncNow;
+  runSyncNowRef.current = runSyncNow;
+
+  // So banner Retry can trigger sync (works even after modal closes — exports all annotations).
+  useEffect(() => {
+    onRegisterSyncRunner?.(() => runSyncNowRef.current?.());
+  }, [onRegisterSyncRunner]);
+
+  const handleClose = () => {
+    if (ghPushTimer.current) {
+      clearTimeout(ghPushTimer.current);
+      ghPushTimer.current = null;
+      if (card?.id && onSyncQueued) onSyncQueued(card.id);
+      runScheduledPush();
+    }
+    onClose();
   };
 
   const saveAnnotation = async (key, value) => {
@@ -494,7 +504,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     <div
       className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden">
@@ -523,7 +533,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
             </button>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <svg
@@ -803,7 +813,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                           disabled={saveStatus === "saving"}
                           className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50"
                         >
-                          {saveStatus === "saving" ? "Saving…" : "Save Changes"}
+                          {saveStatus === "saving" ? "Syncing…" : "Sync now"}
                         </button>
                       </>
                     )}
@@ -832,15 +842,21 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   </div>
                 </div>
 
-                {/* Sync error banner — stays until dismissed so user knows edits didn't reach the cloud */}
+                {/* Sync error: short message + Retry */}
                 {saveStatus === "error" && saveMessage && (
-                  <div className="mt-2 flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                  <div className="mt-2 flex items-center gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                     <span className="flex-1">{saveMessage}</span>
+                    <button
+                      type="button"
+                      onClick={runSyncNow}
+                      className="shrink-0 text-sm font-medium px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                    >
+                      Retry
+                    </button>
                     <button
                       type="button"
                       onClick={() => { setSaveStatus(null); setSaveMessage(""); }}
                       className="shrink-0 text-red-600 hover:text-red-800 font-medium"
-                      aria-label="Dismiss"
                     >
                       Dismiss
                     </button>

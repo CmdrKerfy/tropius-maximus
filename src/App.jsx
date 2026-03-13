@@ -162,7 +162,9 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState("idle"); // "idle" | "syncing" | "done" | "error"
   const [lastSyncedCardIds, setLastSyncedCardIds] = useState([]);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [syncError403, setSyncError403] = useState(false); // true when last sync failed with 403 (token)
   const syncDoneTimeoutRef = useRef(null);
+  const syncRunnerRef = useRef(null); // CardDetail sets this so banner Retry can trigger sync
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
@@ -409,7 +411,10 @@ export default function App() {
     if (!cardId) return;
     setPendingSyncCardIds((prev) => (prev.includes(cardId) ? prev : [...prev, cardId]));
   }, []);
-  const handleSyncStarted = useCallback(() => setSyncStatus("syncing"), []);
+  const handleSyncStarted = useCallback(() => {
+    setSyncStatus("syncing");
+    setSyncError403(false);
+  }, []);
   const handleSyncCompleted = useCallback((cardIds = []) => {
     setLastSyncedCardIds(Array.isArray(cardIds) ? cardIds : []);
     setPendingSyncCardIds([]);
@@ -422,7 +427,10 @@ export default function App() {
       syncDoneTimeoutRef.current = null;
     }, 5000);
   }, []);
-  const handleSyncFailed = useCallback(() => setSyncStatus("error"), []);
+  const handleSyncFailed = useCallback((is403 = false) => {
+    setSyncStatus("error");
+    setSyncError403(!!is403);
+  }, []);
 
   useEffect(() => () => {
     if (syncDoneTimeoutRef.current) clearTimeout(syncDoneTimeoutRef.current);
@@ -684,48 +692,57 @@ export default function App() {
           </div>
         )}
 
-        {/* Annotation sync queue banner (above grid) */}
-        {(pendingSyncCardIds.length > 0 || syncStatus === "syncing" || syncStatus === "done" || syncStatus === "error") && (
-          (() => {
-            const nameMap = new Map(displayedCards.map((c) => [c.id, c.name]));
-            const n = pendingSyncCardIds.length || lastSyncedCardIds.length;
-            const names = (pendingSyncCardIds.length ? pendingSyncCardIds : lastSyncedCardIds)
-              .map((id) => nameMap.get(id) || id)
-              .filter(Boolean);
-            const listText = names.length <= 3 ? names.join(", ") : `${n} cards`;
-            return (
-              <div
-                className={`mt-4 mb-2 rounded px-4 py-2 flex items-center justify-between flex-wrap gap-2 ${
-                  syncStatus === "error"
-                    ? "bg-red-50 border border-red-200 text-red-800"
-                    : syncStatus === "done"
-                    ? "bg-green-50 border border-green-200 text-green-800"
-                    : syncStatus === "syncing"
-                    ? "bg-blue-50 border border-blue-200 text-blue-800"
-                    : "bg-gray-100 border border-gray-200 text-gray-700"
-                }`}
-              >
-                <span className="text-sm">
-                  {syncStatus === "syncing" && `Syncing to GitHub… (${listText})`}
-                  {syncStatus === "done" && `Synced to GitHub: ${listText}`}
-                  {syncStatus === "error" && `${n} card${n !== 1 ? "s" : ""} pending — sync failed. Open a card and use Save Changes to retry.`}
-                  {syncStatus === "idle" && pendingSyncCardIds.length > 0 && `${n} card${n !== 1 ? "s" : ""} in queue — syncing shortly.`}
-                </span>
-                {(syncStatus === "error" || syncStatus === "done") && (
+        {/* Annotation sync banner: one place for Syncing / Synced / error (streamlined) */}
+        {(syncStatus === "syncing" || syncStatus === "done" || syncStatus === "error" || (syncStatus === "idle" && pendingSyncCardIds.length > 0)) && (
+          <div
+            className={`mt-4 mb-2 rounded-lg px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 ${
+              syncStatus === "error"
+                ? "bg-red-50 border border-red-200 text-red-800"
+                : syncStatus === "done"
+                ? "bg-green-50 border border-green-200 text-green-800"
+                : syncStatus === "syncing"
+                ? "bg-blue-50 border border-blue-200 text-blue-800"
+                : "bg-gray-50 border border-gray-200 text-gray-700"
+            }`}
+          >
+            <span className="text-sm">
+              {syncStatus === "syncing" && "Syncing…"}
+              {syncStatus === "done" && "Synced."}
+              {syncStatus === "error" && (syncError403 ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.")}
+              {syncStatus === "idle" && pendingSyncCardIds.length > 0 && "Saved. Syncing in a few seconds."}
+            </span>
+            <div className="flex items-center gap-2">
+              {syncStatus === "error" && (
+                <>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSyncStatus("idle");
-                      setLastSyncedCardIds([]);
-                    }}
-                    className="text-sm font-medium underline hover:no-underline"
+                    onClick={() => syncRunnerRef.current?.()}
+                    className="text-sm font-medium px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
                   >
-                    Dismiss
+                    Retry
                   </button>
-                )}
-              </div>
-            );
-          })()
+                  {syncError403 && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowSettings(true); setSyncStatus("idle"); patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }}
+                      className="text-sm font-medium px-3 py-1 rounded bg-gray-600 text-white hover:bg-gray-700"
+                    >
+                      Settings
+                    </button>
+                  )}
+                </>
+              )}
+              {(syncStatus === "done" || (syncStatus === "error" && !syncError403)) && (
+                <button
+                  type="button"
+                  onClick={() => { setSyncStatus("idle"); setLastSyncedCardIds([]); setSyncError403(false); }}
+                  className="text-sm font-medium underline hover:no-underline"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Delete confirmation dialog */}
@@ -838,6 +855,7 @@ export default function App() {
               onSyncStarted={handleSyncStarted}
               onSyncCompleted={handleSyncCompleted}
               onSyncFailed={handleSyncFailed}
+              onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
             />
           );
         })()}

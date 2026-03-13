@@ -566,12 +566,34 @@ export async function initDB() {
     `);
   }
 
-  // Load custom cards from custom_cards.json
-  // Routes each card to tcg_cards or pocket_cards based on _table field
-  if (customCardsResp.ok) {
-    try {
+  // Load custom cards: prefer IndexedDB (persists adds/deletes) so deletes survive refresh
+  let customCards = [];
+  let customCardsFromJson = false;
+  try {
+    const idbCards = await idbGetAll(STORE_CUSTOM_CARDS);
+    const attrs = await idbGetAll(STORE_ATTRIBUTES).catch(() => []);
+    const customCardsInitialized = attrs.some((a) => a.key === "custom_cards_initialized");
+    if (idbCards.length > 0) {
+      customCards = idbCards;
+    } else if (customCardsInitialized) {
+      customCards = [];
+    } else if (customCardsResp.ok) {
       const customJson = await customCardsResp.json();
-      const customCards = customJson.cards || [];
+      customCards = customJson.cards || [];
+      customCardsFromJson = true;
+    }
+  } catch (e) {
+    if (customCardsResp.ok) {
+      try {
+        const customJson = await customCardsResp.json();
+        customCards = customJson.cards || [];
+        customCardsFromJson = true;
+      } catch (e2) {
+        console.warn("Could not parse custom_cards.json:", e2.message);
+      }
+    }
+  }
+  if (customCards.length > 0) {
 
       // Known column fields for each table (routing/identity fields excluded from JSON blob)
       const tcgColumnFields = new Set([
@@ -704,8 +726,11 @@ export async function initDB() {
           `);
         }
       }
-    } catch (e) {
-      console.warn("Could not parse custom_cards.json:", e.message);
+    if (customCardsFromJson) {
+      for (const card of customCards) {
+        if (card.id) await idbPut(STORE_CUSTOM_CARDS, card);
+      }
+      await idbPut(STORE_ATTRIBUTES, { key: "custom_cards_initialized", value: true });
     }
   }
 
@@ -2891,6 +2916,9 @@ export async function deleteCardsById(cardIds) {
     await idbDelete(STORE_CUSTOM_CARDS, id);
     await idbDelete(STORE_ANNOTATIONS, id);
     deleted.push(id);
+  }
+  if (deleted.length > 0) {
+    await idbPut(STORE_ATTRIBUTES, { key: "custom_cards_initialized", value: true });
   }
   return deleted;
 }
