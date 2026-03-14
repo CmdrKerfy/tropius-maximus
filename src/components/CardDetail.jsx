@@ -321,7 +321,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     onRegisterSyncRunner?.(() => runSyncNowRef.current?.());
   }, [onRegisterSyncRunner]);
 
-  const handleClose = () => {
+  function handleClose() {
     if (ghPushTimer.current) {
       clearTimeout(ghPushTimer.current);
       ghPushTimer.current = null;
@@ -329,7 +329,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       runScheduledPush();
     }
     onClose();
-  };
+  }
 
   const saveAnnotation = async (key, value) => {
     let stored = value;
