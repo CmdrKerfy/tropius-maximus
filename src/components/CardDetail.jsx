@@ -213,16 +213,18 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const GITHUB_PUSH_DEBOUNCE_MS = 5000;
   const GITHUB_PUSH_RETRY_WHEN_BUSY_MS = 2000; // if a push is in progress, retry after this
 
-  // Push annotations to GitHub; on 409 (file changed), refetch SHA and retry once.
+  // Push annotations to GitHub; retries up to 4 times on 409 (workflow may be mid-commit).
   const pushAnnotationsToGitHub = async (token, allAnnotations, commitMessage) => {
-    let { sha } = await getAnnotationsFileContents(token);
-    try {
-      return await updateAnnotationsFileContents(token, allAnnotations, sha, commitMessage);
-    } catch (err) {
-      if (err?.message?.includes("409")) {
-        const latest = await getAnnotationsFileContents(token);
-        return await updateAnnotationsFileContents(token, allAnnotations, latest.sha, commitMessage);
-      } else {
+    const MAX_SHA_RETRIES = 4;
+    for (let attempt = 0; attempt < MAX_SHA_RETRIES; attempt++) {
+      const { sha } = await getAnnotationsFileContents(token);
+      try {
+        return await updateAnnotationsFileContents(token, allAnnotations, sha, commitMessage);
+      } catch (err) {
+        if (err?.message?.includes("409") && attempt < MAX_SHA_RETRIES - 1) {
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
         throw err;
       }
     }
@@ -255,10 +257,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       console.warn("CardDetail GitHub push failed:", err.message);
       const msg = err?.message || "";
       const is403 = msg.includes("403");
-      if (!is403 && autoRetryCount < 2) {
+      if (!is403 && autoRetryCount < 8) {
         // Transient failure (GitHub busy / workflow in progress) — retry silently.
         ghPushInProgressRef.current = false;
-        ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount + 1), 4000);
+        ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount + 1), 15000);
         return;
       }
       setSaveStatus("error");
@@ -319,10 +321,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     } catch (err) {
       const msg = err.message || "";
       const is403 = msg.includes("403");
-      if (!is403 && autoRetryCount < 2) {
+      if (!is403 && autoRetryCount < 8) {
         // Transient failure — retry silently while keeping "Syncing…" visible.
         ghPushInProgressRef.current = false;
-        ghPushTimer.current = setTimeout(() => runSyncNow(autoRetryCount + 1), 4000);
+        ghPushTimer.current = setTimeout(() => runSyncNow(autoRetryCount + 1), 15000);
         return;
       }
       setSaveStatus("error");
