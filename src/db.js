@@ -1572,25 +1572,41 @@ function mergeSupertypes(arr) {
   });
 }
 
-// Fix common UTF-8/Latin-1 mojibake in strings (e.g. Ã© → é, ÃÂ stripped).
+// Fix common UTF-8/Latin-1 mojibake in strings (e.g. Ã© → é).
 function fixMojibake(s) {
   if (!s || typeof s !== "string") return s;
-  return s.replace(/ÃÂ/g, "").replace(/Ã©/g, "é");
+  return s
+    .replace(/Ã©/g, "é").replace(/Ã‰/g, "É")
+    .replace(/Ã /g, "à").replace(/Ã€/g, "À")
+    .replace(/Ã¨/g, "è").replace(/Ã‡/g, "Ç").replace(/Ã§/g, "ç")
+    .replace(/Ã¢/g, "â").replace(/Ã®/g, "î").replace(/Ã´/g, "ô").replace(/Ã»/g, "û")
+    .replace(/Ã¹/g, "ù").replace(/Ã¯/g, "ï").replace(/Ã«/g, "ë").replace(/Ã¼/g, "ü")
+    .replace(/ÃÂ/g, ""); // strip remaining artifacts
 }
 
-// Normalize evolution line options: fix mojibake and dedupe so corrupted variants collapse.
+// Parse a raw evolution_chain value (JSON array or plain string) to its display label.
+function evoLabel(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.join(" → ") : raw;
+  } catch {
+    return raw;
+  }
+}
+
+// Normalize evolution line options: fix mojibake, dedupe by display label, sort alphabetically.
 function mergeEvolutionLines(arr) {
-  const seen = new Set();
-  return arr
-    .map((s) => fixMojibake(String(s).trim()))
-    .filter(Boolean)
-    .filter((s) => {
-      const key = s.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort();
+  const seenLabels = new Set();
+  const result = [];
+  for (const raw of arr) {
+    const s = fixMojibake(String(raw).trim());
+    if (!s) continue;
+    const label = evoLabel(s).toLowerCase();
+    if (seenLabels.has(label)) continue;
+    seenLabels.add(label);
+    result.push(s);
+  }
+  return result.sort((a, b) => evoLabel(a).localeCompare(evoLabel(b)));
 }
 
 // Build a SQL condition for the supertype column that matches "Pokémon", "Pokemon", and mojibake variants.
