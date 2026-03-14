@@ -1127,13 +1127,13 @@ export async function fetchCards(params = {}) {
     const pocketWhere = pocketConditions.length ? "WHERE " + pocketConditions.join(" AND ") : "";
 
     const tcgSelect = `
-      SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, c.source AS _source,
+      SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, c.image_override, c.source AS _source,
              c.number, c.hp, c.rarity, c.is_custom
       FROM tcg_cards c ${pmJoin} ${tcgWhere}`;
 
     const pocketSelect = `
       SELECT pc.id, pc.name, ps.name AS set_name,
-             pc.image_url AS image_small, pc.image_url AS image_large, 'Pocket' AS _source,
+             pc.image_url AS image_small, pc.image_url AS image_large, NULL AS image_override, 'Pocket' AS _source,
              CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity, FALSE AS is_custom
       FROM pocket_cards pc
       LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
@@ -1145,7 +1145,7 @@ export async function fetchCards(params = {}) {
 
     // Dedupe by id preferring custom card when same id exists as both API and custom (e.g. Pikachu xyp-JP279).
     const dedupedSQL = `
-      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
+      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom
       FROM (
         SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY is_custom DESC) AS rn
         FROM (${unionSQL}) combined
@@ -1164,7 +1164,7 @@ export async function fetchCards(params = {}) {
         ? "TRY_CAST(list_element(string_split(CAST(COALESCE(number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
         : allSortBy;
     const dataResult = await conn.query(`
-      SELECT id, name, set_name, image_small, image_large, _source, number, hp, rarity, is_custom
+      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom
       FROM (${dedupedSQL}) counted
       ORDER BY ${allOrderBy} ${safeSortDir}
       LIMIT ${pageSizeInt} OFFSET ${offset}
@@ -1176,6 +1176,7 @@ export async function fetchCards(params = {}) {
       set_name: r.set_name,
       image_small: r.image_small,
       image_large: r.image_large,
+      image_override: r.image_override || undefined,
       _source: r._source,
       is_custom: r.is_custom,
       annotations: {},
@@ -1287,7 +1288,7 @@ export async function fetchCards(params = {}) {
 
     const dataResult = await conn.query(`
       SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
-             c.set_id, c.set_name, c.number, c.image_small, c.image_large,
+             c.set_id, c.set_name, c.number, c.image_small, c.image_large, c.image_override,
              c.source, c.is_custom
       FROM tcg_cards c
       ${where}
@@ -1308,6 +1309,7 @@ export async function fetchCards(params = {}) {
       number: r.number,
       image_small: r.image_small,
       image_large: r.image_large,
+      image_override: r.image_override || undefined,
       is_custom: r.is_custom,
       annotations: {},
     }));
@@ -1378,7 +1380,7 @@ export async function fetchCards(params = {}) {
 
   const dataResult = await conn.query(`
     SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
-           c.set_id, c.set_name, c.number, c.image_small, c.image_large,
+           c.set_id, c.set_name, c.number, c.image_small, c.image_large, c.image_override,
            c.source, c.is_custom,
            pm.region, pm.generation, pm.color
     FROM tcg_cards c
@@ -1402,6 +1404,7 @@ export async function fetchCards(params = {}) {
     number: r.number,
     image_small: r.image_small,
     image_large: r.image_large,
+    image_override: r.image_override || undefined,
     is_custom: r.is_custom,
     annotations: {},
     region: r.region,
@@ -2720,6 +2723,10 @@ export async function syncMutableTablesToIndexedDB() {
   }
 
   results.customCardsData = { cards: cardsForJson };
+
+  // Invalidate stored checksum so next load re-evaluates IDB against bundled JSON
+  await idbDelete(STORE_ATTRIBUTES, "custom_cards_checksum");
+
   return results;
 }
 
