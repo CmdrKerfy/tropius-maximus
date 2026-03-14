@@ -4335,7 +4335,8 @@
     "location": "Sinnoh Route 228 Area"
   },
   "custom-bjp-0": {
-    "additional_character_theme": []
+    "additional_character_theme": [],
+    "evolution_line": "pichu →  pikachu →  raichu"
   },
   "custom-bjp-00": {
     "additional_character_theme": []
