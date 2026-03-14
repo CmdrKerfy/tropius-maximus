@@ -12,7 +12,7 @@ import { useState } from "react";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
-  const displayImage = card.annotations?.image_override || card.image_small || card.image_large;
+  const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
@@ -62,14 +62,18 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         <img
           src={displayImage || pocketCardBg}
           alt={card.name}
+          referrerPolicy="no-referrer"
           className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImgLoaded(true)}
           onError={(e) => {
-            if (card.image_fallback && e.target.src !== card.image_fallback) {
+            const tried = e.target.src;
+            if (card.image_fallback && tried !== card.image_fallback) {
               e.target.src = card.image_fallback;
-            } else if (card.image_large && e.target.src !== card.image_large) {
+            } else if (card.image_small && tried !== card.image_small) {
+              e.target.src = card.image_small;
+            } else if (card.image_large && tried !== card.image_large) {
               e.target.src = card.image_large;
-            } else if (e.target.src !== pocketCardBg) {
+            } else if (tried !== pocketCardBg) {
               e.target.src = pocketCardBg;
             } else {
               setImgLoaded(true);
