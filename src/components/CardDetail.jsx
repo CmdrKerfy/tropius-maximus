@@ -217,11 +217,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const pushAnnotationsToGitHub = async (token, allAnnotations, commitMessage) => {
     let { sha } = await getAnnotationsFileContents(token);
     try {
-      await updateAnnotationsFileContents(token, allAnnotations, sha, commitMessage);
+      return await updateAnnotationsFileContents(token, allAnnotations, sha, commitMessage);
     } catch (err) {
       if (err?.message?.includes("409")) {
         const latest = await getAnnotationsFileContents(token);
-        await updateAnnotationsFileContents(token, allAnnotations, latest.sha, commitMessage);
+        return await updateAnnotationsFileContents(token, allAnnotations, latest.sha, commitMessage);
       } else {
         throw err;
       }
@@ -242,14 +242,14 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (autoRetryCount === 0) onSyncStarted?.();
     try {
       const allAnnotations = await exportAllAnnotations();
-      await pushAnnotationsToGitHub(
+      const pushResult = await pushAnnotationsToGitHub(
         token,
         allAnnotations,
         "CardDetail: update annotations"
       );
       setSaveStatus("saved");
-      setSaveMessage("Synced.");
-      onSyncCompleted?.(Object.keys(allAnnotations));
+      setSaveMessage("Submitted to GitHub.");
+      onSyncCompleted?.(Object.keys(allAnnotations), pushResult?.commit?.sha);
       setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
     } catch (err) {
       console.warn("CardDetail GitHub push failed:", err.message);
@@ -274,7 +274,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (!token) return;
     if (card?.id && onSyncQueued) onSyncQueued(card.id);
     setSaveStatus("queued");
-    setSaveMessage("Saved.");
+    setSaveMessage("Saved locally. Syncing soon…");
     clearTimeout(ghPushTimer.current);
     ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_DEBOUNCE_MS);
   };
@@ -283,7 +283,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (ghPushInProgressRef.current) {
       if (card?.id && onSyncQueued) onSyncQueued(card.id);
       setSaveStatus("queued");
-      setSaveMessage("Saved.");
+      setSaveMessage("Saved locally. Syncing soon…");
       clearTimeout(ghPushTimer.current);
       ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
       return;
@@ -302,18 +302,18 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       const allAnnotations = await exportAllAnnotations();
       const token = getToken();
       if (token) {
-        await pushAnnotationsToGitHub(
+        const pushResult = await pushAnnotationsToGitHub(
           token,
           allAnnotations,
           "Sync annotations"
         );
         setSaveStatus("saved");
-        setSaveMessage("Synced.");
-        onSyncCompleted?.(Object.keys(allAnnotations));
+        setSaveMessage("Submitted to GitHub.");
+        onSyncCompleted?.(Object.keys(allAnnotations), pushResult?.commit?.sha);
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       } else {
         setSaveStatus("saved");
-        setSaveMessage("Saved.");
+        setSaveMessage("Saved locally.");
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       }
     } catch (err) {

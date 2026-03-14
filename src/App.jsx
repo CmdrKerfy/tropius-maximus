@@ -13,7 +13,7 @@ import {
   deleteCardsById,
   syncMutableTablesToIndexedDB,
 } from "./db";
-import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents } from "./lib/github";
+import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "./lib/github";
 import SearchBar from "./components/SearchBar";
 import FilterPanel from "./components/FilterPanel";
 import CardGrid from "./components/CardGrid";
@@ -204,6 +204,8 @@ export default function App() {
   const [syncError403, setSyncError403] = useState(false); // true when last sync failed with 403 (token)
   const syncDoneTimeoutRef = useRef(null);
   const syncRunnerRef = useRef(null); // CardDetail sets this so banner Retry can trigger sync
+  const workflowPollTimeoutRef = useRef(null);
+  const [workflowHtmlUrl, setWorkflowHtmlUrl] = useState(null);
 
   // ── Fetch filter options and attribute definitions on mount ─────────
   useEffect(() => {
@@ -454,18 +456,56 @@ export default function App() {
     setSyncStatus("syncing");
     setSyncError403(false);
   }, []);
-  const handleSyncCompleted = useCallback((cardIds = []) => {
+  const startWorkflowPolling = useCallback(async (commitSha, attemptCount = 0) => {
+    const MAX_ATTEMPTS = 20; // 5s initial delay + up to 20 × 15s ≈ 5 min
+    const token = getToken();
+    if (!token || attemptCount >= MAX_ATTEMPTS) {
+      setSyncStatus("idle");
+      setWorkflowHtmlUrl(null);
+      return;
+    }
+    const run = await pollWorkflowRun(token, commitSha);
+    if (!run) {
+      // Workflow not registered yet — retry
+      workflowPollTimeoutRef.current = setTimeout(() => startWorkflowPolling(commitSha, attemptCount + 1), 10000);
+      return;
+    }
+    setWorkflowHtmlUrl(run.htmlUrl);
+    if (run.status === "completed") {
+      if (run.conclusion === "success") {
+        setSyncStatus("deployed");
+        syncDoneTimeoutRef.current = setTimeout(() => {
+          setSyncStatus("idle");
+          setWorkflowHtmlUrl(null);
+          syncDoneTimeoutRef.current = null;
+        }, 6000);
+      } else {
+        setSyncStatus("deploy_failed");
+      }
+    } else {
+      workflowPollTimeoutRef.current = setTimeout(() => startWorkflowPolling(commitSha, attemptCount + 1), 15000);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSyncCompleted = useCallback((cardIds = [], commitSha = null) => {
     setLastSyncedCardIds(Array.isArray(cardIds) ? cardIds : []);
     setPendingSyncCardIds([]);
     setLastSyncedAt(Date.now());
-    setSyncStatus("done");
-    if (syncDoneTimeoutRef.current) clearTimeout(syncDoneTimeoutRef.current);
-    syncDoneTimeoutRef.current = setTimeout(() => {
-      setSyncStatus("idle");
-      setLastSyncedCardIds([]);
-      syncDoneTimeoutRef.current = null;
-    }, 5000);
-  }, []);
+    if (workflowPollTimeoutRef.current) clearTimeout(workflowPollTimeoutRef.current);
+    if (commitSha && getToken()) {
+      setSyncStatus("building");
+      // Give GitHub 5s to register the workflow run before first poll
+      workflowPollTimeoutRef.current = setTimeout(() => startWorkflowPolling(commitSha), 5000);
+    } else {
+      setSyncStatus("done");
+      if (syncDoneTimeoutRef.current) clearTimeout(syncDoneTimeoutRef.current);
+      syncDoneTimeoutRef.current = setTimeout(() => {
+        setSyncStatus("idle");
+        setLastSyncedCardIds([]);
+        syncDoneTimeoutRef.current = null;
+      }, 5000);
+    }
+  }, [startWorkflowPolling]);
   const handleSyncFailed = useCallback((is403 = false) => {
     setSyncStatus("error");
     setSyncError403(!!is403);
@@ -473,6 +513,7 @@ export default function App() {
 
   useEffect(() => () => {
     if (syncDoneTimeoutRef.current) clearTimeout(syncDoneTimeoutRef.current);
+    if (workflowPollTimeoutRef.current) clearTimeout(workflowPollTimeoutRef.current);
   }, []);
 
   const handleSqlDataChanged = (changed) => {
@@ -731,34 +772,51 @@ export default function App() {
           </div>
         )}
 
-        {/* Annotation sync banner: one place for Syncing / Synced / error (streamlined) */}
-        {(syncStatus === "syncing" || syncStatus === "done" || syncStatus === "error" || (syncStatus === "idle" && pendingSyncCardIds.length > 0)) && (
+        {/* Annotation sync banner */}
+        {(syncStatus === "syncing" || syncStatus === "done" || syncStatus === "building" || syncStatus === "deployed" || syncStatus === "deploy_failed" || syncStatus === "error" || (syncStatus === "idle" && pendingSyncCardIds.length > 0)) && (
           <div
             className={`mt-4 mb-2 rounded-lg px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 ${
-              syncStatus === "error"
+              syncStatus === "error" || syncStatus === "deploy_failed"
                 ? "bg-red-50 border border-red-200 text-red-800"
-                : syncStatus === "done"
+                : syncStatus === "deployed"
                 ? "bg-green-50 border border-green-200 text-green-800"
-                : syncStatus === "syncing"
+                : syncStatus === "syncing" || syncStatus === "building"
                 ? "bg-blue-50 border border-blue-200 text-blue-800"
                 : "bg-gray-50 border border-gray-200 text-gray-700"
             }`}
           >
             <span className="text-sm">
+              {(syncStatus === "idle" && pendingSyncCardIds.length > 0) && (
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+                  Edits saved to this device. Submitting to GitHub…
+                </span>
+              )}
               {syncStatus === "syncing" && (
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                  Syncing to GitHub…
+                  Submitting to GitHub…
                 </span>
               )}
-              {syncStatus === "done" && "Synced to GitHub."}
-              {syncStatus === "error" && (syncError403 ? "Edits saved — couldn't sync (check your token in Settings)." : "Edits saved — couldn't sync to GitHub.")}
-              {syncStatus === "idle" && pendingSyncCardIds.length > 0 && (
+              {syncStatus === "done" && "Edits saved to this device. Submitted to GitHub for permanent saving."}
+              {syncStatus === "building" && (
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
-                  Saved. Syncing to GitHub in a few seconds…
+                  <span className="inline-block w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                  Submitted to GitHub. Building site…
                 </span>
               )}
+              {syncStatus === "deployed" && "Site rebuilt. Changes are live."}
+              {syncStatus === "deploy_failed" && (
+                <span>
+                  GitHub build failed.{" "}
+                  {workflowHtmlUrl && (
+                    <a href={workflowHtmlUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                      View on GitHub
+                    </a>
+                  )}
+                </span>
+              )}
+              {syncStatus === "error" && (syncError403 ? "Edits saved to this device — couldn't submit (check your token in Settings)." : "Edits saved to this device — couldn't submit to GitHub.")}
             </span>
             <div className="flex items-center gap-2">
               {syncStatus === "error" && (
@@ -781,10 +839,10 @@ export default function App() {
                   )}
                 </>
               )}
-              {(syncStatus === "done" || (syncStatus === "error" && !syncError403)) && (
+              {(syncStatus === "done" || syncStatus === "deployed" || syncStatus === "deploy_failed" || (syncStatus === "error" && !syncError403)) && (
                 <button
                   type="button"
-                  onClick={() => { setSyncStatus("idle"); setLastSyncedCardIds([]); setSyncError403(false); }}
+                  onClick={() => { setSyncStatus("idle"); setLastSyncedCardIds([]); setSyncError403(false); setWorkflowHtmlUrl(null); }}
                   className="text-sm font-medium underline hover:no-underline"
                 >
                   Dismiss

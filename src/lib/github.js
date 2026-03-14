@@ -124,3 +124,23 @@ export async function deleteCardsFromGitHub(token, cardIds) {
   const label = cardIds.length === 1 ? cardIds[0] : `${cardIds.length} cards`;
   return await updateFileContents(token, content, sha, `Delete custom card(s): ${label}`);
 }
+
+/**
+ * Poll for the latest Actions workflow run triggered by a specific commit SHA.
+ * Returns { runId, status, conclusion, htmlUrl } or null if not found / on error.
+ */
+export async function pollWorkflowRun(token, commitSha) {
+  try {
+    const resp = await fetch(
+      `${API_BASE}/repos/${OWNER}/${REPO}/actions/runs?head_sha=${commitSha}&per_page=1`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" } }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const run = data.workflow_runs?.[0];
+    if (!run) return null;
+    return { runId: run.id, status: run.status, conclusion: run.conclusion, htmlUrl: run.html_url };
+  } catch {
+    return null;
+  }
+}
