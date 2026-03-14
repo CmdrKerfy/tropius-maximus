@@ -4365,7 +4365,8 @@
     "artist": ""
   },
   "custom-bjp-079": {
-    "additional_character_theme": []
+    "additional_character_theme": [],
+    "evolution_line": "slowpoke →  slowbro →  slowking"
   },
   "custom-bjp-094": {
     "additional_character_theme": []
@@ -4414,7 +4415,9 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-Meowth",
+    "evolution_line": "meowth →  persian →  perrserker"
   },
   "custom-cn-exclusives-arcanine-ex": {
     "annotations": {
