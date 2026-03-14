@@ -26,6 +26,10 @@ import {
 const COLOR_OPTIONS = [
   "black", "blue", "brown", "gray", "green", "pink", "purple", "red", "white", "yellow",
 ];
+const TCG_TYPE_OPTIONS = [
+  "Colorless", "Darkness", "Dragon", "Fairy", "Fighting", "Fire",
+  "Grass", "Lightning", "Metal", "Psychic", "Water",
+];
 const SHAPE_OPTIONS = [
   "ball", "squiggle", "fish", "arms", "blob", "upright", "legs",
   "quadruped", "wings", "tentacles", "heads", "humanoid", "bug-wings", "armor",
@@ -48,6 +52,7 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "video_region", "video_location",
   "pose", "emotion", "actions",
   "items", "held_item", "pokeball",
+  "types",
 ]);
 
 /**
@@ -423,6 +428,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         fields: [
           field("Set Name", annValue("set_name")),
           field("Rarity", annValue("rarity")),
+          field("Type", annValue("types", true)),
+          field("Unique ID", annValue("unique_id")),
           field("Card Subcategory", annValue("card_subcategory", true)),
           field("Evolution Line", annValue("evolution_line")),
           field("Card Border Color", annValue("card_border")),
@@ -982,6 +989,20 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             <div>
                               <label className={labelClass}>Artist</label>
                               <ComboBox value={annValue("artist") || card.artist || ""} onChange={(v) => saveAnnotation("artist", v)} options={optArr(opts.artist)} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Type</label>
+                              <MultiComboBox value={annValue("types", true) || types.join(", ")} onChange={(v) => saveAnnotation("types", v)} options={TCG_TYPE_OPTIONS} placeholder="Fire, Water, Lightning, etc." />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Unique ID</label>
+                              <input
+                                type="text"
+                                value={annValue("unique_id")}
+                                onChange={(e) => saveAnnotation("unique_id", e.target.value)}
+                                placeholder="e.g. custom-xy001"
+                                className={inputClass}
+                              />
                             </div>
                             <div>
                               <label className={labelClass}>Card Subcategory</label>

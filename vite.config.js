@@ -20,6 +20,10 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     sourcemapIgnoreList: (sourcePath) => sourcePath.includes("node_modules"),
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+    },
   },
   define: {
     __BUILD_DATE__: JSON.stringify(

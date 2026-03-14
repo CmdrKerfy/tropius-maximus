@@ -119,7 +119,12 @@ export async function updateAnnotationsFileContents(token, content, sha, message
  */
 export async function commitNewCard(token, card) {
   const { content, sha } = await getFileContents(token);
-  content.cards.push(card);
+  const existingIdx = content.cards.findIndex((c) => c.id === card.id);
+  if (existingIdx >= 0) {
+    content.cards[existingIdx] = card;
+  } else {
+    content.cards.push(card);
+  }
   const message = `Add custom card: ${card.name} (${card.id})`;
   return await updateFileContents(token, content, sha, message);
 }

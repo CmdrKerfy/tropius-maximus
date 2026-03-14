@@ -51,17 +51,34 @@ function encodeUnicode(str) {
 
 function normalizeToArray(val) {
   if (val === null || val === undefined) return null;
-  if (Array.isArray(val)) {
-    // Unwrap single-element array where the element is itself a JSON array string (double-encoding)
-    if (val.length === 1 && typeof val[0] === 'string' && val[0].startsWith('[')) {
-      try {
-        const inner = JSON.parse(val[0]);
-        if (Array.isArray(inner)) return inner;
-      } catch { /* keep original */ }
+  // Recursively unwrap JSON-array strings (handles arbitrary levels of double-encoding)
+  let current = val;
+  for (let i = 0; i < 10; i++) {
+    if (Array.isArray(current)) {
+      // If every element is a plain string (not a JSON array), we're done
+      if (current.every(el => typeof el !== 'string' || !el.startsWith('['))) break;
+      // Unwrap single-element array containing a JSON array string
+      if (current.length === 1 && typeof current[0] === 'string' && current[0].startsWith('[')) {
+        try {
+          const inner = JSON.parse(current[0]);
+          if (Array.isArray(inner)) { current = inner; continue; }
+        } catch { /* keep */ }
+      }
+      break;
     }
-    return val;
+    if (typeof current === 'string' && current !== '') {
+      if (current.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(current);
+          if (Array.isArray(parsed)) { current = parsed; continue; }
+        } catch { /* not a JSON array */ }
+      }
+      return [current];
+    }
+    return null;
   }
-  if (typeof val === 'string' && val !== '') return [val];
+  if (Array.isArray(current)) return current;
+  if (typeof current === 'string' && current !== '') return [current];
   return null;
 }
 
@@ -656,7 +673,13 @@ export async function initDB() {
           top_10_themes, wtpc_episode, pocket_exclusive, owned, unique_id, notes,
           image_override, annotations`;
 
-      for (const card of customCards) {
+      const uniqueCustomCards = [...new Map(customCards.filter(c => c.id).map(c => [c.id, c])).values()];
+
+      // Build VALUES rows grouped by type, then batch-insert (avoids 600+ individual round-trips)
+      const pocketRows = [];
+      const tcgRows = [];
+
+      for (const card of uniqueCustomCards) {
         if (!card.id) continue;
         const isPocket = card._table === 'pocket';
         const columnFields = isPocket ? pocketColumnFields : tcgColumnFields;
@@ -672,7 +695,6 @@ export async function initDB() {
           return arr ? arr.join(' → ') : '';
         })();
 
-        // Build overflow JSON blob for unrecognized fields
         const annotations = {};
         for (const [k, v] of Object.entries(card)) {
           if (columnFields.has(k)) continue;
@@ -713,55 +735,63 @@ export async function initDB() {
           ${escapeJson(annotations)}`;
 
         if (isPocket) {
-          await conn.query(`
-            INSERT INTO pocket_cards (
-              id, name, set_id, rarity, card_type, element, hp, stage,
-              retreat_cost, weakness, evolves_from,
-              packs, image_url, illustrator, source, is_custom,
-              ${PROMOTED_COL_NAMES}
-            ) VALUES (
-              ${escapeStr(card.id)}, ${escapeStr(card.name || '')},
-              ${escapeStr(strVal('set_id'))}, ${escapeStr(strVal('rarity'))},
-              ${escapeStr(strVal('card_type'))}, ${escapeStr(strVal('element'))},
-              ${escapeStr(strVal('hp'))}, ${escapeStr(strVal('stage'))},
-              ${escapeStr(strVal('retreat_cost'))}, ${escapeStr(strVal('weakness'))},
-              ${escapeStr(strVal('evolves_from'))},
-              ${escapeStr(Array.isArray(card.packs) ? JSON.stringify(card.packs) : (card.packs || '[]'))},
-              ${escapeStr(strVal('image_url'))}, ${escapeStr(strVal('illustrator'))},
-              'Pocket', TRUE,
-              ${promotedVals}
-            )
-          `);
+          pocketRows.push(`(
+            ${escapeStr(card.id)}, ${escapeStr(card.name || '')},
+            ${escapeStr(strVal('set_id'))}, ${escapeStr(strVal('rarity'))},
+            ${escapeStr(strVal('card_type'))}, ${escapeStr(strVal('element'))},
+            ${escapeStr(strVal('hp'))}, ${escapeStr(strVal('stage'))},
+            ${escapeStr(strVal('retreat_cost'))}, ${escapeStr(strVal('weakness'))},
+            ${escapeStr(strVal('evolves_from'))},
+            ${escapeStr(Array.isArray(card.packs) ? JSON.stringify(card.packs) : (card.packs || '[]'))},
+            ${escapeStr(strVal('image_url'))}, ${escapeStr(strVal('illustrator'))},
+            'Pocket', TRUE,
+            ${promotedVals}
+          )`);
         } else {
           const subtypesStr = Array.isArray(card.subtypes) ? JSON.stringify(card.subtypes) : (card.subtypes || '[]');
           const typesStr = Array.isArray(card.types) ? JSON.stringify(card.types) : (card.types || '[]');
           const hpStr = card.hp != null ? String(card.hp) : '';
-          await conn.query(`
-            INSERT INTO tcg_cards (
-              id, name, supertype, subtypes, hp, types, evolves_from,
-              rarity, special_rarity, alt_name, artist,
-              set_id, set_name, set_series, number,
-              regulation_mark, image_small, image_large, source, is_custom,
-              ${PROMOTED_COL_NAMES}
-            ) VALUES (
-              ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
-              ${escapeStr(subtypesStr)}, ${escapeStr(hpStr)}, ${escapeStr(typesStr)},
-              ${escapeStr(card.evolves_from || '')}, ${escapeStr(card.rarity || '')},
-              ${escapeStr(card.special_rarity || '')}, ${escapeStr(card.alt_name || '')},
-              ${escapeStr(card.artist || '')},
-              ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
-              ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
-              ${escapeStr(card.image_small || '')}, ${escapeStr(card.image_large || '')},
-              ${escapeStr(card.source || 'TCG')}, TRUE,
-              ${promotedVals}
-            )
-          `);
+          tcgRows.push(`(
+            ${escapeStr(card.id)}, ${escapeStr(card.name || '')}, ${escapeStr(card.supertype || '')},
+            ${escapeStr(subtypesStr)}, ${escapeStr(hpStr)}, ${escapeStr(typesStr)},
+            ${escapeStr(card.evolves_from || '')}, ${escapeStr(card.rarity || '')},
+            ${escapeStr(card.special_rarity || '')}, ${escapeStr(card.alt_name || '')},
+            ${escapeStr(card.artist || '')},
+            ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
+            ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
+            ${escapeStr(card.image_small || card.image_url || '')}, ${escapeStr(card.image_large || card.image_url || '')},
+            ${escapeStr(card.source || 'TCG')}, TRUE,
+            ${promotedVals}
+          )`);
         }
       }
-    if (customCardsFromJson) {
-      for (const card of customCards) {
-        if (card.id) await idbPut(STORE_CUSTOM_CARDS, card);
+
+      const BATCH_SIZE = 25;
+      for (let i = 0; i < pocketRows.length; i += BATCH_SIZE) {
+        const batch = pocketRows.slice(i, i + BATCH_SIZE);
+        await conn.query(`
+          INSERT INTO pocket_cards (
+            id, name, set_id, rarity, card_type, element, hp, stage,
+            retreat_cost, weakness, evolves_from,
+            packs, image_url, illustrator, source, is_custom,
+            ${PROMOTED_COL_NAMES}
+          ) VALUES ${batch.join(',')}
+        `);
       }
+      for (let i = 0; i < tcgRows.length; i += BATCH_SIZE) {
+        const batch = tcgRows.slice(i, i + BATCH_SIZE);
+        await conn.query(`
+          INSERT INTO tcg_cards (
+            id, name, supertype, subtypes, hp, types, evolves_from,
+            rarity, special_rarity, alt_name, artist,
+            set_id, set_name, set_series, number,
+            regulation_mark, image_small, image_large, source, is_custom,
+            ${PROMOTED_COL_NAMES}
+          ) VALUES ${batch.join(',')}
+        `);
+      }
+    if (customCardsFromJson) {
+      await Promise.all(customCards.filter(c => c.id).map(c => idbPut(STORE_CUSTOM_CARDS, c)));
       await idbPut(STORE_ATTRIBUTES, { key: "custom_cards_initialized", value: true });
     }
   }
@@ -2787,7 +2817,7 @@ async function _insertTcgCard(card) {
       ${escapeStr(card.artist || '')},
       ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
       ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
-      ${escapeStr(card.image_small || '')}, ${escapeStr(card.image_large || '')},
+      ${escapeStr(card.image_small || card.image_url || '')}, ${escapeStr(card.image_large || card.image_url || '')},
       ${escapeStr(card.source || 'TCG')}, TRUE,
       ${escapeStr(arrayVal('art_style'))}, ${escapeStr(arrayVal('main_character'))},
       ${escapeStr(arrayVal('background_pokemon'))}, ${escapeStr(arrayVal('background_humans'))},
