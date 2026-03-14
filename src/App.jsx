@@ -205,6 +205,8 @@ export default function App() {
   const syncDoneTimeoutRef = useRef(null);
   const syncRunnerRef = useRef(null); // CardDetail sets this so banner Retry can trigger sync
   const workflowPollTimeoutRef = useRef(null);
+  const workflowBuildingRef = useRef(false); // true while build is in progress; CardDetail reads this to hold pushes
+  const pendingSyncCardIdsRef = useRef([]); // mirror of pendingSyncCardIds for use inside callbacks
   const [workflowHtmlUrl, setWorkflowHtmlUrl] = useState(null);
 
   // ── Fetch filter options and attribute definitions on mount ─────────
@@ -472,6 +474,7 @@ export default function App() {
     }
     setWorkflowHtmlUrl(run.htmlUrl);
     if (run.status === "completed") {
+      workflowBuildingRef.current = false; // unblock any held push immediately
       if (run.conclusion === "success") {
         setSyncStatus("deployed");
         syncDoneTimeoutRef.current = setTimeout(() => {
@@ -482,6 +485,8 @@ export default function App() {
       } else {
         setSyncStatus("deploy_failed");
       }
+      // Flush any edits that were queued while the build was running.
+      if (pendingSyncCardIdsRef.current.length > 0) syncRunnerRef.current?.();
     } else {
       workflowPollTimeoutRef.current = setTimeout(() => startWorkflowPolling(commitSha, attemptCount + 1), 15000);
     }
@@ -515,6 +520,10 @@ export default function App() {
     if (syncDoneTimeoutRef.current) clearTimeout(syncDoneTimeoutRef.current);
     if (workflowPollTimeoutRef.current) clearTimeout(workflowPollTimeoutRef.current);
   }, []);
+
+  // Keep refs in sync so stable callbacks (startWorkflowPolling) can read current values.
+  useEffect(() => { workflowBuildingRef.current = syncStatus === "building"; }, [syncStatus]);
+  useEffect(() => { pendingSyncCardIdsRef.current = pendingSyncCardIds; }, [pendingSyncCardIds]);
 
   const handleSqlDataChanged = (changed) => {
     if (changed.attributes)
@@ -802,7 +811,7 @@ export default function App() {
               {syncStatus === "building" && (
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                  Submitted to GitHub. Building site…
+                  Submitted to GitHub. Building site…{pendingSyncCardIds.length > 0 && " (new edits queued)"}
                 </span>
               )}
               {syncStatus === "deployed" && "Site rebuilt. Changes are live."}
@@ -963,6 +972,7 @@ export default function App() {
               onSyncStarted={handleSyncStarted}
               onSyncCompleted={handleSyncCompleted}
               onSyncFailed={handleSyncFailed}
+              workflowBuildingRef={workflowBuildingRef}
               onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
             />
             </CardDetailErrorBoundary>

@@ -95,7 +95,7 @@ function parseAnnotations(card) {
   return a;
 }
 
-export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed, onRegisterSyncRunner }) {
+export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed, onRegisterSyncRunner, workflowBuildingRef }) {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -238,6 +238,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount), GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
       return;
     }
+    if (workflowBuildingRef?.current) {
+      // A GitHub build is in progress — hold the push until it finishes to avoid SHA conflicts.
+      // startWorkflowPolling will call syncRunnerRef when done; this timer is the fallback.
+      ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount), 10000);
+      return;
+    }
     ghPushInProgressRef.current = true;
     setSaveStatus("saving");
     setSaveMessage("");
@@ -276,7 +282,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (!token) return;
     if (card?.id && onSyncQueued) onSyncQueued(card.id);
     setSaveStatus("queued");
-    setSaveMessage("Saved locally. Syncing soon…");
+    setSaveMessage(workflowBuildingRef?.current ? "Saved locally. Will sync after build." : "Saved locally. Syncing soon…");
     clearTimeout(ghPushTimer.current);
     ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_DEBOUNCE_MS);
   };
