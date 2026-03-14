@@ -228,18 +228,18 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     }
   };
 
-  const runScheduledPush = async () => {
+  const runScheduledPush = async (autoRetryCount = 0) => {
     const token = getToken();
     if (!token) return;
     if (ghPushInProgressRef.current) {
       // Another push is in progress (e.g. user edited another card). Retry shortly so no edits are lost.
-      ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
+      ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount), GITHUB_PUSH_RETRY_WHEN_BUSY_MS);
       return;
     }
     ghPushInProgressRef.current = true;
     setSaveStatus("saving");
     setSaveMessage("");
-    onSyncStarted?.();
+    if (autoRetryCount === 0) onSyncStarted?.();
     try {
       const allAnnotations = await exportAllAnnotations();
       await pushAnnotationsToGitHub(
@@ -247,17 +247,24 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         allAnnotations,
         "CardDetail: update annotations"
       );
-        setSaveStatus("saved");
-        setSaveMessage("Synced.");
-        onSyncCompleted?.(Object.keys(allAnnotations));
-        setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
-      } catch (err) {
-        console.warn("CardDetail GitHub push failed:", err.message);
-        const msg = err?.message || "";
-        setSaveStatus("error");
-        setSaveMessage(msg.includes("403") ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
-        onSyncFailed?.(msg.includes("403"));
-      } finally {
+      setSaveStatus("saved");
+      setSaveMessage("Synced.");
+      onSyncCompleted?.(Object.keys(allAnnotations));
+      setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
+    } catch (err) {
+      console.warn("CardDetail GitHub push failed:", err.message);
+      const msg = err?.message || "";
+      const is403 = msg.includes("403");
+      if (!is403 && autoRetryCount < 2) {
+        // Transient failure (GitHub busy / workflow in progress) — retry silently.
+        ghPushInProgressRef.current = false;
+        ghPushTimer.current = setTimeout(() => runScheduledPush(autoRetryCount + 1), 4000);
+        return;
+      }
+      setSaveStatus("error");
+      setSaveMessage(is403 ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
+      onSyncFailed?.(is403);
+    } finally {
       ghPushInProgressRef.current = false;
     }
   };
@@ -272,7 +279,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     ghPushTimer.current = setTimeout(runScheduledPush, GITHUB_PUSH_DEBOUNCE_MS);
   };
 
-  const runSyncNow = async () => {
+  const runSyncNow = async (autoRetryCount = 0) => {
     if (ghPushInProgressRef.current) {
       if (card?.id && onSyncQueued) onSyncQueued(card.id);
       setSaveStatus("queued");
@@ -286,9 +293,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (card?.id && onSyncQueued) onSyncQueued(card.id);
     setSaveStatus("saving");
     setSaveMessage("");
-    setIsEditMode(false);
-    setActiveTab("info");
-    onSyncStarted?.();
+    if (autoRetryCount === 0) {
+      setIsEditMode(false);
+      setActiveTab("info");
+      onSyncStarted?.();
+    }
     try {
       const allAnnotations = await exportAllAnnotations();
       const token = getToken();
@@ -308,10 +317,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
         setTimeout(() => { setSaveStatus(null); setSaveMessage(""); }, 3500);
       }
     } catch (err) {
-      setSaveStatus("error");
       const msg = err.message || "";
-      setSaveMessage(msg.includes("403") ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
-      onSyncFailed?.(msg.includes("403"));
+      const is403 = msg.includes("403");
+      if (!is403 && autoRetryCount < 2) {
+        // Transient failure — retry silently while keeping "Syncing…" visible.
+        ghPushInProgressRef.current = false;
+        ghPushTimer.current = setTimeout(() => runSyncNow(autoRetryCount + 1), 4000);
+        return;
+      }
+      setSaveStatus("error");
+      setSaveMessage(is403 ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.");
+      onSyncFailed?.(is403);
     } finally {
       ghPushInProgressRef.current = false;
     }
