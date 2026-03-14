@@ -4334,31 +4334,65 @@
     "shape": "upright",
     "location": "Sinnoh Route 228 Area"
   },
-  "custom-xyp-JP279": {
-    "weather_environment": "Indoors",
-    "unique_id": "custom-xyp-JP279",
-    "actions": []
+  "custom-bjp-0": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-0000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-00000000000000": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-053": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-065": {
+    "annotations": {},
+    "artist": "Shin-ichi Yoshida"
+  },
+  "custom-bjp-076": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-079": {
+    "additional_character_theme": []
   },
   "custom-bjp-094": {
     "additional_character_theme": []
   },
-  "custom-xjp-227/SM-P": {
-    "annotations": {},
-    "unique_id": "custom-xjp-227/SM-P",
-    "evolution_line": "pichu →  pikachu →  raichu",
-    "artist": "Naoki Saito"
+  "custom-bjp-139": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-143": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-150": {
+    "additional_character_theme": []
+  },
+  "custom-bjp-151": {
+    "additional_character_theme": []
   },
   "custom-cn-exclusives-Chandelure": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-Chandelure"
   },
   "custom-cn-exclusives-Cubone": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-Cubone"
   },
   "custom-cn-exclusives-Eevee": {
     "annotations": {
@@ -4391,7 +4425,9 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-captain-pikachu",
+    "artist": ""
   },
   "custom-cn-exclusives-captain-pikachu-stamped": {
     "annotations": {
@@ -4405,13 +4441,15 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-ceruledge"
   },
   "custom-cn-exclusives-fuecoco": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-fuecoco"
   },
   "custom-cn-exclusives-leafeon": {
     "annotations": {
@@ -4443,19 +4481,22 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-pikachu-151-2"
   },
   "custom-cn-exclusives-pikachu-151-3": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-pikachu-151-3"
   },
   "custom-cn-exclusives-pikachu-151-4": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-pikachu-151-4"
   },
   "custom-cn-exclusives-quaxly": {
     "annotations": {
@@ -4517,18 +4558,12 @@
       "annotations": {}
     }
   },
-  "custom-jp-promos-custom-Sachiko-EX": {
-    "annotations": {
-      "raw_data": {},
-      "annotations": {}
-    },
-    "unique_id": "custom-jp-promos-custom-Sachiko-EX"
-  },
   "custom-jp-promos-custom-celebration-fanfare-2023": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-jp-promos-custom-celebration-fanfare-2023"
   },
   "custom-jp-promos-custom-pikachu-summer-vacation-jp": {
     "annotations": {
@@ -4541,13 +4576,29 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-kr-promos-Pikachu"
   },
   "custom-kr-promos-Umbreon-ex": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
     }
+  },
+  "custom-kr-promos-ditto": {
+    "annotations": {
+      "annotations": {
+        "raw_data": {},
+        "annotations": {}
+      }
+    },
+    "unique_id": "custom-kr-promos-ditto"
+  },
+  "custom-xjp-227/SM-P": {
+    "annotations": {},
+    "unique_id": "custom-xjp-227/SM-P",
+    "evolution_line": "pichu →  pikachu →  raichu",
+    "artist": "Naoki Saito"
   },
   "koreanditto": {
     "annotations": {},
@@ -4576,49 +4627,6 @@
   "xyp-JP289": {
     "weather_environment": "Sunny",
     "unique_id": "xyp-JP289"
-  },
-  "custom-bjp-065": {
-    "annotations": {},
-    "artist": "Shin-ichi Yoshida"
-  },
-  "custom-bjp-139": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-076": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-079": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-0": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-0000000": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-00000": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-00000000000000": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-00": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-000000": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-053": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-143": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-151": {
-    "additional_character_theme": []
-  },
-  "custom-bjp-150": {
-    "additional_character_theme": []
   },
   "P-A-054": {
     "unique_id": "P-A-054",
