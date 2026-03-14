@@ -4378,7 +4378,8 @@
     "additional_character_theme": []
   },
   "custom-bjp-143": {
-    "additional_character_theme": []
+    "additional_character_theme": [],
+    "evolution_line": "munchlax →  snorlax"
   },
   "custom-bjp-150": {
     "additional_character_theme": []
@@ -4522,31 +4523,40 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-sprigatito",
+    "evolution_line": "sprigatito →  floragato →  meowscarada"
   },
   "custom-cn-exclusives-sylveon": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-sylveon",
+    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
   },
   "custom-cn-exclusives-umbreon": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-umbreon",
+    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
   },
   "custom-cn-promos-custom-victini-ex": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-promos-custom-victini-ex",
+    "evolution_line": "victini"
   },
   "custom-cn-promos-victini-ex-full-art": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-promos-victini-ex-full-art"
   },
   "custom-in-promos-Pikachu-berkemeja-batik-1": {
     "annotations": {
@@ -4599,16 +4609,9 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
-  },
-  "custom-kr-promos-ditto": {
-    "annotations": {
-      "annotations": {
-        "raw_data": {},
-        "annotations": {}
-      }
     },
-    "unique_id": "custom-kr-promos-ditto"
+    "unique_id": "custom-kr-promos-Umbreon-ex",
+    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
   },
   "custom-xjp-227/SM-P": {
     "annotations": {},
