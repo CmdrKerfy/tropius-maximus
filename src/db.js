@@ -47,6 +47,13 @@ function encodeUnicode(str) {
   );
 }
 
+// ── Checksum ────────────────────────────────────────────────────────────
+
+async function computeChecksum(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
 // ── Array normalisation ─────────────────────────────────────────────────
 
 function normalizeToArray(val) {
@@ -615,31 +622,48 @@ export async function initDB() {
     `);
   }
 
-  // Load custom cards: prefer IndexedDB (persists adds/deletes) so deletes survive refresh
+  // Pre-read custom cards JSON (needed for both checksum and parsing)
+  let customCardsJson = null;
+  let newChecksum = null;
+  if (customCardsResp.ok) {
+    try {
+      const text = await customCardsResp.text();
+      newChecksum = await computeChecksum(text);
+      customCardsJson = JSON.parse(text);
+    } catch (e) {
+      console.warn("Could not parse custom_cards.json:", e.message);
+    }
+  }
+
+  // Load custom cards: use IndexedDB when up-to-date, reload from JSON when checksum changes
   let customCards = [];
   let customCardsFromJson = false;
   try {
     const idbCards = await idbGetAll(STORE_CUSTOM_CARDS);
     const attrs = await idbGetAll(STORE_ATTRIBUTES).catch(() => []);
     const customCardsInitialized = attrs.some((a) => a.key === "custom_cards_initialized");
-    if (idbCards.length > 0) {
+    const storedChecksum = attrs.find((a) => a.key === "custom_cards_checksum")?.value;
+    const checksumChanged = newChecksum !== null && storedChecksum !== newChecksum;
+
+    if (checksumChanged) {
+      // JSON file has changed — clear stale IDB cache and reload from JSON
+      await idbClearStore(STORE_CUSTOM_CARDS);
+      if (customCardsJson) {
+        customCards = customCardsJson.cards || [];
+        customCardsFromJson = true;
+      }
+    } else if (idbCards.length > 0) {
       customCards = idbCards;
     } else if (customCardsInitialized) {
       customCards = [];
-    } else if (customCardsResp.ok) {
-      const customJson = await customCardsResp.json();
-      customCards = customJson.cards || [];
+    } else if (customCardsJson) {
+      customCards = customCardsJson.cards || [];
       customCardsFromJson = true;
     }
   } catch (e) {
-    if (customCardsResp.ok) {
-      try {
-        const customJson = await customCardsResp.json();
-        customCards = customJson.cards || [];
-        customCardsFromJson = true;
-      } catch (e2) {
-        console.warn("Could not parse custom_cards.json:", e2.message);
-      }
+    if (customCardsJson) {
+      customCards = customCardsJson.cards || [];
+      customCardsFromJson = true;
     }
   }
   if (customCards.length > 0) {
@@ -793,6 +817,9 @@ export async function initDB() {
     if (customCardsFromJson) {
       await Promise.all(customCards.filter(c => c.id).map(c => idbPut(STORE_CUSTOM_CARDS, c)));
       await idbPut(STORE_ATTRIBUTES, { key: "custom_cards_initialized", value: true });
+      if (newChecksum) {
+        await idbPut(STORE_ATTRIBUTES, { key: "custom_cards_checksum", value: newChecksum });
+      }
     }
   }
 
