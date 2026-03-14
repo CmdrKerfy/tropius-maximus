@@ -2172,13 +2172,21 @@ export async function fetchFormOptions() {
            ORDER BY val`
         ),
         conn.query(
-          `SELECT DISTINCT REPLACE(REPLACE(REPLACE(REPLACE(evolution_chain, '[', ''), ']', ''), '"', ''), ',', ' → ') AS val
+          `SELECT DISTINCT evolution_chain AS val
            FROM pokemon_metadata WHERE evolution_chain IS NOT NULL AND evolution_chain != '' AND evolution_chain != '[]'
            ORDER BY val`
         ),
       ]);
       const fromCustom = customResult.toArray().map((r) => r.val?.toLowerCase()).filter(Boolean);
-      const fromPm = pmResult.toArray().map((r) => r.val).filter(Boolean);
+      const fromPm = pmResult.toArray().map((r) => {
+        if (!r.val) return null;
+        try {
+          const parsed = JSON.parse(r.val);
+          return Array.isArray(parsed) ? parsed.join(" → ") : String(r.val);
+        } catch {
+          return String(r.val);
+        }
+      }).filter(Boolean);
       return mergeEvolutionLines([...fromPm, ...fromCustom]);
     })(),
     splitJsonArrayValues("card_subcategory"),
