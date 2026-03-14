@@ -745,10 +745,20 @@ export default function App() {
             }`}
           >
             <span className="text-sm">
-              {syncStatus === "syncing" && "Syncing…"}
-              {syncStatus === "done" && "Synced."}
-              {syncStatus === "error" && (syncError403 ? "Couldn't sync — check your token in Settings." : "Couldn't sync to GitHub.")}
-              {syncStatus === "idle" && pendingSyncCardIds.length > 0 && "Saved. Syncing in a few seconds."}
+              {syncStatus === "syncing" && (
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                  Syncing to GitHub…
+                </span>
+              )}
+              {syncStatus === "done" && "Synced to GitHub."}
+              {syncStatus === "error" && (syncError403 ? "Edits saved — couldn't sync (check your token in Settings)." : "Edits saved — couldn't sync to GitHub.")}
+              {syncStatus === "idle" && pendingSyncCardIds.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+                  Saved. Syncing to GitHub in a few seconds…
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-2">
               {syncStatus === "error" && (

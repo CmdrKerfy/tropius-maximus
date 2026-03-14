@@ -110,6 +110,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [activeTab, setActiveTab] = useState("info");
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
   const [saveMessage, setSaveMessage] = useState("");
+  const [syncRetryCount, setSyncRetryCount] = useState(0);
   const ghPushTimer = useRef(null);
   const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
   const runSyncNowRef = useRef(null);
@@ -124,6 +125,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     setError(null);
     setImageEnlarged(false);
     setEditingImage(false);
+    setSaveStatus(null);
+    setSaveMessage("");
+    setSyncRetryCount(0);
     fetchCard(cardId, source)
       .then(setCard)
       .catch((err) => setError(err.message))
@@ -826,7 +830,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                           disabled={saveStatus === "saving"}
                           className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50"
                         >
-                          {saveStatus === "saving" ? "Syncing…" : "Sync now"}
+                          {saveStatus === "saving" ? "Syncing…" : "Sync to GitHub"}
                         </button>
                       </>
                     )}
@@ -855,20 +859,25 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   </div>
                 </div>
 
-                {/* Sync error: short message + Retry */}
+                {/* Sync error: edits are locally safe; one retry allowed */}
                 {saveStatus === "error" && saveMessage && (
                   <div className="mt-2 flex items-center gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
-                    <span className="flex-1">{saveMessage}</span>
+                    <span className="flex-1">
+                      Edits saved locally —{" "}
+                      {syncRetryCount > 0 ? "still can't sync to GitHub. Check your token in Settings." : saveMessage.replace("Couldn't sync — ", "").replace("Couldn't sync to GitHub.", "couldn't sync to GitHub.")}
+                    </span>
+                    {syncRetryCount === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => { setSyncRetryCount((n) => n + 1); runSyncNow(); }}
+                        className="shrink-0 text-sm font-medium px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                      >
+                        Retry
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={runSyncNow}
-                      className="shrink-0 text-sm font-medium px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                    >
-                      Retry
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setSaveStatus(null); setSaveMessage(""); }}
+                      onClick={() => { setSaveStatus(null); setSaveMessage(""); setSyncRetryCount(0); }}
                       className="shrink-0 text-red-600 hover:text-red-800 font-medium"
                     >
                       Dismiss
