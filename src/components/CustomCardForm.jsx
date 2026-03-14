@@ -422,7 +422,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       setSource(""); setNumber("");
       setAltName(""); setEvolvesFrom(""); setHp(""); setRarity("");
       setSpecialRarity(""); setArtist(""); setRegulationMark("");
-      setSupertype("Pokémon"); setSubtypes(""); setTypes(""); setSeries("");
+      setSupertype("Pokémon"); setSubtypes(""); setTypes(""); setSetSeries("");
       setCardType(""); setElement(""); setStage(""); setRetreatCost("");
       setWeakness(""); setPacks(""); setIllustrator("");
       setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");

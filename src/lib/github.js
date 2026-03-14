@@ -43,8 +43,20 @@ export async function getFileContents(token) {
   }
 
   const data = await resp.json();
-  const decoded = atob(data.content.replace(/\n/g, ""));
-  const content = JSON.parse(decoded);
+
+  let content;
+  if (data.content && data.content.trim() !== "") {
+    const decoded = atob(data.content.replace(/\n/g, ""));
+    content = JSON.parse(decoded);
+  } else if (data.download_url) {
+    // File is too large for inline base64 (>1MB) — fetch raw content via download_url
+    const rawResp = await fetch(data.download_url);
+    if (!rawResp.ok) throw new Error(`Failed to fetch file contents (${rawResp.status})`);
+    content = await rawResp.json();
+  } else {
+    content = { cards: [] };
+  }
+
   return { content, sha: data.sha };
 }
 
