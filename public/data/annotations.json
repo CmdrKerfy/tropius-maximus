@@ -4361,7 +4361,8 @@
   },
   "custom-bjp-065": {
     "annotations": {},
-    "artist": "Shin-ichi Yoshida"
+    "artist": "Shin-ichi Yoshida",
+    "evolution_line": "abra → kadabra → alakazam"
   },
   "custom-bjp-076": {
     "additional_character_theme": [],
@@ -4446,7 +4447,7 @@
     },
     "unique_id": "custom-cn-exclusives-captain-pikachu-stamped",
     "artist": "",
-    "evolution_line": ""
+    "evolution_line": "pichu →  pikachu →  raichu"
   },
   "custom-cn-exclusives-ceruledge": {
     "annotations": {
