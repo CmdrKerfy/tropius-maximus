@@ -4353,14 +4353,16 @@
     "additional_character_theme": []
   },
   "custom-bjp-053": {
-    "additional_character_theme": []
+    "additional_character_theme": [],
+    "artist": "Ken Sugimori"
   },
   "custom-bjp-065": {
     "annotations": {},
     "artist": "Shin-ichi Yoshida"
   },
   "custom-bjp-076": {
-    "additional_character_theme": []
+    "additional_character_theme": [],
+    "artist": ""
   },
   "custom-bjp-079": {
     "additional_character_theme": []
@@ -4405,7 +4407,8 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    }
+    },
+    "unique_id": "custom-cn-exclusives-Gengar"
   },
   "custom-cn-exclusives-Meowth": {
     "annotations": {
