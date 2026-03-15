@@ -29,7 +29,7 @@ import eh_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url"
 
 let db = null;
 let conn = null;
-let initialized = false;
+let _initPromise = null;
 
 /** Turn relative path/URL into absolute URL so the worker can fetch WASM (Request requires valid URL). */
 function toAbsoluteUrl(url) {
@@ -318,8 +318,12 @@ function buildPromotedSetClause(data) {
  * tables, and hydrate user data from IndexedDB.
  */
 export async function initDB() {
-  if (initialized) return;
+  if (_initPromise) return _initPromise;
+  _initPromise = _doInit();
+  return _initPromise;
+}
 
+async function _doInit() {
   const MANUAL_BUNDLES = {
     mvp: { mainModule: duckdb_wasm_mvp, mainWorker: mvp_worker },
     eh: { mainModule: duckdb_wasm_eh, mainWorker: eh_worker },
@@ -931,7 +935,6 @@ export async function initDB() {
     throw new Error("Loading card data: " + (e?.message || e));
   }
 
-  initialized = true;
 }
 
 async function hydrateFromIndexedDB() {
