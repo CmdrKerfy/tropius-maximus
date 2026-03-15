@@ -390,7 +390,7 @@ export async function initDB() {
     fetch(`${base}data/pokemon_metadata.parquet`),
     fetch(`${base}data/pocket_cards.parquet`),
     fetch(`${base}data/pocket_sets.parquet`),
-    fetch(`${base}data/custom_cards.json`),
+    fetch(`${base}data/custom_cards.json?v=${import.meta.env.VITE_BUILD_DATE || "dev"}`),
   ]);
 
   if (!cardsResp.ok) throw new Error("Failed to fetch cards.parquet");
@@ -2723,10 +2723,6 @@ export async function syncMutableTablesToIndexedDB() {
   }
 
   results.customCardsData = { cards: cardsForJson };
-
-  // Invalidate stored checksum so next load re-evaluates IDB against bundled JSON
-  await idbDelete(STORE_ATTRIBUTES, "custom_cards_checksum");
-
   return results;
 }
 
