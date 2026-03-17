@@ -148,6 +148,7 @@ export default function App() {
   const [pageSize] = useState(60);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const loadCardsSeqRef = useRef(0);
 
   // ── SQL grid overlay state ────────────────────────────────────────
   const [sqlCards, setSqlCards] = useState(null);
@@ -222,6 +223,7 @@ export default function App() {
 
   // ── Fetch cards whenever search, filters, or page changes ──────────
   const loadCards = useCallback(async () => {
+    const seq = ++loadCardsSeqRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -231,14 +233,16 @@ export default function App() {
         page,
         page_size: pageSize,
       });
+      if (seq !== loadCardsSeqRef.current) return;
       setCards(data.cards);
       setTotal(data.total);
     } catch (err) {
+      if (seq !== loadCardsSeqRef.current) return;
       setError(err.message);
       setCards([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (seq === loadCardsSeqRef.current) setLoading(false);
     }
   }, [searchQuery, filters, page, pageSize]);
 
