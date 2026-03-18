@@ -3,7 +3,8 @@
     "unique_id": "base1-1",
     "evolution_line": "abra → kadabra → alakazam",
     "color": "brown",
-    "shape": "humanoid"
+    "shape": "humanoid",
+    "card_border": "Yellow"
   },
   "base1-2": {
     "unique_id": "base1-2",
@@ -131,7 +132,8 @@
     "unique_id": "base1-24",
     "evolution_line": "charmander → charmeleon → charizard",
     "color": "red",
-    "shape": "upright"
+    "shape": "upright",
+    "actions": "Slapping"
   },
   "base1-25": {
     "unique_id": "base1-25",
@@ -231,7 +233,8 @@
     "shape": "quadruped",
     "location": "Cerulean City Area",
     "video_url": "",
-    "video_title": ""
+    "video_title": "",
+    "actions": "attacking"
   },
   "base1-46": {
     "unique_id": "base1-46",
@@ -283,7 +286,8 @@
     "evolution_line": "machop → machoke → machamp",
     "color": "gray",
     "shape": "upright",
-    "location": "Mt Coronet 1F Route 207"
+    "location": "Mt Coronet 1F Route 207",
+    "pose": "young bucks who will grow strong"
   },
   "base1-57": {
     "unique_id": "base1-57",
@@ -297,7 +301,13 @@
     "evolution_line": "pichu → pikachu → raichu",
     "color": "yellow",
     "shape": "quadruped",
-    "location": "Trophy Garden Area"
+    "location": "Trophy Garden Area",
+    "card_locations": "Forest",
+    "background_details": [
+      "Trees",
+      "electricity"
+    ],
+    "weather": "Heavens Shine Down"
   },
   "base1-59": {
     "unique_id": "base1-59",
@@ -318,7 +328,12 @@
     "evolution_line": "squirtle → wartortle → blastoise",
     "color": "blue",
     "shape": "upright",
-    "location": "Seafoam Islands 1F"
+    "location": "Seafoam Islands 1F",
+    "pose": "",
+    "actions": "attacking",
+    "background_details": [
+      "Bubbles"
+    ]
   },
   "base1-64": {
     "unique_id": "base1-64",
@@ -719,7 +734,8 @@
     "evolution_line": "spearow → fearow",
     "color": "brown",
     "shape": "wings",
-    "location": "Stark Mountain Area"
+    "location": "Stark Mountain Area",
+    "actions": "flying"
   },
   "base2-37": {
     "unique_id": "base2-37",
@@ -840,8 +856,7 @@
     "shape": "humanoid",
     "location": "Sinnoh Route 224 Area",
     "background_details": [
-      "seeds",
-      "dandelions"
+      "seeds"
     ]
   },
   "base2-50": {
@@ -905,7 +920,11 @@
     "evolution_line": "mankey → primeape → annihilape",
     "color": "brown",
     "shape": "upright",
-    "location": "Sinnoh Route 225 Area"
+    "location": "Sinnoh Route 225 Area",
+    "actions": "Swinging, attacking the cameraman",
+    "background_details": [
+      "Trees"
+    ]
   },
   "base2-56": {
     "unique_id": "base2-56",
@@ -1431,6 +1450,13 @@
     "color": "green",
     "shape": "quadruped"
   },
+  "dp2-94": {
+    "unique_id": "dp2-94",
+    "evolution_line": "pichu → pikachu → raichu",
+    "color": "yellow",
+    "shape": "quadruped",
+    "location": "Trophy Garden Area"
+  },
   "dp3-50": {
     "unique_id": "dp3-50",
     "evolution_line": "mareep → flaaffy → ampharos",
@@ -1914,6 +1940,13 @@
     "unique_id": "me1-1",
     "evolution_line": "bulbasaur → ivysaur → venusaur"
   },
+  "me1-4": {
+    "unique_id": "me1-4",
+    "evolution_line": "exeggcute → exeggutor",
+    "color": "pink",
+    "shape": "heads",
+    "location": "Johto Route 29 Area"
+  },
   "me1-133": {
     "unique_id": "me1-133",
     "evolution_line": "bulbasaur → ivysaur → venusaur",
@@ -2212,6 +2245,13 @@
     "color": "green",
     "shape": "quadruped",
     "location": "Cerulean City Area"
+  },
+  "sv3pt5-113": {
+    "unique_id": "sv3pt5-113",
+    "evolution_line": "happiny → chansey → blissey",
+    "color": "pink",
+    "shape": "upright",
+    "location": "Sinnoh Route 209 Area"
   },
   "sv7-65": {
     "unique_id": "sv7-65",
@@ -3433,7 +3473,12 @@
   },
   "basep-13": {
     "unique_id": "basep-13",
-    "evolution_line": "bulbasaur → ivysaur → venusaur"
+    "evolution_line": "bulbasaur → ivysaur → venusaur",
+    "color": "green",
+    "shape": "quadruped",
+    "pose": [
+      "mouth agape"
+    ]
   },
   "basep-14": {
     "unique_id": "basep-14",
@@ -3509,7 +3554,18 @@
   },
   "basep-20": {
     "unique_id": "basep-20",
-    "evolution_line": "psyduck → golduck"
+    "evolution_line": "psyduck → golduck",
+    "color": "yellow",
+    "shape": "upright",
+    "location": "Eterna City Area",
+    "background_details": [
+      "Question Marks",
+      "lake"
+    ],
+    "emotion": [
+      "confused"
+    ],
+    "perspective": "Confusing Perspective"
   },
   "basep-21": {
     "unique_id": "basep-21",
@@ -4032,6 +4088,13 @@
     "color": "blue",
     "shape": "quadruped"
   },
+  "pl3-3": {
+    "unique_id": "pl3-3",
+    "evolution_line": "drifloon → drifblim",
+    "color": "purple",
+    "shape": "arms",
+    "location": "Giant Chasm Outside"
+  },
   "pl3-58": {
     "unique_id": "pl3-58",
     "evolution_line": "buizel → floatzel",
@@ -4093,7 +4156,16 @@
     "evolution_line": "wailmer → wailord",
     "color": "blue",
     "shape": "fish",
-    "location": "Sinnoh Sea Route 223 Area"
+    "location": "Sinnoh Sea Route 223 Area",
+    "main_character": "Wailord",
+    "owned": true,
+    "art_style": "2D, hand drawn",
+    "pose": "",
+    "camera_angle": "",
+    "weather_environment": "Sunny, Clouds",
+    "background_details": "Island, Palm Trees",
+    "actions": "Swimming, We Have Liftoff",
+    "background_pokemon": []
   },
   "sm35-29": {
     "unique_id": "sm35-29",
@@ -4334,53 +4406,221 @@
     "shape": "upright",
     "location": "Sinnoh Route 228 Area"
   },
+  "custom-b-124": {
+    "annotations": {}
+  },
   "custom-bjp-0": {
-    "additional_character_theme": [],
-    "evolution_line": "pichu →  pikachu →  raichu"
+    "additional_character_theme": []
   },
   "custom-bjp-00": {
     "additional_character_theme": []
   },
+  "custom-bjp-000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000": {
+    "annotations": {}
+  },
   "custom-bjp-00000": {
-    "additional_character_theme": [],
-    "evolution_line": "pichu →  pikachu →  raichu"
+    "additional_character_theme": []
   },
   "custom-bjp-000000": {
     "additional_character_theme": []
   },
   "custom-bjp-0000000": {
-    "additional_character_theme": [],
-    "evolution_line": "pichu →  pikachu →  raichu"
+    "additional_character_theme": []
+  },
+  "custom-bjp-0000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000": {
+    "annotations": {}
   },
   "custom-bjp-00000000000000": {
     "additional_character_theme": []
   },
+  "custom-bjp-0000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-0000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-000000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-00000000000000000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-bjp-001": {
+    "annotations": {}
+  },
+  "custom-bjp-0025": {
+    "annotations": {}
+  },
+  "custom-bjp-003": {
+    "annotations": {}
+  },
+  "custom-bjp-004": {
+    "annotations": {}
+  },
+  "custom-bjp-006": {
+    "annotations": {}
+  },
+  "custom-bjp-007": {
+    "annotations": {}
+  },
+  "custom-bjp-009": {
+    "annotations": {}
+  },
+  "custom-bjp-01": {
+    "annotations": {}
+  },
+  "custom-bjp-0129": {
+    "annotations": {}
+  },
+  "custom-bjp-0145": {
+    "annotations": {}
+  },
+  "custom-bjp-0149": {
+    "annotations": {}
+  },
+  "custom-bjp-025": {
+    "annotations": {}
+  },
+  "custom-bjp-034": {
+    "annotations": {}
+  },
+  "custom-bjp-050": {
+    "annotations": {}
+  },
+  "custom-bjp-051": {
+    "annotations": {}
+  },
+  "custom-bjp-052": {
+    "annotations": {}
+  },
   "custom-bjp-053": {
-    "additional_character_theme": [],
-    "artist": "Ken Sugimori"
+    "additional_character_theme": []
+  },
+  "custom-bjp-056": {
+    "annotations": {}
+  },
+  "custom-bjp-058": {
+    "annotations": {}
+  },
+  "custom-bjp-060": {
+    "annotations": {}
+  },
+  "custom-bjp-063": {
+    "annotations": {}
   },
   "custom-bjp-065": {
-    "annotations": {},
-    "artist": "Shin-ichi Yoshida",
-    "evolution_line": "abra → kadabra → alakazam"
+    "annotations": {}
+  },
+  "custom-bjp-072": {
+    "annotations": {}
   },
   "custom-bjp-076": {
-    "additional_character_theme": [],
-    "artist": ""
+    "additional_character_theme": []
   },
   "custom-bjp-079": {
-    "additional_character_theme": [],
-    "evolution_line": "slowpoke →  slowbro →  slowking"
+    "additional_character_theme": []
+  },
+  "custom-bjp-083": {
+    "annotations": {}
   },
   "custom-bjp-094": {
     "additional_character_theme": []
+  },
+  "custom-bjp-095": {
+    "annotations": {}
+  },
+  "custom-bjp-104": {
+    "annotations": {}
+  },
+  "custom-bjp-109": {
+    "annotations": {}
+  },
+  "custom-bjp-113": {
+    "annotations": {}
+  },
+  "custom-bjp-120": {
+    "annotations": {}
+  },
+  "custom-bjp-124": {
+    "annotations": {}
+  },
+  "custom-bjp-125": {
+    "annotations": {}
+  },
+  "custom-bjp-129": {
+    "annotations": {}
+  },
+  "custom-bjp-130": {
+    "annotations": {}
+  },
+  "custom-bjp-135": {
+    "annotations": {}
   },
   "custom-bjp-139": {
     "additional_character_theme": []
   },
   "custom-bjp-143": {
-    "additional_character_theme": [],
-    "evolution_line": "munchlax →  snorlax"
+    "additional_character_theme": []
+  },
+  "custom-bjp-144": {
+    "annotations": {}
+  },
+  "custom-bjp-147": {
+    "annotations": {}
+  },
+  "custom-bjp-149": {
+    "annotations": {}
   },
   "custom-bjp-150": {
     "additional_character_theme": []
@@ -4388,87 +4628,80 @@
   "custom-bjp-151": {
     "additional_character_theme": []
   },
+  "custom-bjp-25": {
+    "annotations": {}
+  },
+  "custom-bjp-56": {
+    "annotations": {}
+  },
+  "custom-ce-023/004": {
+    "annotations": {}
+  },
   "custom-cn-exclusives-Chandelure": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-Chandelure"
+    }
   },
   "custom-cn-exclusives-Cubone": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-Cubone"
+    }
   },
   "custom-cn-exclusives-Eevee": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-Eevee"
+    }
   },
   "custom-cn-exclusives-Gengar": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-Gengar"
+    }
   },
   "custom-cn-exclusives-Meowth": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-Meowth",
-    "evolution_line": "meowth →  persian →  perrserker"
+    }
   },
   "custom-cn-exclusives-arcanine-ex": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-arcanine-ex",
-    "artist": "Gemi"
+    }
   },
   "custom-cn-exclusives-captain-pikachu": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-captain-pikachu",
-    "artist": ""
+    }
   },
   "custom-cn-exclusives-captain-pikachu-stamped": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-captain-pikachu-stamped",
-    "artist": "",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-cn-exclusives-ceruledge": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-ceruledge"
+    }
   },
   "custom-cn-exclusives-fuecoco": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-fuecoco"
+    }
   },
   "custom-cn-exclusives-leafeon": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-leafeon"
+    }
   },
   "custom-cn-exclusives-maushold-ex": {
     "annotations": {
@@ -4480,40 +4713,31 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-mew-ex"
+    }
   },
   "custom-cn-exclusives-pikachu-151-1": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-pikachu-151-1",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-cn-exclusives-pikachu-151-2": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-pikachu-151-2",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-cn-exclusives-pikachu-151-3": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-pikachu-151-3",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-cn-exclusives-pikachu-151-4": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-pikachu-151-4",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-cn-exclusives-quaxly": {
     "annotations": {
@@ -4525,47 +4749,994 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-sprigatito",
-    "evolution_line": "sprigatito →  floragato →  meowscarada"
+    }
   },
   "custom-cn-exclusives-sylveon": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-sylveon",
-    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
+    }
   },
   "custom-cn-exclusives-umbreon": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-exclusives-umbreon",
-    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
+    }
   },
   "custom-cn-promos-custom-victini-ex": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-promos-custom-victini-ex",
-    "evolution_line": "victini"
+    }
   },
   "custom-cn-promos-victini-ex-full-art": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-cn-promos-victini-ex-full-art"
+    }
+  },
+  "custom-cp-057/SV-P": {
+    "annotations": {}
+  },
+  "custom-cp-116/SV-P": {
+    "annotations": {}
+  },
+  "custom-cp-117/SV-P": {
+    "annotations": {}
+  },
+  "custom-dbsp-0": {
+    "annotations": {}
+  },
+  "custom-de-008/050": {
+    "annotations": {}
+  },
+  "custom-djp-0": {
+    "annotations": {}
+  },
+  "custom-djp-000": {
+    "annotations": {}
+  },
+  "custom-djp-0000": {
+    "annotations": {}
+  },
+  "custom-djp-00000": {
+    "annotations": {}
+  },
+  "custom-djp-000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-0000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-00000000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-000000000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-djp-048/Dpt-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-098/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-099/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-100/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-101/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-102/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-djp-124/DP-P": {
+    "additional_character_theme": []
+  },
+  "custom-ejp-0": {
+    "annotations": {}
+  },
+  "custom-ejp-00": {
+    "annotations": {}
+  },
+  "custom-ejp-001/048": {
+    "annotations": {}
+  },
+  "custom-ejp-001/141": {
+    "annotations": {}
+  },
+  "custom-ejp-001/J": {
+    "annotations": {}
+  },
+  "custom-ejp-001/P": {
+    "annotations": {}
+  },
+  "custom-ejp-001/T": {
+    "annotations": {}
+  },
+  "custom-ejp-002/141": {
+    "annotations": {}
+  },
+  "custom-ejp-002/J": {
+    "annotations": {}
+  },
+  "custom-ejp-002/P": {
+    "annotations": {}
+  },
+  "custom-ejp-002/T": {
+    "annotations": {}
+  },
+  "custom-ejp-003/141": {
+    "annotations": {}
+  },
+  "custom-ejp-003/P": {
+    "annotations": {}
+  },
+  "custom-ejp-003/T": {
+    "annotations": {}
+  },
+  "custom-ejp-004/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-004/P": {
+    "annotations": {}
+  },
+  "custom-ejp-004/T": {
+    "annotations": {}
+  },
+  "custom-ejp-005/048": {
+    "annotations": {}
+  },
+  "custom-ejp-005/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-005/P": {
+    "annotations": {}
+  },
+  "custom-ejp-005/T": {
+    "annotations": {}
+  },
+  "custom-ejp-006/048": {
+    "annotations": {}
+  },
+  "custom-ejp-006/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-006/P": {
+    "annotations": {}
+  },
+  "custom-ejp-006/T": {
+    "annotations": {}
+  },
+  "custom-ejp-007/141": {
+    "annotations": {}
+  },
+  "custom-ejp-007/P": {
+    "annotations": {}
+  },
+  "custom-ejp-007/T": {
+    "annotations": {}
+  },
+  "custom-ejp-008/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-008/P": {
+    "annotations": {}
+  },
+  "custom-ejp-008/T": {
+    "annotations": {}
+  },
+  "custom-ejp-009/048": {
+    "annotations": {}
+  },
+  "custom-ejp-009/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-009/T": {
+    "annotations": {}
+  },
+  "custom-ejp-010/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-010/T": {
+    "annotations": {}
+  },
+  "custom-ejp-011/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-011/T": {
+    "annotations": {}
+  },
+  "custom-ejp-012/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-012/P": {
+    "annotations": {}
+  },
+  "custom-ejp-012/T": {
+    "annotations": {}
+  },
+  "custom-ejp-013/141": {
+    "annotations": {}
+  },
+  "custom-ejp-013/P": {
+    "annotations": {}
+  },
+  "custom-ejp-013/T": {
+    "annotations": {}
+  },
+  "custom-ejp-014/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-014/P": {
+    "annotations": {}
+  },
+  "custom-ejp-014/T": {
+    "annotations": {}
+  },
+  "custom-ejp-015/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-015/T": {
+    "annotations": {}
+  },
+  "custom-ejp-016/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-016/T": {
+    "annotations": {}
+  },
+  "custom-ejp-017/141": {
+    "annotations": {}
+  },
+  "custom-ejp-017/T": {
+    "annotations": {}
+  },
+  "custom-ejp-018/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-018/P": {
+    "annotations": {}
+  },
+  "custom-ejp-018/T": {
+    "annotations": {}
+  },
+  "custom-ejp-019/141": {
+    "annotations": {}
+  },
+  "custom-ejp-019/P": {
+    "annotations": {}
+  },
+  "custom-ejp-020/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-020/P": {
+    "annotations": {}
+  },
+  "custom-ejp-021/141": {
+    "annotations": {}
+  },
+  "custom-ejp-021/P": {
+    "annotations": {}
+  },
+  "custom-ejp-022/141": {
+    "annotations": {}
+  },
+  "custom-ejp-022/P": {
+    "annotations": {}
+  },
+  "custom-ejp-023/048": {
+    "annotations": {}
+  },
+  "custom-ejp-023/141": {
+    "annotations": {}
+  },
+  "custom-ejp-023/P": {
+    "annotations": {}
+  },
+  "custom-ejp-024/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-024/P": {
+    "annotations": {}
+  },
+  "custom-ejp-025/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-025/P": {
+    "annotations": {}
+  },
+  "custom-ejp-026/048": {
+    "annotations": {}
+  },
+  "custom-ejp-026/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-026/P": {
+    "annotations": {}
+  },
+  "custom-ejp-027/141": {
+    "annotations": {}
+  },
+  "custom-ejp-027/P": {
+    "annotations": {}
+  },
+  "custom-ejp-028/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-028/P": {
+    "annotations": {}
+  },
+  "custom-ejp-029/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-029/P": {
+    "annotations": {}
+  },
+  "custom-ejp-030/141": {
+    "annotations": {}
+  },
+  "custom-ejp-030/P": {
+    "annotations": {}
+  },
+  "custom-ejp-031/141": {
+    "annotations": {}
+  },
+  "custom-ejp-031/P": {
+    "annotations": {}
+  },
+  "custom-ejp-032/141": {
+    "annotations": {}
+  },
+  "custom-ejp-032/P": {
+    "annotations": {}
+  },
+  "custom-ejp-033/141": {
+    "annotations": {}
+  },
+  "custom-ejp-033/P": {
+    "annotations": {}
+  },
+  "custom-ejp-034/141": {
+    "annotations": {}
+  },
+  "custom-ejp-034/P": {
+    "annotations": {}
+  },
+  "custom-ejp-035/141": {
+    "annotations": {}
+  },
+  "custom-ejp-035/P": {
+    "annotations": {}
+  },
+  "custom-ejp-036/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-036/P": {
+    "annotations": {}
+  },
+  "custom-ejp-037/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-037/P": {
+    "annotations": {}
+  },
+  "custom-ejp-038/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-038/P": {
+    "annotations": {}
+  },
+  "custom-ejp-039/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-039/P": {
+    "annotations": {}
+  },
+  "custom-ejp-040/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-040/P": {
+    "annotations": {}
+  },
+  "custom-ejp-041/141": {
+    "annotations": {}
+  },
+  "custom-ejp-041/P": {
+    "annotations": {}
+  },
+  "custom-ejp-042/141": {
+    "annotations": {}
+  },
+  "custom-ejp-042/P": {
+    "annotations": {}
+  },
+  "custom-ejp-043/141": {
+    "annotations": {}
+  },
+  "custom-ejp-043/P": {
+    "annotations": {}
+  },
+  "custom-ejp-044/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-044/P": {
+    "annotations": {}
+  },
+  "custom-ejp-045/141": {
+    "annotations": {}
+  },
+  "custom-ejp-045/P": {
+    "annotations": {}
+  },
+  "custom-ejp-046/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-046/P": {
+    "annotations": {}
+  },
+  "custom-ejp-047/141": {
+    "annotations": {}
+  },
+  "custom-ejp-047/P": {
+    "annotations": {}
+  },
+  "custom-ejp-048/141": {
+    "annotations": {}
+  },
+  "custom-ejp-049/141": {
+    "annotations": {}
+  },
+  "custom-ejp-050/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-051/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-052/141": {
+    "annotations": {}
+  },
+  "custom-ejp-053/141": {
+    "annotations": {}
+  },
+  "custom-ejp-054/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-055/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-056/141": {
+    "annotations": {}
+  },
+  "custom-ejp-057/141": {
+    "annotations": {}
+  },
+  "custom-ejp-058/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-059/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-060/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-061/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-062/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-063/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-064/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-065/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-066/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-067/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-068/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-069/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-070/141": {
+    "annotations": {}
+  },
+  "custom-ejp-071/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-072/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-073/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-074/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-075/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-076/141": {
+    "annotations": {}
+  },
+  "custom-ejp-077/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-078/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-079/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-080/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-081/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-082/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-083/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-084/141": {
+    "annotations": {}
+  },
+  "custom-ejp-085/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-086/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-087/141": {
+    "annotations": {}
+  },
+  "custom-ejp-088/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-089/141": {
+    "annotations": {}
+  },
+  "custom-ejp-090/141": {
+    "annotations": {}
+  },
+  "custom-ejp-091/141": {
+    "annotations": {}
+  },
+  "custom-ejp-092/141": {
+    "annotations": {}
+  },
+  "custom-ejp-093/141": {
+    "annotations": {}
+  },
+  "custom-ejp-094/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-095/141": {
+    "annotations": {}
+  },
+  "custom-ejp-096/141": {
+    "annotations": {}
+  },
+  "custom-ejp-097/141": {
+    "annotations": {}
+  },
+  "custom-ejp-098/141": {
+    "annotations": {}
+  },
+  "custom-ejp-099/141": {
+    "annotations": {}
+  },
+  "custom-ejp-100/141": {
+    "annotations": {}
+  },
+  "custom-ejp-101/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-102/141": {
+    "annotations": {}
+  },
+  "custom-ejp-103/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-104/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-105/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-106/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-107/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-108/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-109/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-110/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-111/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-112/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-113/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-114/131": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-115/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-116/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-117/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-118/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-119/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-120/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-121/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-122/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-123/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-124/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-125/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-126/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-127/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-128/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-129/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-131/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-142/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-143/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-144/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-ejp-151/141": {
+    "annotations": {
+      "annotations": {}
+    }
+  },
+  "custom-gc-0": {
+    "annotations": {}
+  },
+  "custom-gc-00": {
+    "annotations": {}
+  },
+  "custom-gc-0000": {
+    "annotations": {}
+  },
+  "custom-gc-094": {
+    "annotations": {}
+  },
+  "custom-gc-113": {
+    "annotations": {}
+  },
+  "custom-gc-124": {
+    "annotations": {}
+  },
+  "custom-hjp-0": {
+    "annotations": {}
+  },
+  "custom-hjp-00": {
+    "annotations": {}
+  },
+  "custom-hjp-000": {
+    "annotations": {}
+  },
+  "custom-hjp-0000": {
+    "annotations": {}
+  },
+  "custom-hjp-00000": {
+    "annotations": {}
+  },
+  "custom-hjp-000000": {
+    "annotations": {}
+  },
+  "custom-hjp-0000000": {
+    "annotations": {}
+  },
+  "custom-hjp-00000000": {
+    "annotations": {}
+  },
+  "custom-hjp-000000000": {
+    "annotations": {}
+  },
+  "custom-hjp-0000000000": {
+    "annotations": {}
   },
   "custom-in-promos-Pikachu-berkemeja-batik-1": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-in-promos-Pikachu-berkemeja-batik-1"
+    }
   },
   "custom-in-promos-pikachu-berkemeja-batik-2": {
     "annotations": {
@@ -4577,11 +5748,15 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-in-promos-pikachu-berkemeja-batik-3",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-in-promos-pikachu-berkemeja-batik-4": {
+    "annotations": {
+      "raw_data": {},
+      "annotations": {}
+    }
+  },
+  "custom-jp-promos-custom-Sachiko-EX": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
@@ -4591,8 +5766,7 @@
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-jp-promos-custom-celebration-fanfare-2023"
+    }
   },
   "custom-jp-promos-custom-pikachu-summer-vacation-jp": {
     "annotations": {
@@ -4601,21 +5775,714 @@
     },
     "unique_id": "custom-jp-promos-custom-pikachu-summer-vacation-jp"
   },
+  "custom-jvs-0": {
+    "annotations": {}
+  },
+  "custom-jvs-00": {
+    "annotations": {}
+  },
+  "custom-jvs-000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000": {
+    "annotations": {}
+  },
+  "custom-jvs-000000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-00000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-0000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-jvs-001": {
+    "annotations": {}
+  },
+  "custom-jvs-004": {
+    "annotations": {}
+  },
+  "custom-jvs-007": {
+    "annotations": {}
+  },
+  "custom-jvs-010": {
+    "annotations": {}
+  },
+  "custom-jvs-011": {
+    "annotations": {}
+  },
+  "custom-jvs-013": {
+    "annotations": {}
+  },
+  "custom-jvs-0138": {
+    "annotations": {}
+  },
+  "custom-jvs-014": {
+    "annotations": {}
+  },
+  "custom-jvs-0150": {
+    "annotations": {}
+  },
+  "custom-jvs-016": {
+    "annotations": {}
+  },
+  "custom-jvs-017": {
+    "annotations": {}
+  },
+  "custom-jvs-019": {
+    "annotations": {}
+  },
+  "custom-jvs-021": {
+    "annotations": {}
+  },
+  "custom-jvs-022": {
+    "annotations": {}
+  },
+  "custom-jvs-024": {
+    "annotations": {}
+  },
+  "custom-jvs-025": {
+    "annotations": {}
+  },
+  "custom-jvs-026": {
+    "annotations": {}
+  },
+  "custom-jvs-027": {
+    "annotations": {}
+  },
+  "custom-jvs-028": {
+    "annotations": {}
+  },
+  "custom-jvs-029": {
+    "annotations": {}
+  },
+  "custom-jvs-030": {
+    "annotations": {}
+  },
+  "custom-jvs-032": {
+    "annotations": {}
+  },
+  "custom-jvs-033": {
+    "annotations": {}
+  },
+  "custom-jvs-035": {
+    "annotations": {}
+  },
+  "custom-jvs-037": {
+    "annotations": {}
+  },
+  "custom-jvs-040": {
+    "annotations": {}
+  },
+  "custom-jvs-041": {
+    "annotations": {}
+  },
+  "custom-jvs-042": {
+    "annotations": {}
+  },
+  "custom-jvs-046": {
+    "annotations": {}
+  },
+  "custom-jvs-047": {
+    "annotations": {}
+  },
+  "custom-jvs-048": {
+    "annotations": {}
+  },
+  "custom-jvs-049": {
+    "annotations": {}
+  },
+  "custom-jvs-055": {
+    "annotations": {}
+  },
+  "custom-jvs-058": {
+    "annotations": {}
+  },
+  "custom-jvs-060": {
+    "annotations": {}
+  },
+  "custom-jvs-061": {
+    "annotations": {}
+  },
+  "custom-jvs-062": {
+    "annotations": {}
+  },
+  "custom-jvs-063": {
+    "annotations": {}
+  },
+  "custom-jvs-064": {
+    "annotations": {}
+  },
+  "custom-jvs-067": {
+    "annotations": {}
+  },
+  "custom-jvs-069": {
+    "annotations": {}
+  },
+  "custom-jvs-070": {
+    "annotations": {}
+  },
+  "custom-jvs-074": {
+    "annotations": {}
+  },
+  "custom-jvs-075": {
+    "annotations": {}
+  },
+  "custom-jvs-077": {
+    "annotations": {}
+  },
+  "custom-jvs-078": {
+    "annotations": {}
+  },
+  "custom-jvs-080": {
+    "annotations": {}
+  },
+  "custom-jvs-081": {
+    "annotations": {}
+  },
+  "custom-jvs-082": {
+    "annotations": {}
+  },
+  "custom-jvs-084": {
+    "annotations": {}
+  },
+  "custom-jvs-085": {
+    "annotations": {}
+  },
+  "custom-jvs-086": {
+    "annotations": {}
+  },
+  "custom-jvs-087": {
+    "annotations": {}
+  },
+  "custom-jvs-088": {
+    "annotations": {}
+  },
+  "custom-jvs-090": {
+    "annotations": {}
+  },
+  "custom-jvs-092": {
+    "annotations": {}
+  },
+  "custom-jvs-093": {
+    "annotations": {}
+  },
+  "custom-jvs-095": {
+    "annotations": {}
+  },
+  "custom-jvs-097": {
+    "annotations": {}
+  },
+  "custom-jvs-098": {
+    "annotations": {}
+  },
+  "custom-jvs-099": {
+    "annotations": {}
+  },
+  "custom-jvs-100": {
+    "annotations": {}
+  },
+  "custom-jvs-104": {
+    "annotations": {}
+  },
+  "custom-jvs-105": {
+    "annotations": {}
+  },
+  "custom-jvs-106": {
+    "annotations": {}
+  },
+  "custom-jvs-107": {
+    "annotations": {}
+  },
+  "custom-jvs-108": {
+    "annotations": {}
+  },
+  "custom-jvs-109": {
+    "annotations": {}
+  },
+  "custom-jvs-110": {
+    "annotations": {}
+  },
+  "custom-jvs-112": {
+    "annotations": {}
+  },
+  "custom-jvs-113": {
+    "annotations": {}
+  },
+  "custom-jvs-114": {
+    "annotations": {}
+  },
+  "custom-jvs-115": {
+    "annotations": {}
+  },
+  "custom-jvs-116": {
+    "annotations": {}
+  },
+  "custom-jvs-117": {
+    "annotations": {}
+  },
+  "custom-jvs-120": {
+    "annotations": {}
+  },
+  "custom-jvs-124": {
+    "annotations": {}
+  },
+  "custom-jvs-127": {
+    "annotations": {}
+  },
+  "custom-jvs-128": {
+    "annotations": {}
+  },
+  "custom-jvs-131": {
+    "annotations": {}
+  },
+  "custom-jvs-132": {
+    "annotations": {}
+  },
+  "custom-jvs-133": {
+    "annotations": {}
+  },
+  "custom-jvs-137": {
+    "annotations": {}
+  },
+  "custom-jvs-138": {
+    "annotations": {}
+  },
+  "custom-jvs-140": {
+    "annotations": {}
+  },
+  "custom-jvs-142": {
+    "annotations": {}
+  },
+  "custom-jvs-143": {
+    "annotations": {}
+  },
+  "custom-jvs-145": {
+    "annotations": {}
+  },
+  "custom-jvs-146": {
+    "annotations": {}
+  },
+  "custom-jvs-150": {
+    "annotations": {}
+  },
+  "custom-jvs-64": {
+    "annotations": {}
+  },
+  "custom-jvs-66": {
+    "annotations": {}
+  },
+  "custom-jvs-75": {
+    "annotations": {}
+  },
+  "custom-jvs-93": {
+    "annotations": {}
+  },
+  "custom-kp-126/SM-P": {
+    "annotations": {}
+  },
   "custom-kr-promos-Pikachu": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-kr-promos-Pikachu",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    }
   },
   "custom-kr-promos-Umbreon-ex": {
     "annotations": {
       "raw_data": {},
       "annotations": {}
-    },
-    "unique_id": "custom-kr-promos-Umbreon-ex",
-    "evolution_line": "eevee →  vaporeon →  jolteon →  flareon →  espeon →  umbreon →  leafeon →  glaceon →  sylveon"
+    }
+  },
+  "custom-mp-0": {
+    "annotations": {}
+  },
+  "custom-nd-0": {
+    "annotations": {}
+  },
+  "custom-nd-00": {
+    "annotations": {}
+  },
+  "custom-nd-0000": {
+    "annotations": {}
+  },
+  "custom-nd-00000000": {
+    "annotations": {}
+  },
+  "custom-nd-133": {
+    "annotations": {}
+  },
+  "custom-njp-0": {
+    "annotations": {}
+  },
+  "custom-njp-00": {
+    "annotations": {}
+  },
+  "custom-njp-000": {
+    "annotations": {}
+  },
+  "custom-njp-00000": {
+    "annotations": {}
+  },
+  "custom-njp-000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-00000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-00000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-0000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-00000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-000000000000000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-njp-003": {
+    "annotations": {}
+  },
+  "custom-njp-007/128": {
+    "annotations": {}
+  },
+  "custom-njp-022": {
+    "annotations": {}
+  },
+  "custom-njp-025": {
+    "annotations": {}
+  },
+  "custom-njp-124": {
+    "annotations": {}
+  },
+  "custom-njp-133": {
+    "annotations": {}
+  },
+  "custom-njp-137": {
+    "annotations": {}
+  },
+  "custom-njp-150": {
+    "annotations": {}
+  },
+  "custom-njp-151": {
+    "annotations": {}
+  },
+  "custom-njp-175": {
+    "annotations": {}
+  },
+  "custom-njp-182": {
+    "annotations": {}
+  },
+  "custom-njp-183": {
+    "annotations": {}
+  },
+  "custom-njp-187": {
+    "annotations": {}
+  },
+  "custom-njp-191": {
+    "annotations": {}
+  },
+  "custom-njp-194": {
+    "annotations": {}
+  },
+  "custom-njp-198": {
+    "annotations": {}
+  },
+  "custom-njp-201": {
+    "annotations": {}
+  },
+  "custom-njp-206": {
+    "annotations": {}
+  },
+  "custom-njp-208": {
+    "annotations": {}
+  },
+  "custom-njp-238": {
+    "annotations": {}
+  },
+  "custom-njp-249": {
+    "annotations": {}
+  },
+  "custom-paa-0": {
+    "annotations": {}
+  },
+  "custom-paa-00": {
+    "annotations": {}
+  },
+  "custom-paa-00000000000": {
+    "annotations": {}
+  },
+  "custom-paa-00000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-00000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-00000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-0000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-000000000000000000000000000000000000": {
+    "annotations": {}
+  },
+  "custom-paa-11111": {
+    "annotations": {}
+  },
+  "custom-rjp-0": {
+    "annotations": {}
+  },
+  "custom-rjp-00": {
+    "annotations": {}
+  },
+  "custom-rjp-000": {
+    "annotations": {}
+  },
+  "custom-rjp-0000": {
+    "annotations": {}
+  },
+  "custom-rjp-00000": {
+    "annotations": {}
+  },
+  "custom-rjp-000000": {
+    "annotations": {}
+  },
+  "custom-rjp-006/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-007/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-008/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-012/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-013/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-014/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-019/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-019/T": {
+    "annotations": {}
+  },
+  "custom-rjp-020/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-020/T": {
+    "annotations": {}
+  },
+  "custom-rjp-021/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-021/T": {
+    "annotations": {}
+  },
+  "custom-rjp-022/T": {
+    "annotations": {}
+  },
+  "custom-rjp-023/T": {
+    "annotations": {}
+  },
+  "custom-rjp-024/T": {
+    "annotations": {}
+  },
+  "custom-rjp-031/PLAY": {
+    "annotations": {}
+  },
+  "custom-rjp-032/PLAY": {
+    "annotations": {}
+  },
+  "custom-sjp-0TPCi01": {
+    "annotations": {}
+  },
+  "custom-sjp-143/S-P": {
+    "annotations": {},
+    "image_override": "https://archives.bulbagarden.net/media/upload/thumb/1/1b/CharizardSPromo143.jpg/360px-CharizardSPromo143.jpg"
+  },
+  "custom-sjp-153/SV-P": {
+    "annotations": {}
+  },
+  "custom-sjp-316/S-P": {
+    "annotations": {}
+  },
+  "custom-sjp-408/SM-P": {
+    "annotations": {}
+  },
+  "custom-sjp-TPCi01": {
+    "annotations": {}
+  },
+  "custom-skp-001/SM-P": {
+    "annotations": {}
+  },
+  "custom-svbsp-0": {
+    "annotations": {}
+  },
+  "custom-tr-088": {
+    "annotations": {}
+  },
+  "custom-vm-set3-28": {
+    "weather_environment": "Sunny"
+  },
+  "custom-wp-1/5": {
+    "annotations": {}
+  },
+  "custom-wp-2/5": {
+    "annotations": {}
+  },
+  "custom-wp-3/5": {
+    "annotations": {}
+  },
+  "custom-wp-4/5": {
+    "annotations": {}
+  },
+  "custom-wp-5/5": {
+    "annotations": {}
+  },
+  "custom-x-000000017": {
+    "annotations": {}
+  },
+  "custom-x-0000017": {
+    "annotations": {}
+  },
+  "custom-x-000017": {
+    "annotations": {}
+  },
+  "custom-x-00017": {
+    "annotations": {}
+  },
+  "custom-x-0017": {
+    "annotations": {}
+  },
+  "custom-x-017": {
+    "annotations": {}
+  },
+  "custom-xjp-0": {
+    "annotations": {}
+  },
+  "custom-xjp-00": {
+    "annotations": {}
+  },
+  "custom-xjp-000": {
+    "annotations": {}
+  },
+  "custom-xjp-0000": {
+    "annotations": {}
+  },
+  "custom-xjp-00000": {
+    "annotations": {}
+  },
+  "custom-xjp-000000": {
+    "annotations": {}
+  },
+  "custom-xjp-0000000": {
+    "annotations": {}
+  },
+  "custom-xjp-00000000": {
+    "annotations": {}
+  },
+  "custom-xjp-000000000": {
+    "annotations": {}
+  },
+  "custom-xjp-0000000000": {
+    "annotations": {}
   },
   "custom-xjp-227/SM-P": {
     "annotations": {},
@@ -4623,17 +6490,24 @@
     "evolution_line": "pichu →  pikachu →  raichu",
     "artist": "Naoki Saito"
   },
+  "custom-xyp-JP279": {
+    "weather_environment": "Indoors",
+    "unique_id": "custom-xyp-JP279",
+    "actions": []
+  },
+  "custom-xyp-JP289": {
+    "weather_environment": "Sunny"
+  },
   "koreanditto": {
-    "annotations": {},
-    "artist": "Lee Mina"
+    "annotations": {}
   },
   "vm-set3-28": {
-    "weather_environment": "Sunny",
-    "unique_id": "vm-set3-28"
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
   },
   "wseggbwreg": {
-    "annotations": {},
-    "artist": "TOKIYA"
+    "annotations": {}
   },
   "wsjngwgnwrklgmwk;lfg,wefgw": {
     "annotations": {
@@ -4644,13 +6518,17 @@
     "annotations": {}
   },
   "xyp-JP279": {
-    "weather_environment": "Indoors",
-    "unique_id": "xyp-JP279",
-    "evolution_line": "pichu →  pikachu →  raichu"
+    "annotations": {
+      "weather_environment": "Indoors"
+    }
   },
   "xyp-JP289": {
-    "weather_environment": "Sunny",
-    "unique_id": "xyp-JP289"
+    "annotations": {
+      "weather_environment": "Sunny"
+    }
+  },
+  "custom-djp-003/L-P": {
+    "set_name": "HGSS JP Promos"
   },
   "P-A-054": {
     "unique_id": "P-A-054",
