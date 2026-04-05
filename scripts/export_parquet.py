@@ -10,8 +10,12 @@ Usage:
 
 import os
 import re
+import sys
 import unicodedata
 import duckdb
+
+# Refuse to ship cards.parquet if the API-sourced catalog looks truncated (CI safety).
+MIN_NON_CUSTOM_TCG_CARDS = 10_000
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(SCRIPT_DIR, "..", "public", "data", "pokemon.duckdb")
@@ -79,6 +83,18 @@ def export():
     fixed = _normalize_supertypes_in_db(conn)
     if fixed:
         print(f"  Normalized {fixed} supertype variant(s) to 'Pokémon'.")
+
+    tcg_api_count = conn.execute(
+        "SELECT COUNT(*) FROM tcg_cards WHERE NOT is_custom"
+    ).fetchone()[0]
+    if tcg_api_count < MIN_NON_CUSTOM_TCG_CARDS:
+        print(
+            f"  cards.parquet: ABORT — only {tcg_api_count} non-custom tcg_cards "
+            f"(minimum {MIN_NON_CUSTOM_TCG_CARDS}). Refusing to overwrite export.",
+            file=sys.stderr,
+        )
+        conn.close()
+        sys.exit(1)
 
     safe_export(conn, "tcg_cards",
                 "SELECT id, name, supertype, subtypes, hp, types, evolves_from, rarity, artist, set_id, set_name, set_series, number, regulation_mark, image_small, image_large, raw_data, prices FROM tcg_cards WHERE NOT is_custom",
