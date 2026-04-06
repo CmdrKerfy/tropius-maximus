@@ -42,6 +42,10 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - **Next v2 feature (approved, not started):** **User profiles + profile page + activity views** for non-technical collaborators. Full phased spec, schema notes, and file touch list: **`docs/plans/user-profiles-and-activity.md`**. Implement on **`v2/supabase-migration`**; new migration likely **`013_profiles.sql`** (after **`012_signup_allowlist.sql`**).
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
+### Planned cleanup (UX / tech debt — not started)
+
+- **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
+
 ### Optional — after the core v2 plan is finished
 
 Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a performance pass when Explore feels slow loading filter dropdowns.
@@ -199,6 +203,7 @@ src/                             -- React frontend (v2 routes + Supabase layer o
 .env.example                     -- template for .env.local
 vercel.json                      -- Vite SPA rewrites for Vercel; cleanUrls false for /login deep links
 docs/plans/user-profiles-and-activity.md  -- NEXT: profiles + profile page + activity (paused)
+docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
 
