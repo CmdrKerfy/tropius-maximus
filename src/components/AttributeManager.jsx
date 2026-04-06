@@ -30,14 +30,13 @@ export default function AttributeManager({ attributes, onChanged }) {
     try {
       // Build the options field based on the value type.
       let options = null;
-      if (valueType === "select") {
-        // Parse comma-separated options.
+      if (valueType === "select" || valueType === "multi_select") {
         options = optionsText
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
         if (options.length < 2) {
-          throw new Error("Select attributes need at least 2 options");
+          throw new Error("Select and multi-select fields need at least 2 options");
         }
       } else if (valueType === "number") {
         // Build min/max object if provided.
@@ -132,7 +131,7 @@ export default function AttributeManager({ attributes, onChanged }) {
         </h3>
 
         {error && (
-          <div className="text-green-500 text-sm mb-2">{error}</div>
+          <div className="text-red-600 text-sm mb-2">{error}</div>
         )}
 
         <form onSubmit={handleCreate} className="space-y-3">
@@ -164,11 +163,13 @@ export default function AttributeManager({ attributes, onChanged }) {
               <option value="number">Number</option>
               <option value="boolean">Boolean</option>
               <option value="select">Select</option>
+              <option value="multi_select">Multi-select</option>
+              <option value="url">URL</option>
             </select>
           </div>
 
           {/* Additional fields based on type */}
-          {valueType === "select" && (
+          {(valueType === "select" || valueType === "multi_select") && (
             <input
               type="text"
               value={optionsText}

@@ -1,6 +1,10 @@
 node_modules/
 dist/
 .DS_Store
+.claude/
+backup/
+.env
+.env.local
 
 # DuckDB database files (generated at build time)
 *.duckdb

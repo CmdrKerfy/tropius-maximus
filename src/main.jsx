@@ -1,12 +1,31 @@
-import { StrictMode, useState, useEffect } from "react";
+import { StrictMode, useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
-import { initDB } from "./db";
+import { initDB, fetchExploreFilterOptions } from "./db";
+
+/** Keep in sync with ExplorePage FILTER_OPTIONS_STALE_MS */
+const FILTER_OPTIONS_STALE_MS = 30 * 60 * 1000;
 import App from "./App.jsx";
+
+const useSupabase =
+  import.meta.env.VITE_USE_SUPABASE === "true" &&
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 function Root() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 60_000, retry: 1 },
+        },
+      }),
+    []
+  );
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -15,6 +34,11 @@ function Root() {
     initDB()
       .then(() => {
         clearTimeout(timeout);
+        void queryClient.prefetchQuery({
+          queryKey: ["filterOptions", "explore"],
+          queryFn: fetchExploreFilterOptions,
+          staleTime: FILTER_OPTIONS_STALE_MS,
+        });
         setReady(true);
       })
       .catch((err) => {
@@ -22,7 +46,7 @@ function Root() {
         console.error("initDB error:", err);
         setError(err?.message || String(err));
       });
-  }, []);
+  }, [queryClient]);
 
   if (error) {
     return (
@@ -54,14 +78,22 @@ function Root() {
           <div className="inline-block w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-gray-600 text-sm">Loading Tropius Maximus...</p>
           <p className="text-gray-400 text-xs mt-1">
-            Initializing DuckDB-WASM and loading card data
+            {useSupabase
+              ? "Connecting to Supabase…"
+              : "Initializing DuckDB-WASM and loading card data"}
           </p>
         </div>
       </div>
     );
   }
 
-  return <App />;
+  return (
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </BrowserRouter>
+  );
 }
 
 createRoot(document.getElementById("root")).render(

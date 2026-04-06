@@ -22,6 +22,7 @@ Usage:
     python ingest.py --skip-pocket     # Skip Pokemon TCG Pocket data
     python ingest.py --pocket          # Only fetch Pocket data (skip TCG + Pokemon)
     python ingest.py --force           # Re-download all sets even if already present
+    python ingest.py --push-supabase   # After ingest, run push_duckdb_to_supabase.py (needs SUPABASE_* env)
 
 Features:
     - Resume: Automatically skips sets that are already fully ingested
@@ -35,6 +36,8 @@ import argparse
 import json
 import os
 import re
+import subprocess
+import sys
 import time
 import unicodedata
 from typing import Optional
@@ -852,6 +855,12 @@ def main():
         action="store_true",
         help="Only normalize Pokémon supertype variants in tcg_cards to 'Pokémon', then exit.",
     )
+    parser.add_argument(
+        "--push-supabase",
+        dest="push_supabase",
+        action="store_true",
+        help="After ingest, run push_duckdb_to_supabase.py (set SUPABASE_URL + SUPABASE_SERVICE_KEY).",
+    )
     args = parser.parse_args()
     if args.normalize_only:
         conn = get_connection()
@@ -865,6 +874,12 @@ def main():
         conn.close()
         print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
     run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, pocket_only=args.pocket_only, force=args.force)
+
+    if args.push_supabase:
+        push_script = os.path.join(SCRIPT_DIR, "push_duckdb_to_supabase.py")
+        rc = subprocess.call([sys.executable, push_script], env=os.environ)
+        if rc != 0:
+            sys.exit(rc)
 
 
 if __name__ == "__main__":

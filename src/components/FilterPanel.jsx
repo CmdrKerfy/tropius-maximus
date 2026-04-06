@@ -2,13 +2,35 @@
  * FilterPanel — Single flex-wrap row of filter dropdowns + sort controls.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
-function MultiSelectDropdown({ options, values, onChange, className = "", groups = null, searchable = true }) {
+const UNCATEGORIZED_HEADER = "Uncategorized";
+
+/** One group per distinct series string; empty/null series → Uncategorized (sorted last). */
+function seriesBucketKey(seriesRaw) {
+  const s = seriesRaw == null ? "" : String(seriesRaw).trim();
+  if (!s) return { key: "__none__", header: UNCATEGORIZED_HEADER, sort: 2 };
+  return { key: s, header: s, sort: 1 };
+}
+
+function MultiSelectDropdown({
+  options,
+  values,
+  onChange,
+  className = "",
+  groups = null,
+  searchable = true,
+  disabled = false,
+  disabledTitle = "",
+}) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef(null);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
 
   useEffect(() => {
     if (!open) { setSearch(""); return; }
@@ -49,11 +71,17 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
     "h-10 px-3 py-2 border rounded-lg bg-white text-sm text-left flex items-center gap-1.5 min-w-0 " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent " +
     (isActive ? "border-green-400 text-green-700 " : "border-gray-300 text-gray-900 ") +
+    (disabled ? "opacity-50 cursor-not-allowed bg-gray-50 text-gray-500 " : "") +
     className;
 
   return (
-    <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen(!open)} className={btnCls}>
+    <div className="relative" ref={ref} title={disabled ? disabledTitle : undefined}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(!open)}
+        className={btnCls}
+      >
         <span className="flex-1 truncate">{displayText}</span>
         <svg
           className={`w-4 h-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
@@ -78,15 +106,15 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
           )}
           <div className="max-h-52 overflow-y-auto">
             {groups
-              ? groups.map(({ series, sets }) => {
+              ? groups.map(({ id, header, sets }) => {
                   const filtered = sets.filter((s) =>
                     s.name.toLowerCase().includes(search.toLowerCase())
                   );
                   if (filtered.length === 0) return null;
                   return (
-                    <div key={series}>
+                    <div key={id}>
                       <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 sticky top-0">
-                        {series}
+                        {header}
                       </div>
                       {filtered.map((s) => (
                         <label key={s.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
@@ -124,18 +152,38 @@ function MultiSelectDropdown({ options, values, onChange, className = "", groups
   );
 }
 
-export default function FilterPanel({ options, filters, onChange, expanded, onToggleExpand }) {
-  // Build grouped set list for the Set dropdown.
-  const seriesOrder = [];
-  const setsBySeries = {};
-  for (const s of options.sets) {
-    if (!setsBySeries[s.series]) {
-      setsBySeries[s.series] = [];
-      seriesOrder.push(s.series);
+export default function FilterPanel({
+  options,
+  filters,
+  onChange,
+  expanded,
+  onToggleExpand,
+  /** @type {Record<string, boolean> | undefined} true = affects fetchCards */
+  filterAvailability,
+  /** Native tooltip when a control is unavailable */
+  filterUnavailableTitle = "",
+}) {
+  const isFilterOn = (key) => filterAvailability?.[key] !== false;
+  // Group sets by series; merge short API slugs into "Other sets", sort groups & set names.
+  const setGroups = useMemo(() => {
+    const byKey = new Map();
+    for (const setRow of options.sets || []) {
+      const { key, header, sort } = seriesBucketKey(setRow.series);
+      if (!byKey.has(key)) {
+        byKey.set(key, { id: key, header, sort, sets: [] });
+      }
+      byKey.get(key).sets.push(setRow);
     }
-    setsBySeries[s.series].push(s);
-  }
-  const setGroups = seriesOrder.map((series) => ({ series, sets: setsBySeries[series] }));
+    for (const g of byKey.values()) {
+      g.sets.sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+      );
+    }
+    return [...byKey.values()].sort((a, b) => {
+      if (a.sort !== b.sort) return a.sort - b.sort;
+      return a.header.localeCompare(b.header, undefined, { sensitivity: "base" });
+    });
+  }, [options.sets]);
 
   // Parse evolution line JSON arrays into {value, label} objects.
   const evoOptions = (options.evolution_lines || []).map((evo) => {
@@ -277,36 +325,53 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           </div>
 
           {options.sets?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("set_id") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("set_id") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Set</label>
               <MultiSelectDropdown
                 groups={setGroups}
                 values={filters.set_id || []}
                 onChange={(v) => onChange({ set_id: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("set_id")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.artists?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("artist") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("artist") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Artist</label>
               <MultiSelectDropdown
                 options={options.artists}
                 values={filters.artist || []}
                 onChange={(v) => onChange({ artist: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("artist")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.supertypes?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("supertype") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("supertype") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Supertype</label>
               <select
                 value={filters.supertype || ""}
                 onChange={(e) => onChange({ supertype: e.target.value })}
-                className={selectClass}
+                className={
+                  selectClass +
+                  (!isFilterOn("supertype") ? " opacity-50 cursor-not-allowed bg-gray-50 text-gray-600" : "")
+                }
+                disabled={!isFilterOn("supertype")}
               >
                 <option value="">All</option>
                 {options.supertypes.map((s) => (
@@ -317,7 +382,10 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
           )}
 
           {options.regions?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("region") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("region") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Featured Region</label>
               <MultiSelectDropdown
                 options={options.regions}
@@ -325,12 +393,17 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 onChange={(v) => onChange({ region: v })}
                 searchable={false}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("region")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.background_pokemon?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("background_pokemon") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("background_pokemon") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Background Pokémon</label>
               <MultiSelectDropdown
                 options={(options.background_pokemon || []).map((v) => ({
@@ -340,90 +413,127 @@ export default function FilterPanel({ options, filters, onChange, expanded, onTo
                 values={filters.background_pokemon || []}
                 onChange={(v) => onChange({ background_pokemon: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("background_pokemon")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {evoOptions.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("evolution_line") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("evolution_line") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Evolution Line</label>
               <MultiSelectDropdown
                 options={evoOptions}
                 values={filters.evolution_line || []}
                 onChange={(v) => onChange({ evolution_line: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("evolution_line")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.rarities?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("rarity") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("rarity") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Rarity</label>
               <MultiSelectDropdown
                 options={options.rarities}
                 values={filters.rarity || []}
                 onChange={(v) => onChange({ rarity: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("rarity")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.specialties?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("specialty") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("specialty") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Specialty</label>
               <MultiSelectDropdown
                 options={options.specialties}
                 values={filters.specialty || []}
                 onChange={(v) => onChange({ specialty: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("specialty")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.weathers?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("weather") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("weather") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Weather</label>
               <MultiSelectDropdown
                 options={options.weathers}
                 values={filters.weather || []}
                 onChange={(v) => onChange({ weather: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("weather")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.environments?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("environment") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("environment") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Environment</label>
               <MultiSelectDropdown
                 options={options.environments}
                 values={filters.environment || []}
                 onChange={(v) => onChange({ environment: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("environment")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.actions?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("actions") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("actions") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Action</label>
               <MultiSelectDropdown
                 options={options.actions}
                 values={filters.actions || []}
                 onChange={(v) => onChange({ actions: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("actions")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}
 
           {options.poses?.length > 0 && (
-            <div className="flex flex-col min-w-0">
+            <div
+              className={`flex flex-col min-w-0 ${!isFilterOn("pose") ? "opacity-45 saturate-50" : ""}`}
+              title={!isFilterOn("pose") ? filterUnavailableTitle : undefined}
+            >
               <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Pose</label>
               <MultiSelectDropdown
                 options={options.poses}
                 values={filters.pose || []}
                 onChange={(v) => onChange({ pose: v })}
                 className="w-full min-w-0"
+                disabled={!isFilterOn("pose")}
+                disabledTitle={filterUnavailableTitle}
               />
             </div>
           )}

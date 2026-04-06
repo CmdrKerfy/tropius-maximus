@@ -1,0 +1,3 @@
+# For scripts/migrate_data.py — PostgREST client only (no full supabase-py stack).
+# Works with legacy JWT service_role keys (eyJ...) and new dashboard secrets (sb_secret_...).
+postgrest>=0.14,<1

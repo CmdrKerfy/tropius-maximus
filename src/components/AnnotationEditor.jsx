@@ -13,30 +13,154 @@
  * then syncs in the background.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { patchAnnotations } from "../db";
 
-export default function AnnotationEditor({ cardId, annotations, attributes }) {
+/** Stack marker: field was absent before save (undo → clear). */
+const UNDO_ABSENT = Symbol("tm_undo_absent");
+
+function cloneForUndo(val) {
+  if (val === null || val === undefined) return val;
+  if (typeof val === "object") {
+    try {
+      return JSON.parse(JSON.stringify(val));
+    } catch {
+      return val;
+    }
+  }
+  return val;
+}
+import ComboBox from "./ComboBox";
+import MultiComboBox from "./MultiComboBox";
+
+/** field_definitions.name (snake_case) → fetchFormOptions() camelCase key. */
+const FORM_OPTS_KEY_OVERRIDES = {
+  top_10_themes: "top10Themes",
+};
+
+function formOptsKeyForAttr(attrKey) {
+  if (FORM_OPTS_KEY_OVERRIDES[attrKey]) return FORM_OPTS_KEY_OVERRIDES[attrKey];
+  return attrKey.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/** Curated options from field_definitions (JSONB array or JSON string). */
+function curatedToOptions(curated) {
+  if (Array.isArray(curated)) return curated;
+  if (typeof curated === "string") {
+    try {
+      const p = JSON.parse(curated);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function multiValueToComboString(value) {
+  if (Array.isArray(value)) return value.join(", ");
+  if (value == null || value === "") return "";
+  return String(value);
+}
+
+function mergedSuggestionOptions(attr, formOptions) {
+  const curated = curatedToOptions(attr.options);
+  const fk = formOptsKeyForAttr(attr.key);
+  const fromForm = Array.isArray(formOptions?.[fk]) ? formOptions[fk] : [];
+  const set = new Set(
+    [...curated, ...fromForm].filter((x) => x != null && String(x).trim() !== "")
+  );
+  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+export default function AnnotationEditor({ cardId, annotations, attributes, formOptions = {} }) {
+  const queryClient = useQueryClient();
   // Local copy of annotations for immediate UI updates.
   const [values, setValues] = useState(annotations || {});
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [undoHint, setUndoHint] = useState(null);
+  const [undoCount, setUndoCount] = useState(0);
+
+  const serverSnapshotRef = useRef({});
+  const undoStackRef = useRef([]);
+
+  const undoShortcut =
+    typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      ? "⌘⇧Z"
+      : "Ctrl+Shift+Z";
+
+  useEffect(() => {
+    const snap = { ...(annotations || {}) };
+    serverSnapshotRef.current = snap;
+    setValues(snap);
+    undoStackRef.current = [];
+    setUndoHint(null);
+    setUndoCount(0);
+  }, [cardId, annotations]);
+
+  const undoLast = useCallback(async () => {
+    const item = undoStackRef.current.pop();
+    if (!item) return;
+    setSaving(true);
+    setUndoHint(null);
+    try {
+      const payload =
+        item.revertTo === UNDO_ABSENT ? { [item.key]: null } : { [item.key]: item.revertTo };
+      const result = await patchAnnotations(cardId, payload);
+      setValues(result);
+      serverSnapshotRef.current = { ...result };
+      setLastSaved(new Date());
+      setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
+      setUndoCount(undoStackRef.current.length);
+      queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+    } catch (err) {
+      console.error("Undo failed:", err);
+      undoStackRef.current.push(item);
+    } finally {
+      setSaving(false);
+    }
+  }, [cardId, queryClient]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+      if (e.key !== "z" && e.key !== "Z") return;
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable) return;
+      if (undoStackRef.current.length === 0) return;
+      e.preventDefault();
+      undoLast();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undoLast]);
 
   // Save a single annotation field.
   const save = useCallback(
     async (key, value) => {
       setSaving(true);
+      setUndoHint(null);
       try {
+        const revertTo = Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)
+          ? cloneForUndo(serverSnapshotRef.current[key])
+          : UNDO_ABSENT;
         const result = await patchAnnotations(cardId, { [key]: value });
         setValues(result);
+        serverSnapshotRef.current = { ...result };
+        undoStackRef.current.push({ key, revertTo });
+        if (undoStackRef.current.length > 40) undoStackRef.current.shift();
+        setUndoCount(undoStackRef.current.length);
         setLastSaved(new Date());
+        queryClient.invalidateQueries({ queryKey: ["editHistory"] });
       } catch (err) {
         console.error("Failed to save annotation:", err);
       } finally {
         setSaving(false);
       }
     },
-    [cardId]
+    [cardId, queryClient]
   );
 
   // Handle changes for each field type.
@@ -69,6 +193,8 @@ export default function AnnotationEditor({ cardId, annotations, attributes }) {
     <div className="space-y-3">
       {editableAttrs.map((attr) => {
         const value = values[attr.key] ?? attr.default_value ?? null;
+        const mergedOpts = mergedSuggestionOptions(attr, formOptions);
+        const textAsCombo = attr.value_type === "text" && mergedOpts.length > 0;
 
         return (
           <div key={attr.key}>
@@ -76,8 +202,18 @@ export default function AnnotationEditor({ cardId, annotations, attributes }) {
               {attr.label}
             </label>
 
-            {/* Text field → textarea */}
-            {attr.value_type === "text" && (
+            {/* Text field → ComboBox when suggestions exist (parity with Card Detail), else textarea */}
+            {attr.value_type === "text" && textAsCombo && (
+              <ComboBox
+                value={value || ""}
+                onChange={(v) => handleImmediateChange(attr, v || null)}
+                options={mergedOpts}
+                placeholder={`Enter ${attr.label.toLowerCase()}...`}
+                className={inputClass + " w-full"}
+              />
+            )}
+
+            {attr.value_type === "text" && !textAsCombo && (
               <textarea
                 value={value || ""}
                 onChange={(e) => handleChange(attr, e.target.value)}
@@ -122,35 +258,101 @@ export default function AnnotationEditor({ cardId, annotations, attributes }) {
               </label>
             )}
 
-            {/* Select field → dropdown */}
+            {/* Select → ComboBox with curated + DB usage (same option source as Card Detail) */}
             {attr.value_type === "select" && (
-              <select
+              <ComboBox
                 value={value || ""}
-                onChange={(e) =>
-                  handleImmediateChange(attr, e.target.value || null)
+                onChange={(v) => handleImmediateChange(attr, v || null)}
+                options={mergedOpts}
+                placeholder="Not set"
+                className={inputClass + " w-full max-w-[min(100%,420px)]"}
+              />
+            )}
+
+            {/* Multi-select (field_definitions multi_select) → MultiComboBox */}
+            {attr.value_type === "multi_select" && (
+              <MultiComboBox
+                value={multiValueToComboString(value)}
+                onChange={(commaStr) => {
+                  let arr = commaStr
+                    ? commaStr.split(",").map((s) => s.trim()).filter(Boolean)
+                    : [];
+                  if (attr.key === "background_pokemon") {
+                    arr = arr.map((s) => s.toLowerCase());
+                  }
+                  setValues((prev) => ({ ...prev, [attr.key]: arr }));
+                  save(attr.key, arr);
+                }}
+                options={mergedOpts}
+                placeholder={`Add ${attr.label.toLowerCase()}…`}
+                className="w-full"
+              />
+            )}
+
+            {/* URL (image override, video URL, …) */}
+            {attr.value_type === "url" && (
+              <input
+                type="text"
+                inputMode="url"
+                value={value || ""}
+                onChange={(e) => handleChange(attr, e.target.value)}
+                onBlur={(e) => {
+                  const t = e.target.value.trim();
+                  save(attr.key, t || null);
+                }}
+                className={inputClass}
+                placeholder="https://…"
+              />
+            )}
+
+            {/* Unknown types: still editable as text (avoids blank rows) */}
+            {!["text", "number", "boolean", "select", "multi_select", "url"].includes(
+              attr.value_type
+            ) && (
+              <textarea
+                value={
+                  typeof value === "object" && value !== null
+                    ? JSON.stringify(value)
+                    : value || ""
                 }
-                className={inputClass + " max-w-[200px]"}
-              >
-                <option value="">Not set</option>
-                {(Array.isArray(attr.options) ? attr.options : []).map(
-                  (opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  )
-                )}
-              </select>
+                onChange={(e) => {
+                  const v = e.target.value;
+                  handleChange(attr, v);
+                }}
+                onBlur={() => {
+                  const raw = values[attr.key];
+                  if (typeof raw === "string" && raw.trim().startsWith("[")) {
+                    try {
+                      save(attr.key, JSON.parse(raw));
+                      return;
+                    } catch {
+                      /* keep as string */
+                    }
+                  }
+                  handleBlur(attr);
+                }}
+                rows={2}
+                className={inputClass + " resize-y font-mono text-xs"}
+                placeholder={`(${attr.value_type})`}
+              />
             )}
           </div>
         );
       })}
 
       {/* Save indicator */}
-      <div className="text-xs text-gray-400 h-4">
-        {saving && "Saving..."}
-        {!saving && lastSaved && (
+      <div className="text-xs text-gray-400 min-h-4 space-y-0.5">
+        {saving && <span>Saving…</span>}
+        {!saving && undoHint && <span className="text-green-700">{undoHint}</span>}
+        {!saving && !undoHint && lastSaved && (
           <span>
             Saved at {lastSaved.toLocaleTimeString()}
+            {undoCount > 0 && (
+              <span className="text-gray-500">
+                {" "}
+                · Undo last save: {undoShortcut} (only when focus is outside text fields)
+              </span>
+            )}
           </span>
         )}
       </div>

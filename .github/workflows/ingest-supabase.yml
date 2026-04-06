@@ -1,0 +1,52 @@
+# Phase 7: refresh DuckDB via ingest.py, then upsert API rows into Supabase.
+#
+# Scheduled workflows run on the repository DEFAULT branch only (GitHub limitation).
+# For v2 before it is default: use "Run workflow" (workflow_dispatch) on a branch that
+# has this file, or merge to default.
+#
+# Required repository secrets:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_KEY   (service role — never log, never commit)
+# Optional:
+#   POKEMON_TCG_API_KEY    (higher pokemontcg.io rate limits)
+
+name: Ingest and push to Supabase
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 7 * * 1"
+
+jobs:
+  ingest-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements-ci.txt
+
+      - name: Cache DuckDB data file
+        uses: actions/cache@v4
+        with:
+          path: public/data/pokemon.duckdb
+          key: duckdb-${{ runner.os }}-${{ hashFiles('scripts/ingest.py', 'scripts/push_duckdb_to_supabase.py') }}
+          restore-keys: |
+            duckdb-${{ runner.os }}-
+
+      - name: Ingest (TCG + PokeAPI + Pocket)
+        env:
+          POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
+        run: python scripts/ingest.py
+
+      - name: Push DuckDB → Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/push_duckdb_to_supabase.py
