@@ -37,6 +37,11 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - [ ] **Cutover when ready** — merge **`v2/supabase-migration` → `main`** and/or set Vercel production branch; align GitHub Pages vs Vercel-only strategy.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
+### Paused work & backlog (owner paused — resume anytime)
+
+- **Next v2 feature (approved, not started):** **User profiles + profile page + activity views** for non-technical collaborators. Full phased spec, schema notes, and file touch list: **`docs/plans/user-profiles-and-activity.md`**. Implement on **`v2/supabase-migration`**; new migration likely **`013_profiles.sql`** (after **`012_signup_allowlist.sql`**).
+- **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
+
 ### Optional — after the core v2 plan is finished
 
 Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a performance pass when Explore feels slow loading filter dropdowns.
@@ -73,7 +78,7 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 - **Frontend:** React + React Router + TanStack Query + React Hook Form + Tailwind
 - **Backend:** Supabase (Postgres + Auth + RLS) — free tier
-- **Auth:** Magic links (email-based, no passwords or PATs)
+- **Auth:** Magic links (email-based, no passwords or PATs); **production:** invite-only via Edge Function + `signup_allowlist` + **`VITE_REQUIRE_EMAIL_AUTH`**; SPA client **`flowType: 'implicit'`** for cross-device magic links (see `docs/plans/user-profiles-and-activity.md` auth section)
 - **Deploy:** Vercel (free tier) — preview deploys per branch
 - **Ingest:** Weekly `ingest-supabase` workflow (or `ingest.py` locally) refreshes DuckDB, then `push_duckdb_to_supabase.py` upserts API rows into Postgres. `main` branch may still use Pages workflow + Parquet until cutover.
 
@@ -102,7 +107,9 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 **`normalization_rules`** — value normalization (match_pattern → replace_with), applied in app layer + nightly pg_cron safety net
 
-**`edit_history`** — audit trail, partitioned by quarter, no FK (survives card deletion). Table Editor shows the parent table plus partition tables (e.g. `edit_history_2026_q1`, …).
+**`edit_history`** — audit trail, partitioned by quarter; **`edited_by`** → `auth.users(id)` (no FK on `card_id` so history survives card deletion). Table Editor shows the parent table plus partition tables (e.g. `edit_history_2026_q1`, …). App should log **`edited_by`** on writes (see `appAdapter.js`).
+
+**`signup_allowlist`** — emails allowed to request a magic link via Edge Function (`012_signup_allowlist.sql`). RLS on; no user-facing policies — service role only.
 
 **`health_check_results`** — rows for automated / scheduled health checks (optional; Data Health UI can list recent rows).
 
@@ -161,6 +168,9 @@ supabase/
     009_fix_manual_set_ids_and_labels.sql
     010_field_definitions_number_type.sql  -- allow field_type = number for custom fields
     011_field_definitions_rls_custom_only_writes.sql  -- INSERT/UPDATE/DELETE only category = custom
+    012_signup_allowlist.sql       -- invite-only email gate for request-magic-link Edge Function
+  config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
+  functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
 
 scripts/
@@ -187,7 +197,8 @@ src/                             -- React frontend (v2 routes + Supabase layer o
 
 .env.local                       -- gitignored, contains VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 .env.example                     -- template for .env.local
-vercel.json                      -- Vite SPA rewrites for Vercel (Phase 7)
+vercel.json                      -- Vite SPA rewrites for Vercel; cleanUrls false for /login deep links
+docs/plans/user-profiles-and-activity.md  -- NEXT: profiles + profile page + activity (paused)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
 
@@ -206,11 +217,13 @@ When asking the user for **permission** before doing something (destructive edit
 
 ## Memory System
 
-Detailed conversation history, architecture decisions, and feedback are stored in:
+**In-repo (preferred for AI agents in Cursor):** phased plans and resume context live under **`docs/plans/`** (e.g. **`user-profiles-and-activity.md`**). **`CLAUDE.md`** is the primary project snapshot; keep it updated when phases complete or backlog changes.
+
+**External (optional):** detailed conversation history may also live under:
 `/Users/keifergonzalez/.claude/projects/-Users-keifergonzalez-Documents-Coding-Pokemon-Tropius-Maximus/memory/`
 
-Key files:
-- `project_v2_migration.md` — full migration plan with schema, UI architecture, build order
+Key files there:
+- `project_v2_migration.md` — full migration plan with schema, UI architecture, build order (if out of date vs `CLAUDE.md`, prefer repo + this file)
 - `project_current_pain_points.md` — all known v1 bugs and issues
 - `feedback_architecture.md` — architecture decisions, DBA corrections, UX requirements
 - `user_profile.md` — project owner info and collaboration preferences
