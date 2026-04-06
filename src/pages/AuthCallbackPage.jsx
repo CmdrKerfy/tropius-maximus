@@ -1,5 +1,5 @@
 /**
- * OAuth / PKCE callback: exchange ?code= for session after magic link.
+ * Auth callback after magic link: ?code= exchange (server-sent OTP) or hash tokens (implicit grant).
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,9 +15,29 @@ export default function AuthCallbackPage() {
     ran.current = true;
     const run = async () => {
       const sb = getSupabase();
-      const { error: exErr } = await sb.auth.exchangeCodeForSession(window.location.href);
-      if (exErr) {
-        setError(exErr.message);
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+
+      if (code) {
+        const { error: exErr } = await sb.auth.exchangeCodeForSession(code);
+        if (exErr) {
+          setError(exErr.message);
+          return;
+        }
+        navigate("/", { replace: true });
+        return;
+      }
+
+      const {
+        data: { session },
+        error: sessErr,
+      } = await sb.auth.getSession();
+      if (sessErr) {
+        setError(sessErr.message);
+        return;
+      }
+      if (!session) {
+        setError("Missing sign-in code or session. Request a new link from the login page.");
         return;
       }
       navigate("/", { replace: true });

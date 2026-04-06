@@ -31,7 +31,9 @@ export function getSupabase() {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          flowType: "pkce",
+          // implicit: magic links are requested from the Edge Function (no PKCE verifier in this browser).
+          // PKCE would require opening the email link in the same browser/tab that clicked "Send magic link".
+          flowType: "implicit",
           detectSessionInUrl: true,
         },
       }
