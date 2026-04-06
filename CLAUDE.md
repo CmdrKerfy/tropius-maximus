@@ -4,17 +4,17 @@
 
 Pokemon TCG database and collection tracker. 15,000+ cards from multiple APIs, with 50+ annotation fields for cataloging card artwork, themes, and metadata. Used by 1-3 people (2 non-technical).
 
-## Current State: Mid-Migration (v2)
+## Current State: Mid-Migration (v2) — deploy testing; cutover not merged
 
 The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v2 (Supabase + Vercel). **Both versions coexist in the repo on different branches.**
 
-### Branches
+### Branches & deploy (as of 2026-04-06)
 
-- **`main`** — Current live site. GitHub Pages deployment. DO NOT modify unless fixing a live bug.
-- **`v2/supabase-migration`** — New version. All v2 work happens here. This is the active development branch.
+- **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`011`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
-### Migration Progress (as of 2026-04-05)
+### Migration Progress (as of 2026-04-06)
 
 - [x] Phase 0: Branch created, data backed up to `backup/`, Supabase project created
 - [x] Phase 1: SQL schema written (`supabase/migrations/001-007`), seed data written, Python migration script written
@@ -28,7 +28,14 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 
 When polishing Explore/Workbench, **batch UI issues** for the owner: note what screen, what you expected, what happened (screenshot optional). The best times to report are **after a Phase milestone** or when asked **“any UI regressions?”** — avoid one-off fixes mid-refactor unless something is blocking. The AI should **prompt the owner** at natural checkpoints: *“If you notice sorting, filter labels, or layout issues, list them now so we can fix them in the next pass.”* **Phase 5 checkpoint:** after the first Workbench slice lands (route + queue + one save path), ask the same for workbench-specific UX.
 
-- [x] Phase 7: **Ingest → Supabase** — `scripts/push_duckdb_to_supabase.py` upserts `sets`, `cards` (API origins only), `pokemon_metadata` from `public/data/pokemon.duckdb`; `ingest.py --push-supabase` runs it after ingest. CI: `.github/workflows/ingest-supabase.yml` (weekly + manual; needs repo secrets `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`). Deps: `scripts/requirements-ci.txt`. **Vercel** — connect the GitHub repo, set `VITE_USE_SUPABASE=true`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_BASE=/` (or leave default `/` for apex domain); `vercel.json` enables SPA fallback for React Router. Production: follow checklist below (Anonymous auth off, etc.).
+- [x] Phase 7: **Ingest → Supabase + Vercel** — `push_duckdb_to_supabase.py` upserts API-sourced `sets`, `cards`, `pokemon_metadata` from ingest’s DuckDB; `ingest.py --push-supabase` chains locally. **Actions:** workflow on **`main`** (so GitHub lists it) and on **`v2/supabase-migration`**; **Run workflow** can target **`v2/supabase-migration`**; weekly schedule uses **default branch**. Actions use `checkout@v5`, `setup-python@v6`, `cache@v5` (Node 24). Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`; optional `POKEMON_TCG_API_KEY`. **Vercel:** `vercel.json` SPA rewrites; env **`VITE_USE_SUPABASE`**, **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_ANON_KEY`** — **confirmed** in project settings (redeploy after changes). **Not done yet:** merge v2 app into `main`; production checklist below.
+
+### Post–Phase 7 (current focus)
+
+- [ ] E2E testing on **Vercel** (preview + production) against Supabase.
+- [ ] **Production checklist** — Anonymous auth / RLS / `VITE_SUPABASE_AUTO_ANON_AUTH` (see below).
+- [ ] **Cutover when ready** — merge **`v2/supabase-migration` → `main`** and/or set Vercel production branch; align GitHub Pages vs Vercel-only strategy.
+- [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
 ### Optional — after the core v2 plan is finished
 
@@ -95,7 +102,9 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 **`normalization_rules`** — value normalization (match_pattern → replace_with), applied in app layer + nightly pg_cron safety net
 
-**`edit_history`** — audit trail, partitioned by quarter, no FK (survives card deletion)
+**`edit_history`** — audit trail, partitioned by quarter, no FK (survives card deletion). Table Editor shows the parent table plus partition tables (e.g. `edit_history_2026_q1`, …).
+
+**`health_check_results`** — rows for automated / scheduled health checks (optional; Data Health UI can list recent rows).
 
 **`user_preferences`** — per-user quick fields config
 
@@ -167,7 +176,7 @@ backup/                          -- gitignored, contains pre-migration data snap
   cards.csv, sets.csv, pocket_cards.csv, pocket_sets.csv,
   pokemon_metadata.csv, custom_cards.json, annotations.json
 
-src/                             -- React frontend (to be rewritten in phases 3-6)
+src/                             -- React frontend (v2 routes + Supabase layer on v2 branch)
   App.jsx                        -- router shell (Phase 4+)
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
   pages/WorkbenchPage.jsx        -- Workbench route (Phase 5 shell)
@@ -185,8 +194,9 @@ vercel.json                      -- Vite SPA rewrites for Vercel (Phase 7)
 ## Conventions
 
 - Do NOT include `Co-Authored-By` lines in commit messages
-- Do NOT modify the `main` branch unless fixing a live bug on the current site
-- All v2 work on `v2/supabase-migration` branch
+- **Default:** do not change **`main`** frontend / Pages-facing app except **live bugfixes** for the current GitHub Pages site.
+- **Exception:** sync **ingest-only** CI files to `main` (workflow + `push_duckdb_to_supabase.py` + `requirements-ci.txt` + `ingest.py`) when needed so Actions lists **Ingest and push to Supabase**; expect an extra Pages deploy on each such push.
+- All **v2 product work** on **`v2/supabase-migration`** (merge to `main` only at cutover).
 - Secret key (SUPABASE_SERVICE_KEY) is NEVER stored in any file — passed as env var only
 - Backup directory is gitignored — safety net data lives only locally
 
