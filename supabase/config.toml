@@ -1,0 +1,6 @@
+# Minimal config for Edge Functions (see supabase/functions/README.md).
+# For full local dev, run: supabase init (merge carefully).
+
+[functions.request-magic-link]
+# Must be false: callers are not logged in yet; they only pass the anon key.
+verify_jwt = false

@@ -2,6 +2,7 @@ import { getSupabase } from "./supabaseClient.js";
 
 /**
  * Ensures a Supabase session exists so RLS policies (authenticated) allow reads/writes.
+ * When VITE_REQUIRE_EMAIL_AUTH=true, do not call this for bootstrap — use /login + magic link.
  * When VITE_SUPABASE_AUTO_ANON_AUTH=true, signs in anonymously if needed.
  * Enable "Anonymous sign-ins" in Supabase → Authentication → Providers.
  */
@@ -11,6 +12,12 @@ export async function ensureSupabaseSession() {
     data: { session },
   } = await sb.auth.getSession();
   if (session) return session;
+
+  if (import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true") {
+    throw new Error(
+      "Sign in required. Open /login and use your invite email and team code."
+    );
+  }
 
   if (import.meta.env.VITE_SUPABASE_AUTO_ANON_AUTH === "true") {
     const { data, error } = await sb.auth.signInAnonymously();

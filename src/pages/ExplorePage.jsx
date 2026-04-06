@@ -23,6 +23,7 @@ import AttributeManager from "../components/AttributeManager";
 import CustomCardForm from "../components/CustomCardForm";
 import Pagination from "../components/Pagination";
 import SqlConsole from "../components/SqlConsole";
+import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import {
   getExploreFilterAvailability,
   exploreFilterDisabledTitle,
@@ -582,6 +583,7 @@ export default function ExplorePage() {
             </NavLink>
           </nav>
           <div className="flex items-center gap-2">
+            <AuthUserMenu />
             <button
               onClick={() => {
                 setShowSqlConsole(!showSqlConsole);

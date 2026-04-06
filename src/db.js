@@ -27,9 +27,14 @@ export function getCustomSourceNames() {
 
 export async function initDB() {
   if (useSupabaseBackend()) {
-    const { assertSupabaseConfigured } = await import("./lib/supabaseClient.js");
-    const { ensureSupabaseSession } = await import("./lib/supabaseAuthBootstrap.js");
+    const { assertSupabaseConfigured, getSupabase } = await import("./lib/supabaseClient.js");
     assertSupabaseConfigured();
+    const sb = getSupabase();
+    if (import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true") {
+      await sb.auth.getSession();
+      return;
+    }
+    const { ensureSupabaseSession } = await import("./lib/supabaseAuthBootstrap.js");
     await ensureSupabaseSession();
     return;
   }

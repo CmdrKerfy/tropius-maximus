@@ -5,6 +5,7 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDataHealthSummary } from "../db";
+import AuthUserMenu from "../components/AuthUserMenu.jsx";
 
 const USE_SB =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -45,26 +46,29 @@ export default function DataHealthPage() {
               <p className="text-green-100 text-xs">Counts from your Supabase project</p>
             </div>
           </div>
-          <nav className="flex items-center gap-2">
-            <NavLink to="/" className={navLinkClass} end>
-              Explore
-            </NavLink>
-            <NavLink to="/workbench" className={navLinkClass}>
-              Workbench
-            </NavLink>
-            <NavLink to="/health" className={navLinkClass}>
-              Data Health
-            </NavLink>
-            <NavLink to="/fields" className={navLinkClass}>
-              Fields
-            </NavLink>
-            <NavLink to="/batch" className={navLinkClass}>
-              Batch
-            </NavLink>
-            <NavLink to="/history" className={navLinkClass}>
-              History
-            </NavLink>
-          </nav>
+          <div className="flex flex-wrap items-center gap-3">
+            <nav className="flex items-center gap-2">
+              <NavLink to="/" className={navLinkClass} end>
+                Explore
+              </NavLink>
+              <NavLink to="/workbench" className={navLinkClass}>
+                Workbench
+              </NavLink>
+              <NavLink to="/health" className={navLinkClass}>
+                Data Health
+              </NavLink>
+              <NavLink to="/fields" className={navLinkClass}>
+                Fields
+              </NavLink>
+              <NavLink to="/batch" className={navLinkClass}>
+                Batch
+              </NavLink>
+              <NavLink to="/history" className={navLinkClass}>
+                History
+              </NavLink>
+            </nav>
+            <AuthUserMenu />
+          </div>
         </div>
       </header>
 

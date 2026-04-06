@@ -14,6 +14,9 @@ const useSupabase =
   import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const requireEmailAuth =
+  useSupabase && import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true";
+
 function Root() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
@@ -32,8 +35,18 @@ function Root() {
       setError("Load timed out (30s). Check the browser console for errors.");
     }, 30000);
     initDB()
-      .then(() => {
+      .then(async () => {
         clearTimeout(timeout);
+        if (requireEmailAuth) {
+          const { getSupabase } = await import("./lib/supabaseClient.js");
+          const {
+            data: { session },
+          } = await getSupabase().auth.getSession();
+          if (!session) {
+            setReady(true);
+            return;
+          }
+        }
         void queryClient.prefetchQuery({
           queryKey: ["filterOptions", "explore"],
           queryFn: fetchExploreFilterOptions,

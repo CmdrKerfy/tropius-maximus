@@ -1,6 +1,12 @@
 node_modules/
 dist/
 .DS_Store
+
+# Local tooling / caches
+.cursor/
+scripts/__pycache__/
+scripts/.bulbapedia_cache.json
+supabase/.temp/
 .claude/
 backup/
 .env

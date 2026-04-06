@@ -13,6 +13,7 @@ import {
   updateWorkbenchQueue,
 } from "../db";
 import AnnotationEditor from "../components/AnnotationEditor";
+import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 const USE_SB =
@@ -119,26 +120,29 @@ export default function WorkbenchPage() {
               <p className="text-green-100 text-xs">Annotate cards in a focused queue</p>
             </div>
           </div>
-          <nav className="flex items-center gap-2">
-            <NavLink to="/" className={navLinkClass} end>
-              Explore
-            </NavLink>
-            <NavLink to="/workbench" className={navLinkClass}>
-              Workbench
-            </NavLink>
-            <NavLink to="/health" className={navLinkClass}>
-              Data Health
-            </NavLink>
-            <NavLink to="/fields" className={navLinkClass}>
-              Fields
-            </NavLink>
-            <NavLink to="/batch" className={navLinkClass}>
-              Batch
-            </NavLink>
-            <NavLink to="/history" className={navLinkClass}>
-              History
-            </NavLink>
-          </nav>
+          <div className="flex flex-wrap items-center gap-3">
+            <nav className="flex items-center gap-2">
+              <NavLink to="/" className={navLinkClass} end>
+                Explore
+              </NavLink>
+              <NavLink to="/workbench" className={navLinkClass}>
+                Workbench
+              </NavLink>
+              <NavLink to="/health" className={navLinkClass}>
+                Data Health
+              </NavLink>
+              <NavLink to="/fields" className={navLinkClass}>
+                Fields
+              </NavLink>
+              <NavLink to="/batch" className={navLinkClass}>
+                Batch
+              </NavLink>
+              <NavLink to="/history" className={navLinkClass}>
+                History
+              </NavLink>
+            </nav>
+            <AuthUserMenu />
+          </div>
         </div>
       </header>
 
