@@ -41012,10 +41012,10 @@
       "evolution_line": "",
       "background_details": [],
       "emotion": "",
-      "pose": "",
+      "pose": "[\"eyes closed\"]",
       "camera_angle": "",
       "items": [],
-      "actions": "",
+      "actions": "[\"singing\"]",
       "perspective": "",
       "weather": "",
       "environment": "",
@@ -44385,13 +44385,13 @@
       "additional_characters": [],
       "evolution_line": "",
       "background_details": [],
-      "emotion": "",
-      "pose": "",
+      "emotion": "[]",
+      "pose": "[]",
       "camera_angle": "",
       "items": [],
-      "actions": "",
+      "actions": "[]",
       "perspective": "",
-      "weather": "",
+      "weather": "Snow",
       "environment": "",
       "storytelling": "",
       "card_locations": "",
@@ -48524,7 +48524,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48600,7 +48602,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48676,7 +48680,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48752,7 +48758,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48828,7 +48836,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48904,7 +48914,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -48980,7 +48992,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49056,7 +49070,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49132,7 +49148,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49208,7 +49226,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49284,7 +49304,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49360,7 +49382,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49436,7 +49460,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49512,7 +49538,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49588,7 +49616,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49664,7 +49694,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49740,7 +49772,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49816,7 +49850,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49892,7 +49928,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -49968,7 +50006,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50044,7 +50084,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50120,7 +50162,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50352,7 +50396,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50428,7 +50474,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50504,7 +50552,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50580,7 +50630,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50656,7 +50708,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50732,7 +50786,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50808,7 +50864,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -50884,7 +50942,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51038,7 +51098,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51192,7 +51254,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51268,7 +51332,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51344,7 +51410,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51420,7 +51488,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51496,7 +51566,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51572,7 +51644,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51648,7 +51722,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51724,7 +51800,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51800,7 +51878,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51876,7 +51956,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -51952,7 +52034,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52028,7 +52112,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52104,7 +52190,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52180,7 +52268,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52256,7 +52346,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52332,7 +52424,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52408,7 +52502,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52484,7 +52580,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52560,7 +52658,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52636,7 +52736,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52712,7 +52814,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52788,7 +52892,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52864,7 +52970,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -52940,7 +53048,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53016,7 +53126,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53092,7 +53204,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53168,7 +53282,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53244,7 +53360,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53320,7 +53438,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53396,7 +53516,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53472,7 +53594,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53548,7 +53672,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53624,7 +53750,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53700,7 +53828,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53776,7 +53906,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53852,7 +53984,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -53928,7 +54062,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54004,7 +54140,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54080,7 +54218,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54156,7 +54296,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54232,7 +54374,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54308,7 +54452,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54384,7 +54530,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54460,7 +54608,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54536,7 +54686,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54612,7 +54764,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54688,7 +54842,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54764,7 +54920,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54840,7 +54998,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54916,7 +55076,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -54992,7 +55154,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55068,7 +55232,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55144,7 +55310,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55220,7 +55388,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55296,7 +55466,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55372,7 +55544,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55448,7 +55622,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55524,7 +55700,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55600,7 +55778,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55676,7 +55856,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55752,7 +55934,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55828,7 +56012,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55904,7 +56090,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -55980,7 +56168,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56056,7 +56246,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56132,7 +56324,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56208,7 +56402,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56284,7 +56480,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56360,7 +56558,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56436,7 +56636,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56512,7 +56714,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56588,7 +56792,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56664,7 +56870,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56740,7 +56948,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56816,7 +57026,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56892,7 +57104,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -56968,7 +57182,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57044,7 +57260,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57120,7 +57338,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57196,7 +57416,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57272,7 +57494,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57348,7 +57572,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57424,7 +57650,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57500,7 +57728,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57576,7 +57806,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57652,7 +57884,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57728,7 +57962,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57804,7 +58040,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57880,7 +58118,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -57956,7 +58196,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58032,7 +58274,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58108,7 +58352,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58184,7 +58430,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58260,7 +58508,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58336,7 +58586,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58412,7 +58664,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58488,7 +58742,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58564,7 +58820,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58640,7 +58898,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58716,7 +58976,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58792,7 +59054,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58868,7 +59132,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -58944,7 +59210,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59020,7 +59288,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59096,7 +59366,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59172,7 +59444,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59248,7 +59522,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59324,7 +59600,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59400,7 +59678,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59476,7 +59756,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59552,7 +59834,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59628,7 +59912,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59704,7 +59990,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59780,7 +60068,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59856,7 +60146,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -59932,7 +60224,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60008,7 +60302,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60084,7 +60380,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60160,7 +60458,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60236,7 +60536,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60312,7 +60614,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60388,7 +60692,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60464,7 +60770,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60540,7 +60848,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60616,7 +60926,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60692,7 +61004,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60768,7 +61082,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60844,7 +61160,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60920,7 +61238,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -60996,7 +61316,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -61072,7 +61394,9 @@
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "annotations": {},
+      "annotations": {
+        "annotations": {}
+      },
       "supertype": "Pokémon",
       "subtypes": [],
       "hp": "",
@@ -61093,14 +61417,72 @@
     {
       "id": "custom-jm-002/018",
       "name": "Oddish",
-      "alt_name": "",
+      "source": "Japan Exclusive",
+      "_table": "tcg",
+      "art_style": [],
+      "main_character": [],
+      "background_pokemon": [],
+      "background_humans": [],
+      "additional_characters": [],
+      "evolution_line": "",
+      "background_details": [],
+      "emotion": "[]",
+      "pose": "[]",
+      "camera_angle": "",
+      "items": [],
+      "actions": "[]",
+      "perspective": "",
+      "weather": "",
+      "environment": "",
+      "storytelling": "",
+      "card_locations": "",
+      "pkmn_region": "",
+      "card_region": "",
+      "primary_color": "",
+      "secondary_color": "",
+      "shape": "",
+      "image_override": "",
+      "video_game": "",
+      "video_game_location": "",
+      "video_appearance": false,
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_url": "",
+      "video_title": "",
+      "video_type": [],
+      "video_region": [],
+      "video_location": [],
+      "top_10_themes": "",
+      "wtpc_episode": "",
+      "pocket_exclusive": false,
+      "owned": false,
+      "unique_id": "custom-jm-002/018",
+      "notes": "",
+      "card_subcategory": [],
+      "held_item": [],
+      "pokeball": [],
+      "evolution_items": [],
+      "berries": [],
+      "holiday_theme": [],
+      "multi_card": [],
+      "trainer_card_type": "",
+      "trainer_card_subgroup": [],
+      "stamp": "",
+      "card_border": "",
+      "energy_type": "",
+      "rival_group": "",
+      "annotations": {
+        "additional_character_theme": []
+      },
       "supertype": "Pokémon",
       "subtypes": [],
-      "hp": null,
+      "hp": "",
       "types": [],
-      "evolves_from": null,
+      "evolves_from": "",
       "rarity": "",
       "special_rarity": "",
+      "alt_name": "",
       "artist": "",
       "set_id": "jm",
       "set_name": "JP Mcdonalds",
@@ -61108,41 +61490,53 @@
       "number": "002/018",
       "regulation_mark": "",
       "image_small": "https://www.elitefourum.com/uploads/default/original/3X/7/5/7559888486e7eeefe31dc110a85294369b6c801e.jpeg",
-      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/7/5/7559888486e7eeefe31dc110a85294369b6c801e.jpeg",
+      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/7/5/7559888486e7eeefe31dc110a85294369b6c801e.jpeg"
+    },
+    {
+      "id": "custom-jm-007/018",
+      "name": "Squirtle",
       "source": "Japan Exclusive",
       "_table": "tcg",
-      "owned": false,
-      "notes": "",
       "art_style": [],
       "main_character": [],
       "background_pokemon": [],
-      "background_humans": null,
-      "shape": "",
-      "video_game": [],
-      "video_game_location": [],
-      "shorts_appearance": false,
-      "region_appearance": false,
-      "thumbnail_used": false,
-      "video_title": [],
-      "video_type": [],
-      "top_10_themes": [],
-      "wtpc_episode": [],
-      "video_region": [],
-      "video_location": [],
-      "unique_id": "custom-jm-002/018",
+      "background_humans": [],
+      "additional_characters": [],
       "evolution_line": "",
-      "emotion": [],
-      "pose": [],
+      "background_details": [],
+      "emotion": "[]",
+      "pose": "[]",
       "camera_angle": "",
       "items": [],
-      "actions": [],
-      "additional_characters": [],
+      "actions": "[]",
       "perspective": "",
       "weather": "",
       "environment": "",
-      "background_details": [],
+      "storytelling": "",
       "card_locations": "",
       "pkmn_region": "",
+      "card_region": "",
+      "primary_color": "",
+      "secondary_color": "",
+      "shape": "",
+      "image_override": "",
+      "video_game": "",
+      "video_game_location": "",
+      "video_appearance": false,
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_url": "",
+      "video_title": "",
+      "video_type": [],
+      "video_region": [],
+      "video_location": [],
+      "top_10_themes": "",
+      "wtpc_episode": "",
+      "pocket_exclusive": false,
+      "owned": false,
+      "unique_id": "custom-jm-007/018",
+      "notes": "",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -61152,26 +61546,21 @@
       "multi_card": [],
       "trainer_card_type": "",
       "trainer_card_subgroup": [],
-      "pocket_exclusive": false,
       "stamp": "",
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "additional_character_theme": [],
-      "image_override": "",
-      "video_url": ""
-    },
-    {
-      "id": "custom-jm-007/018",
-      "name": "Squirtle",
-      "alt_name": "",
+      "annotations": {
+        "additional_character_theme": []
+      },
       "supertype": "Pokémon",
       "subtypes": [],
-      "hp": null,
+      "hp": "",
       "types": [],
-      "evolves_from": null,
+      "evolves_from": "",
       "rarity": "",
       "special_rarity": "",
+      "alt_name": "",
       "artist": "",
       "set_id": "jm",
       "set_name": "JP Mcdonalds",
@@ -61179,41 +61568,53 @@
       "number": "007/018",
       "regulation_mark": "",
       "image_small": "https://www.elitefourum.com/uploads/default/original/3X/e/d/ed913f059a57ecc0d4cd375fb4d815825f2cd01b.jpeg",
-      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/e/d/ed913f059a57ecc0d4cd375fb4d815825f2cd01b.jpeg",
+      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/e/d/ed913f059a57ecc0d4cd375fb4d815825f2cd01b.jpeg"
+    },
+    {
+      "id": "custom-jm-012/018",
+      "name": "Mareep",
       "source": "Japan Exclusive",
       "_table": "tcg",
-      "owned": false,
-      "notes": "",
       "art_style": [],
       "main_character": [],
       "background_pokemon": [],
-      "background_humans": null,
-      "shape": "",
-      "video_game": [],
-      "video_game_location": [],
-      "shorts_appearance": false,
-      "region_appearance": false,
-      "thumbnail_used": false,
-      "video_title": [],
-      "video_type": [],
-      "top_10_themes": [],
-      "wtpc_episode": [],
-      "video_region": [],
-      "video_location": [],
-      "unique_id": "custom-jm-007/018",
+      "background_humans": [],
+      "additional_characters": [],
       "evolution_line": "",
-      "emotion": [],
-      "pose": [],
+      "background_details": [],
+      "emotion": "[]",
+      "pose": "[]",
       "camera_angle": "",
       "items": [],
-      "actions": [],
-      "additional_characters": [],
+      "actions": "[]",
       "perspective": "",
       "weather": "",
       "environment": "",
-      "background_details": [],
+      "storytelling": "",
       "card_locations": "",
       "pkmn_region": "",
+      "card_region": "",
+      "primary_color": "",
+      "secondary_color": "",
+      "shape": "",
+      "image_override": "",
+      "video_game": "",
+      "video_game_location": "",
+      "video_appearance": false,
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_url": "",
+      "video_title": "",
+      "video_type": [],
+      "video_region": [],
+      "video_location": [],
+      "top_10_themes": "",
+      "wtpc_episode": "",
+      "pocket_exclusive": false,
+      "owned": false,
+      "unique_id": "custom-jm-012/018",
+      "notes": "",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -61223,26 +61624,21 @@
       "multi_card": [],
       "trainer_card_type": "",
       "trainer_card_subgroup": [],
-      "pocket_exclusive": false,
       "stamp": "",
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "additional_character_theme": [],
-      "image_override": "",
-      "video_url": ""
-    },
-    {
-      "id": "custom-jm-012/018",
-      "name": "Mareep",
-      "alt_name": "",
+      "annotations": {
+        "additional_character_theme": []
+      },
       "supertype": "Pokémon",
       "subtypes": [],
-      "hp": null,
+      "hp": "",
       "types": [],
-      "evolves_from": null,
+      "evolves_from": "",
       "rarity": "",
       "special_rarity": "",
+      "alt_name": "",
       "artist": "",
       "set_id": "jm",
       "set_name": "JP Mcdonalds",
@@ -61250,41 +61646,53 @@
       "number": "012/018",
       "regulation_mark": "",
       "image_small": "https://www.elitefourum.com/uploads/default/original/3X/a/f/afa123979a33998d687ce61200242469c3454ba7.jpeg",
-      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/a/f/afa123979a33998d687ce61200242469c3454ba7.jpeg",
+      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/a/f/afa123979a33998d687ce61200242469c3454ba7.jpeg"
+    },
+    {
+      "id": "custom-jm-015/018",
+      "name": "Natu",
       "source": "Japan Exclusive",
       "_table": "tcg",
-      "owned": false,
-      "notes": "",
       "art_style": [],
       "main_character": [],
       "background_pokemon": [],
-      "background_humans": null,
-      "shape": "",
-      "video_game": [],
-      "video_game_location": [],
-      "shorts_appearance": false,
-      "region_appearance": false,
-      "thumbnail_used": false,
-      "video_title": [],
-      "video_type": [],
-      "top_10_themes": [],
-      "wtpc_episode": [],
-      "video_region": [],
-      "video_location": [],
-      "unique_id": "custom-jm-012/018",
+      "background_humans": [],
+      "additional_characters": [],
       "evolution_line": "",
-      "emotion": [],
-      "pose": [],
+      "background_details": [],
+      "emotion": "[]",
+      "pose": "[]",
       "camera_angle": "",
       "items": [],
-      "actions": [],
-      "additional_characters": [],
+      "actions": "[]",
       "perspective": "",
       "weather": "",
       "environment": "",
-      "background_details": [],
+      "storytelling": "",
       "card_locations": "",
       "pkmn_region": "",
+      "card_region": "",
+      "primary_color": "",
+      "secondary_color": "",
+      "shape": "",
+      "image_override": "",
+      "video_game": "",
+      "video_game_location": "",
+      "video_appearance": false,
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_url": "",
+      "video_title": "",
+      "video_type": [],
+      "video_region": [],
+      "video_location": [],
+      "top_10_themes": "",
+      "wtpc_episode": "",
+      "pocket_exclusive": false,
+      "owned": false,
+      "unique_id": "custom-jm-015/018",
+      "notes": "",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -61294,26 +61702,21 @@
       "multi_card": [],
       "trainer_card_type": "",
       "trainer_card_subgroup": [],
-      "pocket_exclusive": false,
       "stamp": "",
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "additional_character_theme": [],
-      "image_override": "",
-      "video_url": ""
-    },
-    {
-      "id": "custom-jm-015/018",
-      "name": "Natu",
-      "alt_name": "",
+      "annotations": {
+        "additional_character_theme": []
+      },
       "supertype": "Pokémon",
       "subtypes": [],
-      "hp": null,
+      "hp": "",
       "types": [],
-      "evolves_from": null,
+      "evolves_from": "",
       "rarity": "",
       "special_rarity": "",
+      "alt_name": "",
       "artist": "",
       "set_id": "jm",
       "set_name": "JP Mcdonalds",
@@ -61321,41 +61724,53 @@
       "number": "015/018",
       "regulation_mark": "",
       "image_small": "https://www.elitefourum.com/uploads/default/original/3X/d/2/d2da315cc4dad341e630ea44cb1a89a9b39f6835.jpeg",
-      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/d/2/d2da315cc4dad341e630ea44cb1a89a9b39f6835.jpeg",
+      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/d/2/d2da315cc4dad341e630ea44cb1a89a9b39f6835.jpeg"
+    },
+    {
+      "id": "custom-jm-017/018",
+      "name": "Phanpy",
       "source": "Japan Exclusive",
       "_table": "tcg",
-      "owned": false,
-      "notes": "",
       "art_style": [],
       "main_character": [],
       "background_pokemon": [],
-      "background_humans": null,
-      "shape": "",
-      "video_game": [],
-      "video_game_location": [],
-      "shorts_appearance": false,
-      "region_appearance": false,
-      "thumbnail_used": false,
-      "video_title": [],
-      "video_type": [],
-      "top_10_themes": [],
-      "wtpc_episode": [],
-      "video_region": [],
-      "video_location": [],
-      "unique_id": "custom-jm-015/018",
+      "background_humans": [],
+      "additional_characters": [],
       "evolution_line": "",
-      "emotion": [],
-      "pose": [],
+      "background_details": [],
+      "emotion": "[]",
+      "pose": "[]",
       "camera_angle": "",
       "items": [],
-      "actions": [],
-      "additional_characters": [],
+      "actions": "[]",
       "perspective": "",
       "weather": "",
       "environment": "",
-      "background_details": [],
+      "storytelling": "",
       "card_locations": "",
       "pkmn_region": "",
+      "card_region": "",
+      "primary_color": "",
+      "secondary_color": "",
+      "shape": "",
+      "image_override": "",
+      "video_game": "",
+      "video_game_location": "",
+      "video_appearance": false,
+      "shorts_appearance": false,
+      "region_appearance": false,
+      "thumbnail_used": false,
+      "video_url": "",
+      "video_title": "",
+      "video_type": [],
+      "video_region": [],
+      "video_location": [],
+      "top_10_themes": "",
+      "wtpc_episode": "",
+      "pocket_exclusive": false,
+      "owned": false,
+      "unique_id": "custom-jm-017/018",
+      "notes": "",
       "card_subcategory": [],
       "held_item": [],
       "pokeball": [],
@@ -61365,26 +61780,21 @@
       "multi_card": [],
       "trainer_card_type": "",
       "trainer_card_subgroup": [],
-      "pocket_exclusive": false,
       "stamp": "",
       "card_border": "",
       "energy_type": "",
       "rival_group": "",
-      "additional_character_theme": [],
-      "image_override": "",
-      "video_url": ""
-    },
-    {
-      "id": "custom-jm-017/018",
-      "name": "Phanpy",
-      "alt_name": "",
+      "annotations": {
+        "additional_character_theme": []
+      },
       "supertype": "Pokémon",
       "subtypes": [],
-      "hp": null,
+      "hp": "",
       "types": [],
-      "evolves_from": null,
+      "evolves_from": "",
       "rarity": "",
       "special_rarity": "",
+      "alt_name": "",
       "artist": "",
       "set_id": "jm",
       "set_name": "JP Mcdonalds",
@@ -61392,58 +61802,7 @@
       "number": "017/018",
       "regulation_mark": "",
       "image_small": "https://www.elitefourum.com/uploads/default/original/3X/3/9/3916285193489a1ef2ddf73ca1721df2a3252a7d.jpeg",
-      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/3/9/3916285193489a1ef2ddf73ca1721df2a3252a7d.jpeg",
-      "source": "Japan Exclusive",
-      "_table": "tcg",
-      "owned": false,
-      "notes": "",
-      "art_style": [],
-      "main_character": [],
-      "background_pokemon": [],
-      "background_humans": null,
-      "shape": "",
-      "video_game": [],
-      "video_game_location": [],
-      "shorts_appearance": false,
-      "region_appearance": false,
-      "thumbnail_used": false,
-      "video_title": [],
-      "video_type": [],
-      "top_10_themes": [],
-      "wtpc_episode": [],
-      "video_region": [],
-      "video_location": [],
-      "unique_id": "custom-jm-017/018",
-      "evolution_line": "",
-      "emotion": [],
-      "pose": [],
-      "camera_angle": "",
-      "items": [],
-      "actions": [],
-      "additional_characters": [],
-      "perspective": "",
-      "weather": "",
-      "environment": "",
-      "background_details": [],
-      "card_locations": "",
-      "pkmn_region": "",
-      "card_subcategory": [],
-      "held_item": [],
-      "pokeball": [],
-      "evolution_items": [],
-      "berries": [],
-      "holiday_theme": [],
-      "multi_card": [],
-      "trainer_card_type": "",
-      "trainer_card_subgroup": [],
-      "pocket_exclusive": false,
-      "stamp": "",
-      "card_border": "",
-      "energy_type": "",
-      "rival_group": "",
-      "additional_character_theme": [],
-      "image_override": "",
-      "video_url": ""
+      "image_large": "https://www.elitefourum.com/uploads/default/original/3X/3/9/3916285193489a1ef2ddf73ca1721df2a3252a7d.jpeg"
     }
   ]
 }
