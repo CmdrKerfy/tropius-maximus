@@ -48,11 +48,13 @@ jobs:
           restore-keys: |
             pages-data-v2-
 
+      # --clear-failed drops bogus failed_sets rows (e.g. after API blips) so ingest
+      # is not stuck skipping most sets; then normal ingest resumes / refreshes.
       - name: Ingest card data
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
-        run: python scripts/ingest.py
+        run: python scripts/ingest.py --clear-failed
 
       - name: Export to Parquet
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
