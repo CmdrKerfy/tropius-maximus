@@ -31,5 +31,10 @@ export default defineConfig({
     __BUILD_DATE__: JSON.stringify(
       process.env.VITE_BUILD_DATE || new Date().toISOString()
     ),
+    // Busts browser/CDN caches for static JSON/Parquet under public/data/ (custom_cards.json
+    // must not reuse the same ?v= across unrelated deploys).
+    __BUILD_ID__: JSON.stringify(
+      process.env.VITE_BUILD_ID || `${Date.now()}`
+    ),
   },
 });

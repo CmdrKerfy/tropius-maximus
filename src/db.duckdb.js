@@ -386,13 +386,14 @@ async function _doInit() {
   try {
     // 2. Fetch Parquet files and register them
     const base = import.meta.env.BASE_URL || "/";
+    const dataV = encodeURIComponent(__BUILD_ID__);
   const [cardsResp, setsResp, pokemonMetaResp, pocketCardsResp, pocketSetsResp, customCardsResp] = await Promise.all([
-    fetch(`${base}data/cards.parquet`),
-    fetch(`${base}data/sets.parquet`),
-    fetch(`${base}data/pokemon_metadata.parquet`),
-    fetch(`${base}data/pocket_cards.parquet`),
-    fetch(`${base}data/pocket_sets.parquet`),
-    fetch(`${base}data/custom_cards.json?v=${import.meta.env.VITE_BUILD_DATE || "dev"}`),
+    fetch(`${base}data/cards.parquet?v=${dataV}`),
+    fetch(`${base}data/sets.parquet?v=${dataV}`),
+    fetch(`${base}data/pokemon_metadata.parquet?v=${dataV}`),
+    fetch(`${base}data/pocket_cards.parquet?v=${dataV}`),
+    fetch(`${base}data/pocket_sets.parquet?v=${dataV}`),
+    fetch(`${base}data/custom_cards.json?v=${dataV}`),
   ]);
 
   if (!cardsResp.ok) throw new Error("Failed to fetch cards.parquet");
@@ -827,7 +828,7 @@ async function _doInit() {
 
   // Load annotations from GitHub-committed annotations.json
   try {
-    const annResp = await fetch(`${base}data/annotations.json`);
+    const annResp = await fetch(`${base}data/annotations.json?v=${dataV}`);
     if (annResp.ok) {
       const annData = await annResp.json();
       for (const [cardId, data] of Object.entries(annData)) {
