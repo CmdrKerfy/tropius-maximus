@@ -82,6 +82,7 @@ jobs:
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_BUILD_DATE: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          VITE_BUILD_ID: ${{ github.sha }}-${{ github.run_id }}
         run: npm run build
 
       - name: Upload artifact

@@ -29,5 +29,8 @@ export default defineConfig({
     __BUILD_DATE__: JSON.stringify(
       process.env.VITE_BUILD_DATE || new Date().toISOString()
     ),
+    __BUILD_ID__: JSON.stringify(
+      process.env.VITE_BUILD_ID || `${Date.now()}`
+    ),
   },
 });
