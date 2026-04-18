@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phase **1** done · Phase **2** done (Sonner + **`humanizeError`**) · Phase **3** mostly done: unified shell **on by default** (`VITE_EXPERIMENTAL_NAV=false` to opt out), **`lg+`** desktop nav + **`<lg` Menu** drawer-style dropdown, Explore **sticky** search + result count · Phases **4–7** not started.  
+**Progress snapshot (2026-04-18):** Phases **1–3** done (tokens, toasts + **`humanizeError`**, shell on by default, responsive Menu, sticky Explore search). Phase **4** done: filter **Viewing** line + **Reset all**, primary vs **More filters**, mobile **Filters** dialog, zero-results CTA, sticky **Skeleton** loading. Phases **5–7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -102,15 +102,15 @@
 
 **Tasks**
 
-- [ ] **Active filter summary** — chips or one-line “You’re viewing: …” with clear **reset**.
-- [ ] **Primary vs. Advanced** — collapse low-usage filters behind **Advanced** (`Disclosure` or accordion).
-- [ ] **Mobile:** filters in **`Sheet`** / drawer from a single **“Filters”** button; desktop keeps panel or two-column layout.
-- [ ] **Empty / zero results** — explain *why* (filters too narrow) + **Reset filters** CTA.
-- [ ] **Loading skeletons** for grid cards (replace generic “loading” text where needed).
+- [x] **Active filter summary** — “**Viewing** …” line (source, search snippet, chip count, sort) + **Reset all**; existing removable chips kept.
+- [x] **Primary vs. Advanced** — primary grid (Source, Set, Supertype, Rarity, Artist, Region) + **`<details>` “More filters”** for art/scene controls.
+- [x] **Mobile:** **`<lg`** — **Filters** opens **`@radix-ui/react-dialog`** scrollable panel (sheet-style positioning); **`lg+`** keeps collapsible inline panel.
+- [x] **Empty / zero results** — plain-language empty state + **Reset search & filters** when constraints are active (`exploreHasActiveConstraints`).
+- [x] **Loading** — sticky result strip uses **`Skeleton`**; **`CardGrid`** already uses pulse placeholders while fetching.
 
 **Exit criteria:** Non-technical user can answer “what am I looking at?” and “how do I undo my filters?” in **one glance**; mobile filter flow completable without horizontal scroll.
 
-**Likely files:** `src/pages/ExplorePage.jsx`, filter components (extract if monolithic), `src/components/*Filter*`.
+**Likely files:** `src/pages/ExplorePage.jsx`, `src/components/FilterPanel.jsx`, `src/components/CardGrid.jsx`, `src/lib/exploreFilterSummary.js`, `src/lib/useMediaQuery.js`, `src/components/ui/Dialog.jsx`.
 
 ---
 

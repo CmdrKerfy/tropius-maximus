@@ -104,6 +104,8 @@ export default function CardGrid({
   onCardClick,
   selectedCardIds = new Set(),
   onToggleSelection,
+  onResetExplore,
+  showResetWhenEmpty = false,
 }) {
   // Loading state: show placeholder skeleton cards.
   if (loading) {
@@ -122,9 +124,22 @@ export default function CardGrid({
   // Empty state: no cards match the current search/filters.
   if (cards.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-lg">No cards found</p>
-        <p className="text-sm mt-1">Try adjusting your search or filters</p>
+      <div className="rounded-xl border border-gray-200 bg-gray-50/80 px-6 py-14 text-center max-w-lg mx-auto">
+        <p className="text-lg font-semibold text-gray-800">No cards match</p>
+        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+          {showResetWhenEmpty
+            ? "Your search or filters may be too narrow. Try clearing them to see the catalog again."
+            : "Try a different search, or widen your filters."}
+        </p>
+        {showResetWhenEmpty && typeof onResetExplore === "function" && (
+          <button
+            type="button"
+            onClick={onResetExplore}
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-tm-leaf px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-tm-leaf-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tm-mist"
+          >
+            Reset search &amp; filters
+          </button>
+        )}
       </div>
     );
   }

@@ -45,7 +45,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### UI refresh (v2 branch — in progress)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phase **1** (tokens + **`src/components/ui/*`** + Radix **`DropdownMenu`**). **Shipped:** Phase **2** — **`sonner`**, **`src/lib/toast.js`**, **`src/lib/humanizeError.js`** on **`toastError`**. **Shipped:** Phase **3** (shell **on by default**; set **`VITE_EXPERIMENTAL_NAV=false`** for legacy per-page headers) — **`AppLayout`**, **`AppShellHeader`** (`lg+` pills + Activity/Manage; **`<lg` Menu** dropdown), nested **`Protected`** routes in **`App.jsx`**, gated page headers, Explore **sticky** search + count strip. **Not done yet:** Explore filter UX overhaul (plan Phase 4), Sheet-based mobile menu (optional), Phases **5–7**.
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–3** (tokens, toasts + **`humanizeError`**, default shell + responsive nav). **Shipped:** Phase **4** Explore — **`FilterPanel`** “Viewing” summary + **Reset all**, primary vs **More filters** `<details>`, mobile **Filters** **`Dialog`**, **`CardGrid`** empty state + reset CTA, **`exploreFilterSummary.js`**, **`useMediaQuery.js`**, sticky strip **`Skeleton`**. **Not done yet:** Phases **5–7** (Workbench polish, motion/icons, etc.).
 - **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
 
 ### Optional — after the core v2 plan is finished
@@ -204,6 +204,10 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   lib/toast.js                   -- **`toastSuccess` / `toastError`** (Phase 2)
   lib/humanizeError.js           -- plain-English **`toastError`** copy from API/network errors
   lib/navEnv.js                  -- **`useExperimentalAppNav()`** (`VITE_EXPERIMENTAL_NAV`)
+  lib/useMediaQuery.js           -- breakpoint hook (Explore **`FilterPanel`** sheet)
+  lib/exploreFilterSummary.js    -- **`exploreFiltersAreActive`**, **`exploreHasActiveConstraints`**
+  components/ui/Dialog.jsx       -- Radix **`Dialog`** wrapper (mobile Explore filters)
+  components/FilterPanel.jsx     -- Explore filters + sort (Phase 4 summary, **More filters**, mobile dialog)
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
   pages/WorkbenchPage.jsx        -- Workbench route (Phase 5 shell)
   pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)

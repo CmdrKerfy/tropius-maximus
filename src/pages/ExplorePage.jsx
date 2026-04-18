@@ -41,6 +41,8 @@ import {
 import { toastSuccess, toastError } from "../lib/toast.js";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
+import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
+import Skeleton from "../components/ui/Skeleton.jsx";
 
 const USE_SUPABASE_APP =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -359,6 +361,28 @@ export default function ExplorePage() {
     setPage(1);
     setSqlCards(null);
   };
+
+  const resetExploreFilters = useCallback(() => {
+    setSearchQuery("");
+    setPage(1);
+    setSqlCards(null);
+    setFilters({ ...DEFAULT_FILTERS });
+    try {
+      localStorage.removeItem(SEARCH_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.removeItem(FILTER_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const exploreConstraintsActive = useMemo(
+    () => exploreHasActiveConstraints(filters, searchQuery),
+    [filters, searchQuery]
+  );
 
   // Refresh attribute definitions after creating/deleting one.
   const handleAttributesChanged = () => {
@@ -802,9 +826,14 @@ export default function ExplorePage() {
             <SearchBar value={searchQuery} onChange={handleSearch} />
             {!sqlCards && (
               <div className="mt-2 text-sm text-gray-500">
-                {listAwaitingFirstData
-                  ? "Loading..."
-                  : `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`}
+                {listAwaitingFirstData ? (
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-40 rounded" />
+                    <span className="sr-only">Loading results…</span>
+                  </div>
+                ) : (
+                  `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
+                )}
               </div>
             )}
           </div>
@@ -821,6 +850,8 @@ export default function ExplorePage() {
           onToggleExpand={() => setFiltersExpanded((prev) => !prev)}
           filterAvailability={exploreFilterAvail}
           filterUnavailableTitle={exploreFilterUnavailableTitle}
+          searchQuery={searchQuery}
+          onResetAll={resetExploreFilters}
         />
 
         {/* Results count (legacy header layout only — shell uses sticky strip above) */}
@@ -1043,6 +1074,8 @@ export default function ExplorePage() {
             onCardClick={(id) => setSelectedCardId(id)}
             selectedCardIds={selectedCardIds}
             onToggleSelection={showSqlConsole ? handleToggleCardSelection : null}
+            onResetExplore={resetExploreFilters}
+            showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
           />
         )}
 
