@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from "react";
 import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from "../db";
-import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import { toastError, toastSuccess } from "../lib/toast.js";
@@ -63,6 +62,8 @@ function CollapsibleSection({ title, defaultOpen = false, children }) {
 }
 
 export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
+  const isSupabase = useSupabaseBackend();
+  const [hasGitHubPat, setHasGitHubPat] = useState(false);
   // ── Card table picker ──
   const [cardTable, setCardTable] = useState("tcg");
 
@@ -192,6 +193,21 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
       .catch((err) => console.warn("Failed to load form options:", err.message));
   }, []);
 
+  useEffect(() => {
+    if (isSupabase) return;
+    let cancelled = false;
+    import("../lib/github")
+      .then(({ getToken }) => {
+        if (!cancelled) setHasGitHubPat(Boolean(getToken()));
+      })
+      .catch(() => {
+        if (!cancelled) setHasGitHubPat(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSupabase]);
+
   // Parse comma-separated string into array, filtering empty
   const toArray = (s) => s ? s.split(",").map(v => v.trim()).filter(Boolean) : [];
   // Format for JSON storage - returns JSON string of array or null
@@ -291,10 +307,11 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         await addPocketCard(pocketCardJson);
 
-        if (useSupabaseBackend()) {
+        if (isSupabase) {
           toastSuccess(`Pocket card "${name}" saved to the database.`);
         } else {
           let ghCommitted = false;
+          const { getToken, commitNewCard } = await import("../lib/github");
           const token = getToken();
           if (token) {
             try {
@@ -388,10 +405,11 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         await addTcgCard(dbCard);
 
-        if (useSupabaseBackend()) {
+        if (isSupabase) {
           toastSuccess(`Card "${name}" saved to the database.`);
         } else {
           let ghCommitted = false;
+          const { getToken, commitNewCard } = await import("../lib/github");
           const token = getToken();
           if (token) {
             try {
@@ -950,7 +968,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         </CollapsibleSection>
 
         {/* ── Submit ── */}
-        {!useSupabaseBackend() && !getToken() && (
+        {!isSupabase && !hasGitHubPat && (
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
             No GitHub PAT configured — this card will only save locally to this browser.{" "}
             {onOpenPAT ? (
