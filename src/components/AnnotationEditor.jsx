@@ -35,6 +35,7 @@ function cloneForUndo(val) {
 }
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
+import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 
 /** field_definitions.name (snake_case) → fetchFormOptions() camelCase key. */
 const FORM_OPTS_KEY_OVERRIDES = {
@@ -246,9 +247,7 @@ export default function AnnotationEditor({
 
         return (
           <div key={attr.key}>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              {attr.label}
-            </label>
+            <FormFieldLabel className="text-gray-700">{attr.label}</FormFieldLabel>
 
             {/* Text field → ComboBox when suggestions exist (parity with Card Detail), else textarea */}
             {attr.value_type === "text" && textAsCombo && (

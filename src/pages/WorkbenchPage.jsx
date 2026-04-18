@@ -27,6 +27,15 @@ const USE_SB =
 /** Stable empty object so AnnotationEditor is not reset every render when a card has no annotation row yet. */
 const EMPTY_ANNOTATIONS = {};
 
+const WB_SPLIT_STORAGE_KEY = "tm_workbench_split_preset";
+
+/** `lg+` two-column ratio; below `lg` the grid is a single column. */
+const WB_SPLIT_GRID_CLASS = {
+  balanced: "lg:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]",
+  image: "lg:grid-cols-[minmax(0,1.14fr)_minmax(0,0.86fr)] xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]",
+  form: "lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]",
+};
+
 const navLinkClass = ({ isActive }) =>
   `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
     isActive ? "bg-white text-green-700" : "bg-green-700 hover:bg-green-800 text-white"
@@ -58,6 +67,24 @@ export default function WorkbenchPage() {
       retry: payload.retry ?? null,
     });
   }, []);
+
+  const [splitPreset, setSplitPreset] = useState(() => {
+    try {
+      const v = typeof localStorage !== "undefined" && localStorage.getItem(WB_SPLIT_STORAGE_KEY);
+      if (v === "image" || v === "form" || v === "balanced") return v;
+    } catch {
+      /* ignore */
+    }
+    return "balanced";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WB_SPLIT_STORAGE_KEY, splitPreset);
+    } catch {
+      /* ignore */
+    }
+  }, [splitPreset]);
 
   const { data: queue, isPending, isError, error } = useQuery({
     queryKey: ["workbenchQueue", "default"],
@@ -253,7 +280,41 @@ export default function WorkbenchPage() {
         )}
 
         {USE_SB && currentCardId && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-6 lg:gap-8 min-h-[min(560px,calc(100vh-12rem))]">
+          <>
+            <div
+              className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
+              role="group"
+              aria-label="Workbench card and form column widths"
+            >
+              <span className="text-xs font-medium text-gray-600">Card / form width</span>
+              <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+                {[
+                  { id: "image", label: "Image" },
+                  { id: "balanced", label: "Balanced" },
+                  { id: "form", label: "Form" },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSplitPreset(id)}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                      splitPreset === id
+                        ? "bg-white text-tm-canopy shadow-sm border border-gray-200/80"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    aria-pressed={splitPreset === id}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className={`grid grid-cols-1 gap-6 lg:gap-8 min-h-[min(560px,calc(100vh-12rem))] ${
+                WB_SPLIT_GRID_CLASS[splitPreset] || WB_SPLIT_GRID_CLASS.balanced
+              }`}
+            >
             <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px]">
               <div className="px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Card
@@ -333,6 +394,7 @@ export default function WorkbenchPage() {
               </div>
             </section>
           </div>
+          </>
         )}
       </main>
     </div>

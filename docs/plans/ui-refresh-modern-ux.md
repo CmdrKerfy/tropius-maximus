@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–4** + **4.5** done. Phase **5** in progress: Workbench **save status** in annotations chrome + **Retry**, **split layout** tweak (`xl` column ratio, image max width); Explore **CardDetail** collapsible sections grouped visually. Remaining Phase **5**: optional split presets, deeper Card detail IA pass. Phases **6–7** not started.  
+**Progress snapshot (2026-04-18):** Phases **1–4** + **4.5** done. Phase **5** mostly done: Workbench **save chrome** + **Retry**, **user split presets** (persisted), layout tuning; **CardDetail** / **AnnotationEditor** use **`FormFieldLabel`** + **`splitUiLabel`** for long / parenthetical labels. **Deferred (revisit after live user testing):** deeper **Card detail IA** — see end of doc. Phases **6–7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -119,8 +119,8 @@
 **Tasks**
 
 - [x] Persistent **save status** in workbench chrome: Idle / Saving / Saved / Error (+ **Retry**). `AnnotationEditor` reports lifecycle via **`onSaveStatusChange`**; **`WorkbenchPage`** shows status in the Annotations panel header.
-- [x] **Card image + form** layout tuned for wider viewports (`xl` grid column ratio, larger image well, panel max-height). **Optional** split ratio presets — not started.
-- [x] **Card detail drawer** (Explore): **`CollapsibleSection`** visual grouping (border, padding, heading focus) — light pass; full metadata vs. annotation vs. actions IA — optional follow-up.
+- [x] **Card image + form** layout: **`lg+`** column ratio presets (**Image** / **Balanced** / **Form**), persisted in **`localStorage`** key **`tm_workbench_split_preset`**; wider image well on **`xl`**.
+- [x] **Card detail drawer** (Explore): **`CollapsibleSection`** visual grouping; field labels use **`FormFieldLabel`** + **`splitUiLabel.js`** (parentheticals on a second line). **Deeper IA** (restructure tabs/sections) — **deferred** until collaborators exercise the app; see **Deferred checklist** at the bottom of this file.
 
 **Exit criteria:** Annotator never unsure whether last save stuck; detail drawer passes a quick **5-second comprehension** test with a collaborator.
 
@@ -186,6 +186,16 @@ Phase 0 (audit + SQL decision)
 - [ ] **Explore:** Filter summary + reset; advanced filters collapsed by default; zero-results state helpful.
 - [ ] **Power tools:** SQL / PAT not in default collaborator path unless explicitly chosen.
 - [ ] **A11y:** Keyboard nav for new menus/dialogs; focus trap in modals; color contrast on semantic states.
+
+---
+
+## Deferred checklist — Card detail IA (after live / final testing)
+
+**Do not block earlier phases on this.** Revisit once collaborators have clicked through real sessions.
+
+- [ ] **Map tasks to sections:** e.g. read-only API facts vs. editable annotations vs. actions (Send to Workbench, delete) — reorder and rename so the first screen answers “what can I change here?”
+- [ ] **Reduce vertical scan:** consider tabs, stepped flow, or stronger section headers for dense attribute tabs.
+- [ ] **Validate with 1–2 non-technical users:** 5-second “where do I edit X?” test; note misses and fix ordering/labels before more engineering.
 
 ---
 

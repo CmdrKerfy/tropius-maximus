@@ -45,7 +45,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### UI refresh (v2 branch — in progress)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–3** (tokens, toasts + **`humanizeError`**, default shell + responsive nav). **Shipped:** Phase **4** + **4.5** Explore (filters, mobile sheet fixes, Radix multiselect, grid/search a11y). **In progress:** Phase **5** — Workbench annotations header **save status** + **Retry** (`AnnotationEditor` **`onSaveStatusChange`**), layout tweak; **CardDetail** collapsible section chrome. **Not done yet:** Phase **5** optional split presets + deeper detail IA; Phases **6–7**.
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–4** + **4.5**; Phase **5** core — Workbench **save chrome** + **Retry**, **split width presets** (`tm_workbench_split_preset`), **`FormFieldLabel`** / **`splitUiLabel.js`** on **CardDetail** + **AnnotationEditor**. **Deferred:** Card detail **IA** restructure (see plan **Deferred checklist**). Phases **6–7** not started.
 - **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
 
 ### Optional — after the core v2 plan is finished
@@ -207,9 +207,11 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   lib/useMediaQuery.js           -- breakpoint hook (Explore **`FilterPanel`** sheet)
   lib/exploreFilterSummary.js    -- **`exploreFiltersAreActive`**, **`exploreHasActiveConstraints`**
   components/ui/Dialog.jsx       -- Radix **`Dialog`** wrapper (mobile Explore filters)
+  components/ui/FormFieldLabel.jsx -- two-line labels (uses **`splitUiLabel`**)
+  lib/splitUiLabel.js            -- split primary vs. parenthetical for field labels
   components/FilterPanel.jsx     -- Explore filters + sort (Phase 4 summary, **More filters**, mobile dialog)
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
-  pages/WorkbenchPage.jsx        -- Workbench route (Phase 5 shell)
+  pages/WorkbenchPage.jsx        -- Workbench queue + **split width presets** (`tm_workbench_split_preset`) + save chrome
   pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)
   pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
   pages/EditHistoryPage.jsx      -- team edit history + “only my edits”

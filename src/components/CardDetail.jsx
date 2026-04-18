@@ -20,6 +20,8 @@ import {
 import { getToken, getAnnotationsFileContents, updateAnnotationsFileContents, deleteCardsFromGitHub } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
+import FormFieldLabel from "./ui/FormFieldLabel.jsx";
+import { splitUiLabel } from "../lib/splitUiLabel.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -218,8 +220,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const inputClass =
     "w-full px-3 py-1.5 border border-gray-300 rounded text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1";
-
   useEffect(() => () => clearTimeout(ghPushTimer.current), []);
 
   // Debounce GitHub push so a quick pass through many cards produces one commit and one workflow run.
@@ -437,10 +437,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const renderAnnotationView = () => {
     const field = (label, value) => {
       if (value === null || value === undefined || value === "" || value === false) return null;
+      const { primary, secondary } = splitUiLabel(label);
       return (
-        <div key={label} className="flex gap-2 text-sm">
-          <span className="text-gray-500 shrink-0">{label}:</span>
-          <span className="text-gray-900">{value === true ? "Yes" : value}</span>
+        <div key={label} className="flex gap-2 text-sm min-w-0">
+          <span className="text-gray-500 shrink-0 max-w-[min(100%,11rem)] leading-snug">
+            <span className="break-words">{primary}</span>
+            {secondary ? (
+              <span className="block text-xs text-gray-400 font-normal break-words">{secondary}</span>
+            ) : null}
+            :
+          </span>
+          <span className="text-gray-900 min-w-0 break-words">{value === true ? "Yes" : value}</span>
         </div>
       );
     };
@@ -666,9 +673,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     return (
                       <div className="w-full md:w-72 space-y-3">
                         <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Image URL
-                          </label>
+                          <FormFieldLabel>Image URL</FormFieldLabel>
                           <input
                             type="url"
                             value={newImageUrl}
@@ -683,9 +688,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                         {/* Preview */}
                         {newImageUrl && (
                           <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Preview
-                            </label>
+                            <FormFieldLabel>Preview</FormFieldLabel>
                             <img
                               src={newImageUrl}
                               alt="Preview"
@@ -1040,7 +1043,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div className="col-span-2 md:col-span-3">
-                              <label className={labelClass}>Set Name</label>
+                              <FormFieldLabel>Set Name</FormFieldLabel>
                               <ComboBox
                                 value={annValue("set_name") || card.set_name || ""}
                                 onChange={(v) => saveAnnotation("set_name", v)}
@@ -1050,19 +1053,19 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               />
                             </div>
                             <div>
-                              <label className={labelClass}>Rarity</label>
+                              <FormFieldLabel>Rarity</FormFieldLabel>
                               <ComboBox value={annValue("rarity") || card.rarity || ""} onChange={(v) => saveAnnotation("rarity", v)} options={optArr(opts.rarity)} placeholder="Promo" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Artist</label>
+                              <FormFieldLabel>Artist</FormFieldLabel>
                               <ComboBox value={annValue("artist") || card.artist || ""} onChange={(v) => saveAnnotation("artist", v)} options={optArr(opts.artist)} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Type</label>
+                              <FormFieldLabel>Type</FormFieldLabel>
                               <MultiComboBox value={annValue("types", true) || types.join(", ")} onChange={(v) => saveAnnotation("types", v)} options={TCG_TYPE_OPTIONS} placeholder="Fire, Water, Lightning, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Unique ID</label>
+                              <FormFieldLabel>Unique ID</FormFieldLabel>
                               <input
                                 type="text"
                                 value={annValue("unique_id")}
@@ -1072,19 +1075,19 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               />
                             </div>
                             <div>
-                              <label className={labelClass}>Card Subcategory</label>
+                              <FormFieldLabel>Card Subcategory</FormFieldLabel>
                               <MultiComboBox value={annValue("card_subcategory", true)} onChange={(v) => saveAnnotation("card_subcategory", v)} options={optArr(opts.cardSubcategory).length ? optArr(opts.cardSubcategory) : CARD_SUBCATEGORY_OPTIONS} placeholder="Full Art, Illustration Rare, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Evolution Line</label>
+                              <FormFieldLabel>Evolution Line</FormFieldLabel>
                               <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={optArr(opts.evolutionLine)} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Card Border Color</label>
+                              <FormFieldLabel>Card Border Color</FormFieldLabel>
                               <ComboBox value={annValue("card_border")} onChange={(v) => saveAnnotation("card_border", v)} options={optArr(opts.cardBorder).length ? optArr(opts.cardBorder) : CARD_BORDER_OPTIONS} placeholder="Yellow, Silver, Blue, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Stamp</label>
+                              <FormFieldLabel>Stamp</FormFieldLabel>
                               <ComboBox value={annValue("stamp")} onChange={(v) => saveAnnotation("stamp", v)}
                                 options={optArr(opts.stamp).length ? optArr(opts.stamp) : STAMP_OPTIONS} placeholder="Pokemon Center, Game Stop, etc."
                                 className={inputClass + " w-full"} />
@@ -1096,15 +1099,15 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Trainer Card Type</label>
+                              <FormFieldLabel>Trainer Card Type</FormFieldLabel>
                               <ComboBox value={annValue("trainer_card_type")} onChange={(v) => saveAnnotation("trainer_card_type", v)} options={optArr(opts.trainerCardType).length ? optArr(opts.trainerCardType) : TRAINER_CARD_TYPE_OPTIONS} placeholder="Supporter, Item, Stadium, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Trainer Card Subgroup</label>
+                              <FormFieldLabel>Trainer Card Subgroup</FormFieldLabel>
                               <MultiComboBox value={annValue("trainer_card_subgroup", true)} onChange={(v) => saveAnnotation("trainer_card_subgroup", v)} options={optArr(opts.trainerCardSubgroup).length ? optArr(opts.trainerCardSubgroup) : TRAINER_CARD_SUBGROUP_OPTIONS} placeholder="Nameless Supporter, Villain Team Items, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Energy Card Type</label>
+                              <FormFieldLabel>Energy Card Type</FormFieldLabel>
                               <ComboBox value={annValue("energy_type")} onChange={(v) => saveAnnotation("energy_type", v)} options={optArr(opts.energyType).length ? optArr(opts.energyType) : ENERGY_TYPE_OPTIONS} placeholder="Basic, Special" className={inputClass + " w-full"} />
                             </div>
 
@@ -1114,27 +1117,27 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Featured Region</label>
+                              <FormFieldLabel>Featured Region</FormFieldLabel>
                               <ComboBox value={annValue("pkmn_region")} onChange={(v) => saveAnnotation("pkmn_region", v)} options={optArr(opts.pkmnRegion)} placeholder="Kanto, Johto, Aquapolis, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Card Location</label>
+                              <FormFieldLabel>Card Location</FormFieldLabel>
                               <ComboBox value={annValue("card_locations")} onChange={(v) => saveAnnotation("card_locations", v)} options={optArr(opts.cardLocations)} placeholder="Pallet Town, Route 110, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Environment</label>
+                              <FormFieldLabel>Environment</FormFieldLabel>
                               <MultiComboBox value={annValue("environment", true)} onChange={(v) => saveAnnotation("environment", v)} options={optArr(opts.environment)} placeholder="Forest, Beach, Stadium, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Weather</label>
+                              <FormFieldLabel>Weather</FormFieldLabel>
                               <ComboBox value={annValue("weather")} onChange={(v) => saveAnnotation("weather", v)} options={optArr(opts.weather)} placeholder="Sunny, Lightning, Clouds, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Background Details</label>
+                              <FormFieldLabel>Background Details</FormFieldLabel>
                               <MultiComboBox value={annValue("background_details", true)} onChange={(v) => saveAnnotation("background_details", v)} options={optArr(opts.backgroundDetails)} placeholder="Island, Stump, Seafloor, Bridge, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Holiday Theme</label>
+                              <FormFieldLabel>Holiday Theme</FormFieldLabel>
                               <MultiComboBox value={annValue("holiday_theme", true)} onChange={(v) => saveAnnotation("holiday_theme", v)} options={optArr(opts.holidayTheme).length ? optArr(opts.holidayTheme) : HOLIDAY_THEME_OPTIONS} placeholder="Halloween, Christmas, etc." />
                             </div>
 
@@ -1144,15 +1147,15 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Actions</label>
+                              <FormFieldLabel>Actions</FormFieldLabel>
                               <MultiComboBox value={annValue("actions", true)} onChange={(v) => saveAnnotation("actions", v)} options={optArr(opts.actions)} placeholder="Dancing, Firefighters, On A Boat" />
                             </div>
                             <div>
-                              <label className={labelClass}>Pose</label>
+                              <FormFieldLabel>Pose</FormFieldLabel>
                               <MultiComboBox value={annValue("pose", true)} onChange={(v) => saveAnnotation("pose", v)} options={optArr(opts.pose)} placeholder="Flexing, Come At Me Bro, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Emotion</label>
+                              <FormFieldLabel>Emotion</FormFieldLabel>
                               <MultiComboBox value={annValue("emotion", true)} onChange={(v) => saveAnnotation("emotion", v)} options={optArr(opts.emotion)} placeholder="Crying, Scared, Angry, etc." />
                             </div>
 
@@ -1162,23 +1165,23 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Items</label>
+                              <FormFieldLabel>Items</FormFieldLabel>
                               <MultiComboBox value={annValue("items", true)} onChange={(v) => saveAnnotation("items", v)} options={optArr(opts.items)} placeholder="Clefairy Doll, Apple, Fossil, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Held Item</label>
+                              <FormFieldLabel>Held Item</FormFieldLabel>
                               <MultiComboBox value={annValue("held_item", true)} onChange={(v) => saveAnnotation("held_item", v)} options={optArr(opts.heldItem).length ? optArr(opts.heldItem) : HELD_ITEM_OPTIONS} placeholder="Food, Flower, Pokeball, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Berries (if present)</label>
+                              <FormFieldLabel>Berries (if present)</FormFieldLabel>
                               <MultiComboBox value={annValue("berries", true)} onChange={(v) => saveAnnotation("berries", v)} options={optArr(opts.berries).length ? optArr(opts.berries) : BERRIES_OPTIONS} placeholder="Oran Berry, Razz Berry, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Pokeball Type (if present)</label>
+                              <FormFieldLabel>Pokeball Type (if present)</FormFieldLabel>
                               <MultiComboBox value={annValue("pokeball", true)} onChange={(v) => saveAnnotation("pokeball", v)} options={optArr(opts.pokeball).length ? optArr(opts.pokeball) : POKEBALL_OPTIONS} placeholder="Great Ball, Timer Ball, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Evolution Items (if present)</label>
+                              <FormFieldLabel>Evolution Items (if present)</FormFieldLabel>
                               <MultiComboBox value={annValue("evolution_items", true)} onChange={(v) => saveAnnotation("evolution_items", v)} options={optArr(opts.evolutionItems).length ? optArr(opts.evolutionItems) : EVOLUTION_ITEMS_OPTIONS} placeholder="Leaf Stone, Upgrade, etc." />
                             </div>
 
@@ -1188,23 +1191,23 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Background Pokemon</label>
+                              <FormFieldLabel>Background Pokemon</FormFieldLabel>
                               <MultiComboBox value={annValue("background_pokemon", true)} onChange={(v) => saveAnnotation("background_pokemon", v)} options={optArr(opts.backgroundPokemon)} placeholder="Squirtle, Pikachu, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Background People Type</label>
+                              <FormFieldLabel>Background People Type</FormFieldLabel>
                               <MultiComboBox value={annValue("background_humans", true)} onChange={(v) => saveAnnotation("background_humans", v)} options={optArr(opts.backgroundHumans)} placeholder="Gym Leader, Trainer, Civilian" />
                             </div>
                             <div>
-                              <label className={labelClass}>Background People Name</label>
+                              <FormFieldLabel>Background People Name</FormFieldLabel>
                               <MultiComboBox value={annValue("additional_characters", true)} onChange={(v) => saveAnnotation("additional_characters", v)} options={optArr(opts.additionalCharacters)} placeholder="Brock, Professor Oak, Delinquent" />
                             </div>
                             <div>
-                              <label className={labelClass}>Rival Faction</label>
+                              <FormFieldLabel>Rival Faction</FormFieldLabel>
                               <ComboBox value={annValue("rival_group")} onChange={(v) => saveAnnotation("rival_group", v)} options={optArr(opts.rivalGroup).length ? optArr(opts.rivalGroup) : RIVAL_GROUP_OPTIONS} placeholder="Team Rocket, Team Aqua, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Additional Character Theme</label>
+                              <FormFieldLabel>Additional Character Theme</FormFieldLabel>
                               <MultiComboBox value={annValue("additional_character_theme", true)} onChange={(v) => saveAnnotation("additional_character_theme", v)} options={optArr(opts.additionalCharacterTheme).length ? optArr(opts.additionalCharacterTheme) : ADDITIONAL_CHARACTER_THEME_OPTIONS} placeholder="Family First, Squad Gang, etc." />
                             </div>
 
@@ -1214,19 +1217,19 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Art Style</label>
+                              <FormFieldLabel>Art Style</FormFieldLabel>
                               <MultiComboBox value={annValue("art_style", true)} onChange={(v) => saveAnnotation("art_style", v)} options={optArr(opts.artStyle)} placeholder="2D, Clay, Trippy Art, etc." />
                             </div>
                             <div>
-                              <label className={labelClass}>Camera Angle</label>
+                              <FormFieldLabel>Camera Angle</FormFieldLabel>
                               <ComboBox value={annValue("camera_angle")} onChange={(v) => saveAnnotation("camera_angle", v)} options={optArr(opts.cameraAngle)} placeholder="Aerial, Upside Down, etc." className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Perspective</label>
+                              <FormFieldLabel>Perspective</FormFieldLabel>
                               <ComboBox value={annValue("perspective")} onChange={(v) => saveAnnotation("perspective", v)} options={optArr(opts.perspective)} placeholder="POV, Tiny, Rotate 90 Degrees" className={inputClass + " w-full"} />
                             </div>
                             <div>
-                              <label className={labelClass}>Multi Card</label>
+                              <FormFieldLabel>Multi Card</FormFieldLabel>
                               <MultiComboBox value={annValue("multi_card", true)} onChange={(v) => saveAnnotation("multi_card", v)} options={optArr(opts.multiCard).length ? optArr(opts.multiCard) : MULTI_CARD_OPTIONS} placeholder="Storytelling, Different Angles, etc." />
                             </div>
 
@@ -1242,11 +1245,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <div>
-                              <label className={labelClass}>Video Game</label>
+                              <FormFieldLabel>Video Game</FormFieldLabel>
                               <MultiComboBox value={annValue("video_game", true)} onChange={(v) => saveAnnotation("video_game", v)} options={VIDEO_GAME_OPTIONS} placeholder="X/Y" />
                             </div>
                             <div>
-                              <label className={labelClass}>Video Game Location</label>
+                              <FormFieldLabel>Video Game Location</FormFieldLabel>
                               <MultiComboBox value={annValue("video_game_location", true)} onChange={(v) => saveAnnotation("video_game_location", v)} options={optArr(opts.videoGameLocation).length ? optArr(opts.videoGameLocation) : VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Route 1" />
                             </div>
 
@@ -1268,31 +1271,31 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <label htmlFor="cardDetail-thumbnailUsed" className="text-sm text-gray-700">Thumbnail Used</label>
                             </div>
                             <div className="col-span-2 md:col-span-3">
-                              <label className={labelClass}>Video Title</label>
+                              <FormFieldLabel>Video Title</FormFieldLabel>
                               <MultiComboBox value={annValue("video_title", true)} onChange={(v) => saveAnnotation("video_title", v)} options={optArr(opts.videoTitle)} placeholder="Video title" />
                             </div>
                             <div className="col-span-2 md:col-span-3">
-                              <label className={labelClass}>Video Type</label>
+                              <FormFieldLabel>Video Type</FormFieldLabel>
                               <MultiComboBox value={annValue("video_type", true)} onChange={(v) => saveAnnotation("video_type", v)}
                                 options={optArr(opts.videoType).length ? optArr(opts.videoType) : VIDEO_TYPE_OPTIONS} placeholder="Top 10, Every Card in a Region" />
                             </div>
                             <div>
-                              <label className={labelClass}>Video Region</label>
+                              <FormFieldLabel>Video Region</FormFieldLabel>
                               <MultiComboBox value={annValue("video_region", true)} onChange={(v) => saveAnnotation("video_region", v)}
                                 options={optArr(opts.videoRegion).length ? optArr(opts.videoRegion) : VIDEO_REGION_OPTIONS} placeholder="Kanto, Johto" />
                             </div>
                             <div>
-                              <label className={labelClass}>Top 10 Themes</label>
+                              <FormFieldLabel>Top 10 Themes</FormFieldLabel>
                               <MultiComboBox value={annValue("top_10_themes", true)} onChange={(v) => saveAnnotation("top_10_themes", v)}
                                 options={optArr(opts.top10Themes).length ? optArr(opts.top10Themes) : TOP_10_THEMES_OPTIONS} placeholder="Theme" />
                             </div>
                             <div>
-                              <label className={labelClass}>WTPC Episode Number</label>
+                              <FormFieldLabel>WTPC Episode Number</FormFieldLabel>
                               <MultiComboBox value={annValue("wtpc_episode", true)} onChange={(v) => saveAnnotation("wtpc_episode", v)}
                                 options={WTPC_EPISODE_OPTIONS} placeholder="Episode 1" />
                             </div>
                             <div>
-                              <label className={labelClass}>Video Location</label>
+                              <FormFieldLabel>Video Location</FormFieldLabel>
                               <MultiComboBox value={annValue("video_location", true)} onChange={(v) => saveAnnotation("video_location", v)}
                                 options={optArr(opts.videoLocation).length ? optArr(opts.videoLocation) : VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Lumiose City" />
                             </div>
@@ -1313,7 +1316,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                               <label htmlFor="cardDetail-owned" className="text-sm text-gray-700">Owned</label>
                             </div>
                             <div>
-                              <label className={labelClass}>Notes</label>
+                              <FormFieldLabel>Notes</FormFieldLabel>
                               <textarea value={annValue("notes")} onChange={(e) => saveAnnotation("notes", e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
                             </div>
                           </div>
