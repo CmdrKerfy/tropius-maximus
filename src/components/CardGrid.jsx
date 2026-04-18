@@ -82,7 +82,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         />
         <div
           className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent
-                      p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100 transition-opacity"
         >
           <p className="text-white text-xs font-medium truncate">{card.name || "Unknown"}</p>
           {(card.set_name || card.number) && (

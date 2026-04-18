@@ -4,9 +4,16 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Button from "./ui/Button.jsx";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import { useMediaQuery } from "../lib/useMediaQuery.js";
 import { exploreFiltersAreActive } from "../lib/exploreFilterSummary.js";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/DropdownMenu.jsx";
 
 const UNCATEGORIZED_HEADER = "Uncategorized";
 
@@ -26,27 +33,8 @@ function MultiSelectDropdown({
   disabled = false,
   disabledTitle = "",
 }) {
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const ref = useRef(null);
   const searchRef = useRef(null);
-
-  useEffect(() => {
-    if (disabled) setOpen(false);
-  }, [disabled]);
-
-  useEffect(() => {
-    if (!open) {
-      setSearch("");
-      return;
-    }
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    if (searchable) setTimeout(() => searchRef.current?.focus(), 0);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, searchable]);
 
   const getVal = (o) => (o && typeof o === "object" ? o.value : o);
   const getLabel = (o) => (o && typeof o === "object" ? o.label : o);
@@ -72,32 +60,38 @@ function MultiSelectDropdown({
   const isActive = values.length > 0;
 
   const btnCls =
-    "h-10 px-3 py-2 border rounded-lg bg-white text-sm text-left flex items-center gap-1.5 min-w-0 " +
+    "h-10 px-3 py-2 border rounded-lg bg-white text-sm text-left inline-flex items-center gap-1.5 min-w-0 w-full " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent " +
     (isActive ? "border-green-400 text-green-700 " : "border-gray-300 text-gray-900 ") +
     (disabled ? "opacity-50 cursor-not-allowed bg-gray-50 text-gray-500 " : "") +
     className;
 
+  const filterText = String(search || "").trim().toLowerCase();
+  const optionMatches = (label) => {
+    if (!filterText) return true;
+    return String(label || "").toLowerCase().includes(filterText);
+  };
+
   return (
-    <div className="relative" ref={ref} title={disabled ? disabledTitle : undefined}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(!open)}
-        className={btnCls}
+    <div className="min-w-0" title={disabled ? disabledTitle : undefined}>
+      <DropdownMenu
+        onOpenChange={(next) => {
+          if (next && searchable) {
+            setSearch("");
+            setTimeout(() => searchRef.current?.focus(), 0);
+          }
+          if (!next) setSearch("");
+        }}
       >
-        <span className="flex-1 truncate">{displayText}</span>
-        <svg
-          className={`w-4 h-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg min-w-full w-max max-w-xs flex flex-col">
+        <DropdownMenuTrigger asChild>
+          <button type="button" disabled={disabled} className={btnCls} aria-label="Choose filter options">
+            <span className="flex-1 truncate">{displayText}</span>
+            <svg className="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="p-0 overflow-hidden">
           {searchable && (
             <div className="p-2 border-b border-gray-100">
               <input
@@ -105,57 +99,58 @@ function MultiSelectDropdown({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="Search…"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+                onKeyDown={(e) => e.stopPropagation()}
               />
             </div>
           )}
-          <div className="max-h-52 overflow-y-auto">
-            {groups
-              ? groups.map(({ id, header, sets }) => {
-                  const filtered = sets.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
-                  if (filtered.length === 0) return null;
-                  return (
-                    <div key={id}>
-                      <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50 sticky top-0">
-                        {header}
-                      </div>
-                      {filtered.map((s) => (
-                        <label
-                          key={s.id}
-                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={values.includes(s.id)}
-                            onChange={() => toggle(s.id)}
-                            className="rounded shrink-0"
-                          />
-                          <span className="truncate">{s.name}</span>
-                        </label>
-                      ))}
+          <div className="max-h-[min(18rem,60vh)] overflow-y-auto p-1.5">
+            {groups ? (
+              groups.map(({ id, header, sets }, idx) => {
+                const filtered = sets.filter((s) => optionMatches(s.name));
+                if (filtered.length === 0) return null;
+                return (
+                  <div key={id}>
+                    {idx > 0 && <DropdownMenuSeparator />}
+                    <div className="px-2.5 py-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                      {header}
                     </div>
-                  );
-                })
-              : options
-                  .filter((opt) => getLabel(opt).toLowerCase().includes(search.toLowerCase()))
-                  .map((opt) => (
-                    <label
-                      key={getVal(opt)}
-                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={values.includes(getVal(opt))}
-                        onChange={() => toggle(getVal(opt))}
-                        className="rounded shrink-0"
-                      />
-                      <span className="truncate">{getLabel(opt)}</span>
-                    </label>
-                  ))}
+                    {filtered.map((s) => (
+                      <DropdownMenuCheckboxItem
+                        key={s.id}
+                        checked={values.includes(s.id)}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          toggle(s.id);
+                        }}
+                      >
+                        <span className="truncate">{s.name}</span>
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
+                );
+              })
+            ) : (
+              options
+                .map((opt) => ({ value: getVal(opt), label: getLabel(opt) }))
+                .filter((opt) => optionMatches(opt.label))
+                .map((opt) => (
+                  <DropdownMenuCheckboxItem
+                    key={opt.value}
+                    checked={values.includes(opt.value)}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      toggle(opt.value);
+                    }}
+                  >
+                    <span className="truncate">{opt.label}</span>
+                  </DropdownMenuCheckboxItem>
+                ))
+            )}
           </div>
-        </div>
-      )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -685,21 +680,81 @@ export default function FilterPanel({
           {hasActiveFilters && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
           )}
-          <span className="text-xs text-gray-500">Opens a scrollable panel — no sideways scrolling.</span>
+          <span className="text-xs text-gray-500">
+            Sort: <span className="font-medium text-gray-700">{sortLabel}</span> ({orderLabel})
+          </span>
         </div>
       )}
 
       {!isLg && (
         <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
           <DialogContent className="inset-x-2 bottom-2 top-[8dvh] max-w-2xl mx-auto overflow-y-auto rounded-xl border border-gray-200 p-4">
-            <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Filters</DialogTitle>
-            <DialogDescription className="sr-only">Change catalog filters and annotation-based options.</DialogDescription>
-            <p className="text-xs text-gray-500 mb-3">Scroll to see every option. Sort stays below on the page.</p>
-            {renderFilterBody()}
-            <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-3">
-              <Button type="button" variant="ghost" size="md" onClick={() => setSheetOpen(false)}>
-                Done
-              </Button>
+            <div className="sticky top-0 -mx-4 px-4 -mt-4 pt-4 pb-3 bg-white border-b border-gray-100 flex items-start gap-3 z-10">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Filters</DialogTitle>
+                <DialogDescription className="sr-only">Change catalog filters and annotation-based options.</DialogDescription>
+                <p className="text-xs text-gray-500 mt-0.5">Adjust filters and sort, then tap Done.</p>
+              </div>
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tm-mist"
+                  aria-label="Close filters"
+                >
+                  ×
+                </button>
+              </DialogClose>
+            </div>
+
+            <div className="pt-4">
+              {renderFilterBody()}
+            </div>
+
+            <div className="mt-4 border-t border-gray-200 pt-3">
+              <div className="flex flex-wrap gap-3 items-start">
+                <div className="flex flex-col min-w-[10rem] flex-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
+                  <select
+                    value={filters.sort_by}
+                    onChange={(e) => onChange({ sort_by: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="name">Name</option>
+                    <option value="number">Number</option>
+                    {isTCG && <option value="pokedex">Pokedex #</option>}
+                    <option value="hp">HP</option>
+                    <option value="rarity">Rarity</option>
+                    <option value="set_name">Set</option>
+                    {isTCG && <option value="price">Price</option>}
+                    {isTCG && <option value="region">Featured Region</option>}
+                  </select>
+                </div>
+
+                <div className="flex flex-col min-w-[10rem] flex-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Order</label>
+                  <select
+                    value={filters.sort_dir}
+                    onChange={(e) => onChange({ sort_dir: e.target.value })}
+                    className={selectClass}
+                  >
+                    <option value="asc">A → Z / Low → High</option>
+                    <option value="desc">Z → A / High → Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearOrReset}
+                  className="h-10 px-3 py-2 text-sm text-green-700 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
+                >
+                  Clear filters
+                </button>
+                <Button type="button" variant="ghost" size="md" onClick={() => setSheetOpen(false)}>
+                  Done
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -734,6 +789,7 @@ export default function FilterPanel({
         {renderFilterBody()}
       </div>
 
+      {isLg && (
       <div className="flex flex-wrap gap-3 items-start border-t border-gray-200 pt-3">
         <div className="flex flex-col">
           <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
@@ -778,6 +834,7 @@ export default function FilterPanel({
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }
