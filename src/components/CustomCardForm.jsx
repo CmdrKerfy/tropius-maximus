@@ -1,10 +1,10 @@
 /**
- * CustomCardForm — Expanded form to add custom cards with all fields
- * and optional GitHub auto-commit via PAT.
+ * CustomCardForm — Expanded form to add custom cards with all fields.
+ * DuckDB mode: optional GitHub PAT auto-commit. Supabase mode: saves to Postgres only.
  */
 
 import { useState, useEffect } from "react";
-import { addTcgCard, addPocketCard, fetchFormOptions } from "../db";
+import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from "../db";
 import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
@@ -292,31 +292,34 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         await addPocketCard(pocketCardJson);
 
-        let ghCommitted = false;
-        const token = getToken();
-        if (token) {
-          try {
-            await commitNewCard(token, pocketCardJson);
-            ghCommitted = true;
-          } catch (ghErr) {
-            console.warn("GitHub commit failed:", ghErr.message);
-            const msg = ghErr?.message || "";
-            setError(
-              msg.includes("403")
-                ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+        if (useSupabaseBackend()) {
+          setSuccess(`Pocket card "${name}" saved to the database.`);
+        } else {
+          let ghCommitted = false;
+          const token = getToken();
+          if (token) {
+            try {
+              await commitNewCard(token, pocketCardJson);
+              ghCommitted = true;
+            } catch (ghErr) {
+              console.warn("GitHub commit failed:", ghErr.message);
+              const msg = ghErr?.message || "";
+              setError(
+                msg.includes("403")
+                  ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+              );
+            }
+          }
+
+          if (ghCommitted) {
+            setSuccess(`Pocket card "${name}" added and committed to GitHub!`);
+          } else if (!token) {
+            setSuccess(
+              `Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
             );
           }
         }
-
-        if (ghCommitted) {
-          setSuccess(`Pocket card "${name}" added and committed to GitHub!`);
-        } else if (!token) {
-          setSuccess(
-            `Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
-          );
-        }
-        // When token existed but commit failed, we already setError — don't show success.
       } else {
         // TCG path
         if (!name || !number || !setNameVal || !imageSmall || !source) {
@@ -387,31 +390,34 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
         await addTcgCard(dbCard);
 
-        let ghCommitted = false;
-        const token = getToken();
-        if (token) {
-          try {
-            await commitNewCard(token, cardJson);
-            ghCommitted = true;
-          } catch (ghErr) {
-            console.warn("GitHub commit failed:", ghErr.message);
-            const msg = ghErr?.message || "";
-            setError(
-              msg.includes("403")
-                ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+        if (useSupabaseBackend()) {
+          setSuccess(`Card "${name}" saved to the database.`);
+        } else {
+          let ghCommitted = false;
+          const token = getToken();
+          if (token) {
+            try {
+              await commitNewCard(token, cardJson);
+              ghCommitted = true;
+            } catch (ghErr) {
+              console.warn("GitHub commit failed:", ghErr.message);
+              const msg = ghErr?.message || "";
+              setError(
+                msg.includes("403")
+                  ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
+              );
+            }
+          }
+
+          if (ghCommitted) {
+            setSuccess(`Card "${name}" added and committed to GitHub!`);
+          } else if (!token) {
+            setSuccess(
+              `Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
             );
           }
         }
-
-        if (ghCommitted) {
-          setSuccess(`Card "${name}" added and committed to GitHub!`);
-        } else if (!token) {
-          setSuccess(
-            `Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
-          );
-        }
-        // When token existed but commit failed, we already setError — don't show success.
       }
 
       // Refetch form options so dropdowns include the newly submitted values
@@ -951,7 +957,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         </CollapsibleSection>
 
         {/* ── Submit ── */}
-        {!getToken() && (
+        {!useSupabaseBackend() && !getToken() && (
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
             No GitHub PAT configured — this card will only save locally to this browser.{" "}
             {onOpenPAT ? (

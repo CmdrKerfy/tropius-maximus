@@ -2,7 +2,7 @@
 
 **Goal:** When the app runs against **Supabase** (`VITE_USE_SUPABASE=true`), **custom card create** should have **one** clear story: save to **Postgres**. No implied dependency on PAT/GitHub for “sync” or success messaging.
 
-**Status:** Not started — implement on **`v2/supabase-migration`**.
+**Status:** Phase 1–2 implemented on **`v2/supabase-migration`** (`useSupabaseBackend` in `db.js`, `CustomCardForm`, `ExplorePage`, `CardDetail`). `github.js` kept for v1 / DuckDB.
 
 **Context:** `CustomCardForm.jsx` still calls `addTcgCard` / `addPocketCard` (correct — routes to `appAdapter` insert) **and then** optionally `commitNewCard` when a GitHub PAT exists. Success/error copy still says “local” / “GitHub” like v1 (DuckDB + git). **Explore** still shows a **GitHub PAT** section in Custom Cards settings.
 

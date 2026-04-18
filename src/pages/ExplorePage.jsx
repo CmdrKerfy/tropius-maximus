@@ -13,6 +13,7 @@ import {
   deleteCardsById,
   syncMutableTablesToIndexedDB,
   appendCardToDefaultQueue,
+  useSupabaseBackend,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
 import SearchBar from "../components/SearchBar";
@@ -402,7 +403,7 @@ export default function ExplorePage() {
       const deleted = await deleteCardsById(selectedCardIds);
       if (deleted.length > 0) {
         const token = getToken();
-        if (token) {
+        if (token && !useSupabaseBackend()) {
           try {
             await deleteCardsFromGitHub(token, deleted);
           } catch (e) {
@@ -627,13 +628,16 @@ export default function ExplorePage() {
                 Card Data
               </h2>
               <p className="text-sm text-gray-600">
-                Card data is updated automatically via GitHub Actions.
+                {USE_SUPABASE_APP
+                  ? "Card data is loaded from your Supabase project. API-sourced cards refresh on the ingest schedule."
+                  : "Card data is updated automatically via GitHub Actions."}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Last build: {typeof __BUILD_DATE__ !== "undefined" ? new Date(__BUILD_DATE__).toLocaleDateString() : "unknown"}
               </p>
 
-              {/* GitHub PAT */}
+              {/* GitHub PAT (v1 / DuckDB only — not used for custom cards when on Supabase) */}
+              {!USE_SUPABASE_APP && (
               <div ref={patSectionRef} className="mt-3 border-t border-gray-100 pt-3 space-y-1.5">
                 {patSaved ? (
                   <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center justify-between">
@@ -691,6 +695,7 @@ export default function ExplorePage() {
                   </div>
                 )}
               </div>
+              )}
 
               <div className="mt-3 flex flex-wrap gap-2 items-center">
                 <button
@@ -700,6 +705,7 @@ export default function ExplorePage() {
                 >
                   {showCustomCardForm ? "Hide Form" : "+ Add Custom Card"}
                 </button>
+                {!USE_SUPABASE_APP && (
                 <button
                   onClick={handlePushToGitHub}
                   disabled={!ghToken || pushStatus === "pushing"}
@@ -708,11 +714,12 @@ export default function ExplorePage() {
                 >
                   {pushStatus === "pushing" ? "Pushing…" : "Push Local Cards to GitHub"}
                 </button>
+                )}
               </div>
-              {pushStatus === "success" && (
+              {!USE_SUPABASE_APP && pushStatus === "success" && (
                 <p className="mt-2 text-xs text-green-700">{pushMessage}</p>
               )}
-              {pushStatus === "error" && (
+              {!USE_SUPABASE_APP && pushStatus === "error" && (
                 <p className="mt-2 text-xs text-red-600">{pushMessage}</p>
               )}
             </div>
@@ -722,10 +729,14 @@ export default function ExplorePage() {
               <CustomCardForm
                 onCardAdded={handleCustomCardAdded}
                 onClose={() => setShowCustomCardForm(false)}
-                onOpenPAT={() => {
-                  setShowTokenInput(true);
-                  setTimeout(() => patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
-                }}
+                onOpenPAT={
+                  USE_SUPABASE_APP
+                    ? undefined
+                    : () => {
+                        setShowTokenInput(true);
+                        setTimeout(() => patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+                      }
+                }
               />
             )}
 
@@ -899,6 +910,7 @@ export default function ExplorePage() {
           ).length;
           const customCount = selectedCardIds.size - nonCustomCount;
           const hasToken = !!getToken();
+          const useSb = USE_SUPABASE_APP;
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
@@ -908,7 +920,11 @@ export default function ExplorePage() {
                   <p className="text-sm text-gray-700 mb-2">
                     <span className="font-semibold text-red-600">{customCount}</span> custom card
                     {customCount !== 1 ? "s" : ""} will be permanently deleted
-                    {hasToken ? " from this browser and from GitHub." : " from this browser only. Add a GitHub PAT in Settings to also remove from GitHub."}
+                    {useSb
+                      ? " from the database."
+                      : hasToken
+                        ? " from this browser and from GitHub."
+                        : " from this browser only. Add a GitHub PAT in Settings to also remove from GitHub."}
                   </p>
                 )}
 

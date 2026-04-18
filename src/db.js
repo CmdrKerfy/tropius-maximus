@@ -6,7 +6,8 @@
 import * as duck from "./db.duckdb.js";
 import { SOURCE_OPTIONS } from "./lib/annotationOptions.js";
 
-function useSupabaseBackend() {
+/** True when the app should use Postgres via Supabase (Explore, Workbench, etc.). */
+export function useSupabaseBackend() {
   return (
     import.meta.env.VITE_USE_SUPABASE === "true" &&
     Boolean(import.meta.env.VITE_SUPABASE_URL) &&
