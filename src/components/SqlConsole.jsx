@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useCallback } from "react";
+import { AlertTriangle, GitCommit, LayoutGrid, Loader2, Play, Terminal } from "lucide-react";
 import { executeSql, syncMutableTablesToIndexedDB, useSupabaseBackend } from "../db";
 import { getToken, getFileContents, updateFileContents } from "../lib/github";
 
@@ -244,7 +245,10 @@ export default function SqlConsole({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-      <h2 className="font-semibold text-gray-800 mb-3">SQL Console</h2>
+      <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <Terminal className="h-5 w-5 text-gray-500 shrink-0" strokeWidth={2} aria-hidden />
+        SQL Console
+      </h2>
       {useSupabaseBackend() && (
         <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-3">
           Supabase mode: only read-only queries are supported here. SQL writes and GitHub sync are disabled; edit
@@ -294,10 +298,20 @@ export default function SqlConsole({
         <button
           onClick={runQuery}
           disabled={running || !query.trim()}
-          className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium
                      hover:bg-green-700 disabled:bg-gray-400 transition-colors"
         >
-          {running ? "Running..." : "Run Query"}
+          {running ? (
+            <>
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+              Running…
+            </>
+          ) : (
+            <>
+              <Play className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+              Run query
+            </>
+          )}
         </button>
         <span className="text-xs text-gray-400">
           {navigator.platform?.includes("Mac") ? "\u2318" : "Ctrl"}+Enter to run
@@ -333,10 +347,20 @@ export default function SqlConsole({
             <button
               onClick={commitSqlChanges}
               disabled={committing}
-              className="shrink-0 px-3 py-1.5 bg-amber-600 text-white rounded text-sm font-medium
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white rounded text-sm font-medium
                          hover:bg-amber-700 disabled:bg-gray-400 transition-colors"
             >
-              {committing ? "Committing..." : "Commit Changes to Database"}
+              {committing ? (
+                <>
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                  Committing…
+                </>
+              ) : (
+                <>
+                  <GitCommit className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                  Commit changes
+                </>
+              )}
             </button>
           </div>
 
@@ -359,7 +383,10 @@ export default function SqlConsole({
       {showConfirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl p-5 max-w-md w-full mx-4 border border-red-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Confirm Database Change</h3>
+            <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" strokeWidth={2} aria-hidden />
+              Confirm database change
+            </h3>
             <p className="text-sm text-gray-700 mb-1">
               This query will <strong>permanently modify the database</strong> and cannot be undone.
             </p>
@@ -385,7 +412,7 @@ export default function SqlConsole({
                 onClick={confirmAndRun}
                 className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 font-medium"
               >
-                Yes, Run Query
+                Run query
               </button>
             </div>
           </div>
@@ -446,9 +473,10 @@ export default function SqlConsole({
                     onShowInGrid(rowsToObjects(cardsResult));
                   }
                 }}
-                className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded hover:bg-green-100 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded hover:bg-green-100 transition-colors"
               >
-                Show in Grid
+                <LayoutGrid className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                Show in grid
               </button>
             )}
           </div>

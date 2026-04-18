@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done. **Phase 7:** **Lucide** through shell, Explore, **`CardDetail`** chrome/icons, **`Dialog`** open/close **200ms** + subtle **zoom** on content; **CardGrid** empty-state copy tightened. Remaining Phase 7: optional **framer-style** toast tuning (Sonner already uses short exit timing), Workbench/CustomCardForm icon sweep, global **button verb** audit if desired.  
+**Progress snapshot (2026-04-18):** Phases **1–7** complete for the scoped UI refresh (Card detail **IA** still **deferred** — see end of doc). **Phase 7** includes **`Dialog`** motion, **Lucide** across shell, Explore, **`CardDetail`**, **`WorkbenchPage`**, **`CustomCardForm`**, **`SqlConsole`**, **`FilterPanel`** (close + chip remove), **`AttributeManager`** button copy; sentence-case primary actions where touched.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -83,7 +83,7 @@
 
 ## Phase 3 — App shell & responsive nav (2–3 days)
 
-**Progress (2026-04-18):** **`AppLayout`** + **`AppShellHeader`** ship for all builds unless **`VITE_EXPERIMENTAL_NAV=false`**. Desktop (**`lg+`**): Explore, Workbench, Activity + Manage data dropdowns, **`AuthUserMenu`**. Small viewports (**`<lg`**): single **Menu** dropdown (☰) with flat links to all routes (avoids horizontal pill overflow). Explore: **sticky** strip under the shell with **search + result count**; full **`FilterPanel`** remains below (not crammed into global nav). **Optional later:** Radix **Sheet** hamburger, or sticky **filter** summary row.
+**Progress (2026-04-18):** **`AppLayout`** + **`AppShellHeader`** ship for all builds unless **`VITE_EXPERIMENTAL_NAV=false`**. Desktop (**`lg+`**): Explore, Workbench, Activity + Manage data dropdowns, **`AuthUserMenu`**. Small viewports (**`<lg`**): single **Menu** dropdown (Lucide **Menu** icon + chevron) with flat links to all routes (avoids horizontal pill overflow). Explore: **sticky** strip under the shell with **search + result count**; full **`FilterPanel`** remains below (not crammed into global nav). **Optional later:** Radix **Sheet** hamburger, or sticky **filter** summary row.
 
 **Tasks**
 
@@ -146,11 +146,11 @@
 
 **Tasks**
 
-- [x] Replace ad-hoc icons with **Lucide** set — **shell + Explore + Card detail drawer** (prev/next/close, section chevrons, image edit/placeholder/add). **Still optional:** Workbench, **`CustomCardForm`**, **`SqlConsole`**, other stray SVGs.
-- [x] Subtle **Motion** on **Dialog** (overlay + content: **200ms** `ease-out`, light **zoom-in/out** on content). **Toasts:** Sonner’s built-in motion is already **~200ms** on exit; no extra dependency unless you want custom enter curves later.
-- [x] **Empty states** — **CardGrid** zero-results headline/body copy when filters active vs. not. **Optional later:** app-wide **button verb** consistency (“Save” vs “Submit” on auth forms, etc.).
+- [x] Replace ad-hoc icons with **Lucide** — **shell**, Explore (**`SearchBar`**, **`FilterPanel`**, **`CardGrid`**), **`CardDetail`**, **`WorkbenchPage`** (queue nav, split presets, empty queue, saving spinner), **`CustomCardForm`** (collapsible sections), **`SqlConsole`** (header, run/commit, confirm, show-in-grid), **`DropdownMenu`** checkbox indicator, **`FilterPanel`** mobile close + chip remove.
+- [x] Subtle **Motion** on **Dialog** (overlay + content: **200ms** `ease-out`, light **zoom-in/out** on content). **Toasts:** Sonner’s built-in motion remains; no extra dependency.
+- [x] **Copy** — **CardGrid** empty states; sentence-case on touched primaries (**Add card**, **Add attribute**, **Run query**, **Commit changes**, **Show in grid**, **SqlConsole** confirm). Auth/profile forms already used action-specific verbs (**Sign in**, **Save profile**, **Update password**); left as-is.
 
-**Exit criteria:** No animation longer than **300ms** (Dialog **200ms**); primary surfaces (**shell, Explore, card detail**) use **Lucide**; power-tool stragglers optional.
+**Exit criteria:** No animation longer than **300ms** (Dialog **200ms**); core product surfaces use **Lucide** for the icons we replaced; remaining one-off SVGs (if any) are non-user-facing or legacy DuckDB-only paths.
 
 ---
 

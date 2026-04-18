@@ -3,6 +3,15 @@
  */
 
 import { useMemo, useState, useEffect, useCallback } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Columns2,
+  Image as ImageIcon,
+  Inbox,
+  Loader2,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -245,19 +254,21 @@ export default function WorkbenchPage() {
                   type="button"
                   onClick={goPrev}
                   disabled={safeIndex <= 0 || patchQueue.isPending}
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
                     hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
+                  <ChevronLeft className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   Previous
                 </button>
                 <button
                   type="button"
                   onClick={goNext}
                   disabled={safeIndex >= cardIds.length - 1 || patchQueue.isPending}
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
                     hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next
+                  <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                 </button>
                 <button
                   type="button"
@@ -275,6 +286,7 @@ export default function WorkbenchPage() {
 
         {USE_SB && queue && cardIds.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500 text-sm">
+            <Inbox className="h-10 w-10 mx-auto mb-3 text-gray-300" strokeWidth={1.5} aria-hidden />
             Queue is empty. From Explore, open a card and choose <strong>Send to Workbench</strong>.
           </div>
         )}
@@ -289,21 +301,22 @@ export default function WorkbenchPage() {
               <span className="text-xs font-medium text-gray-600">Card / form width</span>
               <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
                 {[
-                  { id: "image", label: "Image" },
-                  { id: "balanced", label: "Balanced" },
-                  { id: "form", label: "Form" },
-                ].map(({ id, label }) => (
+                  { id: "image", label: "Image", Icon: ImageIcon },
+                  { id: "balanced", label: "Balanced", Icon: Columns2 },
+                  { id: "form", label: "Form", Icon: ClipboardList },
+                ].map(({ id, label, Icon }) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => setSplitPreset(id)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
                       splitPreset === id
                         ? "bg-white text-tm-canopy shadow-sm border border-gray-200/80"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                     aria-pressed={splitPreset === id}
                   >
+                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
                     {label}
                   </button>
                 ))}
@@ -357,7 +370,7 @@ export default function WorkbenchPage() {
                   )}
                   {annotationSave.phase === "saving" && (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800">
-                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" aria-hidden />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600 shrink-0" aria-hidden />
                       Saving…
                     </span>
                   )}

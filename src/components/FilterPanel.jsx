@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import Button from "./ui/Button.jsx";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import { useMediaQuery } from "../lib/useMediaQuery.js";
@@ -697,7 +697,7 @@ export default function FilterPanel({
                   className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tm-mist"
                   aria-label="Close filters"
                 >
-                  ×
+                  <X className="h-5 w-5" strokeWidth={2} aria-hidden />
                 </button>
               </DialogClose>
             </div>
@@ -770,7 +770,7 @@ export default function FilterPanel({
                 className="shrink-0 ml-0.5 text-green-600 hover:text-green-900 leading-none"
                 aria-label={`Remove ${label}`}
               >
-                ×
+                <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               </button>
             </span>
           ))}

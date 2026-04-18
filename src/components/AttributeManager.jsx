@@ -205,7 +205,7 @@ export default function AttributeManager({ attributes, onChanged }) {
             className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium
                        hover:bg-green-700 disabled:bg-gray-400 transition-colors"
           >
-            {creating ? "Creating..." : "Add Attribute"}
+            {creating ? "Creating…" : "Add attribute"}
           </button>
         </form>
       </div>
