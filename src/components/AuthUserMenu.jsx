@@ -63,8 +63,7 @@ export default function AuthUserMenu() {
     staleTime: 60_000,
   });
 
-  if (!isEmailAuthRequired() || !email) return null;
-
+  /** Must run before any conditional return (Rules of Hooks). */
   const displayName = useMemo(() => {
     const fromProfile = profile?.display_name?.trim();
     if (fromProfile) return fromProfile;
@@ -72,8 +71,10 @@ export default function AuthUserMenu() {
     return fromEmail || "User";
   }, [email, profile?.display_name]);
 
-  const initials = initialsFrom(displayName);
+  const initials = useMemo(() => initialsFrom(displayName), [displayName]);
   const avatarUrl = profile?.avatar_url || null;
+
+  if (!isEmailAuthRequired() || !email) return null;
 
   return (
     <DropdownMenu>
