@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAttributes } from "../db";
 import AttributeManager from "../components/AttributeManager";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import { useExperimentalAppNav } from "../lib/navEnv.js";
 
 const USE_SB =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -20,6 +21,7 @@ const navLinkClass = ({ isActive }) =>
 
 export default function FieldsPage() {
   const queryClient = useQueryClient();
+  const experimentalNav = useExperimentalAppNav();
   const { data: attributes = [], isPending, isError, error } = useQuery({
     queryKey: ["attributes"],
     queryFn: fetchAttributes,
@@ -31,49 +33,60 @@ export default function FieldsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-green-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <img
-              src={`${import.meta.env.BASE_URL}favicon.png`}
-              alt="Tropius"
-              className="h-12 w-12 rounded-full object-cover"
-            />
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Field management</h1>
-              <p className="text-green-100 text-xs">
-                Custom fields appear in Workbench and Card Detail (stored in{" "}
-                <code className="text-green-50/90">annotations.extra</code> when not a typed column)
-              </p>
+      {!experimentalNav ? (
+        <header className="bg-green-600 text-white shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img
+                src={`${import.meta.env.BASE_URL}favicon.png`}
+                alt="Tropius"
+                className="h-12 w-12 rounded-full object-cover"
+              />
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Field management</h1>
+                <p className="text-green-100 text-xs">
+                  Custom fields appear in Workbench and Card Detail (stored in{" "}
+                  <code className="text-green-50/90">annotations.extra</code> when not a typed column)
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <nav className="flex flex-wrap items-center gap-2">
+                <NavLink to="/" className={navLinkClass} end>
+                  Explore
+                </NavLink>
+                <NavLink to="/workbench" className={navLinkClass}>
+                  Workbench
+                </NavLink>
+                <NavLink to="/health" className={navLinkClass}>
+                  Data Health
+                </NavLink>
+                <NavLink to="/fields" className={navLinkClass}>
+                  Fields
+                </NavLink>
+                <NavLink to="/batch" className={navLinkClass}>
+                  Batch
+                </NavLink>
+                <NavLink to="/history" className={navLinkClass}>
+                  History
+                </NavLink>
+              </nav>
+              <AuthUserMenu />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <nav className="flex flex-wrap items-center gap-2">
-              <NavLink to="/" className={navLinkClass} end>
-                Explore
-              </NavLink>
-              <NavLink to="/workbench" className={navLinkClass}>
-                Workbench
-              </NavLink>
-              <NavLink to="/health" className={navLinkClass}>
-                Data Health
-              </NavLink>
-              <NavLink to="/fields" className={navLinkClass}>
-                Fields
-              </NavLink>
-              <NavLink to="/batch" className={navLinkClass}>
-                Batch
-              </NavLink>
-              <NavLink to="/history" className={navLinkClass}>
-                History
-              </NavLink>
-            </nav>
-            <AuthUserMenu />
-          </div>
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+        {experimentalNav ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Field management</h1>
+            <p className="text-gray-600 text-xs mt-0.5">
+              Custom fields appear in Workbench and Card Detail (stored in{" "}
+              <code className="text-gray-500">annotations.extra</code> when not a typed column)
+            </p>
+          </div>
+        ) : null}
         {USE_SB && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Apply migration{" "}

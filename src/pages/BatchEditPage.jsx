@@ -16,6 +16,7 @@ import {
   batchPatchAnnotations,
 } from "../db";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import { useExperimentalAppNav } from "../lib/navEnv.js";
 
 const USE_SB =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -64,6 +65,7 @@ function buildPatch(attr, mode, textValue, boolValue) {
 export default function BatchEditPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const experimentalNav = useExperimentalAppNav();
   const parsed = useMemo(() => readUrlStateFromSearch(location.search), [location.search]);
   const filters = useMemo(() => ({ ...DEFAULT_FILTERS, ...parsed.urlFilters }), [parsed.urlFilters]);
   const q = parsed.searchQuery !== null ? parsed.searchQuery : "";
@@ -156,46 +158,54 @@ export default function BatchEditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-green-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <img
-              src={`${import.meta.env.BASE_URL}favicon.png`}
-              alt="Tropius"
-              className="h-12 w-12 rounded-full object-cover"
-            />
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Batch edit</h1>
-              <p className="text-green-100 text-xs">Apply one annotation field using your current Explore filters</p>
+      {!experimentalNav ? (
+        <header className="bg-green-600 text-white shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img
+                src={`${import.meta.env.BASE_URL}favicon.png`}
+                alt="Tropius"
+                className="h-12 w-12 rounded-full object-cover"
+              />
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Batch edit</h1>
+                <p className="text-green-100 text-xs">Apply one annotation field using your current Explore filters</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <nav className="flex flex-wrap items-center gap-2">
+                <NavLink to="/" className={navLinkClass} end>
+                  Explore
+                </NavLink>
+                <NavLink to="/workbench" className={navLinkClass}>
+                  Workbench
+                </NavLink>
+                <NavLink to="/health" className={navLinkClass}>
+                  Data Health
+                </NavLink>
+                <NavLink to="/fields" className={navLinkClass}>
+                  Fields
+                </NavLink>
+                <NavLink to="/batch" className={navLinkClass}>
+                  Batch
+                </NavLink>
+                <NavLink to="/history" className={navLinkClass}>
+                  History
+                </NavLink>
+              </nav>
+              <AuthUserMenu />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <nav className="flex flex-wrap items-center gap-2">
-              <NavLink to="/" className={navLinkClass} end>
-                Explore
-              </NavLink>
-              <NavLink to="/workbench" className={navLinkClass}>
-                Workbench
-              </NavLink>
-              <NavLink to="/health" className={navLinkClass}>
-                Data Health
-              </NavLink>
-              <NavLink to="/fields" className={navLinkClass}>
-                Fields
-              </NavLink>
-              <NavLink to="/batch" className={navLinkClass}>
-                Batch
-              </NavLink>
-              <NavLink to="/history" className={navLinkClass}>
-                History
-              </NavLink>
-            </nav>
-            <AuthUserMenu />
-          </div>
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {experimentalNav ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Batch edit</h1>
+            <p className="text-gray-600 text-xs mt-0.5">Apply one annotation field using your current Explore filters</p>
+          </div>
+        ) : null}
         {!USE_SB && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Batch edit uses Supabase. Set <code className="font-mono">VITE_USE_SUPABASE=true</code> and your Supabase

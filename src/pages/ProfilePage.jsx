@@ -14,6 +14,7 @@ import {
   useSupabaseBackend,
 } from "../db.js";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import { useExperimentalAppNav } from "../lib/navEnv.js";
 
 function isUuidParam(v) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v || ""));
@@ -27,6 +28,7 @@ function avatarSrc(url, bust) {
 }
 
 export default function ProfilePage() {
+  const experimentalNav = useExperimentalAppNav();
   const { userId: userIdParam } = useParams();
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -135,27 +137,39 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-green-800 text-white shadow">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">{title}</h1>
-            <nav className="flex gap-3 text-sm text-green-100">
-              <Link to="/dashboard" className="hover:text-white hover:underline">
-                Dashboard
-              </Link>
-              <Link to="/history" className="hover:text-white hover:underline">
-                Edit history
-              </Link>
-              <Link to="/" className="hover:text-white hover:underline">
-                Explore
-              </Link>
-            </nav>
+      {!experimentalNav ? (
+        <header className="bg-green-800 text-white shadow">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-semibold">{title}</h1>
+              <nav className="flex gap-3 text-sm text-green-100">
+                <Link to="/dashboard" className="hover:text-white hover:underline">
+                  Dashboard
+                </Link>
+                <Link to="/history" className="hover:text-white hover:underline">
+                  Edit history
+                </Link>
+                <Link to="/" className="hover:text-white hover:underline">
+                  Explore
+                </Link>
+              </nav>
+            </div>
+            <AuthUserMenu />
           </div>
-          <AuthUserMenu />
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <main className="max-w-lg mx-auto px-4 py-8">
+        {experimentalNav ? (
+          <div className="mb-6 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h1>
+            {!isOther ? (
+              <p className="text-gray-600 text-xs mt-0.5">Display name and avatar</p>
+            ) : (
+              <p className="text-gray-600 text-xs mt-0.5">Read-only teammate view</p>
+            )}
+          </div>
+        ) : null}
         {isOther && (
           <p className="text-sm text-gray-600 mb-4">
             <Link to="/history" className="text-green-700 hover:underline">

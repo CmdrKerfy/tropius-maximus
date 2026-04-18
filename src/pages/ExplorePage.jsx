@@ -38,16 +38,13 @@ import {
   readUrlState,
   buildUrlParams,
 } from "../lib/exploreUrlState.js";
+import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
 
 const USE_SUPABASE_APP =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
   Boolean(import.meta.env.VITE_SUPABASE_URL) &&
   Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
-
-const exploreNavLinkClass = ({ isActive }) =>
-  `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-    isActive ? "bg-white text-tm-canopy shadow-sm" : "bg-tm-leaf/85 text-white hover:bg-tm-leaf focus-visible:ring-2 focus-visible:ring-tm-mist/50"
-  }`;
 
 function sortCards(arr, sort_by, sort_dir) {
   const dir = sort_dir === "desc" ? -1 : 1;
@@ -145,6 +142,7 @@ export default function ExplorePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const experimentalNav = useExperimentalAppNav();
 
   // ── Card list state ─────────────────────────────────────────────────
   const [page, setPage] = useState(() => readUrlState().page);
@@ -558,41 +556,61 @@ export default function ExplorePage() {
   // ── Render ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-tm-cream text-gray-900">
-      {/* Header */}
-      <header className="bg-tm-canopy text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Tropius" className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full object-cover" />
-            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">
-              Tropius Maximus Pokemon Tracker
-            </h1>
+      {!experimentalNav ? (
+        <header className="bg-tm-canopy text-white shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Tropius" className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full object-cover" />
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">
+                Tropius Maximus Pokemon Tracker
+              </h1>
+            </div>
+            <nav className="flex flex-wrap items-center gap-2 order-3 sm:order-none w-full sm:w-auto justify-start sm:justify-end">
+              <NavLink to="/" end className={exploreNavLinkClass}>
+                Explore
+              </NavLink>
+              <NavLink to="/workbench" className={exploreNavLinkClass}>
+                Workbench
+              </NavLink>
+              <NavLink to="/health" className={exploreNavLinkClass}>
+                Data Health
+              </NavLink>
+              <NavLink to="/fields" className={exploreNavLinkClass}>
+                Fields
+              </NavLink>
+              <NavLink to={{ pathname: "/batch", search: location.search }} className={exploreNavLinkClass}>
+                Batch
+              </NavLink>
+              <NavLink to="/history" className={exploreNavLinkClass}>
+                History
+              </NavLink>
+            </nav>
+            <div className="flex items-center gap-2 shrink-0">
+              <AuthUserMenu />
+              <Button
+                variant="secondary"
+                size="md"
+                className="!text-tm-canopy border-white/40 bg-white/95 hover:bg-white"
+                onClick={() => {
+                  if (showSettings) {
+                    setShowSettings(false);
+                    setShowSqlConsole(false);
+                  } else {
+                    setShowSettings(true);
+                  }
+                }}
+              >
+                {showSettings ? "Close" : "Card data & tools"}
+              </Button>
+            </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-2 order-3 sm:order-none w-full sm:w-auto justify-start sm:justify-end">
-            <NavLink to="/" end className={exploreNavLinkClass}>
-              Explore
-            </NavLink>
-            <NavLink to="/workbench" className={exploreNavLinkClass}>
-              Workbench
-            </NavLink>
-            <NavLink to="/health" className={exploreNavLinkClass}>
-              Data Health
-            </NavLink>
-            <NavLink to="/fields" className={exploreNavLinkClass}>
-              Fields
-            </NavLink>
-            <NavLink to={{ pathname: "/batch", search: location.search }} className={exploreNavLinkClass}>
-              Batch
-            </NavLink>
-            <NavLink to="/history" className={exploreNavLinkClass}>
-              History
-            </NavLink>
-          </nav>
-          <div className="flex items-center gap-2 shrink-0">
-            <AuthUserMenu />
+        </header>
+      ) : (
+        <div className="border-b border-gray-200 bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end">
             <Button
-              variant="secondary"
+              variant="primary"
               size="md"
-              className="!text-tm-canopy border-white/40 bg-white/95 hover:bg-white"
               onClick={() => {
                 if (showSettings) {
                   setShowSettings(false);
@@ -606,7 +624,7 @@ export default function ExplorePage() {
             </Button>
           </div>
         </div>
-      </header>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Card data & tools panel — data source, custom cards, and SQL are sibling sections */}

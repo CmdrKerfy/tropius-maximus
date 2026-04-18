@@ -9,8 +9,10 @@ import {
   fetchMyCards,
 } from "../db.js";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import { useExperimentalAppNav } from "../lib/navEnv.js";
 
 export default function DashboardPage() {
+  const experimentalNav = useExperimentalAppNav();
   const { data: profile, isLoading: pLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: () => fetchProfile(),
@@ -30,30 +32,38 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-green-800 text-white shadow">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-            <nav className="flex gap-3 text-sm text-green-100">
-              <Link to="/" className="hover:text-white hover:underline">
-                Explore
-              </Link>
-              <Link to="/workbench" className="hover:text-white hover:underline">
-                Workbench
-              </Link>
-              <Link to="/history" className="hover:text-white hover:underline">
-                Edit history
-              </Link>
-              <Link to="/profile" className="hover:text-white hover:underline">
-                Profile
-              </Link>
-            </nav>
+      {!experimentalNav ? (
+        <header className="bg-green-800 text-white shadow">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-semibold">Dashboard</h1>
+              <nav className="flex gap-3 text-sm text-green-100">
+                <Link to="/" className="hover:text-white hover:underline">
+                  Explore
+                </Link>
+                <Link to="/workbench" className="hover:text-white hover:underline">
+                  Workbench
+                </Link>
+                <Link to="/history" className="hover:text-white hover:underline">
+                  Edit history
+                </Link>
+                <Link to="/profile" className="hover:text-white hover:underline">
+                  Profile
+                </Link>
+              </nav>
+            </div>
+            <AuthUserMenu />
           </div>
-          <AuthUserMenu />
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {experimentalNav ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+            <p className="text-gray-600 text-xs mt-0.5">Your recent activity and manual cards</p>
+          </div>
+        ) : null}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-1">Welcome, {pLoading ? "…" : display}</h2>
           <p className="text-sm text-gray-600">

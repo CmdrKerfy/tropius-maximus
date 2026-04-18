@@ -3,6 +3,7 @@
  */
 import { Routes, Route } from "react-router-dom";
 import RequireAuth from "./components/RequireAuth.jsx";
+import AppLayout from "./layouts/AppLayout.jsx";
 import ExplorePage from "./pages/ExplorePage.jsx";
 import WorkbenchPage from "./pages/WorkbenchPage.jsx";
 import DataHealthPage from "./pages/DataHealthPage.jsx";
@@ -28,77 +29,22 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/reset-password" element={<AuthResetPasswordPage />} />
       <Route
-        path="/"
         element={
           <Protected>
-            <ExplorePage />
+            <AppLayout />
           </Protected>
         }
-      />
-      <Route
-        path="/workbench"
-        element={
-          <Protected>
-            <WorkbenchPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/health"
-        element={
-          <Protected>
-            <DataHealthPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/fields"
-        element={
-          <Protected>
-            <FieldsPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/batch"
-        element={
-          <Protected>
-            <BatchEditPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <Protected>
-            <EditHistoryPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <Protected>
-            <DashboardPage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/profile/:userId"
-        element={
-          <Protected>
-            <ProfilePage />
-          </Protected>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <Protected>
-            <ProfilePage />
-          </Protected>
-        }
-      />
+      >
+        <Route path="/" element={<ExplorePage />} />
+        <Route path="/workbench" element={<WorkbenchPage />} />
+        <Route path="/health" element={<DataHealthPage />} />
+        <Route path="/fields" element={<FieldsPage />} />
+        <Route path="/batch" element={<BatchEditPage />} />
+        <Route path="/history" element={<EditHistoryPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
     </Routes>
   );
 }
