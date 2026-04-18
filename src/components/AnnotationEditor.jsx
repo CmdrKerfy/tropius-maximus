@@ -17,6 +17,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { patchAnnotations } from "../db";
 import { toastError } from "../lib/toast.js";
+import { humanizeError } from "../lib/humanizeError.js";
 
 /** Stack marker: field was absent before save (undo → clear). */
 const UNDO_ABSENT = Symbol("tm_undo_absent");
@@ -75,7 +76,14 @@ function mergedSuggestionOptions(attr, formOptions) {
   return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
-export default function AnnotationEditor({ cardId, annotations, attributes, formOptions = {} }) {
+export default function AnnotationEditor({
+  cardId,
+  annotations,
+  attributes,
+  formOptions = {},
+  /** Workbench chrome: idle / saving / saved / error (+ optional retry). */
+  onSaveStatusChange,
+}) {
   const queryClient = useQueryClient();
   // Local copy of annotations for immediate UI updates.
   const [values, setValues] = useState(annotations || {});
@@ -93,6 +101,10 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
       : "Ctrl+Shift+Z";
 
   useEffect(() => {
+    onSaveStatusChange?.({ phase: "idle", detail: null, savedAt: null, retry: null });
+  }, [cardId, onSaveStatusChange]);
+
+  useEffect(() => {
     const snap = { ...(annotations || {}) };
     serverSnapshotRef.current = snap;
     setValues(snap);
@@ -102,28 +114,44 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
   }, [cardId, annotations]);
 
   const undoLast = useCallback(async () => {
-    const item = undoStackRef.current.pop();
+    const stack = undoStackRef.current;
+    const item = stack.length ? stack[stack.length - 1] : null;
     if (!item) return;
-    setSaving(true);
-    setUndoHint(null);
-    try {
-      const payload =
-        item.revertTo === UNDO_ABSENT ? { [item.key]: null } : { [item.key]: item.revertTo };
-      const result = await patchAnnotations(cardId, payload);
-      setValues(result);
-      serverSnapshotRef.current = { ...result };
-      setLastSaved(new Date());
-      setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
-      setUndoCount(undoStackRef.current.length);
-      queryClient.invalidateQueries({ queryKey: ["editHistory"] });
-    } catch (err) {
-      console.error("Undo failed:", err);
-      toastError(err);
-      undoStackRef.current.push(item);
-    } finally {
-      setSaving(false);
-    }
-  }, [cardId, queryClient]);
+    const payload =
+      item.revertTo === UNDO_ABSENT ? { [item.key]: null } : { [item.key]: item.revertTo };
+
+    const runUndoPatch = async () => {
+      onSaveStatusChange?.({ phase: "saving", detail: null, savedAt: null, retry: null });
+      setSaving(true);
+      setUndoHint(null);
+      try {
+        const result = await patchAnnotations(cardId, payload);
+        setValues(result);
+        serverSnapshotRef.current = { ...result };
+        undoStackRef.current.pop();
+        setLastSaved(new Date());
+        setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
+        setUndoCount(undoStackRef.current.length);
+        queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+        onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
+      } catch (err) {
+        console.error("Undo failed:", err);
+        toastError(err);
+        onSaveStatusChange?.({
+          phase: "error",
+          detail: humanizeError(err),
+          savedAt: null,
+          retry: () => {
+            void runUndoPatch();
+          },
+        });
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    await runUndoPatch();
+  }, [cardId, onSaveStatusChange, queryClient]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -139,9 +167,9 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
     return () => window.removeEventListener("keydown", onKey);
   }, [undoLast]);
 
-  // Save a single annotation field.
-  const save = useCallback(
+  const persistField = useCallback(
     async (key, value) => {
+      onSaveStatusChange?.({ phase: "saving", detail: null, savedAt: null, retry: null });
       setSaving(true);
       setUndoHint(null);
       try {
@@ -156,14 +184,31 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
         setUndoCount(undoStackRef.current.length);
         setLastSaved(new Date());
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+        onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
         console.error("Failed to save annotation:", err);
         toastError(err);
+        onSaveStatusChange?.({
+          phase: "error",
+          detail: humanizeError(err),
+          savedAt: null,
+          retry: () => {
+            void persistField(key, value);
+          },
+        });
       } finally {
         setSaving(false);
       }
     },
-    [cardId, queryClient]
+    [cardId, onSaveStatusChange, queryClient]
+  );
+
+  // Save a single annotation field.
+  const save = useCallback(
+    (key, value) => {
+      void persistField(key, value);
+    },
+    [persistField]
   );
 
   // Handle changes for each field type.

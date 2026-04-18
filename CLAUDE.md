@@ -45,7 +45,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### UI refresh (v2 branch — in progress)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–3** (tokens, toasts + **`humanizeError`**, default shell + responsive nav). **Shipped:** Phase **4** Explore — **`FilterPanel`** “Viewing” summary + **Reset all**, primary vs **More filters** `<details>`, mobile **Filters** **`Dialog`**, **`CardGrid`** empty state + reset CTA, **`exploreFilterSummary.js`**, **`useMediaQuery.js`**, sticky strip **`Skeleton`**. **Not done yet:** Phases **5–7** (Workbench polish, motion/icons, etc.).
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–3** (tokens, toasts + **`humanizeError`**, default shell + responsive nav). **Shipped:** Phase **4** + **4.5** Explore (filters, mobile sheet fixes, Radix multiselect, grid/search a11y). **In progress:** Phase **5** — Workbench annotations header **save status** + **Retry** (`AnnotationEditor` **`onSaveStatusChange`**), layout tweak; **CardDetail** collapsible section chrome. **Not done yet:** Phase **5** optional split presets + deeper detail IA; Phases **6–7**.
 - **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
 
 ### Optional — after the core v2 plan is finished

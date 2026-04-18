@@ -2,7 +2,7 @@
  * Workbench — Phase 5: queue-backed annotation editing (Supabase).
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +14,7 @@ import {
 } from "../db";
 import AnnotationEditor from "../components/AnnotationEditor";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { toastError } from "../lib/toast.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
@@ -41,6 +42,23 @@ export default function WorkbenchPage() {
   const queryClient = useQueryClient();
   const experimentalNav = useExperimentalAppNav();
 
+  /** Phase 5: persistent save status in Workbench chrome (driven by AnnotationEditor). */
+  const [annotationSave, setAnnotationSave] = useState({
+    phase: "idle",
+    detail: null,
+    savedAt: null,
+    retry: null,
+  });
+
+  const onAnnotationSaveStatus = useCallback((payload) => {
+    setAnnotationSave({
+      phase: payload.phase || "idle",
+      detail: payload.detail ?? null,
+      savedAt: payload.savedAt ?? null,
+      retry: payload.retry ?? null,
+    });
+  }, []);
+
   const { data: queue, isPending, isError, error } = useQuery({
     queryKey: ["workbenchQueue", "default"],
     queryFn: () => ensureDefaultWorkbenchQueue(),
@@ -55,6 +73,10 @@ export default function WorkbenchPage() {
     ? Math.max(0, Math.min(rawIndex, cardIds.length - 1))
     : 0;
   const currentCardId = cardIds.length ? cardIds[safeIndex] : null;
+
+  useEffect(() => {
+    setAnnotationSave({ phase: "idle", detail: null, savedAt: null, retry: null });
+  }, [currentCardId]);
 
   const { data: card, isPending: cardLoading, isError: cardError, error: cardErr } = useQuery({
     queryKey: ["workbenchCard", currentCardId],
@@ -231,7 +253,7 @@ export default function WorkbenchPage() {
         )}
 
         {USE_SB && currentCardId && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[min(520px,calc(100vh-11rem))]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-6 lg:gap-8 min-h-[min(560px,calc(100vh-12rem))]">
             <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px]">
               <div className="px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Card
@@ -243,7 +265,7 @@ export default function WorkbenchPage() {
                 )}
                 {card && !cardLoading && (
                   <>
-                    <div className="w-full max-w-sm flex-1 min-h-[200px] flex items-center justify-center">
+                    <div className="w-full max-w-md xl:max-w-lg flex-1 min-h-[220px] flex items-center justify-center">
                       <img
                         src={displayImage}
                         alt={card.name || "Card"}
@@ -265,9 +287,37 @@ export default function WorkbenchPage() {
               </div>
             </section>
 
-            <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] max-h-[calc(100vh-10rem)]">
-              <div className="px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">
-                Annotations
+            <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] max-h-[calc(100vh-10rem)] xl:max-h-[calc(100vh-11rem)]">
+              <div className="px-4 py-2.5 border-b border-gray-100 shrink-0 flex flex-wrap items-center justify-between gap-2 bg-white">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Annotations</span>
+                <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 flex-1">
+                  {annotationSave.phase === "idle" && (
+                    <span className="text-xs text-gray-400 tabular-nums">Ready to save on change</span>
+                  )}
+                  {annotationSave.phase === "saving" && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800">
+                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" aria-hidden />
+                      Saving…
+                    </span>
+                  )}
+                  {annotationSave.phase === "saved" && annotationSave.savedAt && (
+                    <span className="text-xs font-medium text-tm-success tabular-nums">
+                      Saved {annotationSave.savedAt.toLocaleTimeString()}
+                    </span>
+                  )}
+                  {annotationSave.phase === "error" && (
+                    <span className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+                      <span className="text-xs text-tm-danger text-right leading-snug max-w-[min(100%,20rem)]">
+                        {annotationSave.detail || "Could not save."}
+                      </span>
+                      {typeof annotationSave.retry === "function" && (
+                        <Button type="button" variant="secondary" size="sm" onClick={() => annotationSave.retry?.()}>
+                          Retry
+                        </Button>
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 {card && (
@@ -277,6 +327,7 @@ export default function WorkbenchPage() {
                     annotations={card.annotations ?? EMPTY_ANNOTATIONS}
                     attributes={attributes}
                     formOptions={formOptions || {}}
+                    onSaveStatusChange={onAnnotationSaveStatus}
                   />
                 )}
               </div>

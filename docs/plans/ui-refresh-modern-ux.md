@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–3** done (tokens, toasts + **`humanizeError`**, shell on by default, responsive Menu, sticky Explore search). Phase **4** done: filter **Viewing** line + **Reset all**, primary vs **More filters**, mobile **Filters** dialog, zero-results CTA, sticky **Skeleton** loading. Phases **5–7** not started.  
+**Progress snapshot (2026-04-18):** Phases **1–4** + **4.5** done. Phase **5** in progress: Workbench **save status** in annotations chrome + **Retry**, **split layout** tweak (`xl` column ratio, image max width); Explore **CardDetail** collapsible sections grouped visually. Remaining Phase **5**: optional split presets, deeper Card detail IA pass. Phases **6–7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -118,9 +118,9 @@
 
 **Tasks**
 
-- [ ] Persistent **save status** in workbench chrome: Idle / Saving / Saved / Error (+ retry where safe).
-- [ ] **Card image + form** layout tuned for **1280 and 1440**; optional split ratio presets.
-- [ ] **Card detail drawer** (Explore): consistent padding, section headings, fewer “walls of labels” — group fields (metadata vs. annotation vs. actions).
+- [x] Persistent **save status** in workbench chrome: Idle / Saving / Saved / Error (+ **Retry**). `AnnotationEditor` reports lifecycle via **`onSaveStatusChange`**; **`WorkbenchPage`** shows status in the Annotations panel header.
+- [x] **Card image + form** layout tuned for wider viewports (`xl` grid column ratio, larger image well, panel max-height). **Optional** split ratio presets — not started.
+- [x] **Card detail drawer** (Explore): **`CollapsibleSection`** visual grouping (border, padding, heading focus) — light pass; full metadata vs. annotation vs. actions IA — optional follow-up.
 
 **Exit criteria:** Annotator never unsure whether last save stuck; detail drawer passes a quick **5-second comprehension** test with a collaborator.
 
