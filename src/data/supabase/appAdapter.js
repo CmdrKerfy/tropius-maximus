@@ -935,6 +935,74 @@ export async function fetchEditHistory({ card_id = null, limit = 200 } = {}) {
   return data || [];
 }
 
+/** Current user's profile row (or null). */
+export async function fetchProfile() {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return null;
+  const { data, error } = await sb.from("profiles").select("id, display_name, avatar_url, created_at, updated_at").eq("id", uid).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Update display_name and/or avatar_url for the signed-in user (insert row if missing). */
+export async function upsertProfile({ display_name, avatar_url } = {}) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) throw new Error("Sign in required to update profile.");
+  const patch = {};
+  if (display_name !== undefined) patch.display_name = String(display_name).trim() || null;
+  if (avatar_url !== undefined) patch.avatar_url = avatar_url;
+  if (!Object.keys(patch).length) return fetchProfile();
+
+  const { data: existing, error: exErr } = await sb.from("profiles").select("id").eq("id", uid).maybeSingle();
+  if (exErr) throw exErr;
+  if (existing) {
+    const { data, error } = await sb.from("profiles").update(patch).eq("id", uid).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const { data, error } = await sb.from("profiles").insert({ id: uid, ...patch }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+/** Recent edit_history rows for the signed-in user only. */
+export async function fetchMyEditHistory({ limit = 40 } = {}) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return [];
+  const lim = Math.min(200, Math.max(1, Number(limit) || 40));
+  const { data, error } = await sb
+    .from("edit_history")
+    .select("id, card_id, field_name, old_value, new_value, edited_at, edited_by")
+    .eq("edited_by", uid)
+    .order("edited_at", { ascending: false })
+    .limit(lim);
+  if (error) throw error;
+  return data || [];
+}
+
+/** Cards created by the signed-in user (manual / custom inserts). */
+export async function fetchMyCards({ limit = 40 } = {}) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return [];
+  const lim = Math.min(200, Math.max(1, Number(limit) || 40));
+  const { data, error } = await sb
+    .from("cards")
+    .select("id, name, set_id, set_name, set_series, origin, created_at, created_by")
+    .eq("created_by", uid)
+    .order("created_at", { ascending: false })
+    .limit(lim);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function patchAnnotations(cardId, patch) {
   const sb = await sbReady();
   const { data: cur, error: readErr } = await sb

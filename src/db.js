@@ -98,6 +98,23 @@ export async function fetchEditHistory(params) {
     : duck.fetchEditHistory(params);
 }
 
+export async function fetchProfile() {
+  return useSupabaseBackend() ? (await sb()).fetchProfile() : null;
+}
+
+export async function upsertProfile(patch) {
+  if (useSupabaseBackend()) return (await sb()).upsertProfile(patch);
+  throw new Error("Profile updates require Supabase (v2).");
+}
+
+export async function fetchMyEditHistory(opts) {
+  return useSupabaseBackend() ? (await sb()).fetchMyEditHistory(opts) : [];
+}
+
+export async function fetchMyCards(opts) {
+  return useSupabaseBackend() ? (await sb()).fetchMyCards(opts) : [];
+}
+
 export async function fetchAttributes() {
   return useSupabaseBackend() ? (await sb()).fetchAttributes() : duck.fetchAttributes();
 }

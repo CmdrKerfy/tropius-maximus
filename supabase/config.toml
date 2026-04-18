@@ -4,3 +4,7 @@
 [functions.request-magic-link]
 # Must be false: callers are not logged in yet; they only pass the anon key.
 verify_jwt = false
+
+[functions.invite-set-password]
+# Same as magic-link: unauthenticated callers send invite code + anon key.
+verify_jwt = false

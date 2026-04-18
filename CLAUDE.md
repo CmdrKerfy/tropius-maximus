@@ -39,7 +39,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Paused work & backlog (owner paused — resume anytime)
 
-- **Next v2 feature (approved, not started):** **User profiles + profile page + activity views** for non-technical collaborators. Full phased spec, schema notes, and file touch list: **`docs/plans/user-profiles-and-activity.md`**. Implement on **`v2/supabase-migration`**; new migration likely **`013_profiles.sql`** (after **`012_signup_allowlist.sql`**).
+- **Next v2 feature (approved, not started):** **User dashboards + email/password auth** (primary UX); profiles, activity, and **`/profile`** are specified across **`docs/plans/user-dashboards-and-password-auth.md`** (auth + dashboard) and **`docs/plans/user-profiles-and-activity.md`** (schema / history / `created_by`). Implement on **`v2/supabase-migration`**; new migration likely **`013_profiles.sql`** (after **`012_signup_allowlist.sql`**).
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
 ### Planned cleanup (UX / tech debt — not started)

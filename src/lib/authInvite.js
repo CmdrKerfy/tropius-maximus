@@ -7,6 +7,13 @@ export function getMagicLinkRequestUrl() {
   return `${base}/functions/v1/request-magic-link`;
 }
 
+/** Invite-gated create account / set password (email + password auth). */
+export function getInviteSetPasswordUrl() {
+  const base = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
+  if (!base) return null;
+  return `${base}/functions/v1/invite-set-password`;
+}
+
 export function isEmailAuthRequired() {
   return (
     import.meta.env.VITE_USE_SUPABASE === "true" &&

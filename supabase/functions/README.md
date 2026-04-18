@@ -49,3 +49,24 @@ Gated magic-link requests:
 ### Why not “just a code” in the frontend?
 
 A secret typed only in the browser can be extracted from the built JS bundle. The **invite code is checked in this function**, together with the **allowlist**, so both stay server-side (except the code the user types, which is fine).
+
+---
+
+## `invite-set-password`
+
+Invite-gated **email + password** account creation or password set for an existing auth user (no magic link).
+
+1. Same **`signup_allowlist`** and **`INVITE_SECRET`** as `request-magic-link`.
+2. **Supabase Dashboard → Authentication → Providers → Email** — enable **Email** and configure **password** sign-in (and redirect URLs for password reset).
+3. Add redirect URL for recovery, e.g.  
+   `https://YOUR_VERCEL_APP.vercel.app/auth/reset-password`  
+   (and `http://localhost:5173/auth/reset-password` for local dev.)
+4. Deploy:
+
+   ```bash
+   supabase functions deploy invite-set-password --no-verify-jwt
+   ```
+
+5. **`config.toml`** sets `verify_jwt = false` for this function (same rationale as magic link).
+
+The app calls this function from **`LoginPage`** (“Create account”) with the anon key + JSON body `{ email, inviteCode, password }`.

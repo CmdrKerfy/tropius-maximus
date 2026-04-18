@@ -24,7 +24,7 @@ export default function AuthCallbackPage() {
           setError(exErr.message);
           return;
         }
-        navigate("/", { replace: true });
+        navigate("/dashboard", { replace: true });
         return;
       }
 
@@ -40,7 +40,7 @@ export default function AuthCallbackPage() {
         setError("Missing sign-in code or session. Request a new link from the login page.");
         return;
       }
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     };
     void run();
   }, [navigate]);

@@ -11,6 +11,9 @@ import BatchEditPage from "./pages/BatchEditPage.jsx";
 import EditHistoryPage from "./pages/EditHistoryPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AuthCallbackPage from "./pages/AuthCallbackPage.jsx";
+import AuthResetPasswordPage from "./pages/AuthResetPasswordPage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 import { isEmailAuthRequired } from "./lib/authInvite.js";
 
 function Protected({ children }) {
@@ -23,6 +26,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/auth/reset-password" element={<AuthResetPasswordPage />} />
       <Route
         path="/"
         element={
@@ -68,6 +72,22 @@ export default function App() {
         element={
           <Protected>
             <EditHistoryPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <Protected>
+            <DashboardPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Protected>
+            <ProfilePage />
           </Protected>
         }
       />

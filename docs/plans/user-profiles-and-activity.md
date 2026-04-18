@@ -4,6 +4,8 @@
 **Audience:** Future AI agents / developers picking up after a break.  
 **Companion context:** Root `CLAUDE.md` (project state, branches, phases).
 
+**Auth / dashboard direction (2026-04):** Primary sign-in is moving to **email + password** with a **user dashboard**; see **`docs/plans/user-dashboards-and-password-auth.md`** for the full phased plan. This document remains the source for **`profiles`**, **`edit_history` display names**, **`created_by`**, and **`/profile`** details.
+
 ## Why this exists
 
 Collaborators are not highly technical. A **visible profile** (display name, one clear **Profile** screen) improves trust and orientation more than adding passwords. **Magic link + session persistence** remains the auth model; profiles sit on top of `auth.users`.

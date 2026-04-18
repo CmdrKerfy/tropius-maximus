@@ -2,7 +2,7 @@
  * Signed-in email + sign out when invite / email auth is enabled.
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getSupabase } from "../lib/supabaseClient.js";
 import { isEmailAuthRequired } from "../lib/authInvite.js";
 
@@ -33,7 +33,13 @@ export default function AuthUserMenu() {
   if (!isEmailAuthRequired() || !email) return null;
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-2 text-sm flex-wrap justify-end">
+      <Link to="/dashboard" className="text-green-100 hover:text-white hover:underline text-xs font-medium">
+        Dashboard
+      </Link>
+      <Link to="/profile" className="text-green-100 hover:text-white hover:underline text-xs font-medium">
+        Profile
+      </Link>
       <span className="text-green-100 truncate max-w-[10rem] sm:max-w-[14rem]" title={email}>
         {email}
       </span>
