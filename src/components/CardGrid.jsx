@@ -122,11 +122,13 @@ export default function CardGrid({
   if (cards.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50/80 px-6 py-14 text-center max-w-lg mx-auto">
-        <p className="text-lg font-semibold text-gray-800">No cards match</p>
+        <p className="text-lg font-semibold text-gray-800">
+          {showResetWhenEmpty ? "No cards match these filters" : "No cards match"}
+        </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
           {showResetWhenEmpty
-            ? "Your search or filters may be too narrow. Try clearing them to see the catalog again."
-            : "Try a different search, or widen your filters."}
+            ? "Try loosening your search or clearing filters to see more of the catalog."
+            : "Try another search term or adjust filters."}
         </p>
         {showResetWhenEmpty && typeof onResetExplore === "function" && (
           <button

@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done for this slice: SQL console under **Advanced**; Supabase **PAT/copy** cleanup (`CustomCardForm`, Explore, **`SqlConsole`** commit strip hidden on Supabase); shell-on pages avoid duplicate global nav. **Phase 7** started: **Lucide** on **`AppShellHeader`**, **`SearchBar`**, **`FilterPanel`**, **`CardGrid`** selection check, **`DropdownMenu`** checkbox indicator — remaining: Motion polish, microcopy sweep, deeper icon pass (**`CardDetail`**, etc.).  
+**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done. **Phase 7:** **Lucide** through shell, Explore, **`CardDetail`** chrome/icons, **`Dialog`** open/close **200ms** + subtle **zoom** on content; **CardGrid** empty-state copy tightened. Remaining Phase 7: optional **framer-style** toast tuning (Sonner already uses short exit timing), Workbench/CustomCardForm icon sweep, global **button verb** audit if desired.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -146,11 +146,11 @@
 
 **Tasks**
 
-- [x] Replace ad-hoc icons with **Lucide** set — **first pass** (shell mobile menu + chevrons, Explore search/clear, filter dropdown chevrons + expand toggle, grid SQL selection check, Radix checkbox indicator). **Later:** **`CardDetail`**, Workbench, remaining inline SVGs.
-- [ ] Subtle **Motion** on Sheet/Dialog/toast (150–200ms).
-- [ ] Pass on **button verbs** (“Save changes” vs “Submit”) and **empty states** copy.
+- [x] Replace ad-hoc icons with **Lucide** set — **shell + Explore + Card detail drawer** (prev/next/close, section chevrons, image edit/placeholder/add). **Still optional:** Workbench, **`CustomCardForm`**, **`SqlConsole`**, other stray SVGs.
+- [x] Subtle **Motion** on **Dialog** (overlay + content: **200ms** `ease-out`, light **zoom-in/out** on content). **Toasts:** Sonner’s built-in motion is already **~200ms** on exit; no extra dependency unless you want custom enter curves later.
+- [x] **Empty states** — **CardGrid** zero-results headline/body copy when filters active vs. not. **Optional later:** app-wide **button verb** consistency (“Save” vs “Submit” on auth forms, etc.).
 
-**Exit criteria:** No animation longer than **300ms**; reduced “mixed icon styles” grep to near zero.
+**Exit criteria:** No animation longer than **300ms** (Dialog **200ms**); primary surfaces (**shell, Explore, card detail**) use **Lucide**; power-tool stragglers optional.
 
 ---
 
