@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`011`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`014`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -39,7 +39,8 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Paused work & backlog (owner paused — resume anytime)
 
-- **Next v2 feature (approved, not started):** **User dashboards + email/password auth** (primary UX); profiles, activity, and **`/profile`** are specified across **`docs/plans/user-dashboards-and-password-auth.md`** (auth + dashboard) and **`docs/plans/user-profiles-and-activity.md`** (schema / history / `created_by`). Implement on **`v2/supabase-migration`**; new migration likely **`013_profiles.sql`** (after **`012_signup_allowlist.sql`**).
+- **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`**, edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` in Supabase** before avatar upload works in production.
+- **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
 ### Planned cleanup (UX / tech debt — not started)
@@ -173,6 +174,8 @@ supabase/
     010_field_definitions_number_type.sql  -- allow field_type = number for custom fields
     011_field_definitions_rls_custom_only_writes.sql  -- INSERT/UPDATE/DELETE only category = custom
     012_signup_allowlist.sql       -- invite-only email gate for request-magic-link Edge Function
+    013_profiles.sql               -- profiles, RLS, auth trigger, indexes for history/cards
+    014_storage_avatars.sql        -- Storage bucket `avatars` + RLS for per-user paths
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -202,7 +205,7 @@ src/                             -- React frontend (v2 routes + Supabase layer o
 .env.local                       -- gitignored, contains VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 .env.example                     -- template for .env.local
 vercel.json                      -- Vite SPA rewrites for Vercel; cleanUrls false for /login deep links
-docs/plans/user-profiles-and-activity.md  -- NEXT: profiles + profile page + activity (paused)
+docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see plan status)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```

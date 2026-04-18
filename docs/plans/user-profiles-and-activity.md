@@ -1,77 +1,92 @@
 # Plan: User profiles, profile page, and activity (v2)
 
-**Status:** Approved by owner; **implementation paused** — resume on branch `v2/supabase-migration`.  
-**Audience:** Future AI agents / developers picking up after a break.  
-**Companion context:** Root `CLAUDE.md` (project state, branches, phases).
+**Status (2026-04-17):** **Phases 1–5 implemented** on branch `v2/supabase-migration` (profiles, dashboard, history UX, `created_by`, teammate profile route, avatars + Storage). **Ops:** apply migration **`014_storage_avatars.sql`** in the Supabase project before avatar upload works in that environment.
 
-**Auth / dashboard direction (2026-04):** Primary sign-in is moving to **email + password** with a **user dashboard**; see **`docs/plans/user-dashboards-and-password-auth.md`** for the full phased plan. This document remains the source for **`profiles`**, **`edit_history` display names**, **`created_by`**, and **`/profile`** details.
+**Audience:** Future AI agents / developers.  
+**Companion context:** Root `CLAUDE.md` (project state, branches).
+
+**Auth direction:** Primary sign-in is moving to **email + password** + dashboard; see **`docs/plans/user-dashboards-and-password-auth.md`**. This document remains the source for **`profiles`**, **`edit_history` display names**, **`created_by`**, **`/profile`**, and **avatars**.
 
 ## Why this exists
 
-Collaborators are not highly technical. A **visible profile** (display name, one clear **Profile** screen) improves trust and orientation more than adding passwords. **Magic link + session persistence** remains the auth model; profiles sit on top of `auth.users`.
+Collaborators are not highly technical. A **visible profile** (display name, optional photo, one clear **Profile** screen) improves trust and orientation. Profiles sit on top of `auth.users` (magic link, password, or other Supabase auth).
 
 ## Already in the schema (do not reinvent)
 
 | Piece | Location | Notes |
 |--------|-----------|--------|
 | Edit attribution | `edit_history.edited_by` → `auth.users(id)` | `004_create_edit_history.sql` |
-| App writes `edited_by` | `src/data/supabase/appAdapter.js` | Uses current session user id when logging edits |
-| Card attribution | `cards.created_by` → `auth.users(id)` | `001_create_cards.sql` — verify all manual/custom insert paths set this |
+| App writes `edited_by` | `src/data/supabase/appAdapter.js` | Current session user id when logging edits |
+| Card attribution | `cards.created_by` → `auth.users(id)` | `001_create_cards.sql`; manual insert paths set this in app adapter |
+| Profiles | `013_profiles.sql` | `profiles` + RLS + `handle_new_user` trigger + backfill |
+| Avatars bucket | `014_storage_avatars.sql` | Bucket `avatars`, public URLs, write RLS to own `{user_id}/…` prefix |
 
-## Product goals
+## Product goals (implementation checklist)
 
-1. **`profiles` table** — `id = auth.users.id`, human **`display_name`**, optional **`avatar_url`**, timestamps.
-2. **RLS** — Authenticated users can **read** all profiles (small team, show names on history). Users may **insert/update only their own** row.
-3. **Auto row** — Prefer DB trigger on `auth.users` **after insert** to create `profiles`; or lazy upsert on first profile visit (trigger is cleaner).
-4. **`/profile` route** — Show email (read-only from session), edit **display_name**, short copy: stay signed in until sign out / magic link when session gone.
-5. **Nav** — Link from `AuthUserMenu` (or equivalent) to Profile.
-6. **Edit history UX** — Join **`profiles.display_name`** for `edited_by` instead of raw UUIDs; optional filter **“Only my edits”** (`edited_by = auth.uid()`).
-7. **Optional “My cards”** — After confirming inserts set **`cards.created_by`**, list recent cards for current user on profile or sub-route.
+| # | Goal | Status |
+|---|------|--------|
+| 1 | **`profiles` table** — `id = auth.users.id`, **`display_name`**, optional **`avatar_url`**, timestamps | Done (`013`) |
+| 2 | **RLS** — Authenticated **read** all profiles; **insert/update** only own row | Done (`013`) |
+| 3 | **Auto row** — Trigger on `auth.users` after insert | Done (`013`) |
+| 4 | **`/profile`** — Email read-only, edit **display_name** | Done (`ProfilePage.jsx`) |
+| 5 | **`/profile/:userId`** — Read-only teammate view (valid UUID); invalid param → `/profile` | Done |
+| 6 | **Nav** — Link to Profile from `AuthUserMenu` | Done |
+| 7 | **Edit history** — Join **`profiles.display_name`** for editors; **“Only my edits”** | Done (`EditHistoryPage.jsx`) |
+| 8 | **“My cards” / dashboard** — **`created_by`** on manual cards; **`/dashboard`** lists recent edits + cards | Done |
+| 9 | **Avatars** — Supabase Storage **`avatars`** bucket + upload/remove on own profile | Done (app + **`014`**; DB must run **`014`**) |
+| 10 | **Deep links** — History **Editor** → `/profile/{edited_by}`; dashboard card links → `/?card=…` | Done |
 
 ## Explicit non-goals (for this plan)
 
-- Replacing magic links with username/password (optional later; not required for “easier” UX here).
-- Public sign-up (keep invite allowlist + Edge Function gate unless product changes).
+- **Global uniqueness** of display names (email remains identity).
+- **Public anonymous** profile directory (only signed-in teammates see names/photos as designed).
 
-## Implementation phases (effort estimates)
+## Implementation phases (original estimates)
 
-| Phase | Scope | Effort (indicative) |
-|-------|--------|---------------------|
-| **1** | Migration: `profiles` + RLS + trigger (or documented upsert); backfill SQL for existing `auth.users` | 0.5–1.5 days |
-| **2** | `/profile` page + TanStack Query mutation + nav link | 0.5–1 day |
-| **3** | Edit history: resolve display names + “my edits” filter | 0.5–1 day |
-| **4** | Audit card insert paths; `created_by`; “My submitted cards” UI | 0.5–1 day (+ if inserts missing) |
-| **5** (optional) | Avatars via Supabase Storage + upload UI | 1–2 days |
+| Phase | Scope | Status |
+|-------|--------|--------|
+| **1** | Migration: `profiles` + RLS + trigger; backfill | Done — `013_profiles.sql` |
+| **2** | `/profile` + TanStack Query + nav | Done |
+| **3** | Edit history: display names + “my edits” | Done |
+| **4** | `created_by` on inserts; “My submitted cards” / dashboard | Done |
+| **5** | Avatars via Storage + upload UI | Done — `014_storage_avatars.sql` + `uploadProfileAvatar` / `removeProfileAvatar` + `ProfilePage` |
 
-## Decisions to confirm with owner before coding
+## Decisions (confirmed in implementation)
 
-- **Display name:** required vs optional; max length; **not** globally unique (email remains identity).
-- **Visibility:** all authenticated users may read others’ `display_name` (recommended for 1–3 people).
-- **Backfill:** one-off SQL `INSERT INTO profiles ...` for users that already exist before trigger exists.
+- **Display name:** optional; trimmed; max **120** characters in UI; not globally unique.
+- **Visibility:** all **authenticated** users may read others’ profile row (display name + avatar URL for small team).
+- **Avatar files:** JPEG, PNG, WebP; **1 MB** max client-side; stored at **`{user_id}/avatar`** in bucket **`avatars`** (upsert); **`profiles.avatar_url`** holds public URL.
 
-## Auth context (magic link + invite)
+## Auth context
 
-- **Login:** `/login` → Edge Function `request-magic-link` (`supabase/functions/request-magic-link/`) checks `INVITE_SECRET` + `signup_allowlist`.
-- **Callback:** `/auth/callback` — browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so email links work when opened in a **different** browser/device than the one that requested the link (PKCE would require same-browser verifier).
+- **Login:** `/login` — invite allowlist + Edge Function `request-magic-link` when using magic-link flow; password sign-in per dashboard/auth plan.
+- **Callback:** `/auth/callback` — client may use **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` for cross-device magic links (see auth plan).
 - **Migrations:** `012_signup_allowlist.sql`; `supabase/config.toml` sets `verify_jwt = false` for that function.
 
-## Key files to touch when implementing
+## Key files
 
-- New migration: e.g. `013_profiles.sql` (number after latest in repo).
-- `007_create_rls_policies.sql` pattern for RLS style reference; may add policies in new migration.
-- `src/App.jsx` — route `/profile`.
-- `src/components/AuthUserMenu.jsx` — link to profile.
-- `src/data/supabase/appAdapter.js` — `fetchProfile`, `upsertProfile`, optional `fetchEditHistoryForUser` / join helpers.
-- `src/pages/EditHistoryPage.jsx` — names + filter.
-- Card creation paths in `appAdapter.js` (or related) — set `created_by`.
+| Area | Files |
+|------|--------|
+| SQL | `supabase/migrations/013_profiles.sql`, `014_storage_avatars.sql` |
+| Routes | `src/App.jsx` — `/profile`, `/profile/:userId`, `/dashboard` |
+| UI | `src/pages/ProfilePage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/EditHistoryPage.jsx` |
+| Data | `src/data/supabase/appAdapter.js` — `fetchProfile`, `fetchProfileById`, `upsertProfile`, `uploadProfileAvatar`, `removeProfileAvatar`, edit history helpers, card inserts + `created_by` |
+| Router | `src/db.js` — re-exports above |
 
-## Verification checklist after build
+## Verification checklist
 
-- [ ] New user after invite: profile row exists (trigger or first visit).
-- [ ] Edit in Workbench / Batch: `edit_history.edited_by` populated; history shows **display name**.
+- [ ] New user after invite: profile row exists (trigger on signup).
+- [ ] **Apply `014`** in Supabase: bucket `avatars` exists; upload from `/profile` succeeds; image loads via public URL.
+- [ ] Edit in Workbench / Batch: `edit_history.edited_by` populated; history shows **display name**; editor links to `/profile/{uuid}`.
 - [ ] “Only my edits” matches session user.
-- [ ] Custom/manual card: `created_by` set when applicable; “My cards” list correct.
+- [ ] Custom/manual card: `created_by` set; dashboard “My submitted cards” correct.
+- [ ] **`/profile/{teammateUuid}`** read-only; own UUID on same route still shows **edit** UI (treated as “my profile”).
+
+## Optional follow-ups (not required)
+
+- Show tiny avatars next to editor names on **Edit history** table.
+- **Private** bucket + signed URLs instead of public URLs (stricter; more client work).
 
 ---
 
-*Last updated: 2026-04-06 — plan saved for paused work; see `CLAUDE.md` “Paused work & backlog”.*
+*Last updated: 2026-04-17 — aligned with repo (`013`, `014`, Profile / Dashboard / History / Storage UI).*

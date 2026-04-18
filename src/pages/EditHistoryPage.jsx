@@ -169,11 +169,18 @@ export default function EditHistoryPage() {
                             : "—"}
                         </td>
                         <td className="px-3 py-2 text-gray-800 text-xs max-w-[140px] break-words" title={r.edited_by || ""}>
-                          {r.editor_display_name?.trim()
-                            ? r.editor_display_name
-                            : r.edited_by
-                              ? previewText(r.edited_by, 12)
-                              : "—"}
+                          {r.edited_by ? (
+                            <Link
+                              to={`/profile/${encodeURIComponent(r.edited_by)}`}
+                              className="text-green-700 hover:underline break-words"
+                            >
+                              {r.editor_display_name?.trim()
+                                ? r.editor_display_name
+                                : previewText(r.edited_by, 12)}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td className="px-3 py-2">
                           <Link

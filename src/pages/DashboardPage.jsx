@@ -74,7 +74,10 @@ export default function DashboardPage() {
                   <span className="text-gray-500 whitespace-nowrap">
                     {row.edited_at ? new Date(row.edited_at).toLocaleString() : ""}
                   </span>
-                  <Link to="/" className="text-green-700 font-medium hover:underline">
+                  <Link
+                    to={`/?card=${encodeURIComponent(row.card_id)}`}
+                    className="text-green-700 font-medium hover:underline"
+                  >
                     {row.card_id}
                   </Link>
                   <span className="text-gray-700">
@@ -98,7 +101,10 @@ export default function DashboardPage() {
             <ul className="divide-y divide-gray-100 text-sm">
               {myCards.map((row) => (
                 <li key={row.id} className="py-2 flex flex-wrap gap-2 items-baseline">
-                  <Link to="/" className="text-green-700 font-medium hover:underline">
+                  <Link
+                    to={`/?card=${encodeURIComponent(row.id)}`}
+                    className="text-green-700 font-medium hover:underline"
+                  >
                     {row.id}
                   </Link>
                   <span className="text-gray-800">{row.name}</span>

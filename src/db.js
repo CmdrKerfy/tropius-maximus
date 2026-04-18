@@ -103,9 +103,23 @@ export async function fetchProfile() {
   return useSupabaseBackend() ? (await sb()).fetchProfile() : null;
 }
 
+export async function fetchProfileById(userId) {
+  return useSupabaseBackend() ? (await sb()).fetchProfileById(userId) : null;
+}
+
 export async function upsertProfile(patch) {
   if (useSupabaseBackend()) return (await sb()).upsertProfile(patch);
   throw new Error("Profile updates require Supabase (v2).");
+}
+
+export async function uploadProfileAvatar(file) {
+  if (useSupabaseBackend()) return (await sb()).uploadProfileAvatar(file);
+  throw new Error("Avatar upload requires Supabase (v2).");
+}
+
+export async function removeProfileAvatar() {
+  if (useSupabaseBackend()) return (await sb()).removeProfileAvatar();
+  throw new Error("Avatar removal requires Supabase (v2).");
 }
 
 export async function fetchMyEditHistory(opts) {

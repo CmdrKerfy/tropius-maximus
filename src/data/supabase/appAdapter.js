@@ -1098,6 +1098,66 @@ export async function fetchProfile() {
   return data;
 }
 
+/** Another member's `profiles` row (same columns). RLS: authenticated may read all profiles. */
+export async function fetchProfileById(userId) {
+  const sb = await sbReady();
+  const id = String(userId || "").trim();
+  if (!id) return null;
+  const { data: authData } = await sb.auth.getUser();
+  if (!authData?.user?.id) return null;
+  const { data, error } = await sb
+    .from("profiles")
+    .select("id, display_name, avatar_url, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+const AVATAR_BUCKET = "avatars";
+/** Object key after bucket: `{userId}/avatar` (upsert overwrites). */
+function profileAvatarObjectPath(userId) {
+  return `${userId}/avatar`;
+}
+
+const AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const AVATAR_MAX_BYTES = 1024 * 1024;
+
+/** Upload image to Storage and set `profiles.avatar_url` (public URL). */
+export async function uploadProfileAvatar(file) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) throw new Error("Sign in required to upload an avatar.");
+  if (!file?.size) throw new Error("Choose an image file.");
+  const mime = file.type || "";
+  if (!AVATAR_MIME.has(mime)) throw new Error("Use a JPEG, PNG, or WebP image.");
+  if (file.size > AVATAR_MAX_BYTES) throw new Error("Image must be 1 MB or smaller.");
+  const path = profileAvatarObjectPath(uid);
+  const { error: upErr } = await sb.storage.from(AVATAR_BUCKET).upload(path, file, {
+    upsert: true,
+    contentType: mime,
+    cacheControl: "3600",
+  });
+  if (upErr) throw upErr;
+  const { data: pub } = sb.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  const url = pub?.publicUrl;
+  if (!url) throw new Error("Could not resolve public URL for avatar.");
+  return upsertProfile({ avatar_url: url });
+}
+
+/** Remove Storage object and clear `profiles.avatar_url`. */
+export async function removeProfileAvatar() {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) throw new Error("Sign in required.");
+  const path = profileAvatarObjectPath(uid);
+  const { error: rmErr } = await sb.storage.from(AVATAR_BUCKET).remove([path]);
+  if (rmErr) console.warn("removeProfileAvatar storage:", rmErr.message);
+  return upsertProfile({ avatar_url: null });
+}
+
 /** Update display_name and/or avatar_url for the signed-in user (insert row if missing). */
 export async function upsertProfile({ display_name, avatar_url } = {}) {
   const sb = await sbReady();
