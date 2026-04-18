@@ -259,6 +259,151 @@ function stripUndefined(obj) {
   return o;
 }
 
+/** Annotation columns stored as JSONB arrays (see `002_create_annotations.sql`). */
+const ANNOTATION_JSONB_COLUMNS = new Set([
+  "art_style",
+  "main_character",
+  "background_pokemon",
+  "background_humans",
+  "additional_characters",
+  "background_details",
+  "emotion",
+  "pose",
+  "actions",
+  "items",
+  "held_item",
+  "pokeball",
+  "evolution_items",
+  "berries",
+  "card_subcategory",
+  "trainer_card_subgroup",
+  "holiday_theme",
+  "multi_card",
+  "video_type",
+  "video_region",
+  "video_location",
+]);
+
+const ANNOTATION_BOOLEAN_COLUMNS = new Set([
+  "video_appearance",
+  "shorts_appearance",
+  "region_appearance",
+  "thumbnail_used",
+  "pocket_exclusive",
+  "owned",
+]);
+
+/** Single-value TEXT columns on `annotations` (form sometimes sends string[]). */
+const ANNOTATION_TEXT_SCALAR_KEYS = new Set([
+  "camera_angle",
+  "perspective",
+  "weather",
+  "environment",
+  "storytelling",
+  "card_locations",
+  "pkmn_region",
+  "card_region",
+  "primary_color",
+  "secondary_color",
+  "shape",
+  "trainer_card_type",
+  "stamp",
+  "card_border",
+  "energy_type",
+  "rival_group",
+  "image_override",
+  "notes",
+  "top_10_themes",
+  "wtpc_episode",
+  "video_game",
+  "video_game_location",
+  "video_url",
+  "video_title",
+]);
+
+function coerceAnnotationTextScalars(flat) {
+  const out = { ...flat };
+  for (const k of ANNOTATION_TEXT_SCALAR_KEYS) {
+    if (!(k in out)) continue;
+    const v = out[k];
+    if (Array.isArray(v)) out[k] = v.join(", ") || null;
+    else if (typeof v === "string" && v.trim() === "") out[k] = null;
+  }
+  return out;
+}
+
+function coerceJsonbArray(val) {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    const t = val.trim();
+    if (!t) return [];
+    try {
+      const p = JSON.parse(t);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function normalizeAnnotationFlatForDb(flat) {
+  const out = { ...flat };
+  for (const k of ANNOTATION_JSONB_COLUMNS) {
+    if (k in out) out[k] = coerceJsonbArray(out[k]);
+  }
+  for (const k of ANNOTATION_BOOLEAN_COLUMNS) {
+    if (k in out) out[k] = Boolean(out[k]);
+  }
+  return out;
+}
+
+async function attachProfileDisplayNames(sb, rows) {
+  if (!rows?.length) return [];
+  const ids = [...new Set(rows.map((r) => r.edited_by).filter(Boolean))];
+  if (!ids.length) {
+    return rows.map((r) => ({ ...r, editor_display_name: null }));
+  }
+  const { data: profs, error } = await sb.from("profiles").select("id, display_name").in("id", ids);
+  if (error) throw error;
+  const map = new Map((profs || []).map((p) => [p.id, p.display_name]));
+  return rows.map((r) => ({
+    ...r,
+    editor_display_name: r.edited_by ? map.get(r.edited_by) ?? null : null,
+  }));
+}
+
+function pickAnnotationFlatFromCustomCard(card, skipKeys) {
+  const flat = {};
+  for (const [k, v] of Object.entries(card)) {
+    if (skipKeys.has(k)) continue;
+    if (v === undefined) continue;
+    flat[k] = v;
+  }
+  return coerceAnnotationTextScalars(normalizeAnnotationFlatForDb(flat));
+}
+
+async function ensureManualSetRow(sb, setId, setName) {
+  const sid = String(setId || "").trim();
+  if (!sid) throw new Error("Set ID is required.");
+  const name = String(setName || sid).trim() || sid;
+  const { error } = await sb.from("sets").insert({ id: sid, name, origin: "manual" });
+  if (error && error.code !== "23505") throw error;
+}
+
+async function insertInitialAnnotationForCard(sb, cardId, flat, updatedBy) {
+  const { typed, extra } = flatToAnnotationPayload(flat, {});
+  const row = stripUndefined({
+    card_id: cardId,
+    ...typed,
+    extra,
+    version: 1,
+    updated_by: updatedBy ?? null,
+  });
+  const { error } = await sb.from("annotations").insert(row);
+  if (error) throw error;
+}
+
 /**
  * Value for PostgREST `.or('col.eq.VALUE,...')` (handles spaces/special chars in artist names).
  */
@@ -920,8 +1065,9 @@ async function insertEditHistoryRows(sb, cardId, patch, prevFlat) {
 
 /**
  * Recent annotation edits (newest first). Optional filter by card.
+ * @param {{ card_id?: string | null, limit?: number, only_mine?: boolean }} [opts]
  */
-export async function fetchEditHistory({ card_id = null, limit = 200 } = {}) {
+export async function fetchEditHistory({ card_id = null, limit = 200, only_mine = false } = {}) {
   const sb = await sbReady();
   const lim = Math.min(500, Math.max(1, Number(limit) || 200));
   let q = sb
@@ -930,9 +1076,15 @@ export async function fetchEditHistory({ card_id = null, limit = 200 } = {}) {
     .order("edited_at", { ascending: false })
     .limit(lim);
   if (card_id) q = q.eq("card_id", card_id);
+  if (only_mine) {
+    const { data: authData } = await sb.auth.getUser();
+    const uid = authData?.user?.id;
+    if (!uid) return [];
+    q = q.eq("edited_by", uid);
+  }
   const { data, error } = await q;
   if (error) throw error;
-  return data || [];
+  return attachProfileDisplayNames(sb, data || []);
 }
 
 /** Current user's profile row (or null). */
@@ -983,7 +1135,7 @@ export async function fetchMyEditHistory({ limit = 40 } = {}) {
     .order("edited_at", { ascending: false })
     .limit(lim);
   if (error) throw error;
-  return data || [];
+  return attachProfileDisplayNames(sb, data || []);
 }
 
 /** Cards created by the signed-in user (manual / custom inserts). */
@@ -1246,16 +1398,173 @@ export async function addCustomSet() {
   throw new Error("addCustomSet via Supabase is not implemented yet (Phase 5+).");
 }
 
-export async function addTcgCard() {
-  throw new Error("addTcgCard via Supabase is not implemented yet (Phase 5+).");
+const TCG_CARD_BODY_SKIP = new Set([
+  "id",
+  "name",
+  "alt_name",
+  "supertype",
+  "subtypes",
+  "hp",
+  "types",
+  "evolves_from",
+  "rarity",
+  "special_rarity",
+  "artist",
+  "set_id",
+  "set_name",
+  "set_series",
+  "number",
+  "regulation_mark",
+  "image_small",
+  "image_large",
+  "source",
+  "_table",
+]);
+
+const POCKET_CARD_BODY_SKIP = new Set([
+  "id",
+  "name",
+  "set_id",
+  "number",
+  "rarity",
+  "card_type",
+  "element",
+  "hp",
+  "stage",
+  "retreat_cost",
+  "weakness",
+  "evolves_from",
+  "packs",
+  "image_url",
+  "illustrator",
+  "source",
+  "_table",
+]);
+
+export async function addTcgCard(card) {
+  const sb = await sbReady();
+  const {
+    data: { user },
+    error: authErr,
+  } = await sb.auth.getUser();
+  if (authErr || !user?.id) throw new Error("Sign in required to add a custom card.");
+  const uid = user.id;
+  if (!card?.id) throw new Error("Card must have an id");
+  const { data: exists } = await sb.from("cards").select("id").eq("id", card.id).maybeSingle();
+  if (exists) throw new Error(`Card with ID '${card.id}' already exists`);
+
+  await ensureManualSetRow(sb, card.set_id, card.set_name);
+
+  const subtypes = parseJsonbStringArray(card.subtypes);
+  const types = parseJsonbStringArray(card.types);
+  const cardRow = stripUndefined({
+    id: card.id,
+    name: card.name,
+    supertype: normalizeSupertypeDisplay(card.supertype || "Pokémon"),
+    subtypes,
+    hp: card.hp != null && card.hp !== "" ? String(card.hp) : null,
+    types,
+    evolves_from: card.evolves_from || null,
+    rarity: card.rarity || null,
+    artist: card.artist || null,
+    set_id: card.set_id,
+    number: card.number != null ? String(card.number) : "",
+    set_name: card.set_name || "",
+    set_series: card.set_series || "",
+    regulation_mark: card.regulation_mark || null,
+    image_small: card.image_small || card.image_large,
+    image_large: card.image_large || card.image_small,
+    raw_data: stripUndefined({
+      source: card.source || "TCG",
+      alt_name: card.alt_name || "",
+      special_rarity: card.special_rarity || "",
+    }),
+    prices: {},
+    evolution_line: card.evolution_line || null,
+    origin: "manual",
+    origin_detail: (card.source && String(card.source).trim()) || "TCG",
+    format: "printed",
+    created_by: uid,
+  });
+
+  const { error: cErr } = await sb.from("cards").insert(cardRow);
+  if (cErr) throw new Error(cErr.message || String(cErr));
+
+  try {
+    const annFlat = pickAnnotationFlatFromCustomCard(card, TCG_CARD_BODY_SKIP);
+    await insertInitialAnnotationForCard(sb, card.id, annFlat, uid);
+  } catch (e) {
+    await sb.from("cards").delete().eq("id", card.id);
+    throw e;
+  }
+  return card;
 }
 
-export async function addPocketCard() {
-  throw new Error("addPocketCard via Supabase is not implemented yet (Phase 5+).");
+export async function addPocketCard(card) {
+  const sb = await sbReady();
+  const {
+    data: { user },
+    error: authErr,
+  } = await sb.auth.getUser();
+  if (authErr || !user?.id) throw new Error("Sign in required to add a custom card.");
+  const uid = user.id;
+  if (!card?.id) throw new Error("Card must have an id");
+  const { data: exists } = await sb.from("cards").select("id").eq("id", card.id).maybeSingle();
+  if (exists) throw new Error(`Card with ID '${card.id}' already exists`);
+
+  await ensureManualSetRow(sb, card.set_id, card.set_name || card.set_id);
+
+  const packs = Array.isArray(card.packs) ? card.packs : parseJsonbStringArray(card.packs);
+  const cardRow = stripUndefined({
+    id: card.id,
+    name: card.name,
+    card_type: card.card_type || "",
+    supertype: normalizeSupertypeDisplay(card.card_type || ""),
+    subtypes: [],
+    hp: card.hp != null && card.hp !== "" ? String(card.hp) : null,
+    types: card.element ? [String(card.element)] : [],
+    evolves_from: card.evolves_from || null,
+    rarity: card.rarity || null,
+    artist: null,
+    illustrator: card.illustrator || "",
+    set_id: card.set_id,
+    number: card.number != null ? String(card.number) : "",
+    set_name: card.set_name || card.set_id || "",
+    set_series: card.set_series || "",
+    image_small: card.image_url || card.image_small,
+    image_large: card.image_url || card.image_large || card.image_small,
+    stage: card.stage || null,
+    retreat_cost:
+      card.retreat_cost != null && card.retreat_cost !== ""
+        ? Number(card.retreat_cost)
+        : null,
+    weakness: card.weakness || null,
+    packs: packs.length ? packs : [],
+    raw_data: stripUndefined({ source: card.source || "Pocket" }),
+    prices: {},
+    evolution_line: card.evolution_line || null,
+    origin: "manual",
+    origin_detail: "Pocket",
+    format: "printed",
+    created_by: uid,
+  });
+
+  const { error: cErr } = await sb.from("cards").insert(cardRow);
+  if (cErr) throw new Error(cErr.message || String(cErr));
+
+  try {
+    const annFlat = pickAnnotationFlatFromCustomCard(card, POCKET_CARD_BODY_SKIP);
+    await insertInitialAnnotationForCard(sb, card.id, annFlat, uid);
+  } catch (e) {
+    await sb.from("cards").delete().eq("id", card.id);
+    throw e;
+  }
+  return card;
 }
 
-export async function addCustomCard() {
-  throw new Error("addCustomCard via Supabase is not implemented yet (Phase 5+).");
+export async function addCustomCard(card) {
+  if (card?._table === "pocket") return addPocketCard(card);
+  return addTcgCard(card);
 }
 
 // ── Workbench queues (006) ───────────────────────────────────────────

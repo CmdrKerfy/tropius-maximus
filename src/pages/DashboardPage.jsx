@@ -92,7 +92,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">Loading…</p>
           ) : myCards.length === 0 ? (
             <p className="text-sm text-gray-500">
-              No manual cards with your user as creator yet. (Supabase custom-card inserts will populate this.)
+              No manual cards with your user as creator yet. Add a custom card in Explore (Supabase mode) to see it here.
             </p>
           ) : (
             <ul className="divide-y divide-gray-100 text-sm">

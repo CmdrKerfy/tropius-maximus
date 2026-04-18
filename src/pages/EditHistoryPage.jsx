@@ -26,11 +26,13 @@ function previewText(s, max = 80) {
 
 export default function EditHistoryPage() {
   const [cardFilter, setCardFilter] = useState("");
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const queryParams = useMemo(() => {
     const id = cardFilter.trim();
-    return id ? { card_id: id, limit: 300 } : { limit: 200 };
-  }, [cardFilter]);
+    const base = id ? { card_id: id, limit: 300, only_mine: onlyMine } : { limit: 200, only_mine: onlyMine };
+    return base;
+  }, [cardFilter, onlyMine]);
 
   const { data: rows = [], isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["editHistory", queryParams],
@@ -103,6 +105,15 @@ export default function EditHistoryPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none pb-2">
+                <input
+                  type="checkbox"
+                  checked={onlyMine}
+                  onChange={(e) => setOnlyMine(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-600"
+                />
+                Only my edits
+              </label>
               <button
                 type="button"
                 onClick={() => refetch()}
@@ -139,6 +150,7 @@ export default function EditHistoryPage() {
                   <thead>
                     <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase">
                       <th className="px-3 py-2 font-medium whitespace-nowrap">When</th>
+                      <th className="px-3 py-2 font-medium">Editor</th>
                       <th className="px-3 py-2 font-medium">Card</th>
                       <th className="px-3 py-2 font-medium">Field</th>
                       <th className="px-3 py-2 font-medium">Old</th>
@@ -147,7 +159,7 @@ export default function EditHistoryPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {rows.map((r) => (
-                      <tr key={`${r.id}-${r.edited_at}`} className="align-top">
+                      <tr key={`${String(r.id)}-${r.edited_at}`} className="align-top">
                         <td className="px-3 py-2 text-gray-600 whitespace-nowrap tabular-nums text-xs">
                           {r.edited_at
                             ? new Date(r.edited_at).toLocaleString(undefined, {
@@ -155,6 +167,13 @@ export default function EditHistoryPage() {
                                 timeStyle: "short",
                               })
                             : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-gray-800 text-xs max-w-[140px] break-words" title={r.edited_by || ""}>
+                          {r.editor_display_name?.trim()
+                            ? r.editor_display_name
+                            : r.edited_by
+                              ? previewText(r.edited_by, 12)
+                              : "—"}
                         </td>
                         <td className="px-3 py-2">
                           <Link
