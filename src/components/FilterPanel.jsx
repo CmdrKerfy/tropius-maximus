@@ -629,7 +629,7 @@ export default function FilterPanel({
   );
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 mb-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2 text-sm text-gray-600">
         <span className="font-semibold text-gray-800">Viewing</span>
         <span className="min-w-0">
@@ -691,7 +691,7 @@ export default function FilterPanel({
 
       {!isLg && (
         <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-          <DialogContent className="fixed left-2 right-2 bottom-2 top-[8dvh] max-h-[90dvh] overflow-y-auto rounded-xl border border-gray-200 p-4 sm:left-auto sm:right-auto sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[min(100vw-2rem,28rem)] sm:max-h-[85vh]">
+          <DialogContent className="inset-x-2 bottom-2 top-[8dvh] max-w-2xl mx-auto overflow-y-auto rounded-xl border border-gray-200 p-4">
             <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Filters</DialogTitle>
             <DialogDescription className="sr-only">Change catalog filters and annotation-based options.</DialogDescription>
             <p className="text-xs text-gray-500 mb-3">Scroll to see every option. Sort stays below on the page.</p>
