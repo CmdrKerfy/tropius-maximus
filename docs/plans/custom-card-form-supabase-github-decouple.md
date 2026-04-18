@@ -2,9 +2,9 @@
 
 **Goal:** When the app runs against **Supabase** (`VITE_USE_SUPABASE=true`), **custom card create** should have **one** clear story: save to **Postgres**. No implied dependency on PAT/GitHub for “sync” or success messaging.
 
-**Status:** Phase 1–2 implemented on **`v2/supabase-migration`** (`useSupabaseBackend` in `db.js`, `CustomCardForm`, `ExplorePage`, `CardDetail`, **`SqlConsole`** — Supabase: no GitHub copy / no mutation path; Explore GitHub sync banner hidden). `github.js` kept for v1 / DuckDB.
+**Status:** Implemented on **`v2/supabase-migration`**: Supabase builds skip GitHub commit paths and PAT-dependent success copy (`CustomCardForm` lazy-loads `github.js` only on DuckDB; Explore hides PAT UI when `VITE_USE_SUPABASE=true`; **`SqlConsole`** read-only + hides local “commit” strip on Supabase). `github.js` remains for v1 / DuckDB.
 
-**Context:** `CustomCardForm.jsx` still calls `addTcgCard` / `addPocketCard` (correct — routes to `appAdapter` insert) **and then** optionally `commitNewCard` when a GitHub PAT exists. Success/error copy still says “local” / “GitHub” like v1 (DuckDB + git). **Explore** still shows a **GitHub PAT** section in Custom Cards settings.
+**Context (resolved for Supabase):** `CustomCardForm` inserts via `addTcgCard` / `addPocketCard` only; DuckDB mode may still `commitNewCard` when a PAT exists. Explore **Custom cards** copy no longer references GitHub sync on the Supabase path.
 
 ---
 

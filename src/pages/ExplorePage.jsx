@@ -677,8 +677,9 @@ export default function ExplorePage() {
             <Card>
               <h2 className="font-semibold text-gray-800 mb-2">Custom cards</h2>
               <p className="text-xs text-gray-600 mb-3">
-                Add manual TCG or Pocket cards that are not in the public API. On Supabase, saves go to your
-                database; GitHub sync below is only for the classic static-site workflow.
+                {USE_SUPABASE_APP
+                  ? "Add manual TCG or Pocket cards that are not in the public API. Saves go to your Supabase database (same as other catalog cards)."
+                  : "Add manual TCG or Pocket cards that are not in the public API. With a GitHub PAT below, you can also sync custom_cards.json for the classic static-site workflow."}
               </p>
 
               {/* GitHub PAT (v1 / DuckDB only — not used for custom cards when on Supabase) */}

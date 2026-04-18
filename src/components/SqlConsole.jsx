@@ -319,7 +319,7 @@ export default function SqlConsole({
       )}
 
       {/* Commit Changes section — shown after any successful mutation */}
-      {hasUncommittedChanges && (
+      {hasUncommittedChanges && !useSupabaseBackend() && (
         <div className="mt-3 border border-amber-200 rounded-lg p-3 bg-amber-50">
           <div className="flex items-start justify-between gap-3">
             <div>

@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–4** + **4.5** done. Phase **5** mostly done: Workbench **save chrome** + **Retry**, **user split presets** (persisted), layout tuning; **CardDetail** / **AnnotationEditor** use **`FormFieldLabel`** + **`splitUiLabel`** for long / parenthetical labels. **Deferred (revisit after live user testing):** deeper **Card detail IA** — see end of doc. Phases **6–7** not started.  
+**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done for this slice: SQL console under **Advanced**; Supabase **PAT/copy** cleanup (`CustomCardForm`, Explore, **`SqlConsole`** commit strip hidden on Supabase); shell-on pages avoid duplicate global nav. **Phase 7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -132,9 +132,9 @@
 
 **Tasks**
 
-- [ ] **SQL console:** implement Phase 0 decision — relocate route, add env flag, or hide behind Advanced dialog with warning copy.
-- [ ] **GitHub PAT / legacy copy:** align with **`docs/plans/custom-card-form-supabase-github-decouple.md`** — no PAT implied for Supabase success paths.
-- [ ] **Dead links / duplicate nav** audit after shell change — remove duplicate “Profile” in page header + global nav if redundant.
+- [x] **SQL console:** Phase 0 decision shipped — embedded under Explore **Card data & tools → Advanced: SQL console** (warning + toggle).
+- [x] **GitHub PAT / legacy copy:** Supabase path aligned with **`docs/plans/custom-card-form-supabase-github-decouple.md`** (Explore copy, `CustomCardForm` lazy GitHub import, `SqlConsole` hides DuckDB-only commit UI on Supabase).
+- [x] **Dead links / duplicate nav** audit (shell default): legacy green headers stay for **`VITE_EXPERIMENTAL_NAV=false`**; with shell on, Manage/Activity routes use title strips without duplicating the global pill row.
 
 **Exit criteria:** Default nav for a collaborator shows **no SQL** and **no PAT** unless explicitly in Advanced; power users can still reach SQL if product keeps it.
 
