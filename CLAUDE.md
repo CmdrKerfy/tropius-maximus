@@ -34,7 +34,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 - [ ] E2E testing on **Vercel** (preview + production) against Supabase.
 - [ ] **Production checklist** — Anonymous auth / RLS / `VITE_SUPABASE_AUTO_ANON_AUTH` (see below).
-- [ ] **Cutover when ready** — merge **`v2/supabase-migration` → `main`** and/or set Vercel production branch; align GitHub Pages vs Vercel-only strategy.
+- [ ] **Cutover when ready** — merge **`v2/supabase-migration` → `main`** and/or set Vercel production branch; align GitHub Pages vs Vercel-only strategy. **Runbook (monitoring, rollback, SMTP, Vercel branch without merging):** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
 ### Paused work & backlog (owner paused — resume anytime)
