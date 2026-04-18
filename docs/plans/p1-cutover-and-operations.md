@@ -8,11 +8,11 @@
 
 ## 1. Vercel (no merge required — can do anytime)
 
-| Task | Where | Notes |
-|--------|--------|--------|
-| **Production branch** | Vercel → Project → Settings → Git → *Production Branch* | Point at `v2/supabase-migration` for prod traffic while `main` stays Pages-only, **or** keep prod on `main` after merge. |
-| **Env parity** | Settings → Environment Variables | Production vs Preview: `VITE_USE_SUPABASE`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_REQUIRE_EMAIL_AUTH`, etc. Redeploy after edits. |
-| **Preview behavior** | Same | Confirm preview URLs are in Supabase Auth redirect allowlist if you test auth on previews. |
+| Task                  | Where                                                   | Notes                                                                                                                                            |
+| --------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Production branch** | Vercel → Project → Settings → Git → _Production Branch_ | Point at `v2/supabase-migration` for prod traffic while `main` stays Pages-only, **or** keep prod on `main` after merge.                         |
+| **Env parity**        | Settings → Environment Variables                        | Production vs Preview: `VITE_USE_SUPABASE`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_REQUIRE_EMAIL_AUTH`, etc. Redeploy after edits. |
+| **Preview behavior**  | Same                                                    | Confirm preview URLs are in Supabase Auth redirect allowlist if you test auth on previews.                                                       |
 
 Repo `vercel.json` already defines SPA rewrites; **branch choice is dashboard-only**.
 
@@ -31,13 +31,13 @@ Write the chosen URL(s) in this file or team notes when decided.
 
 ## 3. Post-deploy monitoring (lightweight)
 
-| Cadence | What |
-|---------|------|
-| **After each prod deploy** | Vercel → Deployments → open latest → build/runtime errors. |
-| **Weekly** | GitHub Actions → *Ingest and push to Supabase* (scheduled on **default branch**, usually `main`) — green run. |
-| **When users report auth/data issues** | Supabase → Logs / Auth / Database; check RLS-related errors. |
+| Cadence                                | What                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **After each prod deploy**             | Vercel → Deployments → open latest → build/runtime errors.                                                    |
+| **Weekly**                             | GitHub Actions → _Ingest and push to Supabase_ (scheduled on **default branch**, usually `main`) — green run. |
+| **When users report auth/data issues** | Supabase → Logs / Auth / Database; check RLS-related errors.                                                  |
 
-**Owner:** assign a name (even if it is you) so “who checks” is not ambiguous.
+Kerfy → **Owner:**
 
 ---
 
@@ -72,13 +72,14 @@ Official guide: [Custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ---
 
-## 6. When you *are* ready to merge (your gate)
+## 6. When you _are_ ready to merge (your gate)
 
 1. Final QA on Vercel production (or prod branch) against Supabase.
 2. Merge `v2/supabase-migration` → `main` **or** keep branch split and only move Vercel prod branch — align with **§2** above.
 3. Run **Ingest and push to Supabase** once if `push_duckdb_to_supabase.py` / migrations changed on `main`.
 4. Re-read **Production checklist** in `CLAUDE.md` (RLS, anon auth, env flags).
+5. **Postgres + Storage migrations:** If the target Supabase project predates recent v2 work, confirm applied: **`013_profiles.sql`** (profiles + triggers + RLS) and **`014_storage_avatars.sql`** (avatar bucket + Storage policies). Re-run ingest push only if `push_duckdb_to_supabase.py` / card schema changed (step 3 above).
 
 ---
 
-*Added for P1 tracking — merge timing is owner-controlled.*
+_Added for P1 tracking — merge timing is owner-controlled. Last ops note sync: 2026-04-17._

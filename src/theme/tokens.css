@@ -1,0 +1,45 @@
+/**
+ * Tropius-inspired palette (Grass / jungle canopy + flying sky + fruit accent).
+ * Tweaks welcome — adjust hex values here; utilities are `bg-tm-canopy`, `text-tm-mist`, etc.
+ */
+@theme {
+  /* Brand — deep canopy green (neck foliage), leaf mid-tone, cream page bg hint */
+  --color-tm-canopy: #124a3a;
+  --color-tm-canopy-hover: #0e3d30;
+  --color-tm-leaf: #2a7a5c;
+  --color-tm-leaf-muted: #3a9574;
+  --color-tm-cream: #f3f6f4;
+
+  /* Flying / sky accent for links & focus */
+  --color-tm-mist: #7dd3fc;
+  --color-tm-mist-deep: #0e7490;
+
+  /* Banana / warm highlight (badge, caution emphasis) */
+  --color-tm-fruit: #ca8a04;
+  --color-tm-fruit-soft: #fef3c7;
+
+  /* Semantic (UI feedback — Phase 2 toasts will lean on these) */
+  --color-tm-success: #059669;
+  --color-tm-success-soft: #d1fae5;
+  --color-tm-warning: #d97706;
+  --color-tm-warning-soft: #fef3c7;
+  --color-tm-danger: #dc2626;
+  --color-tm-danger-soft: #fee2e2;
+  --color-tm-info: #0284c7;
+  --color-tm-info-soft: #e0f2fe;
+
+  /*
+   * Type scale (Phase 1 baseline documentation)
+   * Prefer these semantics while migrating components:
+   * - body-sm   ~ 14px (dense tables/forms)
+   * - body      ~ 16px
+   * - heading   ~ 20px section title
+   * - display   ~ 30px page hero
+   */
+  --text-tm-body-sm: 0.875rem;
+  --text-tm-body: 1rem;
+  --text-tm-heading: 1.25rem;
+  --text-tm-display: 1.875rem;
+  --leading-tm-tight: 1.2;
+  --leading-tm-normal: 1.5;
+}

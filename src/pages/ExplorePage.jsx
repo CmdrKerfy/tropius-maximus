@@ -25,6 +25,8 @@ import CustomCardForm from "../components/CustomCardForm";
 import Pagination from "../components/Pagination";
 import SqlConsole from "../components/SqlConsole";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import Button from "../components/ui/Button.jsx";
+import Card from "../components/ui/Card.jsx";
 import {
   getExploreFilterAvailability,
   exploreFilterDisabledTitle,
@@ -44,7 +46,7 @@ const USE_SUPABASE_APP =
 
 const exploreNavLinkClass = ({ isActive }) =>
   `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-    isActive ? "bg-white text-green-700" : "bg-green-700 hover:bg-green-800 text-white"
+    isActive ? "bg-white text-tm-canopy shadow-sm" : "bg-tm-leaf/85 text-white hover:bg-tm-leaf focus-visible:ring-2 focus-visible:ring-tm-mist/50"
   }`;
 
 function sortCards(arr, sort_by, sort_dir) {
@@ -94,16 +96,18 @@ class CardDetailErrorBoundary extends Component {
             <p className="text-sm text-gray-600 mb-4 font-mono break-all">
               {this.state.error?.message ?? String(this.state.error)}
             </p>
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="lg"
+              className="w-full"
               onClick={() => {
                 this.setState({ error: null });
                 this.props.onClose?.();
               }}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -553,17 +557,17 @@ export default function ExplorePage() {
 
   // ── Render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-tm-cream text-gray-900">
       {/* Header */}
-      <header className="bg-green-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Tropius" className="h-16 w-16 rounded-full object-cover" />
-            <h1 className="text-2xl font-bold tracking-tight">
+      <header className="bg-tm-canopy text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Tropius" className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full object-cover" />
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">
               Tropius Maximus Pokemon Tracker
             </h1>
           </div>
-          <nav className="flex items-center gap-2 mr-2">
+          <nav className="flex flex-wrap items-center gap-2 order-3 sm:order-none w-full sm:w-auto justify-start sm:justify-end">
             <NavLink to="/" end className={exploreNavLinkClass}>
               Explore
             </NavLink>
@@ -583,47 +587,33 @@ export default function ExplorePage() {
               History
             </NavLink>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <AuthUserMenu />
-            <button
+            <Button
+              variant="secondary"
+              size="md"
+              className="!text-tm-canopy border-white/40 bg-white/95 hover:bg-white"
               onClick={() => {
-                setShowSqlConsole(!showSqlConsole);
-                if (!showSqlConsole) setShowSettings(false);
+                if (showSettings) {
+                  setShowSettings(false);
+                  setShowSqlConsole(false);
+                } else {
+                  setShowSettings(true);
+                }
               }}
-              className="px-3 py-1.5 bg-green-700 hover:bg-green-800 rounded text-sm font-medium transition-colors"
-            >
-              {showSqlConsole ? "Close SQL" : "SQL Console"}
-            </button>
-            <button
-              onClick={() => {
-                setShowSettings(!showSettings);
-                if (!showSettings) setShowSqlConsole(false);
-              }}
-              className="px-3 py-1.5 bg-green-700 hover:bg-green-800 rounded text-sm font-medium transition-colors"
             >
               {showSettings ? "Close" : "Custom Cards"}
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* SQL Console panel */}
-        {showSqlConsole && (
-          <div className="mb-6">
-            <SqlConsole
-              onShowInGrid={handleShowInGrid}
-              onDataChanged={handleSqlDataChanged}
-              selectedCardIds={selectedCardIds}
-            />
-          </div>
-        )}
-
         {/* Settings panel (attribute manager + data info) */}
         {showSettings && (
           <div className="mb-6 space-y-4">
             {/* Data info (replaces Update Cards) */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <Card>
               <h2 className="font-semibold text-gray-800 mb-3">
                 Card Data
               </h2>
@@ -722,7 +712,38 @@ export default function ExplorePage() {
               {!USE_SUPABASE_APP && pushStatus === "error" && (
                 <p className="mt-2 text-xs text-red-600">{pushMessage}</p>
               )}
-            </div>
+
+              {/* SQL console — option (a): advanced only; not in main header */}
+              <details className="mt-4 border border-amber-200 rounded-lg bg-tm-warning-soft/80">
+                <summary className="cursor-pointer select-none px-3 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-100/60 rounded-lg">
+                  Advanced — SQL console
+                </summary>
+                <div className="px-3 pb-3 pt-0 space-y-3 border-t border-amber-200/60">
+                  <p className="text-xs text-amber-950/90 leading-relaxed">
+                    For developers and power users. SQL runs against the connected database (DuckDB in-browser or
+                    Supabase). Wrong writes can damage data — use read-only queries when unsure.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="!text-amber-950 border-amber-300"
+                    onClick={() => setShowSqlConsole((v) => !v)}
+                  >
+                    {showSqlConsole ? "Hide SQL console" : "Open SQL console"}
+                  </Button>
+                  {showSqlConsole && (
+                    <div className="pt-1">
+                      <SqlConsole
+                        onShowInGrid={handleShowInGrid}
+                        onDataChanged={handleSqlDataChanged}
+                        selectedCardIds={selectedCardIds}
+                      />
+                    </div>
+                  )}
+                </div>
+              </details>
+            </Card>
 
             {/* Custom Card Form */}
             {showCustomCardForm && (
@@ -794,7 +815,7 @@ export default function ExplorePage() {
         )}
 
         {/* Selection toolbar */}
-        {(showSqlConsole || selectedCardIds.size > 0) && (
+        {(selectedCardIds.size > 0 || sqlCards) && (
           <div className="mt-4 mb-2 bg-gray-100 border border-gray-200 rounded px-4 py-2 flex items-center gap-4 flex-wrap">
             <span className="text-sm text-gray-700">
               <span className="font-medium">{selectedCardIds.size}</span> card

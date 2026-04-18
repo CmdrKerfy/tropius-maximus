@@ -1,7 +1,8 @@
 # Plan: User dashboards + email/password auth (v2)
 
-**Status:** Approved direction — implement on **`v2/supabase-migration`**.  
-**Supersedes for auth UX:** `docs/plans/user-profiles-and-activity.md` still applies for **`profiles`**, **`edit_history` names**, and **`created_by`**, but **primary sign-in becomes email + password** instead of magic link.
+**Status (2026-04-17):** **Approved** — much of the **profiles / dashboard / history / teammate profile / avatars** surface is **already shipped** on **`v2/supabase-migration`** (see **`user-profiles-and-activity.md`** and migrations **`013`–`014`**). This document tracks **password-primary auth**, **Edge Function `invite-set-password`**, **reset password**, and **nav / post-login** polish still called out below.
+
+**Cross-ref:** `docs/plans/user-profiles-and-activity.md` remains canonical for **`profiles`**, **`edit_history`** display names, **`created_by`**, **`/profile`**, **`/profile/:userId`**, and **Storage avatars**.
 
 **Audience:** Owner + implementers.
 
@@ -15,7 +16,7 @@
    - Short welcome + **display name** (from **`profiles`**).
    - **Recent activity** — own rows from **`edit_history`** (Workbench/Batch edits), with links into card/detail or history filtered view.
    - **My submitted cards** — **`cards`** where **`created_by = auth.uid()`** and relevant `origin` (e.g. manual), newest first.
-   - **Quick links** — Explore, Workbench, Edit history (“my edits”), optional **Profile** (`/profile`) for editing display name / future avatar.
+   - **Quick links** — Explore, Workbench, Edit history (“my edits”), **Profile** (`/profile`) for display name + **avatar upload** (requires Storage migration **`014`** on that Supabase project).
 4. **Attribution unchanged:** Keep populating **`edit_history.edited_by`** and **`cards.created_by`** from session (already in **`appAdapter.js`**); dashboard is read-mostly on those columns.
 
 ## Terminology
@@ -35,11 +36,13 @@
 
 | Piece | Location |
 |--------|-----------|
-| Login UI | `src/pages/LoginPage.jsx` — email + team code → Edge Function **`request-magic-link`** |
-| Edge Function | `supabase/functions/request-magic-link/index.ts` — validates **`INVITE_SECRET`** + **`signup_allowlist`**, then **`admin.auth.signInWithOtp`** |
-| Callback | `src/pages/AuthCallbackPage.jsx` — implicit flow for magic-link tokens in URL |
-| Client | `src/lib/supabaseClient.js` — `flowType: "implicit"` (needed when magic link opened on another device) |
-| Routes / guard | `src/App.jsx`, `src/components/RequireAuth.jsx`, `src/lib/authInvite.js` |
+| Login UI | `src/pages/LoginPage.jsx` — **email + password** sign-in, **Create account** (→ **`invite-set-password`**), forgot password; optional magic-link path per env |
+| Edge Functions | **`invite-set-password`** (password / create user); **`request-magic-link`** (OTP) — both use **`INVITE_SECRET`** + **`signup_allowlist`** |
+| Callback / reset | `src/pages/AuthCallbackPage.jsx`, **`AuthResetPasswordPage.jsx`** — session + recovery URLs |
+| Client | `src/lib/supabaseClient.js` — `flowType: "implicit"` where cross-device magic link still matters |
+| Routes / guard | `src/App.jsx`, **`RequireAuth.jsx`**, **`authInvite.js`** — includes **`/dashboard`**, **`/profile`**, **`/profile/:userId`** |
+| Profiles + Storage | **`013_profiles.sql`**, **`014_storage_avatars.sql`**; **`ProfilePage`**, **`uploadProfileAvatar`** / **`removeProfileAvatar`** in **`appAdapter.js`** |
+| Dashboard + history | **`DashboardPage.jsx`**; **`EditHistoryPage.jsx`** — editor display names, link to **`/profile/{edited_by}`**, “only my edits”; dashboard card links → **`/?card=…`** |
 
 ---
 
@@ -96,7 +99,7 @@ Do **before** or in parallel with first migration:
 3. **RLS** — authenticated read all **`profiles`** (small team); update only own row.
 4. **`edit_history` / `cards`** — ensure policies allow:
    - authenticated **SELECT** for dashboard aggregations (own rows at minimum; team-wide read optional for “recent team activity” widget — default to **own only** for v1 dashboard).
-5. **Migration file:** e.g. **`013_profiles.sql`** (or next free number after repo tip).
+5. **Migrations in repo:** **`013_profiles.sql`**, **`014_storage_avatars.sql`** — apply both on each Supabase environment that should support profiles + avatars.
 
 ---
 
@@ -104,9 +107,10 @@ Do **before** or in parallel with first migration:
 
 | Route | Purpose |
 |--------|---------|
-| **`/dashboard`** | Default post-login landing; sections below. |
-| **`/profile`** | Edit **`display_name`** (and future avatar); show read-only email. |
-| **`/history`** | Existing page; add **“Only my edits”** default-on or toggle when coming from dashboard link. |
+| **`/dashboard`** | Personal home: recent edits, my submitted cards (shipped). |
+| **`/profile`** | Edit own **`display_name`**, email read-only, **avatar** upload/remove (shipped). |
+| **`/profile/:userId`** | Read-only teammate profile when UUID ≠ session user (shipped). |
+| **`/history`** | Team history + **“Only my edits”**; editor column links to **`/profile/{edited_by}`** (shipped). |
 
 **Dashboard sections (single scroll or tabs):**
 
@@ -122,39 +126,41 @@ Do **before** or in parallel with first migration:
 
 ## Implementation phases (suggested order)
 
-| Phase | Scope | Notes |
+| Phase | Scope | Status |
 |-------|--------|--------|
-| **1** | **`013_profiles.sql`** + RLS + trigger + backfill existing **`auth.users`** | Unblocks display names everywhere. |
-| **2** | **Supabase Dashboard** email provider + redirect URLs + templates | Coordinate with deploy envs. |
-| **3** | **Edge Function** `invite-set-password` (or equivalent) + wire **`LoginPage`** | First-time: email + invite code + password → create/update user → client password sign-in. |
-| **4** | **`LoginPage`** — returning user: email + password; **Forgot password** link | Remove primary magic-link copy. |
-| **5** | **`PasswordResetPage`** / callback handling for recovery | Hash in URL handling per Supabase v2 JS docs. |
-| **6** | **`/dashboard`** page + TanStack Query + **`App.jsx`** route + nav | Uses **`fetchProfile`**, **`fetchMyEditHistory`**, **`fetchMyCards`** in **`appAdapter.js`**. |
-| **7** | **`/profile`** page + **`AuthUserMenu`** link | Mutation for **`display_name`**. |
-| **8** | **`EditHistoryPage`** — join **`profiles`**, **“Only my edits”** filter | Completes cross-app visibility. |
-| **9** | **Audit `cards.created_by`** on all insert paths | Required for honest “My cards”. |
-| **10** | **`RequireAuth`** / **`authInvite.js`** — post-login redirect to **`/dashboard`** | Optional env **`VITE_POST_LOGIN_PATH`**. |
-| **11** | **Cleanup** — remove or archive **`request-magic-link`** primary path; **`supabaseClient`** flowType decision | Docs + **`CLAUDE.md`** update. |
+| **1** | **`013_profiles.sql`** + RLS + trigger + backfill existing **`auth.users`** | **Done** (see profiles plan). |
+| **1b** | **`014_storage_avatars.sql`** + profile avatar upload/remove UI | **Done** (apply SQL per Supabase project). |
+| **2** | **Supabase Dashboard** email provider + redirect URLs + templates | **Ops** — verify each env. |
+| **3** | **Edge Function** `invite-set-password` + wire **`LoginPage`** | **In repo** — deploy + secrets per env. |
+| **4** | **`LoginPage`** — returning user: email + password; **Forgot password** | **In repo** — confirm copy/UX vs magic link. |
+| **5** | **`AuthResetPasswordPage`** / callback handling for recovery | **In repo** — verify on Vercel previews. |
+| **6** | **`/dashboard`** + **`App.jsx`** route + nav | **Done**. |
+| **7** | **`/profile`** + **`AuthUserMenu`** link + **`display_name`** mutation | **Done** (+ avatars). |
+| **7b** | **`/profile/:userId`** read-only teammate view + **`fetchProfileById`** | **Done**. |
+| **8** | **`EditHistoryPage`** — join **`profiles`**, **“Only my edits”**, editor profile links | **Done**. |
+| **9** | **`cards.created_by`** on manual insert paths | **Done** in **`appAdapter`** (keep auditing new paths). |
+| **10** | **`RequireAuth`** / **`authInvite.js`** — post-login redirect to **`/dashboard`** | **Verify** desired default; optional **`VITE_POST_LOGIN_PATH`**. |
+| **11** | **Cleanup** — demote/remove **`request-magic-link`** primary path if unused; **`supabaseClient`** flowType | **When product decides**; document in this file. |
 
 **Rough effort:** ~3–6 engineering days depending on Edge Function + reset-flow polish and existing **`appAdapter`** surface.
 
 ---
 
-## Key files to touch
+## Key files (reference)
 
-- `supabase/migrations/013_profiles.sql` (number may bump)
+- `supabase/migrations/013_profiles.sql`, `014_storage_avatars.sql`
 - `supabase/functions/invite-set-password/` (+ `config.toml` JWT rules)
 - `src/pages/LoginPage.jsx`
-- `src/pages/DashboardPage.jsx` (**new**)
-- `src/pages/ProfilePage.jsx` (**new**) or extend existing shell
-- `src/pages/AuthCallbackPage.jsx` / **`PasswordResetPage.jsx`** (**new**)
-- `src/App.jsx` — routes **`/dashboard`**, **`/profile`**
+- `src/pages/DashboardPage.jsx`
+- `src/pages/ProfilePage.jsx`
+- `src/pages/AuthCallbackPage.jsx`, `src/pages/AuthResetPasswordPage.jsx`
+- `src/App.jsx` — routes **`/dashboard`**, **`/profile`**, **`/profile/:userId`**, auth routes
 - `src/components/AuthUserMenu.jsx` — Dashboard + Profile links
-- `src/data/supabase/appAdapter.js` — profile CRUD, my edits, my cards queries
-- `src/pages/EditHistoryPage.jsx` — profile join + filter
+- `src/data/supabase/appAdapter.js` — **`fetchProfile`**, **`fetchProfileById`**, **`upsertProfile`**, **`uploadProfileAvatar`**, **`removeProfileAvatar`**, my edits, my cards, **`created_by`** on inserts
+- `src/pages/EditHistoryPage.jsx` — profile names + filter + editor links
 - `src/lib/supabaseClient.js` — auth options after PKCE/implicit decision
-- `docs/plans/user-profiles-and-activity.md` — add banner: **“Auth: see user-dashboards-and-password-auth.md”**
-- Root **`CLAUDE.md`** — paused backlog pointer when work starts
+- `docs/plans/user-profiles-and-activity.md` — profiles + avatars status
+- Root **`CLAUDE.md`** — v2 snapshot + backlog
 
 ---
 
@@ -164,9 +170,10 @@ Do **before** or in parallel with first migration:
 - [ ] Returning user: email + password only; session persists refresh.
 - [ ] Forgot password: email arrives, link completes, new password works.
 - [ ] Non-allowlisted email: cannot create user or sign in (clear error).
-- [ ] Dashboard: recent edits and my cards match DB for **`auth.uid()`**.
-- [ ] Edit history shows **display names**; “only my edits” correct.
-- [ ] Workbench save still writes **`edit_history.edited_by`**.
+- [x] Dashboard: recent edits and my cards lists wired (confirm rows still match DB for **`auth.uid()`** after deploy).
+- [x] Edit history shows **display names**; “only my edits” toggle; editor links to **`/profile/{uuid}`**.
+- [ ] Workbench save still writes **`edit_history.edited_by`** (regression check when changing auth).
+- [x] **`/profile`** display name + avatar upload (after **`014`** on Supabase); **`/profile/:userId`** read-only teammate view.
 
 ---
 
@@ -190,9 +197,10 @@ Do **before** or in parallel with first migration:
 | 2026-04-18 | **`LoginPage`**: sign-in, create account (POST function), forgot password → **`/auth/reset-password`**. |
 | 2026-04-18 | **`AuthResetPasswordPage`**, **`AuthCallbackPage`** → post-login **`/dashboard`**. |
 | 2026-04-18 | **`DashboardPage`**, **`ProfilePage`**, **`App.jsx`** routes; **`appAdapter`** `fetchProfile` / `upsertProfile` / `fetchMyEditHistory` / `fetchMyCards`; **`db.js`** exports; **`AuthUserMenu`** links. |
+| 2026-04-17 | **`014_storage_avatars.sql`** + **`uploadProfileAvatar`** / **`removeProfileAvatar`**; **`ProfilePage`** avatar UI; route **`/profile/:userId`** + **`fetchProfileById`**; **`EditHistoryPage`** editor → profile links; **`DashboardPage`** card links → **`/?card=…`**; docs + **`CLAUDE.md`** (commit `5ddf493` on `v2/supabase-migration`). |
 
-**Still manual / follow-up:** Run migration and deploy Edge Function in Supabase; enable **Email** provider + redirect URLs; **`EditHistoryPage`** profile join + “only my edits” filter (plan phase 8); audit **`cards.created_by`** on inserts when custom-card Supabase path ships.
+**Still manual / follow-up:** On **each** Supabase project: run **`013`** and **`014`** if not already; deploy **`invite-set-password`** (and **`request-magic-link`** if still used); confirm **Email** provider + redirect URLs + Edge secrets; smoke **Vercel** (login, dashboard, profile, avatar upload, history links). Revisit **Phase 11** cleanup when magic link is fully retired.
 
 ---
 
-*Created: 2026-04-18 — complements `user-profiles-and-activity.md` for dashboard + password-primary auth.*
+*Created: 2026-04-18 — complements `user-profiles-and-activity.md` for dashboard + password-primary auth. Last context sync: 2026-04-17.*

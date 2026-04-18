@@ -76,7 +76,7 @@
 
 ## Relation to other plans
 
-- **`docs/plans/user-profiles-and-activity.md`** — Independent; can ship before or after. **`created_by`** on card insert can link to this plan or profiles Phase 4.
+- **`docs/plans/user-profiles-and-activity.md`** — **`created_by`** on Supabase manual card inserts is **shipped** in **`appAdapter.js`** (see profiles plan / dashboard). This custom-card doc is independent for PAT/copy cleanup.
 
 ---
 

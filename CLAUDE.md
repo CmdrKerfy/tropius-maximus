@@ -39,12 +39,13 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Paused work & backlog (owner paused — resume anytime)
 
-- **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`**, edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` in Supabase** before avatar upload works in production.
+- **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`**, edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` once per Supabase project** that should support avatar upload (Storage bucket + policies); skip if already applied.
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
 ### Planned cleanup (UX / tech debt — not started)
 
+- **UI / UX refresh (modern shell, toasts, Explore filters, progressive disclosure):** phased plan **`docs/plans/ui-refresh-modern-ux.md`** (Tailwind + Radix/shadcn-style primitives + Sonner; no Bootstrap).
 - **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
 
 ### Optional — after the core v2 plan is finished
@@ -83,7 +84,7 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 - **Frontend:** React + React Router + TanStack Query + React Hook Form + Tailwind
 - **Backend:** Supabase (Postgres + Auth + RLS) — free tier
-- **Auth:** Magic links (email-based, no passwords or PATs); **production:** invite-only via Edge Function + `signup_allowlist` + **`VITE_REQUIRE_EMAIL_AUTH`**; SPA client **`flowType: 'implicit'`** for cross-device magic links (see `docs/plans/user-profiles-and-activity.md` auth section)
+- **Auth:** **Email + password** (primary UX on v2: **`LoginPage`**, Edge Function **`invite-set-password`**) plus **magic-link** recovery path where still wired; **production:** invite-only via allowlist + secrets + **`VITE_REQUIRE_EMAIL_AUTH`**; client may use **`flowType: 'implicit'`** for cross-device magic links when that path is enabled (see **`docs/plans/user-dashboards-and-password-auth.md`** and profiles plan).
 - **Deploy:** Vercel (free tier) — preview deploys per branch
 - **Ingest:** Weekly `ingest-supabase` workflow (or `ingest.py` locally) refreshes DuckDB, then `push_duckdb_to_supabase.py` upserts API rows into Postgres. `main` branch may still use Pages workflow + Parquet until cutover.
 
@@ -121,6 +122,8 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 **`user_preferences`** — per-user quick fields config
 
 **`workbench_queues`** — persistent annotation queues per user
+
+**`profiles`** — one row per `auth.users`: `display_name`, optional `avatar_url` (public URL after Storage upload); RLS: authenticated read all, write own. Trigger on `auth.users` insert. Migrations **`013_profiles.sql`**, **`014_storage_avatars.sql`** (Storage bucket **`avatars`**, per-user object prefix).
 
 ### Key Design Decisions
 
@@ -194,9 +197,12 @@ backup/                          -- gitignored, contains pre-migration data snap
   pokemon_metadata.csv, custom_cards.json, annotations.json
 
 src/                             -- React frontend (v2 routes + Supabase layer on v2 branch)
-  App.jsx                        -- router shell (Phase 4+)
+  App.jsx                        -- router shell (Phase 4+): Explore, Workbench, `/dashboard`, `/profile`, `/profile/:userId`, auth routes, etc.
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
   pages/WorkbenchPage.jsx        -- Workbench route (Phase 5 shell)
+  pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)
+  pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
+  pages/EditHistoryPage.jsx      -- team edit history + “only my edits”
   db.js                          -- routes DuckDB vs Supabase (`data/supabase/appAdapter.js`)
   lib/github.js                  -- WILL BE DELETED
   lib/annotationOptions.js       -- WILL BE REPLACED by field_definitions table
@@ -206,7 +212,10 @@ src/                             -- React frontend (v2 routes + Supabase layer o
 .env.example                     -- template for .env.local
 vercel.json                      -- Vite SPA rewrites for Vercel; cleanUrls false for /login deep links
 docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see plan status)
+docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
+docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
+docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
 

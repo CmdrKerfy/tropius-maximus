@@ -1,2 +1,3 @@
 /* Tailwind v4 — this single import brings in all utilities */
 @import "tailwindcss";
+@import "./theme/tokens.css";

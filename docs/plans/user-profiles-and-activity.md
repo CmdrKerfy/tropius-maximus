@@ -1,6 +1,6 @@
 # Plan: User profiles, profile page, and activity (v2)
 
-**Status (2026-04-17):** **Phases 1–5 implemented** on branch `v2/supabase-migration` (profiles, dashboard, history UX, `created_by`, teammate profile route, avatars + Storage). **Ops:** apply migration **`014_storage_avatars.sql`** in the Supabase project before avatar upload works in that environment.
+**Status (2026-04-17):** **Phases 1–5 implemented** on branch `v2/supabase-migration` (profiles, dashboard, history UX, `created_by`, teammate profile route, avatars + Storage). **Ops:** apply migration **`014_storage_avatars.sql`** once per Supabase project that should support avatar upload (creates bucket **`avatars`** + Storage RLS). No-op if already applied.
 
 **Audience:** Future AI agents / developers.  
 **Companion context:** Root `CLAUDE.md` (project state, branches).

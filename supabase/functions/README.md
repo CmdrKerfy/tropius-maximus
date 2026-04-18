@@ -1,5 +1,7 @@
 # Supabase Edge Functions
 
+**Related SQL (profiles + avatars):** run **`013_profiles.sql`** and **`014_storage_avatars.sql`** from `supabase/migrations/` in the Supabase SQL editor (or `supabase db push`) so **`profiles`** and Storage bucket **`avatars`** exist before relying on **`/profile`** photo upload in the app.
+
 ## `request-magic-link`
 
 Gated magic-link requests:
