@@ -38,6 +38,7 @@ import {
   readUrlState,
   buildUrlParams,
 } from "../lib/exploreUrlState.js";
+import { toastSuccess, toastError } from "../lib/toast.js";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
 
@@ -544,10 +545,11 @@ export default function ExplorePage() {
         await appendCardToDefaultQueue(cardId);
         queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
         setSelectedCardId(null);
+        toastSuccess("Card added to your Workbench queue.");
         navigate("/workbench");
       } catch (err) {
         console.error(err);
-        alert(err?.message || "Could not add card to workbench queue.");
+        toastError(err);
       }
     },
     [navigate, queryClient]

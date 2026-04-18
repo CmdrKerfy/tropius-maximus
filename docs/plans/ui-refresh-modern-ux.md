@@ -2,6 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
+**Progress snapshot (2026-04-18):** Phase **1** done · Phase **2** done (Sonner + **`humanizeError`** on **`toastError`**) · Phase **3** partial: optional **`VITE_EXPERIMENTAL_NAV`** canopy shell + dropdown nav + gated page headers (default-off) · Phases **4–7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -67,22 +68,26 @@
 
 **Tasks**
 
-- [ ] Add **Toaster** root in app shell (`main.jsx` or top layout).
-- [ ] Create **`toastSuccess` / `toastError` / `toastPromise`** helpers (thin wrapper).
-- [ ] Wire **high-value mutations** first: Workbench save, Batch save, custom card submit, profile save, avatar upload/remove, queue add/remove.
-- [ ] Standardize **loading** on primary actions (button `disabled` + spinner or “Saving…”).
+- [x] Add **Toaster** root in app shell (`main.jsx` or top layout).
+- [x] Create **`toastSuccess` / `toastError` / `toastPromise`** helpers (thin wrapper).
+- [x] Wire **high-value mutations** first: Workbench save, Batch save, custom card submit, profile save, avatar upload/remove, queue add/remove.
+- [x] Standardize **loading** on primary actions (button `disabled` + spinner or “Saving…”).
 
 **Exit criteria:** Above actions show **clear success or error** without opening devtools; errors include **actionable** short text (or “Copy request id” later if you add support).
 
-**Likely files:** `src/main.jsx`, `src/App.jsx`, `src/lib/toast.js` (new), mutation call sites in Workbench/Batch/Profile/CustomCardForm.
+**Also shipped:** **`src/lib/humanizeError.js`** — maps Postgres / RLS / auth / network patterns to short plain English; long stack traces → generic line. **`toastError(x)`** always runs **`humanizeError(x)`** so call sites may pass raw `Error` objects.
+
+**Likely files:** `src/main.jsx`, `src/lib/toast.js`, `src/lib/humanizeError.js`, mutation call sites in Workbench/Batch/Profile/CustomCardForm/Explore/AnnotationEditor.
 
 ---
 
 ## Phase 3 — App shell & responsive nav (2–3 days)
 
+**Progress (2026-04-18):** When **`VITE_EXPERIMENTAL_NAV=true`**, **`AppLayout`** + **`AppShellHeader`** provide a canopy bar (Explore, Workbench, Activity + Manage data dropdowns, **`AuthUserMenu`**); authenticated routes are nested under one **`Protected`** parent; page-level headers are hidden to avoid duplicate chrome; Explore keeps **Card data & tools** on a slim bar. **Still open:** turn shell on by default (or ship flag), `< lg` **More** / **Sheet** pattern, sticky Explore filter row, full Phase 3 exit criteria at **768px** without relying on the flag alone.
+
 **Tasks**
 
-- [ ] **Single top shell:** logo, **primary nav** (Explore, Workbench, …), **right cluster** (optional search trigger, **user menu**).
+- [ ] **Single top shell:** logo, **primary nav** (Explore, Workbench, …), **right cluster** (optional search trigger, **user menu**). *(Experimental: `AppShellHeader` behind **`VITE_EXPERIMENTAL_NAV`** — see `src/layouts/AppLayout.jsx`.)*
 - [ ] **User menu contents:** display name, avatar or initials, links (Dashboard, Profile, History, Sign out); **email** secondary or bottom of menu — use **`fetchProfile`** / session (already have profile data paths).
 - [ ] **Breakpoints:** e.g. `< lg` collapse secondary routes into **`More` dropdown** or **Sheet**; avoid 3-row header stacks.
 - [ ] **Sticky sub-bar** for Explore (optional in this phase): filter trigger + result count — do not cram into global nav row.

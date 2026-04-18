@@ -17,6 +17,7 @@ import {
 } from "../db";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { toastError, toastSuccess, toastWarning } from "../lib/toast.js";
 
 const USE_SB =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -146,7 +147,17 @@ export default function BatchEditPage() {
       queryClient.invalidateQueries({ queryKey: ["batchPreview"] });
       queryClient.invalidateQueries({ queryKey: ["formOptions"] });
       queryClient.invalidateQueries({ queryKey: ["editHistory"] });
-      if (result.errors.length === 0) setConfirmLarge(false);
+      if (result.errors.length === 0) {
+        setConfirmLarge(false);
+        toastSuccess(`Updated ${result.updated.toLocaleString()} card${result.updated === 1 ? "" : "s"}.`);
+      } else {
+        toastWarning(`Updated ${result.updated.toLocaleString()} cards with ${result.errors.length} error${result.errors.length === 1 ? "" : "s"}.`, {
+          description: "Expand the result details below for per-card messages.",
+        });
+      }
+    },
+    onError: (err) => {
+      toastError(err);
     },
     onSettled: () => setBatchProgress(null),
   });

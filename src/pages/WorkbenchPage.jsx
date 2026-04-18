@@ -15,6 +15,7 @@ import {
 import AnnotationEditor from "../components/AnnotationEditor";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { toastError } from "../lib/toast.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 const USE_SB =
@@ -78,6 +79,9 @@ export default function WorkbenchPage() {
     mutationFn: ({ queueId, patch }) => updateWorkbenchQueue(queueId, patch),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
+    },
+    onError: (e) => {
+      toastError(e);
     },
   });
 

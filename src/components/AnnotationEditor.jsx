@@ -16,6 +16,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { patchAnnotations } from "../db";
+import { toastError } from "../lib/toast.js";
 
 /** Stack marker: field was absent before save (undo → clear). */
 const UNDO_ABSENT = Symbol("tm_undo_absent");
@@ -117,6 +118,7 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
       queryClient.invalidateQueries({ queryKey: ["editHistory"] });
     } catch (err) {
       console.error("Undo failed:", err);
+      toastError(err);
       undoStackRef.current.push(item);
     } finally {
       setSaving(false);
@@ -156,6 +158,7 @@ export default function AnnotationEditor({ cardId, annotations, attributes, form
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
       } catch (err) {
         console.error("Failed to save annotation:", err);
+        toastError(err);
       } finally {
         setSaving(false);
       }

@@ -43,9 +43,9 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
-### Planned cleanup (UX / tech debt — not started)
+### UI refresh (v2 branch — in progress)
 
-- **UI / UX refresh (modern shell, toasts, Explore filters, progressive disclosure):** phased plan **`docs/plans/ui-refresh-modern-ux.md`** (Tailwind + Radix/shadcn-style primitives + Sonner; no Bootstrap).
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phase **1** (design tokens in `src/theme/tokens.css`, **`src/components/ui/*`**, Radix **`DropdownMenu`**). **Shipped:** Phase **2** — **`sonner`** **`Toaster`** in **`src/main.jsx`**, helpers in **`src/lib/toast.js`**, plain-English errors via **`src/lib/humanizeError.js`** (wired through **`toastError`** on Workbench queue updates, **`AnnotationEditor`** save/undo failures, Batch run, Profile save/avatar, Custom Card submit/sync failures, Explore → Workbench). **Partial Phase 3:** optional canopy shell when **`VITE_EXPERIMENTAL_NAV=true`** — **`src/layouts/AppLayout.jsx`**, **`src/components/AppShellHeader.jsx`**, nested routes in **`src/App.jsx`**, gated headers on app pages. **Not done yet:** default-on shell + small-viewport nav pattern, Explore filter overhaul (plan Phase 4), remaining plan phases.
 - **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
 
 ### Optional — after the core v2 plan is finished
@@ -197,7 +197,13 @@ backup/                          -- gitignored, contains pre-migration data snap
   pokemon_metadata.csv, custom_cards.json, annotations.json
 
 src/                             -- React frontend (v2 routes + Supabase layer on v2 branch)
-  App.jsx                        -- router shell (Phase 4+): Explore, Workbench, `/dashboard`, `/profile`, `/profile/:userId`, auth routes, etc.
+  main.jsx                       -- QueryClient + router root; Sonner **`Toaster`**; DB init prefetch
+  App.jsx                        -- router shell: nested **`Protected`** + **`AppLayout`** (optional **`VITE_EXPERIMENTAL_NAV`**), auth routes
+  layouts/AppLayout.jsx          -- optional **`AppShellHeader`** + **`<Outlet />`**
+  components/AppShellHeader.jsx  -- experimental canopy nav (Explore, Workbench, Activity, Manage data)
+  lib/toast.js                   -- **`toastSuccess` / `toastError`** (Phase 2)
+  lib/humanizeError.js           -- plain-English **`toastError`** copy from API/network errors
+  lib/navEnv.js                  -- **`useExperimentalAppNav()`** (`VITE_EXPERIMENTAL_NAV`)
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
   pages/WorkbenchPage.jsx        -- Workbench route (Phase 5 shell)
   pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)

@@ -15,6 +15,7 @@ import {
 } from "../db.js";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { toastError, toastSuccess } from "../lib/toast.js";
 
 function isUuidParam(v) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v || ""));
@@ -86,6 +87,10 @@ export default function ProfilePage() {
     mutationFn: () => upsertProfile({ display_name: displayName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toastSuccess("Profile saved.");
+    },
+    onError: (e) => {
+      toastError(e);
     },
   });
 
@@ -94,6 +99,10 @@ export default function ProfilePage() {
     onSuccess: (row) => {
       setAvatarBust(row?.updated_at || String(Date.now()));
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toastSuccess("Photo updated.");
+    },
+    onError: (e) => {
+      toastError(e);
     },
   });
 
@@ -102,6 +111,10 @@ export default function ProfilePage() {
     onSuccess: () => {
       setAvatarBust("");
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toastSuccess("Photo removed.");
+    },
+    onError: (e) => {
+      toastError(e);
     },
   });
 
@@ -280,12 +293,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">JPEG, PNG, or WebP · max 1 MB</p>
-                {avatarUploadMutation.isError && (
-                  <p className="text-sm text-red-600">{avatarUploadMutation.error?.message || "Upload failed"}</p>
-                )}
-                {avatarRemoveMutation.isError && (
-                  <p className="text-sm text-red-600">{avatarRemoveMutation.error?.message || "Remove failed"}</p>
-                )}
               </div>
             )}
 
@@ -312,16 +319,6 @@ export default function ProfilePage() {
                     disabled={loading}
                   />
                 </div>
-                {saveMutation.isError && (
-                  <p className="text-sm text-red-600" role="alert">
-                    {saveMutation.error?.message || "Could not save"}
-                  </p>
-                )}
-                {saveMutation.isSuccess && (
-                  <p className="text-sm text-green-700" role="status">
-                    Saved.
-                  </p>
-                )}
                 <button
                   type="submit"
                   disabled={saveMutation.isPending || loading}

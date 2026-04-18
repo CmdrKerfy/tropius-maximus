@@ -8,6 +8,7 @@ import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from 
 import { getToken, commitNewCard } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
+import { toastError, toastSuccess } from "../lib/toast.js";
 import {
   SOURCE_OPTIONS, CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -155,7 +156,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
   // ── UI state ──
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [creating, setCreating] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [setIdManual, setSetIdManual] = useState(false);
@@ -258,7 +258,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setCreating(true);
 
     try {
@@ -293,7 +292,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         await addPocketCard(pocketCardJson);
 
         if (useSupabaseBackend()) {
-          setSuccess(`Pocket card "${name}" saved to the database.`);
+          toastSuccess(`Pocket card "${name}" saved to the database.`);
         } else {
           let ghCommitted = false;
           const token = getToken();
@@ -304,20 +303,19 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             } catch (ghErr) {
               console.warn("GitHub commit failed:", ghErr.message);
               const msg = ghErr?.message || "";
-              setError(
+              const errText =
                 msg.includes("403")
                   ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
-              );
+                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+              setError(errText);
+              toastError(errText);
             }
           }
 
           if (ghCommitted) {
-            setSuccess(`Pocket card "${name}" added and committed to GitHub!`);
+            toastSuccess(`Pocket card "${name}" added and committed to GitHub!`);
           } else if (!token) {
-            setSuccess(
-              `Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
-            );
+            toastSuccess(`Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
           }
         }
       } else {
@@ -391,7 +389,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
         await addTcgCard(dbCard);
 
         if (useSupabaseBackend()) {
-          setSuccess(`Card "${name}" saved to the database.`);
+          toastSuccess(`Card "${name}" saved to the database.`);
         } else {
           let ghCommitted = false;
           const token = getToken();
@@ -402,20 +400,19 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             } catch (ghErr) {
               console.warn("GitHub commit failed:", ghErr.message);
               const msg = ghErr?.message || "";
-              setError(
+              const errText =
                 msg.includes("403")
                   ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings."
-              );
+                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+              setError(errText);
+              toastError(errText);
             }
           }
 
           if (ghCommitted) {
-            setSuccess(`Card "${name}" added and committed to GitHub!`);
+            toastSuccess(`Card "${name}" added and committed to GitHub!`);
           } else if (!token) {
-            setSuccess(
-              `Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`
-            );
+            toastSuccess(`Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
           }
         }
       }
@@ -450,7 +447,9 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
       onCardAdded?.();
     } catch (err) {
-      setError(err.message);
+      const m = err?.message || String(err);
+      setError(m);
+      toastError(m);
     } finally {
       setCreating(false);
     }
@@ -511,12 +510,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
           </button>
         </div>
       )}
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-sm mb-4">
-          {success}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-4">
 
         {/* ── Required Fields (TCG) ── */}
