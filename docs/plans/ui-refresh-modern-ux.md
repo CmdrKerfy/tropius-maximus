@@ -167,6 +167,7 @@ Phase 0 (audit + SQL decision)
 
 | Risk | Mitigation |
 |------|------------|
+| **React Rules of Hooks** (blank white screen) | Do not `return` (including `<Navigate />`) before later hooks. Audited/fixed: `AuthUserMenu`, `ProfilePage` invalid `/profile/:userId`. After refactors, smoke **login → Explore → Profile** and `npm run build`. |
 | Big-bang PR | **Vertical slices** per phase; feature-flag **nav v2** if needed (`VITE_UI_SHELL_V2`). |
 | shadcn + Tailwind 4 friction | Pin docs version; if generator conflicts, use **Radix manually** with same tokens. |
 | Toast spam | Debounce repeated saves; collapse “Saved” if same action within N seconds. |
