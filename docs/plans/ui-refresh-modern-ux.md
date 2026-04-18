@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done for this slice: SQL console under **Advanced**; Supabase **PAT/copy** cleanup (`CustomCardForm`, Explore, **`SqlConsole`** commit strip hidden on Supabase); shell-on pages avoid duplicate global nav. **Phase 7** not started.  
+**Progress snapshot (2026-04-18):** Phases **1–5** + **4.5** done (Workbench split presets, labels, save chrome; Card detail IA deferred — see end of doc). **Phase 6** done for this slice: SQL console under **Advanced**; Supabase **PAT/copy** cleanup (`CustomCardForm`, Explore, **`SqlConsole`** commit strip hidden on Supabase); shell-on pages avoid duplicate global nav. **Phase 7** started: **Lucide** on **`AppShellHeader`**, **`SearchBar`**, **`FilterPanel`**, **`CardGrid`** selection check, **`DropdownMenu`** checkbox indicator — remaining: Motion polish, microcopy sweep, deeper icon pass (**`CardDetail`**, etc.).  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -146,7 +146,7 @@
 
 **Tasks**
 
-- [ ] Replace ad-hoc icons with **Lucide** set.
+- [x] Replace ad-hoc icons with **Lucide** set — **first pass** (shell mobile menu + chevrons, Explore search/clear, filter dropdown chevrons + expand toggle, grid SQL selection check, Radix checkbox indicator). **Later:** **`CardDetail`**, Workbench, remaining inline SVGs.
 - [ ] Subtle **Motion** on Sheet/Dialog/toast (150–200ms).
 - [ ] Pass on **button verbs** (“Save changes” vs “Submit”) and **empty states** copy.
 

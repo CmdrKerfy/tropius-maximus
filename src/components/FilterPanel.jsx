@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 import Button from "./ui/Button.jsx";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import { useMediaQuery } from "../lib/useMediaQuery.js";
@@ -86,9 +87,7 @@ function MultiSelectDropdown({
         <DropdownMenuTrigger asChild>
           <button type="button" disabled={disabled} className={btnCls} aria-label="Choose filter options">
             <span className="flex-1 truncate">{displayText}</span>
-            <svg className="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className="w-4 h-4 shrink-0 text-gray-400" strokeWidth={2} aria-hidden />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="p-0 overflow-hidden">
@@ -659,14 +658,11 @@ export default function FilterPanel({
             hasActiveFilters ? "text-green-600 font-medium" : "text-gray-600"
           } hover:text-gray-800`}
         >
-          <svg
+          <ChevronDown
             className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+            strokeWidth={2}
+            aria-hidden
+          />
           {expanded ? "Hide filters" : "Show filters"}
           {hasActiveFilters && !expanded && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>

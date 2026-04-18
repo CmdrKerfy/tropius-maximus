@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { Check } from "lucide-react";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
@@ -31,11 +32,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
                      }`}
           aria-label={isSelected ? "Deselect card" : "Select card"}
         >
-          {isSelected && (
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
+          {isSelected && <Check className="w-4 h-4 text-white" strokeWidth={3} aria-hidden />}
         </button>
       )}
 

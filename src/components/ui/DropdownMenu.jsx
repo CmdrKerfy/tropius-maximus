@@ -1,4 +1,5 @@
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { Check } from "lucide-react";
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -35,13 +36,7 @@ export function DropdownMenuCheckboxItem({ className = "", checked, ...props }) 
     >
       <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-white">
         <DropdownMenuPrimitive.ItemIndicator>
-          <svg className="h-3.5 w-3.5 text-tm-leaf" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fillRule="evenodd"
-              d="M16.704 5.29a1 1 0 010 1.42l-7.25 7.25a1 1 0 01-1.42 0l-3.25-3.25a1 1 0 011.42-1.42l2.54 2.54 6.54-6.54a1 1 0 011.42 0z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <Check className="h-3.5 w-3.5 text-tm-leaf" strokeWidth={2.5} aria-hidden />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       <span className="min-w-0 flex-1">{props.children}</span>

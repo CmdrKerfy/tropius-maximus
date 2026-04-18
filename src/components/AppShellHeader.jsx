@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { ChevronDown, Menu } from "lucide-react";
 import AuthUserMenu from "./AuthUserMenu.jsx";
 import {
   DropdownMenu,
@@ -28,13 +29,9 @@ function MobileNavMenu() {
           className={`${shellDropdownTriggerClass(anySecondary)} max-w-full gap-1.5`}
           aria-label="Open navigation menu"
         >
-          <span className="text-base leading-none" aria-hidden>
-            ☰
-          </span>
+          <Menu className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
           <span className="text-sm font-medium">Menu</span>
-          <span className="text-[0.65rem] opacity-90" aria-hidden>
-            ▾
-          </span>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" className="min-w-[14rem] max-h-[min(24rem,70vh)] overflow-y-auto">
           <DropdownMenuItem asChild>
@@ -116,9 +113,7 @@ export default function AppShellHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger type="button" className={shellDropdownTriggerClass(activityRoute)}>
               Activity
-              <span className="text-[0.65rem] opacity-90" aria-hidden>
-                ▾
-              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[11rem]">
               <DropdownMenuItem asChild>
@@ -137,9 +132,7 @@ export default function AppShellHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger type="button" className={shellDropdownTriggerClass(manageRoute)}>
               Manage data
-              <span className="text-[0.65rem] opacity-90" aria-hidden>
-                ▾
-              </span>
+              <ChevronDown className="h-3 w-3 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[11rem]">
               <DropdownMenuItem asChild>
