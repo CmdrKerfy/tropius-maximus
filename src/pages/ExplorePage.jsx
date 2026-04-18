@@ -602,108 +602,124 @@ export default function ExplorePage() {
                 }
               }}
             >
-              {showSettings ? "Close" : "Custom Cards"}
+              {showSettings ? "Close" : "Card data & tools"}
             </Button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Settings panel (attribute manager + data info) */}
+        {/* Card data & tools panel — data source, custom cards, and SQL are sibling sections */}
         {showSettings && (
           <div className="mb-6 space-y-4">
-            {/* Data info (replaces Update Cards) */}
+            <p className="text-sm text-gray-600">
+              Card catalog, manual entries, and optional developer tools. Custom cards are only one part of this
+              panel.
+            </p>
+
             <Card>
-              <h2 className="font-semibold text-gray-800 mb-3">
-                Card Data
-              </h2>
+              <h2 className="font-semibold text-gray-800 mb-2">Data &amp; updates</h2>
               <p className="text-sm text-gray-600">
                 {USE_SUPABASE_APP
                   ? "Card data is loaded from your Supabase project. API-sourced cards refresh on the ingest schedule."
                   : "Card data is updated automatically via GitHub Actions."}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Last build: {typeof __BUILD_DATE__ !== "undefined" ? new Date(__BUILD_DATE__).toLocaleDateString() : "unknown"}
+              <p className="text-xs text-gray-400 mt-2">
+                Last build:{" "}
+                {typeof __BUILD_DATE__ !== "undefined" ? new Date(__BUILD_DATE__).toLocaleDateString() : "unknown"}
+              </p>
+            </Card>
+
+            <Card>
+              <h2 className="font-semibold text-gray-800 mb-2">Custom cards</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Add manual TCG or Pocket cards that are not in the public API. On Supabase, saves go to your
+                database; GitHub sync below is only for the classic static-site workflow.
               </p>
 
               {/* GitHub PAT (v1 / DuckDB only — not used for custom cards when on Supabase) */}
               {!USE_SUPABASE_APP && (
-              <div ref={patSectionRef} className="mt-3 border-t border-gray-100 pt-3 space-y-1.5">
-                {patSaved ? (
-                  <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center justify-between">
-                    <span>GitHub PAT configured</span>
-                    <div className="flex gap-3">
+                <div ref={patSectionRef} className="mb-3 border-t border-gray-100 pt-3 space-y-1.5">
+                  {patSaved ? (
+                    <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center justify-between">
+                      <span>GitHub PAT configured</span>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowTokenInput(!showTokenInput)}
+                          className="text-green-800 font-medium hover:underline"
+                        >
+                          {showTokenInput ? "Hide" : "Change"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setToken("");
+                            setGhToken("");
+                            setPatSaved(false);
+                          }}
+                          className="text-red-500 hover:text-red-700 font-medium hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                      No GitHub PAT —{" "}
                       <button
                         type="button"
-                        onClick={() => setShowTokenInput(!showTokenInput)}
-                        className="text-green-800 font-medium hover:underline"
+                        onClick={() => setShowTokenInput(true)}
+                        className="text-amber-800 font-medium hover:underline"
                       >
-                        {showTokenInput ? "Hide" : "Change"}
-                      </button>
+                        Add PAT
+                      </button>{" "}
+                      to sync annotations and cards across devices.
+                    </div>
+                  )}
+                  {(!patSaved || showTokenInput) && <p className="text-xs text-gray-500 font-medium">Paste token here</p>}
+                  {(!patSaved || showTokenInput) && (
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={ghToken}
+                        onChange={(e) => setGhToken(e.target.value)}
+                        placeholder="github_pat_..."
+                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono
+                                   focus:outline-none focus:ring-1 focus:ring-green-500"
+                      />
                       <button
                         type="button"
-                        onClick={() => { setToken(""); setGhToken(""); setPatSaved(false); }}
-                        className="text-red-500 hover:text-red-700 font-medium hover:underline"
+                        onClick={() => {
+                          setToken(ghToken);
+                          setShowTokenInput(false);
+                          setPatSaved(!!ghToken.trim());
+                        }}
+                        className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800"
                       >
-                        Remove
+                        Save
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                    No GitHub PAT —{" "}
-                    <button
-                      type="button"
-                      onClick={() => setShowTokenInput(true)}
-                      className="text-amber-800 font-medium hover:underline"
-                    >
-                      Add PAT
-                    </button>{" "}
-                    to sync annotations and cards across devices.
-                  </div>
-                )}
-                {(!patSaved || showTokenInput) && (
-                  <p className="text-xs text-gray-500 font-medium">Paste Token Here:</p>
-                )}
-                {(!patSaved || showTokenInput) && (
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      value={ghToken}
-                      onChange={(e) => setGhToken(e.target.value)}
-                      placeholder="github_pat_..."
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono
-                                 focus:outline-none focus:ring-1 focus:ring-green-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setToken(ghToken); setShowTokenInput(false); setPatSaved(!!ghToken.trim()); }}
-                      className="px-2 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-800"
-                    >
-                      Save
-                    </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
               )}
 
-              <div className="mt-3 flex flex-wrap gap-2 items-center">
+              <div className="flex flex-wrap gap-2 items-center">
                 <button
                   onClick={() => setShowCustomCardForm(!showCustomCardForm)}
-                  className="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium
-                             hover:bg-green-700 transition-colors"
+                  className="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors"
                 >
-                  {showCustomCardForm ? "Hide Form" : "+ Add Custom Card"}
+                  {showCustomCardForm ? "Hide form" : "+ Add custom card"}
                 </button>
                 {!USE_SUPABASE_APP && (
-                <button
-                  onClick={handlePushToGitHub}
-                  disabled={!ghToken || pushStatus === "pushing"}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
-                             hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {pushStatus === "pushing" ? "Pushing…" : "Push Local Cards to GitHub"}
-                </button>
+                  <button
+                    onClick={handlePushToGitHub}
+                    disabled={!ghToken || pushStatus === "pushing"}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
+                               hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {pushStatus === "pushing" ? "Pushing…" : "Push local cards to GitHub"}
+                  </button>
                 )}
               </div>
               {!USE_SUPABASE_APP && pushStatus === "success" && (
@@ -712,37 +728,32 @@ export default function ExplorePage() {
               {!USE_SUPABASE_APP && pushStatus === "error" && (
                 <p className="mt-2 text-xs text-red-600">{pushMessage}</p>
               )}
+            </Card>
 
-              {/* SQL console — option (a): advanced only; not in main header */}
-              <details className="mt-4 border border-amber-200 rounded-lg bg-tm-warning-soft/80">
-                <summary className="cursor-pointer select-none px-3 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-100/60 rounded-lg">
-                  Advanced — SQL console
-                </summary>
-                <div className="px-3 pb-3 pt-0 space-y-3 border-t border-amber-200/60">
-                  <p className="text-xs text-amber-950/90 leading-relaxed">
-                    For developers and power users. SQL runs against the connected database (DuckDB in-browser or
-                    Supabase). Wrong writes can damage data — use read-only queries when unsure.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="!text-amber-950 border-amber-300"
-                    onClick={() => setShowSqlConsole((v) => !v)}
-                  >
-                    {showSqlConsole ? "Hide SQL console" : "Open SQL console"}
-                  </Button>
-                  {showSqlConsole && (
-                    <div className="pt-1">
-                      <SqlConsole
-                        onShowInGrid={handleShowInGrid}
-                        onDataChanged={handleSqlDataChanged}
-                        selectedCardIds={selectedCardIds}
-                      />
-                    </div>
-                  )}
+            <Card className="border-amber-200/90 bg-tm-warning-soft/40">
+              <h2 className="font-semibold text-amber-950 mb-2">Advanced: SQL console</h2>
+              <p className="text-xs text-amber-950/90 leading-relaxed mb-3">
+                For developers only. Runs against the connected database (DuckDB in-browser or Supabase). Incorrect
+                writes can damage data — prefer read-only queries unless you know the impact.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="!text-amber-950 border-amber-300 mb-2"
+                onClick={() => setShowSqlConsole((v) => !v)}
+              >
+                {showSqlConsole ? "Hide SQL console" : "Open SQL console"}
+              </Button>
+              {showSqlConsole && (
+                <div className="pt-2 border-t border-amber-200/70">
+                  <SqlConsole
+                    onShowInGrid={handleShowInGrid}
+                    onDataChanged={handleSqlDataChanged}
+                    selectedCardIds={selectedCardIds}
+                  />
                 </div>
-              </details>
+              )}
             </Card>
 
             {/* Custom Card Form */}

@@ -42,7 +42,7 @@
 - [x] Screenshot / list **top 5 pain URLs** — **Code audit done** (layout risks below). **Optional:** owner captures **375 / 768 / 1280** screenshots for design reference (not required to start Phase 1).
 - [x] Inventory **all headers** / nav patterns — see **Appendix: header inventory**.
 - [x] List **user-visible mutations** — see **Appendix: mutation inventory**.
-- [x] **SQL console decision** — **Owner chose (a)** on 2026-04-18: SQL only under **Custom Cards → Advanced — SQL console**; header button removed (see `ExplorePage.jsx`).
+- [x] **SQL console decision** — **Owner chose (a)** on 2026-04-18: SQL only inside **Card data & tools** panel under its own **Advanced: SQL console** section (sibling to **Custom cards**); header SQL button removed (see `ExplorePage.jsx`).
 
 **Exit criteria:** Appendix filled from repo scan; **SQL console path chosen** — **(a) shipped** for Explore.
 
@@ -187,7 +187,7 @@ Phase 0 (audit + SQL decision)
 ## Owner actions (you chime in here)
 
 **1. SQL Console — ✅ completed**  
-Owner chose **(a)** — shipped in **`ExplorePage.jsx`** (Advanced `<details>` inside **Custom Cards**; header SQL button removed).
+Owner chose **(a)** — shipped in **`ExplorePage.jsx`**: header button **Card data & tools** opens a panel with sibling sections **Data & updates**, **Custom cards**, and **Advanced: SQL console** (header SQL button removed).
 
 **2. Color scheme (Tropius)** — **no reply required** unless you want a different mood  
 Phase 1 introduced **`src/theme/tokens.css`** (`tm-canopy`, `tm-leaf`, `tm-mist`, `tm-fruit`, `tm-cream`, semantic colors). Edit hex values there anytime; other pages can adopt the same tokens in Phase 3. **Optional later:** you send reference art or “warmer / more pastel” and we retune once.
@@ -203,7 +203,7 @@ Capture **Explore** at **375px**, **768px**, and **1280px** after a resize and a
 
 | URL / area | Risk at narrow width | Why (code) |
 |------------|----------------------|------------|
-| **`/` Explore** | **High** — header crowding / overlap | `ExplorePage.jsx` header: single `flex … justify-between` row with **logo + long title**, **6× `NavLink`**, then **`AuthUserMenu` + SQL + Custom Cards`**. **No `flex-wrap`** on that outer row (unlike Workbench/Fields/Batch which use `flex-wrap` + `gap-3`). |
+| **`/` Explore** | **High** — header crowding / overlap | `ExplorePage.jsx` header: single `flex … justify-between` row with **logo + long title**, **6× `NavLink`**, then **`AuthUserMenu` + Card data & tools** (SQL moved into panel). **No `flex-wrap`** on that outer row (unlike Workbench/Fields/Batch which use `flex-wrap` + `gap-3`). |
 | **`/workbench`** | Medium | Header uses `flex-wrap`; still **many pills** in one band — can wrap into tall stacks. |
 | **`/login`** | Lower | Dedicated page; form stacks naturally. |
 | **`/profile`**, **`/dashboard`** | Medium | Narrower `max-w-*` layout; **green-800** header (different from Explore’s **green-600**) — **visual inconsistency**. |
@@ -213,7 +213,7 @@ Capture **Explore** at **375px**, **768px**, and **1280px** after a resize and a
 
 | File | Header style | Nav links | Notes |
 |------|----------------|-----------|--------|
-| `ExplorePage.jsx` | `bg-green-600`, **single-row** `justify-between` | Explore, Workbench, Health, Fields, Batch, History | **SQL Console** + **Custom Cards** buttons beside `AuthUserMenu`. **No** Dashboard/Profile in pill row (only in `AuthUserMenu`). |
+| `ExplorePage.jsx` | `bg-tm-canopy`, **single-row** `justify-between` (with wrap tweaks) | Explore, Workbench, Health, Fields, Batch, History | **Card data & tools** beside `AuthUserMenu`. **No** Dashboard/Profile in pill row (only in `AuthUserMenu`). |
 | `WorkbenchPage.jsx` | `bg-green-600`, `flex-wrap` | Same 6 | `AuthUserMenu` only. |
 | `DataHealthPage.jsx` | `bg-green-600`, `flex-wrap` | Same 6 | … |
 | `FieldsPage.jsx` | `bg-green-600`, `flex-wrap` | Same 6 | … |
@@ -247,7 +247,7 @@ Capture **Explore** at **375px**, **768px**, and **1280px** after a resize and a
 
 ### SQL console decision (owner)
 
-**Chosen option:** **(a)** — SQL console only inside **Custom Cards** panel → **Advanced — SQL console** (`<details>` + warning copy + Open/Hide). Header **“SQL Console”** button **removed**. Closing **Custom Cards** clears SQL panel state.
+**Chosen option:** **(a)** — SQL console only inside **Card data & tools** panel, section **Advanced: SQL console** (warning + Open/Hide). Header **“SQL Console”** button **removed**. Closing the panel clears SQL panel state.
 
 **Notes:** SQL is **not** a separate route — `SqlConsole` remains embedded in **`ExplorePage.jsx`**.
 
