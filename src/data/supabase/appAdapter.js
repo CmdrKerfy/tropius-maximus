@@ -1181,6 +1181,74 @@ export async function upsertProfile({ display_name, avatar_url } = {}) {
   return data;
 }
 
+const CARD_DETAIL_PINS_MAX = 12;
+
+/** Current user's preferences row (card_detail_pins, quick_fields, etc.) or null. */
+export async function fetchUserPreferences() {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) return null;
+  const { data, error } = await sb
+    .from("user_preferences")
+    .select("user_id, quick_fields, default_category, card_detail_pins, updated_at")
+    .eq("user_id", uid)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { card_detail_pins: [] };
+  return data;
+}
+
+/**
+ * Upsert user_preferences for the signed-in user. Pass only fields to change.
+ * @param {{ card_detail_pins?: string[] }} patch
+ */
+export async function upsertUserPreferences(patch = {}) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id;
+  if (!uid) throw new Error("Sign in required to save preferences.");
+
+  let pins = patch.card_detail_pins;
+  if (pins !== undefined) {
+    if (!Array.isArray(pins)) pins = [];
+    const seen = new Set();
+    pins = pins.map((k) => String(k || "").trim()).filter((k) => {
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    pins = pins.slice(0, CARD_DETAIL_PINS_MAX);
+  }
+
+  const row = {
+    user_id: uid,
+    updated_at: new Date().toISOString(),
+  };
+  if (pins !== undefined) row.card_detail_pins = pins;
+
+  const { data: existing } = await sb.from("user_preferences").select("user_id").eq("user_id", uid).maybeSingle();
+
+  if (existing) {
+    const update = { updated_at: row.updated_at };
+    if (pins !== undefined) update.card_detail_pins = pins;
+    const { data, error } = await sb.from("user_preferences").update(update).eq("user_id", uid).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  const insert = {
+    user_id: uid,
+    quick_fields: ["art_style", "pose", "emotion", "environment", "owned"],
+    default_category: "general",
+    card_detail_pins: pins !== undefined ? pins : [],
+    updated_at: row.updated_at,
+  };
+  const { data, error } = await sb.from("user_preferences").insert(insert).select().single();
+  if (error) throw error;
+  return data;
+}
+
 /** Recent edit_history rows for the signed-in user only. */
 export async function fetchMyEditHistory({ limit = 40 } = {}) {
   const sb = await sbReady();

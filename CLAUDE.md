@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`014`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`015`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -43,10 +43,11 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
-### UI refresh (v2 branch — in progress)
+### UI refresh (v2 branch)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–4** + **4.5**; Phase **5** core — Workbench **save chrome** + **Retry**, **split width presets** (`tm_workbench_split_preset`), **`FormFieldLabel`** / **`splitUiLabel.js`** on **CardDetail** + **AnnotationEditor**. **Deferred:** Card detail **IA** restructure (see plan **Deferred checklist**). Phases **6–7** not started.
-- **Custom cards + GitHub PAT:** `CustomCardForm` and Explore still reference **v1** git sync (PAT, `commitNewCard`) even when **`VITE_USE_SUPABASE=true`**; the real save is already **Postgres**. Plan: **`docs/plans/custom-card-form-supabase-github-decouple.md`** — skip GitHub on Supabase, fix copy, hide or relabel PAT UI on Explore.
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**); optional **Part B** quick-add flow for **`CustomCardForm`** — **`docs/plans/card-detail-pins-and-quick-card-add.md`**.
+- **Card detail pins (Part A):** **`docs/plans/card-detail-pins-and-quick-card-add.md`** — **`user_preferences.card_detail_pins`** + **`CardDetailFieldControl`**, **`CardDetailPinEditor`**; pinned fields strip on **More Info** edit; DuckDB/localStorage fallback **`tm_card_detail_pins`**. **More pinnable keys:** extend **`CARD_DETAIL_PINNABLE_KEYS`** in **`CardDetailFieldControl.jsx`**. Apply Supabase migration **`015_card_detail_pins.sql`** on each project.
+- **Custom cards + GitHub:** Decoupled for Supabase in **`CustomCardForm`** / Explore copy (see **`docs/plans/custom-card-form-supabase-github-decouple.md`**); DuckDB still optional PAT/git.
 
 ### Optional — after the core v2 plan is finished
 
@@ -119,7 +120,7 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 **`health_check_results`** — rows for automated / scheduled health checks (optional; Data Health UI can list recent rows).
 
-**`user_preferences`** — per-user quick fields config
+**`user_preferences`** — per-user UI config: **`quick_fields`** (JSONB, legacy default list), **`card_detail_pins`** (JSONB array of field keys — ordered pins for Explore **Card detail** edit mode; migration **`015`**); **`default_category`**
 
 **`workbench_queues`** — persistent annotation queues per user
 
@@ -179,6 +180,7 @@ supabase/
     012_signup_allowlist.sql       -- invite-only email gate for request-magic-link Edge Function
     013_profiles.sql               -- profiles, RLS, auth trigger, indexes for history/cards
     014_storage_avatars.sql        -- Storage bucket `avatars` + RLS for per-user paths
+    015_card_detail_pins.sql       -- `user_preferences.card_detail_pins` JSONB for Explore card detail
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -211,6 +213,8 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   lib/splitUiLabel.js            -- split primary vs. parenthetical for field labels
   components/FilterPanel.jsx     -- Explore filters + sort (Phase 4 summary, **More filters**, mobile dialog)
   pages/ExplorePage.jsx          -- Explore route: grid, filters, detail
+  components/CardDetailFieldControl.jsx  -- shared editors for **Card detail** pins + form (pinnable keys)
+  components/CardDetailPinEditor.jsx     -- modal: ordered **Edit pins** (`user_preferences.card_detail_pins`)
   pages/WorkbenchPage.jsx        -- Workbench queue + **split width presets** (`tm_workbench_split_preset`) + save chrome
   pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)
   pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
@@ -228,6 +232,7 @@ docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dash
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
+docs/plans/card-detail-pins-and-quick-card-add.md  -- Card detail **pins** (Part A) + **quick custom card** (Part B)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
 

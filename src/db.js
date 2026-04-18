@@ -221,3 +221,38 @@ export async function appendCardToDefaultQueue(cardId) {
     ? (await sb()).appendCardToDefaultQueue(cardId)
     : duck.appendCardToDefaultQueue(cardId);
 }
+
+const LS_CARD_DETAIL_PINS = "tm_card_detail_pins";
+
+/** @returns {Promise<{ card_detail_pins?: string[], quick_fields?: unknown, default_category?: string } | null>} */
+export async function fetchUserPreferences() {
+  if (useSupabaseBackend()) return (await sb()).fetchUserPreferences();
+  try {
+    if (typeof localStorage === "undefined") return { card_detail_pins: [] };
+    const raw = localStorage.getItem(LS_CARD_DETAIL_PINS);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const pins = Array.isArray(parsed) ? parsed : [];
+    return { card_detail_pins: pins };
+  } catch {
+    return { card_detail_pins: [] };
+  }
+}
+
+/**
+ * @param {{ card_detail_pins?: string[] }} patch
+ * @returns {Promise<object>}
+ */
+export async function upsertUserPreferences(patch) {
+  if (useSupabaseBackend()) return (await sb()).upsertUserPreferences(patch);
+  if (patch.card_detail_pins !== undefined) {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(LS_CARD_DETAIL_PINS, JSON.stringify(patch.card_detail_pins));
+      }
+    } catch {
+      /* ignore */
+    }
+    return { card_detail_pins: patch.card_detail_pins };
+  }
+  return { card_detail_pins: [] };
+}

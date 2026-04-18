@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phases **1–7** complete for the scoped UI refresh (Card detail **IA** still **deferred** — see end of doc). **Phase 7** includes **`Dialog`** motion, **Lucide** across shell, Explore, **`CardDetail`**, **`WorkbenchPage`**, **`CustomCardForm`**, **`SqlConsole`**, **`FilterPanel`** (close + chip remove), **`AttributeManager`** button copy; sentence-case primary actions where touched.  
+**Progress snapshot (2026-04-18):** Phases **1–7** complete. **Card detail:** **pinned annotation fields** shipped (`docs/plans/card-detail-pins-and-quick-card-add.md` Part A); full **IA** restructure (tabs/sections) still **deferred** — see **Deferred checklist** below. **Phase 7** includes **`Dialog`** motion, **Lucide** across shell, Explore, **`CardDetail`**, **`WorkbenchPage`**, **`CustomCardForm`**, **`SqlConsole`**, **`FilterPanel`**, **`AttributeManager`** copy. **Next:** Part B **quick custom card** flow (same pins doc).  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -193,8 +193,9 @@ Phase 0 (audit + SQL decision)
 
 **Do not block earlier phases on this.** Revisit once collaborators have clicked through real sessions.
 
+- [x] **Pinned fields (user-ordered)** — shipped separately: **`docs/plans/card-detail-pins-and-quick-card-add.md`** Part **A** (`card_detail_pins`, pin strip + editor on **More Info** edit).
 - [ ] **Map tasks to sections:** e.g. read-only API facts vs. editable annotations vs. actions (Send to Workbench, delete) — reorder and rename so the first screen answers “what can I change here?”
-- [ ] **Reduce vertical scan:** consider tabs, stepped flow, or stronger section headers for dense attribute tabs.
+- [ ] **Reduce vertical scan:** consider tabs, stepped flow, or stronger section headers for dense attribute tabs (pins reduce scroll for frequent fields but do not replace this).
 - [ ] **Validate with 1–2 non-technical users:** 5-second “where do I edit X?” test; note misses and fix ordering/labels before more engineering.
 
 ---

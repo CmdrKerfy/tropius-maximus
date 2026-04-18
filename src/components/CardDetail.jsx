@@ -8,7 +8,8 @@
  * Closes when clicking the backdrop or pressing Escape.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Pencil, Plus, X } from "lucide-react";
 import {
   fetchCard,
@@ -17,7 +18,11 @@ import {
   exportAllAnnotations,
   deleteCardsById,
   useSupabaseBackend,
+  fetchUserPreferences,
+  upsertUserPreferences,
 } from "../db";
+import CardDetailFieldControl, { CARD_DETAIL_PINNABLE_KEYS } from "./CardDetailFieldControl.jsx";
+import CardDetailPinEditor from "./CardDetailPinEditor.jsx";
 import { getToken, getAnnotationsFileContents, updateAnnotationsFileContents, deleteCardsFromGitHub } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
@@ -116,12 +121,44 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
+  const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
   const [saveMessage, setSaveMessage] = useState("");
   const [syncRetryCount, setSyncRetryCount] = useState(0);
   const ghPushTimer = useRef(null);
   const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
   const runSyncNowRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const pinAllowed = useMemo(() => new Set(CARD_DETAIL_PINNABLE_KEYS), []);
+
+  const { data: userPrefs } = useQuery({
+    queryKey: ["userPreferences"],
+    queryFn: fetchUserPreferences,
+    staleTime: 30_000,
+  });
+
+  const normalizedCardDetailPins = useMemo(() => {
+    const raw = userPrefs?.card_detail_pins;
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    return raw
+      .map((k) => String(k || "").trim())
+      .filter((k) => {
+        if (!k || !pinAllowed.has(k) || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 12);
+  }, [userPrefs?.card_detail_pins, pinAllowed]);
+
+  const savePinsMutation = useMutation({
+    mutationFn: (pins) => upsertUserPreferences({ card_detail_pins: pins }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userPreferences"] });
+      setPinEditorOpen(false);
+    },
+  });
 
   useEffect(() => {
     fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
@@ -994,6 +1031,33 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             Add a PAT in Settings to sync across devices.
                           </div>
                         )}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-gray-600">Pinned fields</span>
+                          <button
+                            type="button"
+                            onClick={() => setPinEditorOpen(true)}
+                            className="text-xs font-medium text-tm-leaf hover:underline"
+                          >
+                            Edit pins
+                          </button>
+                        </div>
+                        {normalizedCardDetailPins.length > 0 && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 rounded-xl border border-tm-leaf/25 bg-tm-cream/60 p-3">
+                            {normalizedCardDetailPins.map((pk) => (
+                              <CardDetailFieldControl
+                                key={`pin-${pk}`}
+                                fieldKey={pk}
+                                ann={ann}
+                                card={card}
+                                annValue={annValue}
+                                saveAnnotation={saveAnnotation}
+                                formOpts={opts}
+                                inputClass={inputClass}
+                                idSuffix="-pin"
+                              />
+                            ))}
+                          </div>
+                        )}
                         <CollapsibleSection title="Annotations" defaultOpen={true}>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
@@ -1479,6 +1543,14 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                 </div>
               </div>
             )}
+
+            <CardDetailPinEditor
+              open={pinEditorOpen}
+              onOpenChange={setPinEditorOpen}
+              initialPins={normalizedCardDetailPins}
+              onSave={(pins) => savePinsMutation.mutate(pins)}
+              isSaving={savePinsMutation.isPending}
+            />
           </div>
         )}
       </div>
