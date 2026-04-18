@@ -21,8 +21,9 @@ import {
   fetchUserPreferences,
   upsertUserPreferences,
 } from "../db";
-import CardDetailFieldControl, { CARD_DETAIL_PINNABLE_KEYS } from "./CardDetailFieldControl.jsx";
+import CardDetailFieldControl from "./CardDetailFieldControl.jsx";
 import CardDetailPinEditor from "./CardDetailPinEditor.jsx";
+import { normalizeCardDetailPins } from "../lib/cardDetailPinRegistry.js";
 import { getToken, getAnnotationsFileContents, updateAnnotationsFileContents, deleteCardsFromGitHub } from "../lib/github";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
@@ -130,27 +131,16 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const runSyncNowRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const pinAllowed = useMemo(() => new Set(CARD_DETAIL_PINNABLE_KEYS), []);
-
   const { data: userPrefs } = useQuery({
     queryKey: ["userPreferences"],
     queryFn: fetchUserPreferences,
     staleTime: 30_000,
   });
 
-  const normalizedCardDetailPins = useMemo(() => {
-    const raw = userPrefs?.card_detail_pins;
-    if (!Array.isArray(raw)) return [];
-    const seen = new Set();
-    return raw
-      .map((k) => String(k || "").trim())
-      .filter((k) => {
-        if (!k || !pinAllowed.has(k) || seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      })
-      .slice(0, 12);
-  }, [userPrefs?.card_detail_pins, pinAllowed]);
+  const normalizedCardDetailPins = useMemo(
+    () => normalizeCardDetailPins(userPrefs?.card_detail_pins),
+    [userPrefs?.card_detail_pins]
+  );
 
   const savePinsMutation = useMutation({
     mutationFn: (pins) => upsertUserPreferences({ card_detail_pins: pins }),
@@ -1054,6 +1044,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                                 formOpts={opts}
                                 inputClass={inputClass}
                                 idSuffix="-pin"
+                                types={types}
                               />
                             ))}
                           </div>
