@@ -892,16 +892,28 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   <div className="ml-auto flex items-center gap-2 pb-2">
                     {isEditMode && (
                       <>
-                        {(saveStatus === "saved" || saveStatus === "queued") && saveMessage && (
-                          <span className={`text-xs font-medium ${saveStatus === "saved" ? "text-green-600" : "text-gray-600"}`}>{saveMessage}</span>
+                        {useSupabaseBackend() ? (
+                          <span className="text-xs text-gray-500 max-w-[14rem] text-right leading-snug">
+                            Changes save to the database as you edit.
+                          </span>
+                        ) : (
+                          <>
+                            {(saveStatus === "saved" || saveStatus === "queued") && saveMessage && (
+                              <span
+                                className={`text-xs font-medium ${saveStatus === "saved" ? "text-green-600" : "text-gray-600"}`}
+                              >
+                                {saveMessage}
+                              </span>
+                            )}
+                            <button
+                              onClick={handleSaveChanges}
+                              disabled={saveStatus === "saving"}
+                              className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50"
+                            >
+                              {saveStatus === "saving" ? "Syncing…" : "Sync to GitHub"}
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={handleSaveChanges}
-                          disabled={saveStatus === "saving"}
-                          className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 font-medium disabled:opacity-50"
-                        >
-                          {saveStatus === "saving" ? "Syncing…" : "Sync to GitHub"}
-                        </button>
                       </>
                     )}
                     <button
@@ -929,17 +941,24 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                   </div>
                 </div>
 
-                {/* Sync error: edits are locally safe; one retry allowed */}
-                {saveStatus === "error" && saveMessage && (
+                {/* Sync error (GitHub path only — Supabase saves per field to Postgres) */}
+                {!useSupabaseBackend() && saveStatus === "error" && saveMessage && (
                   <div className="mt-2 flex items-center gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                     <span className="flex-1">
                       Edits saved locally —{" "}
-                      {syncRetryCount > 0 ? "still can't sync to GitHub. Check your token in Settings." : saveMessage.replace("Couldn't sync — ", "").replace("Couldn't sync to GitHub.", "couldn't sync to GitHub.")}
+                      {syncRetryCount > 0
+                        ? "still can't sync to GitHub. Check your token in Settings."
+                        : saveMessage
+                            .replace("Couldn't sync — ", "")
+                            .replace("Couldn't sync to GitHub.", "couldn't sync to GitHub.")}
                     </span>
                     {syncRetryCount === 0 && (
                       <button
                         type="button"
-                        onClick={() => { setSyncRetryCount((n) => n + 1); runSyncNow(); }}
+                        onClick={() => {
+                          setSyncRetryCount((n) => n + 1);
+                          runSyncNow();
+                        }}
                         className="shrink-0 text-sm font-medium px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700"
                       >
                         Retry
@@ -947,7 +966,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     )}
                     <button
                       type="button"
-                      onClick={() => { setSaveStatus(null); setSaveMessage(""); setSyncRetryCount(0); }}
+                      onClick={() => {
+                        setSaveStatus(null);
+                        setSaveMessage("");
+                        setSyncRetryCount(0);
+                      }}
                       className="shrink-0 text-red-600 hover:text-red-800 font-medium"
                     >
                       Dismiss
