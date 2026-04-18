@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, useCallback } from "react";
-import { executeSql, syncMutableTablesToIndexedDB } from "../db";
+import { executeSql, syncMutableTablesToIndexedDB, useSupabaseBackend } from "../db";
 import { getToken, getFileContents, updateFileContents } from "../lib/github";
 
 const EXAMPLES = [
@@ -126,6 +126,12 @@ export default function SqlConsole({
     // Intercept mutations with a confirmation dialog
     const isMutation = /^\s*(UPDATE|INSERT|DELETE|DROP|ALTER|CREATE)/i.test(trimmed);
     if (isMutation) {
+      if (useSupabaseBackend()) {
+        setError(
+          "SQL mutations are not available in Supabase mode. Use Explore, Workbench, or Field Management to change data."
+        );
+        return;
+      }
       setPendingQuery(expandTemplate(trimmed));
       setShowConfirmDialog(true);
       return;
@@ -161,12 +167,19 @@ export default function SqlConsole({
     setCommitting(true);
     setCommitMessage(null);
     try {
+      if (useSupabaseBackend()) {
+        setCommitMessage({
+          type: "error",
+          text: "Commit from SQL console is not used in Supabase mode (no local DuckDB file to sync).",
+        });
+        return;
+      }
+
       const { annotationsSynced, customCardsSynced, customCardsData } =
         await syncMutableTablesToIndexedDB();
 
       let msg = `Saved to local storage (${annotationsSynced} annotation(s), ${customCardsSynced} custom card(s))`;
 
-      // Push to GitHub if a PAT is configured
       const token = getToken();
       if (token && customCardsData) {
         const { sha } = await getFileContents(token);
@@ -232,6 +245,12 @@ export default function SqlConsole({
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
       <h2 className="font-semibold text-gray-800 mb-3">SQL Console</h2>
+      {useSupabaseBackend() && (
+        <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-3">
+          Supabase mode: only read-only queries are supported here. SQL writes and GitHub sync are disabled; edit
+          cards and annotations in the main UI.
+        </p>
+      )}
 
       {/* Example queries */}
       <div className="mb-3">
@@ -306,8 +325,9 @@ export default function SqlConsole({
             <div>
               <span className="text-sm font-medium text-amber-800">Uncommitted changes</span>
               <p className="text-xs text-amber-700 mt-0.5">
-                Saves SQL mutations to local storage
-                {getToken() ? " and commits to GitHub" : ""}
+                {useSupabaseBackend()
+                  ? "Not used in Supabase mode."
+                  : `Saves SQL mutations to local storage${getToken() ? " and commits to GitHub" : ""}`}
               </p>
             </div>
             <button
@@ -343,7 +363,11 @@ export default function SqlConsole({
             <p className="text-sm text-gray-700 mb-1">
               This query will <strong>permanently modify the database</strong> and cannot be undone.
             </p>
-            {getToken() ? (
+            {useSupabaseBackend() ? (
+              <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1.5 mb-4">
+                You cannot run this confirmation in Supabase mode — mutations were blocked before this dialog.
+              </p>
+            ) : getToken() ? (
               <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-4">
                 GitHub PAT is configured — changes will be <strong>pushed to GitHub</strong> automatically.
               </p>

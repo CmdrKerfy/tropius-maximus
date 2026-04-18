@@ -823,8 +823,15 @@ export default function ExplorePage() {
           </div>
         )}
 
-        {/* Annotation sync banner */}
-        {(syncStatus === "syncing" || syncStatus === "done" || syncStatus === "building" || syncStatus === "deployed" || syncStatus === "deploy_failed" || syncStatus === "error" || (syncStatus === "idle" && pendingSyncCardIds.length > 0)) && (
+        {/* Annotation sync banner (GitHub / DuckDB only — not used when data lives in Supabase) */}
+        {!USE_SUPABASE_APP &&
+          (syncStatus === "syncing" ||
+            syncStatus === "done" ||
+            syncStatus === "building" ||
+            syncStatus === "deployed" ||
+            syncStatus === "deploy_failed" ||
+            syncStatus === "error" ||
+            (syncStatus === "idle" && pendingSyncCardIds.length > 0)) && (
           <div
             className={`mt-4 mb-2 rounded-lg px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 ${
               syncStatus === "error" || syncStatus === "deploy_failed"

@@ -2,7 +2,7 @@
 
 **Goal:** When the app runs against **Supabase** (`VITE_USE_SUPABASE=true`), **custom card create** should have **one** clear story: save to **Postgres**. No implied dependency on PAT/GitHub for “sync” or success messaging.
 
-**Status:** Phase 1–2 implemented on **`v2/supabase-migration`** (`useSupabaseBackend` in `db.js`, `CustomCardForm`, `ExplorePage`, `CardDetail`). `github.js` kept for v1 / DuckDB.
+**Status:** Phase 1–2 implemented on **`v2/supabase-migration`** (`useSupabaseBackend` in `db.js`, `CustomCardForm`, `ExplorePage`, `CardDetail`, **`SqlConsole`** — Supabase: no GitHub copy / no mutation path; Explore GitHub sync banner hidden). `github.js` kept for v1 / DuckDB.
 
 **Context:** `CustomCardForm.jsx` still calls `addTcgCard` / `addPocketCard` (correct — routes to `appAdapter` insert) **and then** optionally `commitNewCard` when a GitHub PAT exists. Success/error copy still says “local” / “GitHub” like v1 (DuckDB + git). **Explore** still shows a **GitHub PAT** section in Custom Cards settings.
 
@@ -60,7 +60,7 @@
 
 - **`src/lib/github.js`:** No removal yet — may still be used on **`main`** / v1. **Do not delete** until v1 cutover is explicit.
 - **Docs:** One line in `CLAUDE.md` or README under v2: *Custom cards are created in Supabase; no repo PAT.*
-- **`created_by`:** If `cards.created_by` should be set on manual inserts, wire in `appAdapter.addTcgCard` / `addPocketCard` (ties into profiles plan later).
+- **`created_by`:** Done in `appAdapter.addTcgCard` / `addPocketCard` (Supabase manual inserts).
 
 ---
 
@@ -69,7 +69,8 @@
 - [ ] Supabase: create TCG + Pocket custom card → row in `cards` (and related), no `commitNewCard` in network tab.
 - [ ] DuckDB/local (if still tested): PAT path still works.
 - [ ] No success message implying “local only” when using Supabase.
-- [ ] Explore: PAT panel hidden or clearly labeled legacy when Supabase.
+- [x] Explore: PAT panel hidden when Supabase; GitHub annotation sync banner hidden on Supabase.
+- [x] SqlConsole: Supabase note + block mutations; no GitHub commit path; PAT confirm copy guarded.
 
 ---
 
