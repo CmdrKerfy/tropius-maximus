@@ -47,15 +47,13 @@ export default function ProfilePage() {
   const selfId = sessionUser?.id ?? null;
   const isOther =
     Boolean(userIdParam) && Boolean(selfId) && String(userIdParam) !== String(selfId);
-
-  if (userIdParam && !isUuidParam(userIdParam)) {
-    return <Navigate to="/profile" replace />;
-  }
+  /** Bad `/profile/:userId` segments must not skip hooks below (Rules of Hooks). */
+  const invalidProfileId = Boolean(userIdParam) && !isUuidParam(userIdParam);
 
   const { data: profile, isLoading: profileLoading, isError, error } = useQuery({
     queryKey: ["profile", userIdParam || selfId || "me", isOther ? "byId" : "self"],
     queryFn: () => (isOther ? fetchProfileById(userIdParam) : fetchProfile()),
-    enabled: useSb && Boolean(selfId) && (!userIdParam || isUuidParam(userIdParam)),
+    enabled: useSb && Boolean(selfId) && !invalidProfileId && (!userIdParam || isUuidParam(userIdParam)),
   });
 
   useEffect(() => {
@@ -113,6 +111,10 @@ export default function ProfilePage() {
 
   const loading = authLoading || (useSb && selfId && profileLoading);
   const title = isOther ? "Member profile" : "Profile";
+
+  if (invalidProfileId) {
+    return <Navigate to="/profile" replace />;
+  }
 
   if (!useSb) {
     return (
