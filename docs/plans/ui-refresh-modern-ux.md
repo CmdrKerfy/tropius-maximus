@@ -2,7 +2,7 @@
 
 **Status:** Approved direction — implement on **`v2/supabase-migration`** in slices (merge-friendly PRs).  
 **Phase 0 (repo audit):** **Done** on **2026-04-17** (see appendix + **Owner actions** below). Screenshots are optional follow-up for the owner.  
-**Progress snapshot (2026-04-18):** Phase **1** done · Phase **2** done (Sonner + **`humanizeError`** on **`toastError`**) · Phase **3** partial: optional **`VITE_EXPERIMENTAL_NAV`** canopy shell + dropdown nav + gated page headers (default-off) · Phases **4–7** not started.  
+**Progress snapshot (2026-04-18):** Phase **1** done · Phase **2** done (Sonner + **`humanizeError`**) · Phase **3** mostly done: unified shell **on by default** (`VITE_EXPERIMENTAL_NAV=false` to opt out), **`lg+`** desktop nav + **`<lg` Menu** drawer-style dropdown, Explore **sticky** search + result count · Phases **4–7** not started.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** Root **`CLAUDE.md`**, existing stack (React 19, Vite, Tailwind 4, TanStack Query, React Hook Form).
 
@@ -83,14 +83,14 @@
 
 ## Phase 3 — App shell & responsive nav (2–3 days)
 
-**Progress (2026-04-18):** When **`VITE_EXPERIMENTAL_NAV=true`**, **`AppLayout`** + **`AppShellHeader`** provide a canopy bar (Explore, Workbench, Activity + Manage data dropdowns, **`AuthUserMenu`**); authenticated routes are nested under one **`Protected`** parent; page-level headers are hidden to avoid duplicate chrome; Explore keeps **Card data & tools** on a slim bar. **Still open:** turn shell on by default (or ship flag), `< lg` **More** / **Sheet** pattern, sticky Explore filter row, full Phase 3 exit criteria at **768px** without relying on the flag alone.
+**Progress (2026-04-18):** **`AppLayout`** + **`AppShellHeader`** ship for all builds unless **`VITE_EXPERIMENTAL_NAV=false`**. Desktop (**`lg+`**): Explore, Workbench, Activity + Manage data dropdowns, **`AuthUserMenu`**. Small viewports (**`<lg`**): single **Menu** dropdown (☰) with flat links to all routes (avoids horizontal pill overflow). Explore: **sticky** strip under the shell with **search + result count**; full **`FilterPanel`** remains below (not crammed into global nav). **Optional later:** Radix **Sheet** hamburger, or sticky **filter** summary row.
 
 **Tasks**
 
-- [ ] **Single top shell:** logo, **primary nav** (Explore, Workbench, …), **right cluster** (optional search trigger, **user menu**). *(Experimental: `AppShellHeader` behind **`VITE_EXPERIMENTAL_NAV`** — see `src/layouts/AppLayout.jsx`.)*
-- [ ] **User menu contents:** display name, avatar or initials, links (Dashboard, Profile, History, Sign out); **email** secondary or bottom of menu — use **`fetchProfile`** / session (already have profile data paths).
-- [ ] **Breakpoints:** e.g. `< lg` collapse secondary routes into **`More` dropdown** or **Sheet**; avoid 3-row header stacks.
-- [ ] **Sticky sub-bar** for Explore (optional in this phase): filter trigger + result count — do not cram into global nav row.
+- [x] **Single top shell:** logo, **primary nav** (Explore, Workbench, …), **right cluster** (**user menu**). **`src/layouts/AppLayout.jsx`**, **`src/lib/navEnv.js`** (default on).
+- [x] **User menu contents:** display name, avatar or initials, links (Dashboard, Profile, History, Sign out); **email** in menu body — **`AuthUserMenu`** + **`fetchProfile`**.
+- [x] **Breakpoints:** **`<lg`** → **Menu** dropdown (flat links); **`lg+`** → pills + Activity / Manage data dropdowns.
+- [x] **Sticky sub-bar** for Explore (lightweight): **search + result count** sticky under global header when shell is on; filters stay in page flow.
 
 **Exit criteria:** At **768px** width, no overlapping header text; nav usable without horizontal scroll; account area shows **name**, not raw email, when profile has `display_name`.
 

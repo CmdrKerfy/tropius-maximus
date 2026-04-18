@@ -796,8 +796,21 @@ export default function ExplorePage() {
           </div>
         )}
 
-        {/* Search bar */}
-        <SearchBar value={searchQuery} onChange={handleSearch} />
+        {/* Search + count: sticky strip under global shell (Phase 3); full filter panel stays below */}
+        {experimentalNav ? (
+          <div className="-mx-4 px-4 sticky top-0 z-[15] bg-tm-cream/95 backdrop-blur-sm border-b border-gray-200/90 py-2 mb-3 shadow-sm">
+            <SearchBar value={searchQuery} onChange={handleSearch} />
+            {!sqlCards && (
+              <div className="mt-2 text-sm text-gray-500">
+                {listAwaitingFirstData
+                  ? "Loading..."
+                  : `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`}
+              </div>
+            )}
+          </div>
+        ) : (
+          <SearchBar value={searchQuery} onChange={handleSearch} />
+        )}
 
         {/* Filters — shell shows immediately; options fill in when the query resolves */}
         <FilterPanel
@@ -810,8 +823,8 @@ export default function ExplorePage() {
           filterUnavailableTitle={exploreFilterUnavailableTitle}
         />
 
-        {/* Results count */}
-        {!sqlCards && (
+        {/* Results count (legacy header layout only — shell uses sticky strip above) */}
+        {!experimentalNav && !sqlCards && (
           <div className="mt-4 mb-2 text-sm text-gray-500">
             {listAwaitingFirstData
               ? "Loading..."
