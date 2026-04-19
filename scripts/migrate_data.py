@@ -18,6 +18,10 @@ Usage:
   export SUPABASE_URL=https://your-project.supabase.co
   export SUPABASE_SERVICE_KEY=<secret>   # legacy service_role JWT (eyJ...) OR new secret (sb_secret_...)
   python scripts/migrate_data.py [--dry-run]
+  python scripts/migrate_data.py --custom-cards-only   # only backup/custom_cards.json → cards + annotations (manual)
+
+  After syncing ``public/data/custom_cards.json`` from ``main``:
+  ``cp public/data/custom_cards.json backup/custom_cards.json`` then ``--custom-cards-only``.
 
 Custom cards: run ``python scripts/normalize_custom_cards_json.py backup/custom_cards.json`` before
 migrating if the JSON still has ambiguous set_id values (e.g. bjp). Existing Supabase DBs: apply
@@ -51,6 +55,7 @@ except ImportError:
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), "..", "backup")
 BATCH_SIZE = 500
 DRY_RUN = "--dry-run" in sys.argv
+CUSTOM_CARDS_ONLY = "--custom-cards-only" in sys.argv
 
 # Fields that are arrays in the annotations schema
 ARRAY_FIELDS = {
@@ -579,6 +584,12 @@ def main():
 
     print(f"Migrating data to {url}")
     print(f"Backup directory: {os.path.abspath(BACKUP_DIR)}")
+
+    if CUSTOM_CARDS_ONLY:
+        print("\n=== Custom cards only (reads backup/custom_cards.json) ===\n")
+        migrate_custom_cards(sb)
+        print("\nDone (custom cards only).")
+        return
 
     # Order matters: sets first (FK target), then cards, then annotations
     migrate_sets(sb)

@@ -244,6 +244,7 @@ docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dash
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder; merge to `main` only on owner say-so)
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
 docs/plans/production-hardening-anon-auth.md  -- production: migration 019 + disable anon + Vercel env
+docs/plans/sync-main-public-data-to-supabase.md  -- merge `public/data` from `main` + push DuckDB/custom cards to Supabase
 docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`

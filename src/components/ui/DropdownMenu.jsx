@@ -11,7 +11,7 @@ export function DropdownMenuContent({ className = "", sideOffset = 8, align = "e
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         align={align}
-        className={`z-50 min-w-[12rem] rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg outline-none ${className}`.trim()}
+        className={`z-[80] min-w-[12rem] rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg outline-none ${className}`.trim()}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
