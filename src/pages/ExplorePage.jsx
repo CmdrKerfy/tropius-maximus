@@ -814,6 +814,7 @@ export default function ExplorePage() {
                         setTimeout(() => patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
                       }
                 }
+                onAddAndSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
               />
             )}
 

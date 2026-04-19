@@ -1,9 +1,10 @@
 /**
  * CustomCardForm — Expanded form to add custom cards with all fields.
  * DuckDB mode: optional GitHub PAT auto-commit. Supabase mode: saves to Postgres only.
+ * Part B: Quick/Full layout, same-set batch add, session toasts, optional Workbench handoff.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from "../db";
 import ComboBox from "./ComboBox";
@@ -25,6 +26,8 @@ const NON_CUSTOM_SOURCES = new Set(["TCG"]);
 
 // Prefix applied to card id when saving (hidden from user). Avoids collisions with API cards.
 const CUSTOM_CARD_ID_PREFIX = "custom-";
+
+const FORM_MODE_STORAGE_KEY = "tm_custom_card_form_mode";
 
 // Hardcoded option sets
 const SHAPE_OPTIONS = [
@@ -61,7 +64,23 @@ function CollapsibleSection({ title, defaultOpen = false, children }) {
   );
 }
 
-export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
+function SectionShell({ quick, title, defaultOpen = true, children }) {
+  if (quick) {
+    return (
+      <div className="pt-4 first:pt-0 border-t border-gray-200/90 first:border-0">
+        <h4 className="text-sm font-semibold text-gray-800 mb-3">{title}</h4>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <CollapsibleSection title={title} defaultOpen={defaultOpen}>
+      {children}
+    </CollapsibleSection>
+  );
+}
+
+export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddAndSendToWorkbench }) {
   const isSupabase = useSupabaseBackend();
   const [hasGitHubPat, setHasGitHubPat] = useState(false);
   // ── Card table picker ──
@@ -163,6 +182,27 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
 
   // ── Combobox options (loaded from DB) ──
   const [opts, setOpts] = useState({});
+
+  const [formMode, setFormMode] = useState(() => {
+    try {
+      const v = localStorage.getItem(FORM_MODE_STORAGE_KEY);
+      if (v === "full" || v === "quick") return v;
+    } catch {
+      /* ignore */
+    }
+    return "quick";
+  });
+  const [sameSetNext, setSameSetNext] = useState(true);
+  const [sessionAddCount, setSessionAddCount] = useState(0);
+  const nameFieldWrapRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FORM_MODE_STORAGE_KEY, formMode);
+    } catch {
+      /* ignore */
+    }
+  }, [formMode]);
 
   // Auto-generate Set ID from Set Name for TCG custom-only sources.
   // Stops auto-filling if the user manually edits the Set ID field.
@@ -271,199 +311,342 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
     };
   };
 
+  const resetAllFields = () => {
+    setId("");
+    setName("");
+    setSetIdVal("");
+    setSetNameVal("");
+    setImageSmall("");
+    setImageLarge("");
+    setSource("");
+    setNumber("");
+    setAltName("");
+    setEvolvesFrom("");
+    setHp("");
+    setRarity("");
+    setSpecialRarity("");
+    setArtist("");
+    setRegulationMark("");
+    setSupertype("Pokémon");
+    setSubtypes("");
+    setTypes("");
+    setSetSeries("");
+    setCardType("");
+    setElement("");
+    setStage("");
+    setRetreatCost("");
+    setWeakness("");
+    setPacks("");
+    setIllustrator("");
+    setArtStyle("");
+    setMainCharacter("");
+    setBackgroundPokemon("");
+    setBackgroundHumans("");
+    setAdditionalCharacters("");
+    setEmotion("");
+    setPose("");
+    setCameraAngle("");
+    setItems("");
+    setActions("");
+    setPerspective("");
+    setWeather("");
+    setEnvironment("");
+    setBackgroundDetails("");
+    setCardLocations("");
+    setPkmnRegion("");
+    setShape("");
+    setEvolutionLine("");
+    setVideoGame("");
+    setVideoGameLocation("");
+    setShortsAppearance(false);
+    setRegionAppearance(false);
+    setThumbnailUsed(false);
+    setVideoTitle("");
+    setVideoType("");
+    setTop10Themes("");
+    setWtpcEpisode("");
+    setVideoRegion("");
+    setVideoLocation("");
+    setOwned(false);
+    setNotes("");
+    setCardSubcategory("");
+    setHeldItem("");
+    setPokeball("");
+    setEvolutionItems("");
+    setBerries("");
+    setHolidayTheme("");
+    setMultiCard("");
+    setTrainerCardType("");
+    setTrainerCardSubgroup("");
+    setPocketExclusive(false);
+    setStamp("");
+    setCardBorder("");
+    setEnergyType("");
+    setRivalGroup("");
+    setAdditionalCharacterTheme("");
+    setImageOverride("");
+    setVideoUrl("");
+    setSetIdManual(false);
+    setImageError(false);
+  };
+
+  const captureSameSetSnapshot = () => ({
+    cardTable,
+    setNameVal,
+    setIdVal,
+    source,
+    setSeries,
+    setIdManual,
+  });
+
+  const restoreSameSetSnapshot = (snap) => {
+    setCardTable(snap.cardTable);
+    if (snap.cardTable === "tcg") {
+      setSetNameVal(snap.setNameVal);
+      setSource(snap.source);
+      setSetSeries(snap.setSeries);
+      setSetIdManual(snap.setIdManual);
+    } else {
+      setSetIdVal(snap.setIdVal);
+    }
+  };
+
+  const focusFirstQuickField = () => {
+    requestAnimationFrame(() => {
+      const wrap = nameFieldWrapRef.current;
+      const nameInput = wrap?.querySelector?.("input");
+      if (!name?.trim() && nameInput) {
+        nameInput.focus();
+        return;
+      }
+      document.getElementById("ccf-card-number")?.focus();
+    });
+  };
+
+  const performSave = async (silent = false) => {
+    if (cardTable === "pocket") {
+      if (!name || !number || !setIdVal || !imageSmall) {
+        throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
+      }
+
+      const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+      const sharedFields = buildSharedAnnotationFields(cardId);
+      const pocketCardJson = {
+        id: cardId,
+        name,
+        set_id: setIdVal,
+        number: number || "",
+        rarity: rarity || "",
+        card_type: cardType || "",
+        element: element || "",
+        hp: hp ? Number(hp) || null : null,
+        stage: stage || "",
+        retreat_cost: retreatCost ? Number(retreatCost) || null : null,
+        weakness: weakness || "",
+        evolves_from: evolvesFrom || null,
+        packs: toArray(packs),
+        image_url: imageSmall,
+        illustrator: illustrator || "",
+        source: "Pocket",
+        _table: "pocket",
+        ...sharedFields,
+      };
+
+      await addPocketCard(pocketCardJson);
+
+      if (isSupabase) {
+        if (!silent) toastSuccess(`Pocket card "${name}" saved to the database.`);
+      } else {
+        let ghCommitted = false;
+        const { getToken, commitNewCard } = await import("../lib/github");
+        const token = getToken();
+        if (token) {
+          try {
+            await commitNewCard(token, pocketCardJson);
+            ghCommitted = true;
+          } catch (ghErr) {
+            console.warn("GitHub commit failed:", ghErr.message);
+            const msg = ghErr?.message || "";
+            const errText =
+              msg.includes("403")
+                ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+                : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+            setError(errText);
+            toastError(errText);
+          }
+        }
+
+        if (ghCommitted) {
+          if (!silent) toastSuccess(`Pocket card "${name}" added and committed to GitHub!`);
+        } else if (!token) {
+          if (!silent) toastSuccess(`Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
+        }
+      }
+      return { cardId, name, isPocket: true };
+    }
+
+    if (!name || !number || !setNameVal || !imageSmall || !source) {
+      throw new Error("Please fill in all required fields");
+    }
+
+    const bgPokemon = toArray(backgroundPokemon).map((v) => v.toLowerCase());
+
+    const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+    const sharedFields = buildSharedAnnotationFields(cardId);
+    const cardJson = {
+      id: cardId,
+      name,
+      alt_name: altName || "",
+      supertype: supertype || "",
+      subtypes: toArray(subtypes),
+      hp: hp ? Number(hp) || hp : null,
+      types: toArray(types),
+      evolves_from: evolvesFrom || null,
+      rarity: rarity || "",
+      special_rarity: specialRarity || "",
+      artist: artist || "",
+      set_id: setIdVal,
+      set_name: setNameVal,
+      set_series: setSeries || "",
+      number: number || "",
+      regulation_mark: regulationMark || "",
+      image_small: imageSmall,
+      image_large: imageLarge || imageSmall,
+      source,
+      _table: "tcg",
+      ...sharedFields,
+      background_pokemon: bgPokemon,
+    };
+
+    const dbCard = {
+      ...cardJson,
+      subtypes: JSON.stringify(cardJson.subtypes),
+      types: JSON.stringify(cardJson.types),
+      art_style: arrayStr(artStyle),
+      main_character: arrayStr(mainCharacter),
+      background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
+      background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
+      additional_characters: arrayStr(additionalCharacters),
+      background_details: arrayStr(backgroundDetails),
+      image_large: imageLarge || imageSmall,
+      card_subcategory: arrayStr(cardSubcategory),
+      items: arrayStr(items),
+      held_item: arrayStr(heldItem),
+      pokeball: arrayStr(pokeball),
+      evolution_items: arrayStr(evolutionItems),
+      berries: arrayStr(berries),
+      holiday_theme: arrayStr(holidayTheme),
+      multi_card: arrayStr(multiCard),
+      trainer_card_subgroup: arrayStr(trainerCardSubgroup),
+      additional_character_theme: arrayStr(additionalCharacterTheme),
+      video_title: arrayStr(videoTitle),
+      video_game: arrayStr(videoGame),
+      video_game_location: arrayStr(videoGameLocation),
+      video_type: arrayStr(videoType),
+      top_10_themes: arrayStr(top10Themes),
+      wtpc_episode: arrayStr(wtpcEpisode),
+      video_region: arrayStr(videoRegion),
+      video_location: arrayStr(videoLocation),
+    };
+
+    await addTcgCard(dbCard);
+
+    if (isSupabase) {
+      if (!silent) toastSuccess(`Card "${name}" saved to the database.`);
+    } else {
+      let ghCommitted = false;
+      const { getToken, commitNewCard } = await import("../lib/github");
+      const token = getToken();
+      if (token) {
+        try {
+          await commitNewCard(token, cardJson);
+          ghCommitted = true;
+        } catch (ghErr) {
+          console.warn("GitHub commit failed:", ghErr.message);
+          const msg = ghErr?.message || "";
+          const errText =
+            msg.includes("403")
+              ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
+              : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+          setError(errText);
+          toastError(errText);
+        }
+      }
+
+      if (ghCommitted) {
+        if (!silent) toastSuccess(`Card "${name}" added and committed to GitHub!`);
+      } else if (!token) {
+        if (!silent) toastSuccess(`Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
+      }
+    }
+    return { cardId, name, isPocket: false };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setCreating(true);
-
     try {
-      if (cardTable === 'pocket') {
-        if (!name || !number || !setIdVal || !imageSmall) {
-          throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
-        }
-
-        const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
-        const sharedFields = buildSharedAnnotationFields(cardId);
-        const pocketCardJson = {
-          id: cardId,
-          name,
-          set_id: setIdVal,
-          number: number || "",
-          rarity: rarity || "",
-          card_type: cardType || "",
-          element: element || "",
-          hp: hp ? Number(hp) || null : null,
-          stage: stage || "",
-          retreat_cost: retreatCost ? Number(retreatCost) || null : null,
-          weakness: weakness || "",
-          evolves_from: evolvesFrom || null,
-          packs: toArray(packs),
-          image_url: imageSmall,
-          illustrator: illustrator || "",
-          source: 'Pocket',
-          _table: 'pocket',
-          ...sharedFields,
-        };
-
-        await addPocketCard(pocketCardJson);
-
-        if (isSupabase) {
-          toastSuccess(`Pocket card "${name}" saved to the database.`);
-        } else {
-          let ghCommitted = false;
-          const { getToken, commitNewCard } = await import("../lib/github");
-          const token = getToken();
-          if (token) {
-            try {
-              await commitNewCard(token, pocketCardJson);
-              ghCommitted = true;
-            } catch (ghErr) {
-              console.warn("GitHub commit failed:", ghErr.message);
-              const msg = ghErr?.message || "";
-              const errText =
-                msg.includes("403")
-                  ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
-              setError(errText);
-              toastError(errText);
-            }
-          }
-
-          if (ghCommitted) {
-            toastSuccess(`Pocket card "${name}" added and committed to GitHub!`);
-          } else if (!token) {
-            toastSuccess(`Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
-          }
-        }
-      } else {
-        // TCG path
-        if (!name || !number || !setNameVal || !imageSmall || !source) {
-          throw new Error("Please fill in all required fields");
-        }
-
-        const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
-
-        const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
-        const sharedFields = buildSharedAnnotationFields(cardId);
-        // Build card object for custom_cards.json format
-        const cardJson = {
-          id: cardId,
-          name,
-          alt_name: altName || "",
-          supertype: supertype || "",
-          subtypes: toArray(subtypes),
-          hp: hp ? Number(hp) || hp : null,
-          types: toArray(types),
-          evolves_from: evolvesFrom || null,
-          rarity: rarity || "",
-          special_rarity: specialRarity || "",
-          artist: artist || "",
-          set_id: setIdVal,
-          set_name: setNameVal,
-          set_series: setSeries || "",
-          number: number || "",
-          regulation_mark: regulationMark || "",
-          image_small: imageSmall,
-          image_large: imageLarge || imageSmall,
-          source,
-          _table: 'tcg',
-          ...sharedFields,
-          background_pokemon: bgPokemon,
-        };
-
-        // Build card for DuckDB insert (arrays as JSON strings)
-        const dbCard = {
-          ...cardJson,
-          subtypes: JSON.stringify(cardJson.subtypes),
-          types: JSON.stringify(cardJson.types),
-          art_style: arrayStr(artStyle),
-          main_character: arrayStr(mainCharacter),
-          background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
-          background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
-          additional_characters: arrayStr(additionalCharacters),
-          background_details: arrayStr(backgroundDetails),
-          image_large: imageLarge || imageSmall,
-          card_subcategory:      arrayStr(cardSubcategory),
-          items:                 arrayStr(items),
-          held_item:             arrayStr(heldItem),
-          pokeball:              arrayStr(pokeball),
-          evolution_items:       arrayStr(evolutionItems),
-          berries:               arrayStr(berries),
-          holiday_theme:         arrayStr(holidayTheme),
-          multi_card:            arrayStr(multiCard),
-          trainer_card_subgroup:       arrayStr(trainerCardSubgroup),
-          additional_character_theme:  arrayStr(additionalCharacterTheme),
-          video_title:                 arrayStr(videoTitle),
-          video_game:            arrayStr(videoGame),
-          video_game_location:   arrayStr(videoGameLocation),
-          video_type:            arrayStr(videoType),
-          top_10_themes:         arrayStr(top10Themes),
-          wtpc_episode:          arrayStr(wtpcEpisode),
-          video_region:          arrayStr(videoRegion),
-          video_location:        arrayStr(videoLocation),
-        };
-
-        await addTcgCard(dbCard);
-
-        if (isSupabase) {
-          toastSuccess(`Card "${name}" saved to the database.`);
-        } else {
-          let ghCommitted = false;
-          const { getToken, commitNewCard } = await import("../lib/github");
-          const token = getToken();
-          if (token) {
-            try {
-              await commitNewCard(token, cardJson);
-              ghCommitted = true;
-            } catch (ghErr) {
-              console.warn("GitHub commit failed:", ghErr.message);
-              const msg = ghErr?.message || "";
-              const errText =
-                msg.includes("403")
-                  ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
-                  : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
-              setError(errText);
-              toastError(errText);
-            }
-          }
-
-          if (ghCommitted) {
-            toastSuccess(`Card "${name}" added and committed to GitHub!`);
-          } else if (!token) {
-            toastSuccess(`Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
-          }
-        }
-      }
-
-      // Refetch form options so dropdowns include the newly submitted values
+      const { name: savedLabel } = await performSave(true);
       fetchFormOptions().then(setOpts).catch(() => {});
-
-      // Reset form
-      setId(""); setName(""); setSetIdVal(""); setSetNameVal(""); setImageSmall(""); setImageLarge("");
-      setSource(""); setNumber("");
-      setAltName(""); setEvolvesFrom(""); setHp(""); setRarity("");
-      setSpecialRarity(""); setArtist(""); setRegulationMark("");
-      setSupertype("Pokémon"); setSubtypes(""); setTypes(""); setSetSeries("");
-      setCardType(""); setElement(""); setStage(""); setRetreatCost("");
-      setWeakness(""); setPacks(""); setIllustrator("");
-      setArtStyle(""); setMainCharacter(""); setBackgroundPokemon("");
-      setBackgroundHumans(""); setAdditionalCharacters(""); setEmotion("");
-      setPose(""); setCameraAngle(""); setItems(""); setActions("");
-      setPerspective(""); setWeather(""); setEnvironment("");
-      setBackgroundDetails(""); setCardLocations(""); setPkmnRegion(""); setShape(""); setEvolutionLine("");
-      setVideoGame(""); setVideoGameLocation(""); setShortsAppearance(false); setRegionAppearance(false); setThumbnailUsed(false);
-      setVideoTitle(""); setVideoType(""); setTop10Themes(""); setWtpcEpisode(""); setVideoRegion(""); setVideoLocation("");
-      setOwned(false); setNotes("");
-      setCardSubcategory(""); setHeldItem(""); setPokeball("");
-      setEvolutionItems(""); setBerries(""); setHolidayTheme("");
-      setMultiCard(""); setTrainerCardType(""); setTrainerCardSubgroup("");
-      setPocketExclusive(false); setStamp("");
-      setCardBorder(""); setEnergyType(""); setRivalGroup(""); setAdditionalCharacterTheme("");
-      setImageOverride(""); setVideoUrl("");
-      setSetIdManual(false);
-      setImageError(false);
-
+      resetAllFields();
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      toastSuccess(
+        savedLabel
+          ? `"${savedLabel}" added — ${next} saved this session.`
+          : `Card added — ${next} saved this session.`
+      );
       onCardAdded?.();
+    } catch (err) {
+      const m = err?.message || String(err);
+      setError(m);
+      toastError(m);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSaveAndAddAnother = async () => {
+    setError(null);
+    setCreating(true);
+    const snap = captureSameSetSnapshot();
+    try {
+      const { name: savedLabel } = await performSave(true);
+      fetchFormOptions().then(setOpts).catch(() => {});
+      resetAllFields();
+      if (sameSetNext) {
+        restoreSameSetSnapshot(snap);
+      }
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      toastSuccess(
+        savedLabel
+          ? `"${savedLabel}" added — ${next} saved this session.`
+          : `Card added — ${next} saved this session.`
+      );
+      onCardAdded?.();
+      focusFirstQuickField();
+    } catch (err) {
+      const m = err?.message || String(err);
+      setError(m);
+      toastError(m);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleAddAndSendToWorkbench = async () => {
+    if (!onAddAndSendToWorkbench) return;
+    setError(null);
+    setCreating(true);
+    try {
+      const { cardId } = await performSave(true);
+      fetchFormOptions().then(setOpts).catch(() => {});
+      resetAllFields();
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      await onAddAndSendToWorkbench(cardId);
     } catch (err) {
       const m = err?.message || String(err);
       setError(m);
@@ -478,147 +661,13 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-800">Add Custom Card</h2>
-        {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
-            &times;
-          </button>
-        )}
-      </div>
+  const quick = formMode === "quick";
 
-      {/* TCG / Pocket Picker */}
-      <div className="flex gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => setCardTable("tcg")}
-          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
-            cardTable === "tcg"
-              ? "bg-green-600 text-white border-green-600"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          Add TCG Card
-        </button>
-        <button
-          type="button"
-          onClick={() => setCardTable("pocket")}
-          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
-            cardTable === "pocket"
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          Add Pocket Card
-        </button>
-      </div>
-
-      {error && (
-        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 rounded-lg px-3 py-2.5 mb-4 text-sm">
-          <p className="flex-1">{error}</p>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="shrink-0 text-red-600 hover:text-red-800 font-medium"
-            aria-label="Dismiss"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* ── Required Fields (TCG) ── */}
-        {cardTable === 'tcg' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className={labelClass}>Name <span className="text-red-500">*</span></label>
-              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Set Series</label>
-              <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Set Name <span className="text-red-500">*</span></label>
-              <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
-              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Number in set" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Featured Region</label>
-              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto, Johto, Aquapolis, etc." className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Artist</label>
-              <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Source <span className="text-red-500">*</span></label>
-              <ComboBox value={source} onChange={setSource} options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]} placeholder="e.g., Japan Exclusive" className={inputClass + " w-full"} />
-            </div>
-            <div className="flex items-center gap-2 pt-5">
-              <input type="checkbox" id="pocketExclusive" checked={pocketExclusive}
-                onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
-              <label htmlFor="pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
-            </div>
-            <div className="col-span-1 md:col-span-3">
-              <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
-              <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
-            </div>
-            <div className="col-span-1 md:col-span-3 pb-2">
-              <label className={labelClass}>Large Image URL [Optional]</label>
-              <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
-            </div>
-          </div>
-        )}
-
-        {/* ── Required Fields (Pocket) ── */}
-        {cardTable === 'pocket' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className={labelClass}>Name <span className="text-red-500">*</span></label>
-              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Set ID <span className="text-red-500">*</span></label>
-              <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., A1" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Card Number <span className="text-red-500">*</span></label>
-              <input type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="e.g., 001" className={inputClass + " w-full"} />
-            </div>
-            <div>
-              <label className={labelClass}>Featured Region</label>
-              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto" className={inputClass + " w-full"} />
-            </div>
-            <div className="col-span-1 md:col-span-3">
-              <label className={labelClass}>Image URL <span className="text-red-500">*</span></label>
-              <input type="url" value={imageSmall} onChange={(e) => { setImageSmall(e.target.value); setImageError(false); }} placeholder="https://..." required className={inputClass + " w-full"} />
-            </div>
-          </div>
-        )}
-
-        {/* Image Preview */}
-        {imageSmall && (
-          <div className="flex justify-center">
-            <div className="w-48">
-              {!imageError ? (
-                <img src={imageSmall} alt="Preview" className="w-full h-auto rounded shadow-md" onError={() => setImageError(true)} />
-              ) : (
-                <div className="w-full h-64 bg-gray-100 rounded flex items-center justify-center text-gray-500 text-sm">Failed to load</div>
-              )}
-            </div>
-          </div>
-        )}
-
+  const renderSecondarySections = (q) => (
+    <>
         {/* ── Card Details (TCG, collapsible) ── */}
         {cardTable === 'tcg' && (
-          <CollapsibleSection title="Card Details" defaultOpen={true}>
+          <SectionShell quick={q} title="Card Details" defaultOpen={true}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
               <div>
                 <label className={labelClass}>Supertype</label>
@@ -661,12 +710,12 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
                 <input type="text" value={altName} onChange={(e) => setAltName(e.target.value)} placeholder="" className={inputClass + " w-full"} />
               </div>
             </div>
-          </CollapsibleSection>
+          </SectionShell>
         )}
 
         {/* ── Card Details (Pocket, collapsible) ── */}
         {cardTable === 'pocket' && (
-          <CollapsibleSection title="Card Details" defaultOpen={true}>
+          <SectionShell quick={q} title="Card Details" defaultOpen={true}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
               <div>
                 <label className={labelClass}>Card Type</label>
@@ -718,11 +767,11 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
                 <input type="text" value={rarity} onChange={(e) => setRarity(e.target.value)} placeholder="◆◆◆" className={inputClass + " w-full"} />
               </div>
             </div>
-          </CollapsibleSection>
+          </SectionShell>
         )}
 
         {/* ── Annotations (collapsible) ── */}
-        <CollapsibleSection title="Annotations" defaultOpen={true}>
+        <SectionShell quick={q} title="Annotations" defaultOpen={true}>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Mon Classification ── */}
@@ -888,10 +937,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             </div>
 
           </div>
-        </CollapsibleSection>
+        </SectionShell>
 
         {/* ── Video (collapsible) ── */}
-        <CollapsibleSection title="Video" defaultOpen={true}>
+        <SectionShell quick={q} title="Video" defaultOpen={true}>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
             {/* ── Video Games ── */}
@@ -951,10 +1000,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
                 options={opts.videoLocation || VIDEO_LOCATION_OPTIONS} placeholder="Pallet Town, Lumiose City" />
             </div>
           </div>
-        </CollapsibleSection>
+        </SectionShell>
 
         {/* ── Notes (collapsible) ── */}
-        <CollapsibleSection title="Notes">
+        <SectionShell quick={q} title="Notes" defaultOpen={false}>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <input type="checkbox" id="owned" checked={owned} onChange={(e) => setOwned(e.target.checked)} className="rounded" />
@@ -965,7 +1014,400 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any additional notes..." className={inputClass + " w-full"} />
             </div>
           </div>
-        </CollapsibleSection>
+        </SectionShell>
+
+    </>
+  );
+
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-gray-800">Add Custom Card</h2>
+        {onClose && (
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
+            &times;
+          </button>
+        )}
+      </div>
+
+      {/* TCG / Pocket Picker */}
+      <div className="flex gap-2 mb-4">
+        <button
+          type="button"
+          onClick={() => setCardTable("tcg")}
+          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+            cardTable === "tcg"
+              ? "bg-green-600 text-white border-green-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Add TCG Card
+        </button>
+        <button
+          type="button"
+          onClick={() => setCardTable("pocket")}
+          className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+            cardTable === "pocket"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          Add Pocket Card
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 rounded-lg px-3 py-2.5 mb-4 text-sm">
+          <p className="flex-1">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="shrink-0 text-red-600 hover:text-red-800 font-medium"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-50" role="group" aria-label="Form layout">
+            <button
+              type="button"
+              onClick={() => setFormMode("quick")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                quick ? "bg-white shadow text-gray-900" : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Quick add
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormMode("full")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                !quick ? "bg-white shadow text-gray-900" : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Full form
+            </button>
+          </div>
+          {quick && (
+            <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={sameSetNext}
+                onChange={(e) => setSameSetNext(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              Keep set &amp; source for next card
+            </label>
+          )}
+        </div>
+        {quick && (
+          <p className="text-xs text-gray-600 -mt-1">
+            Required fields stay on top; open <strong>Details &amp; annotations</strong> for the rest (or add them later in Explore or Workbench).
+          </p>
+        )}
+
+        {/* ── Identity: TCG ── */}
+        {cardTable === "tcg" && !quick && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div ref={nameFieldWrapRef}>
+              <label className={labelClass}>
+                Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Set Series</label>
+              <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Set Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Card Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="ccf-card-number"
+                type="text"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="Number in set"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Featured Region</label>
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto, Johto, Aquapolis, etc." className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>Artist</label>
+              <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Source <span className="text-red-500">*</span>
+              </label>
+              <ComboBox
+                value={source}
+                onChange={setSource}
+                options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]}
+                placeholder="e.g., Japan Exclusive"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <input
+                type="checkbox"
+                id="pocketExclusive"
+                checked={pocketExclusive}
+                onChange={(e) => setPocketExclusive(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="pocketExclusive" className="text-sm text-gray-700">
+                Pocket Exclusive
+              </label>
+            </div>
+            <div className="col-span-1 md:col-span-3">
+              <label className={labelClass}>
+                Image URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={imageSmall}
+                onChange={(e) => {
+                  setImageSmall(e.target.value);
+                  setImageError(false);
+                }}
+                placeholder="https://..."
+                required
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div className="col-span-1 md:col-span-3 pb-2">
+              <label className={labelClass}>Large Image URL [Optional]</label>
+              <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
+            </div>
+          </div>
+        )}
+
+        {cardTable === "tcg" && quick && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div ref={nameFieldWrapRef} className="sm:col-span-2">
+              <label className={labelClass}>
+                Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>
+                Set Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Card Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="ccf-card-number"
+                type="text"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="Number in set"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Source <span className="text-red-500">*</span>
+              </label>
+              <ComboBox
+                value={source}
+                onChange={setSource}
+                options={[...new Set([...SOURCE_OPTIONS, ...(opts.source || [])])]}
+                placeholder="e.g., Japan Exclusive"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>
+                Image URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={imageSmall}
+                onChange={(e) => {
+                  setImageSmall(e.target.value);
+                  setImageError(false);
+                }}
+                placeholder="https://..."
+                required
+                className={inputClass + " w-full"}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Identity: Pocket ── */}
+        {cardTable === "pocket" && !quick && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div ref={nameFieldWrapRef}>
+              <label className={labelClass}>
+                Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Set ID <span className="text-red-500">*</span>
+              </label>
+              <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., A1" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Card Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="ccf-card-number"
+                type="text"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="e.g., 001"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Featured Region</label>
+              <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto" className={inputClass + " w-full"} />
+            </div>
+            <div className="col-span-1 md:col-span-3">
+              <label className={labelClass}>
+                Image URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={imageSmall}
+                onChange={(e) => {
+                  setImageSmall(e.target.value);
+                  setImageError(false);
+                }}
+                placeholder="https://..."
+                required
+                className={inputClass + " w-full"}
+              />
+            </div>
+          </div>
+        )}
+
+        {cardTable === "pocket" && quick && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div ref={nameFieldWrapRef} className="sm:col-span-2">
+              <label className={labelClass}>
+                Name <span className="text-red-500">*</span>
+              </label>
+              <ComboBox value={name} onChange={setName} options={opts.name || []} placeholder="e.g., Pikachu" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Set ID <span className="text-red-500">*</span>
+              </label>
+              <input type="text" value={setIdVal} onChange={(e) => setSetIdVal(e.target.value)} placeholder="e.g., A1" className={inputClass + " w-full"} />
+            </div>
+            <div>
+              <label className={labelClass}>
+                Card Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="ccf-card-number"
+                type="text"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="e.g., 001"
+                className={inputClass + " w-full"}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>
+                Image URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={imageSmall}
+                onChange={(e) => {
+                  setImageSmall(e.target.value);
+                  setImageError(false);
+                }}
+                placeholder="https://..."
+                required
+                className={inputClass + " w-full"}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Image Preview */}
+        {imageSmall && (
+          <div className="flex justify-center">
+            <div className="w-48">
+              {!imageError ? (
+                <img src={imageSmall} alt="Preview" className="w-full h-auto rounded shadow-md" onError={() => setImageError(true)} />
+              ) : (
+                <div className="w-full h-64 bg-gray-100 rounded flex items-center justify-center text-gray-500 text-sm">Failed to load</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {quick ? (
+          <details className="rounded-lg border border-gray-200 bg-gray-50/60 p-3 mt-1">
+            <summary className="cursor-pointer text-sm font-medium text-gray-900 py-1 select-none">
+              Details & annotations (optional)
+            </summary>
+            <p className="text-xs text-gray-600 mt-2 mb-4">
+              Optional identity, stats, tags, and notes. You can complete these later in Explore or Workbench.
+            </p>
+            {cardTable === "tcg" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <label className={labelClass}>Set Series</label>
+                  <ComboBox value={setSeries} onChange={setSetSeries} options={opts.setSeries || []} placeholder="e.g., Black & White" className={inputClass + " w-full"} />
+                </div>
+                <div>
+                  <label className={labelClass}>Featured Region</label>
+                  <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto, Johto, Aquapolis, etc." className={inputClass + " w-full"} />
+                </div>
+                <div>
+                  <label className={labelClass}>Artist</label>
+                  <ComboBox value={artist} onChange={setArtist} options={opts.artist || []} placeholder="Ken Sugimori" className={inputClass + " w-full"} />
+                </div>
+                <div className="flex items-center gap-2 sm:col-span-2 md:col-span-1 pt-1">
+                  <input type="checkbox" id="pocketExclusiveQuick" checked={pocketExclusive} onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
+                  <label htmlFor="pocketExclusiveQuick" className="text-sm text-gray-700">Pocket Exclusive</label>
+                </div>
+                <div className="sm:col-span-2 md:col-span-3">
+                  <label className={labelClass}>Large Image URL [Optional]</label>
+                  <input type="url" value={imageLarge} onChange={(e) => setImageLarge(e.target.value)} placeholder="https://..." className={inputClass + " w-full"} />
+                </div>
+              </div>
+            )}
+            {cardTable === "pocket" && (
+              <div className="mb-4 pb-4 border-b border-gray-200 max-w-md">
+                <label className={labelClass}>Featured Region</label>
+                <ComboBox value={pkmnRegion} onChange={setPkmnRegion} options={opts.pkmnRegion || []} placeholder="Kanto" className={inputClass + " w-full"} />
+              </div>
+            )}
+            {renderSecondarySections(true)}
+          </details>
+        ) : (
+          renderSecondarySections(false)
+        )}
 
         {/* ── Add card actions ── */}
         {!isSupabase && !hasGitHubPat && (
@@ -985,7 +1427,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
             to sync across devices.
           </div>
         )}
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2">
           <button
             type="submit"
             disabled={creating}
@@ -994,6 +1436,26 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT }) {
           >
             {creating ? "Adding…" : "Add card"}
           </button>
+          <button
+            type="button"
+            disabled={creating}
+            onClick={handleSaveAndAddAnother}
+            className="px-4 py-2 bg-emerald-700 text-white rounded text-sm font-medium
+                       hover:bg-emerald-800 disabled:bg-gray-400 transition-colors"
+          >
+            {creating ? "Adding…" : "Save & add another"}
+          </button>
+          {onAddAndSendToWorkbench && (
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleAddAndSendToWorkbench}
+              className="px-4 py-2 bg-tm-canopy text-white rounded text-sm font-medium
+                         hover:opacity-95 disabled:bg-gray-400 transition-colors"
+            >
+              {creating ? "Adding…" : "Add & send to Workbench"}
+            </button>
+          )}
           {onClose && (
             <button
               type="button"
