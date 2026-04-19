@@ -51,8 +51,7 @@ ALTER POLICY "authenticated insert sets" ON public.sets
 ALTER POLICY "authenticated update sets" ON public.sets
   USING (public.auth_is_non_anonymous_authenticated());
 
-ALTER POLICY "authenticated delete sets" ON public.sets
-  USING (public.auth_is_non_anonymous_authenticated());
+-- No DELETE policy on sets in 007 (ingest uses service role).
 
 ALTER POLICY "authenticated read pokemon_metadata" ON public.pokemon_metadata
   USING (public.auth_is_non_anonymous_authenticated());

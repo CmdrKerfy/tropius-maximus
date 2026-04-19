@@ -19,6 +19,8 @@ supabase db push
 # Or run the SQL file in Supabase → SQL Editor (review first).
 ```
 
+If a previous **019** attempt failed partway (e.g. wrong policy name), use the **latest** `019` from the repo and re-run the **whole** file in one transaction when possible, or run from the first statement that did not succeed. The function `auth_is_non_anonymous_authenticated` is idempotent (`CREATE OR REPLACE`).
+
 ---
 
 ## 2. Supabase dashboard
