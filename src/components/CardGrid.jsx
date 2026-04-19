@@ -29,7 +29,9 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
     });
 
   return (
-    <div className="relative aspect-[2.5/3.5]">
+    <div
+      className="relative aspect-[2.5/3.5] rounded-lg shadow-sm transition-all duration-200 ease-out hover:z-10 hover:scale-105 hover:shadow-xl"
+    >
       {onToggleSelection && (
         <button
           onClick={(e) => {
@@ -66,8 +68,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         type="button"
         onClick={() => onCardClick(card.id)}
         title={attributionTitle || undefined}
-        className={`w-full h-full group rounded-lg overflow-hidden shadow-sm hover:shadow-xl
-                   transition-all duration-200 hover:scale-105 focus:outline-none
+        className={`w-full h-full group rounded-lg overflow-hidden focus:outline-none
                    focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-white
                    ${isSelected ? "ring-2 ring-green-500" : ""}`}
       >
