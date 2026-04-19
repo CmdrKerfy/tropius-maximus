@@ -85,6 +85,7 @@ export default function PublicShareCardPage() {
   }
 
   const img = card.image_large || card.image_small;
+  const displayImage = img || "/og-card-placeholder.svg";
   const subtitle = [card.set_name, card.number ? `#${card.number}` : null].filter(Boolean).join(" · ");
 
   return (
@@ -100,17 +101,11 @@ export default function PublicShareCardPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8 flex flex-col items-center gap-6">
-        {img ? (
-          <img
-            src={img}
-            alt={card.name || "Card"}
-            className="w-full max-w-sm rounded-lg shadow-2xl border border-slate-800 bg-slate-900"
-          />
-        ) : (
-          <div className="w-full max-w-sm aspect-[63/88] rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 text-sm">
-            No image
-          </div>
-        )}
+        <img
+          src={displayImage}
+          alt={card.name || "Card"}
+          className="w-full max-w-sm rounded-lg shadow-2xl border border-slate-800 bg-slate-900"
+        />
 
         <div className="text-center space-y-1 w-full">
           <h1 className="text-2xl font-semibold text-white">{card.name}</h1>

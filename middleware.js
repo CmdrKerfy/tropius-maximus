@@ -1,8 +1,10 @@
 /**
  * Vercel Edge: send known crawlers to /api/share-og for Open Graph HTML; humans get the SPA.
+ * Expand this list when a messenger/crawler does not match and previews fall back to generic HTML.
+ * (iMessage, WhatsApp, Facebook, Slack, Discord, Telegram, LinkedIn, Pinterest, Reddit, search bots, etc.)
  */
 const BOT_UA =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|TelegramBot|Pinterest|LinkedInBot|Embedly|vkShare|redditbot|Applebot|Googlebot|bingbot|Yandex|Baiduspider/i;
+  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Slack-ImgProxy|Slackbot-LinkExpanding|Discordbot|Discordapp|TelegramBot|Pinterest|LinkedInBot|Embedly|vkShare|redditbot|Applebot|Googlebot|Google-Structured-Data-Testing-Tool|bingbot|Yandex|Baiduspider|Bytespider|TikTok|Snapchat|Instagram|SkypeUriPreview|MicrosoftPreview|Teams|Iframely|opengraph\.io|Mastodon|Showyoubot|Outbrain|trendiction|Mail\.RU_Bot|Quora|Slurp|DuckDuckBot/i;
 
 export const config = {
   matcher: "/share/card/:path*",

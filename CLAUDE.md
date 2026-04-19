@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`017`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`018`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -39,6 +39,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Paused work & backlog (owner paused — resume anytime)
 
+- **Public card share (shipped on v2 branch):** Read-only **`/share/card/:cardId`** (**`PublicShareCardPage`**); RPC **`get_public_card_for_share`** (**`018_public_card_share_rpc.sql`**); **`api/share-og`** + root **`middleware.js`** (crawlers → OG HTML with **`og:image`**); **`public/og-card-placeholder.svg`** when artwork missing; **Copy share link** in **`CardDetail`**. Plan: **`docs/plans/public-card-share-and-social-preview.md`**. **Deferred:** opaque share tokens; share analytics.
 - **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`** (**Recent edits** = annotation `edit_history`; **My submitted cards** = successful manual inserts via `created_by`), **`/history`** (**Edit history** = team annotation edits, not card creation), edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. **Custom card form** (`CustomCardForm`): **This session — add attempts** list + **`sessionStorage`** key **`tm_custom_card_add_session_log`** for per-attempt success/error/partial (e.g. DuckDB saved, GitHub sync failed)—failed adds are **not** stored server-side; Dashboard only lists cards that reached Postgres. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` once per Supabase project** that should support avatar upload (Storage bucket + policies); skip if already applied.
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
@@ -183,7 +184,9 @@ supabase/
     013_profiles.sql               -- profiles, RLS, auth trigger, indexes for history/cards
     014_storage_avatars.sql        -- Storage bucket `avatars` + RLS for per-user paths
     015_card_detail_pins.sql       -- `user_preferences.card_detail_pins` JSONB for Explore card detail
-    … (016+)                       -- manual card IDs, avatars, profiles, etc.; **`017_apply_annotation_with_history.sql`** — RPC: annotation + `edit_history` in one transaction
+    016_generate_card_id_manual.sql
+    017_apply_annotation_with_history.sql  -- RPC: annotation + `edit_history` in one transaction
+    018_public_card_share_rpc.sql            -- `get_public_card_for_share` for anonymous share + OG
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -221,6 +224,7 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   pages/WorkbenchPage.jsx        -- Workbench queue + **split width presets** (`tm_workbench_split_preset`) + save chrome
   pages/DashboardPage.jsx        -- personal dashboard (**Recent edits** vs **My submitted cards** copy; `fetchMyEditHistory` / `fetchMyCards`)
   pages/BatchEditPage.jsx        -- batch annotation patch; per-card error list (names when id in Explore preview sample)
+  pages/PublicShareCardPage.jsx  -- read-only **`/share/card/:id`** (outside **`Protected`**)
   pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
   pages/EditHistoryPage.jsx      -- team annotation edit history + “only my edits” (not custom card creation)
   components/CustomCardForm.jsx  -- custom card add; **session add log** + `tm_custom_card_add_session_log`; Quick/Full, Workbench handoff
@@ -232,6 +236,9 @@ src/                             -- React frontend (v2 routes + Supabase layer o
 .env.local                       -- gitignored, contains VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 .env.example                     -- template for .env.local
 vercel.json                      -- Vite SPA rewrites for Vercel; cleanUrls false for /login deep links
+middleware.js                    -- Edge: social/crawler User-Agents → `/api/share-og` for Open Graph
+api/share-og.js                  -- Serverless HTML + `og:image` for link previews
+public/og-card-placeholder.svg   -- Default preview when card has no image URL
 docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see plan status)
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder)
@@ -240,6 +247,7 @@ docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotati
 docs/plans/edit-add-card-workflow-hardening.md  -- Draft: add/edit card UX + concurrency + batch safety
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
 docs/plans/card-detail-pins-and-quick-card-add.md  -- Card detail **pins** (Part A) + **quick custom card** (Part B)
+docs/plans/public-card-share-and-social-preview.md  -- Public `/share/card/…` + Open Graph thumbnails (**shipped**)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
 
