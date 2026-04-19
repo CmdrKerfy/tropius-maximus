@@ -243,6 +243,7 @@ docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder; merge to `main` only on owner say-so)
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
+docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
 docs/plans/edit-add-card-workflow-hardening.md  -- Draft: add/edit card UX + concurrency + batch safety
