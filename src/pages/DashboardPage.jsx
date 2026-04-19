@@ -67,12 +67,18 @@ export default function DashboardPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-1">Welcome, {pLoading ? "…" : display}</h2>
           <p className="text-sm text-gray-600">
-            Recent annotation edits and manual cards attributed to your account.
+            <strong>Recent edits</strong> lists annotation field changes (Workbench, card detail, batch).{" "}
+            <strong>My submitted cards</strong> lists manual/custom cards that were saved to the database with your
+            account as creator. Failed saves are not stored here—the custom card form keeps a per-session add list in
+            your browser until you clear it.
           </p>
         </section>
 
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-3">Recent edits</h3>
+          <p className="text-xs text-gray-500 mb-3">
+            Field-level annotation updates only (not “add card” creation).
+          </p>
           {eLoading ? (
             <p className="text-sm text-gray-500">Loading…</p>
           ) : edits.length === 0 ? (
@@ -101,6 +107,9 @@ export default function DashboardPage() {
 
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-3">My submitted cards</h3>
+          <p className="text-xs text-gray-500 mb-3">
+            Successful database inserts only. Use Explore’s custom card form for live per-attempt status in this session.
+          </p>
           {cLoading ? (
             <p className="text-sm text-gray-500">Loading…</p>
           ) : myCards.length === 0 ? (

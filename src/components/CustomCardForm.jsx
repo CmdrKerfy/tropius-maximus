@@ -1,15 +1,26 @@
 /**
  * CustomCardForm — Expanded form to add custom cards with all fields.
  * DuckDB mode: optional GitHub PAT auto-commit. Supabase mode: saves to Postgres only.
- * Part B: Quick/Full layout, same-set batch add, session toasts, optional Workbench handoff.
+ * Part B: Quick/Full layout, same-set batch add, session add log (sessionStorage), optional Workbench handoff.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { ChevronRight, Layers } from "lucide-react";
-import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from "../db";
+import {
+  addTcgCard,
+  addPocketCard,
+  fetchFormOptions,
+  useSupabaseBackend,
+  generateManualCardId,
+  normalizeCardNumberForStorage,
+  buildManualCardId,
+} from "../db";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
-import { toastError, toastSuccess } from "../lib/toast.js";
+import { toastError, toastSuccess, toastWarning } from "../lib/toast.js";
+import { humanizeError } from "../lib/humanizeError.js";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import {
   SOURCE_OPTIONS, CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -24,10 +35,47 @@ import {
 // for these to avoid ID collisions with real cards across annotation tables.
 const NON_CUSTOM_SOURCES = new Set(["TCG"]);
 
-// Prefix applied to card id when saving (hidden from user). Avoids collisions with API cards.
-const CUSTOM_CARD_ID_PREFIX = "custom-";
-
 const FORM_MODE_STORAGE_KEY = "tm_custom_card_form_mode";
+const SESSION_ADD_LOG_STORAGE_KEY = "tm_custom_card_add_session_log";
+
+function loadSessionAddLog() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = sessionStorage.getItem(SESSION_ADD_LOG_STORAGE_KEY);
+    if (!raw) return [];
+    const j = JSON.parse(raw);
+    return Array.isArray(j) ? j.slice(0, 80) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSessionAddLog(entries) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SESSION_ADD_LOG_STORAGE_KEY, JSON.stringify(entries.slice(0, 60)));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+/** Thrown when set+number maps to an existing card id — UI opens duplicate-ID dialog. */
+class DuplicateCardIdFlow extends Error {
+  constructor() {
+    super("DUPLICATE_CARD_ID");
+    this.name = "DuplicateCardIdFlow";
+  }
+}
+
+function isDuplicateCardIdError(err) {
+  const m = String(err?.message ?? err ?? "");
+  if (/A card with this set and number already exists/i.test(m)) return true;
+  if (/Card ID ".+" already exists/i.test(m)) return true;
+  if (/Card with ID .+ already exists/i.test(m)) return true;
+  if (/already exists/i.test(m) && /custom-/i.test(m)) return true;
+  if (/duplicate key|unique constraint/i.test(m) && /cards/i.test(m)) return true;
+  return false;
+}
 
 // Hardcoded option sets
 const SHAPE_OPTIONS = [
@@ -87,7 +135,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const [cardTable, setCardTable] = useState("tcg");
 
   // ── Required fields (TCG) ──
-  const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [setIdVal, setSetIdVal] = useState("");
   const [setNameVal, setSetNameVal] = useState("");
@@ -194,6 +241,17 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   });
   const [sameSetNext, setSameSetNext] = useState(true);
   const [sessionAddCount, setSessionAddCount] = useState(0);
+  /** Per-attempt log for this browser session (persisted to sessionStorage). */
+  const [sessionAddLog, setSessionAddLog] = useState(() => loadSessionAddLog());
+  /** Links duplicate-ID dialog to a session log row to update on resolve. */
+  const duplicateLogIdRef = useRef(null);
+  /** Which primary action is active when resolving duplicate ID (submit / addAnother / workbench). */
+  const saveIntentRef = useRef("submit");
+  const [duplicateIdModalOpen, setDuplicateIdModalOpen] = useState(false);
+  const [dupEditSetId, setDupEditSetId] = useState("");
+  const [dupEditNumber, setDupEditNumber] = useState("");
+  const [dupModalError, setDupModalError] = useState(null);
+  const [dupChecking, setDupChecking] = useState(false);
   const nameFieldWrapRef = useRef(null);
 
   useEffect(() => {
@@ -203,6 +261,29 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       /* ignore */
     }
   }, [formMode]);
+
+  useEffect(() => {
+    persistSessionAddLog(sessionAddLog);
+  }, [sessionAddLog]);
+
+  const appendSessionAddLog = (entry) => {
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `log-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const row = { id, at: Date.now(), ...entry };
+    setSessionAddLog((prev) => [row, ...prev].slice(0, 60));
+    return id;
+  };
+
+  const updateSessionAddLog = (logId, patch) => {
+    setSessionAddLog((prev) => prev.map((e) => (e.id === logId ? { ...e, ...patch } : e)));
+  };
+
+  const clearSessionAddLog = () => {
+    setSessionAddLog([]);
+    persistSessionAddLog([]);
+  };
 
   // Auto-generate Set ID from Set Name for TCG custom-only sources.
   // Stops auto-filling if the user manually edits the Set ID field.
@@ -218,14 +299,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       .toLowerCase();
     setSetIdVal(derived);
   }, [setNameVal, source, setIdManual, cardTable]);
-
-  // Auto-generate Card ID from Set ID + Card Number.
-  // For TCG path: skip auto-gen when source is "TCG" (existing card database).
-  // For Pocket path: always auto-gen.
-  useEffect(() => {
-    if (cardTable === 'tcg' && NON_CUSTOM_SOURCES.has(source)) return;
-    setId(setIdVal && number ? `${setIdVal}-${number}` : "");
-  }, [setIdVal, number, source, cardTable]);
 
   useEffect(() => {
     fetchFormOptions()
@@ -312,7 +385,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   };
 
   const resetAllFields = () => {
-    setId("");
     setName("");
     setSetIdVal("");
     setSetNameVal("");
@@ -423,19 +495,213 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
     });
   };
 
-  const performSave = async (silent = false) => {
+  const afterSuccessfulSave = async (intent, result, idOverride, opts = {}) => {
+    const { quietToast = false } = opts;
+    if (idOverride) {
+      setSetIdVal(String(idOverride.setId).trim());
+      setNumber(String(idOverride.number ?? ""));
+      if (cardTable === "tcg") setSetIdManual(true);
+    }
+    fetchFormOptions().then(setOpts).catch(() => {});
+    if (intent === "submit") {
+      resetAllFields();
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      if (!quietToast) {
+        toastSuccess(
+          result.name
+            ? `"${result.name}" added — ${next} saved this session.`
+            : `Card added — ${next} saved this session.`
+        );
+      }
+      onCardAdded?.();
+    } else if (intent === "addAnother") {
+      const snap = captureSameSetSnapshot();
+      resetAllFields();
+      if (sameSetNext) restoreSameSetSnapshot(snap);
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      if (!quietToast) {
+        toastSuccess(
+          result.name
+            ? `"${result.name}" added — ${next} saved this session.`
+            : `Card added — ${next} saved this session.`
+        );
+      }
+      onCardAdded?.();
+      focusFirstQuickField();
+    } else if (intent === "workbench" && onAddAndSendToWorkbench) {
+      resetAllFields();
+      const next = sessionAddCount + 1;
+      setSessionAddCount(next);
+      await onAddAndSendToWorkbench(result.cardId);
+    }
+  };
+
+  const runSaveIntent = async (intent, idOverride = null) => {
+    saveIntentRef.current = intent;
+    const label = name.trim() || "(unnamed card)";
+    const logId = appendSessionAddLog({
+      label,
+      status: "pending",
+      cardId: undefined,
+      detail: null,
+    });
+    duplicateLogIdRef.current = null;
+    setCreating(true);
+    setError(null);
+    try {
+      const result = await performSave(true, idOverride);
+      await afterSuccessfulSave(intent, result, idOverride, { quietToast: true });
+      const sw = result?.syncWarning;
+      if (sw) {
+        toastWarning(sw);
+        updateSessionAddLog(logId, {
+          status: "partial",
+          cardId: result.cardId,
+          detail: sw,
+        });
+      } else {
+        const okDetail =
+          intent === "workbench"
+            ? "Saved to the database and added to your default Workbench queue."
+            : isSupabase
+              ? "Saved to the database."
+              : "Saved on this device.";
+        updateSessionAddLog(logId, {
+          status: "success",
+          cardId: result.cardId,
+          detail: okDetail,
+        });
+      }
+    } catch (err) {
+      if (err?.message === "SAVE_CANCELLED" || err?.name === "SaveCancelled") {
+        updateSessionAddLog(logId, { status: "cancelled", detail: "Save cancelled." });
+        return;
+      }
+      if (err instanceof DuplicateCardIdFlow) {
+        duplicateLogIdRef.current = logId;
+        setDupEditSetId(String(idOverride?.setId ?? setIdVal).trim());
+        setDupEditNumber(String(idOverride?.number ?? number));
+        setDupModalError(null);
+        setDuplicateIdModalOpen(true);
+        updateSessionAddLog(logId, {
+          status: "duplicate",
+          detail: "This Set ID and card number are already in use. Choose another combination in the dialog.",
+        });
+        return;
+      }
+      const m = err?.message || String(err);
+      setError(m);
+      updateSessionAddLog(logId, { status: "error", detail: humanizeError(err) });
+      toastError(m);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDuplicateApply = async () => {
+    const sid = dupEditSetId.trim();
+    const num = dupEditNumber;
+    if (!sid || !String(num ?? "").trim()) {
+      setDupModalError("Set ID and card number are required.");
+      return;
+    }
+    const logId = duplicateLogIdRef.current;
+    setCreating(true);
+    setDupChecking(true);
+    setDupModalError(null);
+    try {
+      try {
+        await generateManualCardId(sid, num);
+      } catch (err) {
+        if (isDuplicateCardIdError(err)) {
+          setDupModalError("That set and number are still in use. Change one or both, then try again.");
+          return;
+        }
+        throw err;
+      }
+      const result = await performSave(true, { setId: sid, number: num });
+      setDuplicateIdModalOpen(false);
+      setDupModalError(null);
+      await afterSuccessfulSave(saveIntentRef.current, result, { setId: sid, number: num }, { quietToast: true });
+      const sw = result?.syncWarning;
+      if (sw) {
+        toastWarning(sw);
+        if (logId) {
+          updateSessionAddLog(logId, { status: "partial", cardId: result.cardId, detail: sw });
+        }
+      } else {
+        const intent = saveIntentRef.current;
+        const okDetail =
+          intent === "workbench"
+            ? "Saved to the database and added to your default Workbench queue."
+            : isSupabase
+              ? "Saved to the database."
+              : "Saved on this device.";
+        if (logId) {
+          updateSessionAddLog(logId, { status: "success", cardId: result.cardId, detail: okDetail });
+        } else {
+          appendSessionAddLog({
+            label: result.name?.trim() || "(unnamed card)",
+            status: "success",
+            cardId: result.cardId,
+            detail: okDetail,
+          });
+        }
+      }
+      duplicateLogIdRef.current = null;
+    } catch (err) {
+      if (err?.message === "SAVE_CANCELLED" || err?.name === "SaveCancelled") {
+        return;
+      }
+      if (err instanceof DuplicateCardIdFlow) {
+        setDupModalError("That combination is still taken. Try a different set or number.");
+        return;
+      }
+      const hm = humanizeError(err);
+      setDupModalError(hm);
+      if (logId) updateSessionAddLog(logId, { status: "error", detail: hm });
+    } finally {
+      setCreating(false);
+      setDupChecking(false);
+    }
+  };
+
+  const performSave = async (silent = false, idOverride = null) => {
+    const effSetId = String(idOverride?.setId ?? setIdVal).trim();
+    const effNumberRaw = idOverride?.number ?? number;
+    const effNumber = typeof effNumberRaw === "string" ? effNumberRaw : String(effNumberRaw ?? "");
+
+    if (imageSmall && imageError && typeof window !== "undefined") {
+      const ok = window.confirm(
+        "The image preview failed to load (wrong URL, a blocked hotlink, or network). It might still work in the app. Save anyway?"
+      );
+      if (!ok) {
+        const cancel = new Error("SAVE_CANCELLED");
+        cancel.name = "SaveCancelled";
+        throw cancel;
+      }
+    }
+
     if (cardTable === "pocket") {
-      if (!name || !number || !setIdVal || !imageSmall) {
+      if (!name || !effNumber || !effSetId || !imageSmall) {
         throw new Error("Please fill in all required fields (Name, Set ID, Number, Image URL)");
       }
 
-      const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+      let cardId;
+      try {
+        cardId = await generateManualCardId(effSetId, effNumber);
+      } catch (err) {
+        if (isDuplicateCardIdError(err)) throw new DuplicateCardIdFlow();
+        throw err;
+      }
       const sharedFields = buildSharedAnnotationFields(cardId);
       const pocketCardJson = {
         id: cardId,
         name,
-        set_id: setIdVal,
-        number: number || "",
+        set_id: effSetId,
+        number: normalizeCardNumberForStorage(effNumber),
         rarity: rarity || "",
         card_type: cardType || "",
         element: element || "",
@@ -452,8 +718,14 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
         ...sharedFields,
       };
 
-      await addPocketCard(pocketCardJson);
+      try {
+        await addPocketCard(pocketCardJson);
+      } catch (err) {
+        if (isDuplicateCardIdError(err)) throw new DuplicateCardIdFlow();
+        throw err;
+      }
 
+      let syncWarning = null;
       if (isSupabase) {
         if (!silent) toastSuccess(`Pocket card "${name}" saved to the database.`);
       } else {
@@ -471,8 +743,9 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
               msg.includes("403")
                 ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
                 : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+            syncWarning = errText;
             setError(errText);
-            toastError(errText);
+            if (!silent) toastError(errText);
           }
         }
 
@@ -482,16 +755,27 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
           if (!silent) toastSuccess(`Pocket card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
         }
       }
-      return { cardId, name, isPocket: true };
+      return { cardId, name, isPocket: true, syncWarning };
     }
 
-    if (!name || !number || !setNameVal || !imageSmall || !source) {
+    if (!name || !effNumber || !setNameVal || !imageSmall || !source) {
       throw new Error("Please fill in all required fields");
+    }
+    if (!effSetId) {
+      throw new Error(
+        "Set ID is missing. Use a Source other than “TCG” for auto-generated Set IDs, open full form to type a Set ID, or adjust Set Name until a Set ID appears."
+      );
     }
 
     const bgPokemon = toArray(backgroundPokemon).map((v) => v.toLowerCase());
 
-    const cardId = id ? `${CUSTOM_CARD_ID_PREFIX}${id}` : id;
+    let cardId;
+    try {
+      cardId = await generateManualCardId(effSetId, effNumber);
+    } catch (err) {
+      if (isDuplicateCardIdError(err)) throw new DuplicateCardIdFlow();
+      throw err;
+    }
     const sharedFields = buildSharedAnnotationFields(cardId);
     const cardJson = {
       id: cardId,
@@ -505,10 +789,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       rarity: rarity || "",
       special_rarity: specialRarity || "",
       artist: artist || "",
-      set_id: setIdVal,
+      set_id: effSetId,
       set_name: setNameVal,
       set_series: setSeries || "",
-      number: number || "",
+      number: normalizeCardNumberForStorage(effNumber),
       regulation_mark: regulationMark || "",
       image_small: imageSmall,
       image_large: imageLarge || imageSmall,
@@ -549,8 +833,14 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       video_location: arrayStr(videoLocation),
     };
 
-    await addTcgCard(dbCard);
+    try {
+      await addTcgCard(dbCard);
+    } catch (err) {
+      if (isDuplicateCardIdError(err)) throw new DuplicateCardIdFlow();
+      throw err;
+    }
 
+    let syncWarning = null;
     if (isSupabase) {
       if (!silent) toastSuccess(`Card "${name}" saved to the database.`);
     } else {
@@ -568,8 +858,9 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
             msg.includes("403")
               ? "Your card was saved on this device, but we don't have permission to sync it to the cloud. Check your PAT in Settings (it needs Read and write access)."
               : "Your card was saved on this device, but syncing to the cloud failed. It won't appear on other devices until sync works. You can try again later or check Settings.";
+          syncWarning = errText;
           setError(errText);
-          toastError(errText);
+          if (!silent) toastError(errText);
         }
       }
 
@@ -579,81 +870,21 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
         if (!silent) toastSuccess(`Card "${name}" added locally. Set a GitHub PAT in Settings to auto-commit.`);
       }
     }
-    return { cardId, name, isPocket: false };
+    return { cardId, name, isPocket: false, syncWarning };
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError(null);
-    setCreating(true);
-    try {
-      const { name: savedLabel } = await performSave(true);
-      fetchFormOptions().then(setOpts).catch(() => {});
-      resetAllFields();
-      const next = sessionAddCount + 1;
-      setSessionAddCount(next);
-      toastSuccess(
-        savedLabel
-          ? `"${savedLabel}" added — ${next} saved this session.`
-          : `Card added — ${next} saved this session.`
-      );
-      onCardAdded?.();
-    } catch (err) {
-      const m = err?.message || String(err);
-      setError(m);
-      toastError(m);
-    } finally {
-      setCreating(false);
-    }
+    void runSaveIntent("submit");
   };
 
-  const handleSaveAndAddAnother = async () => {
-    setError(null);
-    setCreating(true);
-    const snap = captureSameSetSnapshot();
-    try {
-      const { name: savedLabel } = await performSave(true);
-      fetchFormOptions().then(setOpts).catch(() => {});
-      resetAllFields();
-      if (sameSetNext) {
-        restoreSameSetSnapshot(snap);
-      }
-      const next = sessionAddCount + 1;
-      setSessionAddCount(next);
-      toastSuccess(
-        savedLabel
-          ? `"${savedLabel}" added — ${next} saved this session.`
-          : `Card added — ${next} saved this session.`
-      );
-      onCardAdded?.();
-      focusFirstQuickField();
-    } catch (err) {
-      const m = err?.message || String(err);
-      setError(m);
-      toastError(m);
-    } finally {
-      setCreating(false);
-    }
+  const handleSaveAndAddAnother = () => {
+    void runSaveIntent("addAnother");
   };
 
-  const handleAddAndSendToWorkbench = async () => {
+  const handleAddAndSendToWorkbench = () => {
     if (!onAddAndSendToWorkbench) return;
-    setError(null);
-    setCreating(true);
-    try {
-      const { cardId } = await performSave(true);
-      fetchFormOptions().then(setOpts).catch(() => {});
-      resetAllFields();
-      const next = sessionAddCount + 1;
-      setSessionAddCount(next);
-      await onAddAndSendToWorkbench(cardId);
-    } catch (err) {
-      const m = err?.message || String(err);
-      setError(m);
-      toastError(m);
-    } finally {
-      setCreating(false);
-    }
+    void runSaveIntent("workbench");
   };
 
   const inputClass =
@@ -662,6 +893,15 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
   const quick = formMode === "quick";
+
+  const dupPreviewId = useMemo(() => {
+    try {
+      if (!dupEditSetId.trim()) return "";
+      return buildManualCardId(dupEditSetId, dupEditNumber);
+    } catch {
+      return "";
+    }
+  }, [dupEditSetId, dupEditNumber]);
 
   const renderSecondarySections = (q) => (
     <>
@@ -1021,6 +1261,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
 
 
   return (
+    <>
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-gray-800">Add Custom Card</h2>
@@ -1195,6 +1436,11 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 Pocket Exclusive
               </label>
             </div>
+            <div className="col-span-1 md:col-span-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-snug">
+              <strong className="text-gray-800">Set ID and card number</strong> form the unique card ID. For most
+              sources, Set ID is auto-derived from Set Name. Source <strong>TCG</strong> turns that off (to reduce clashes
+              with real TCG products) — pick a custom source or adjust Set Name / number so the ID is unique.
+            </div>
             <div className="col-span-1 md:col-span-3">
               <label className={labelClass}>
                 Image URL <span className="text-red-500">*</span>
@@ -1256,6 +1502,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 placeholder="e.g., Japan Exclusive"
                 className={inputClass + " w-full"}
               />
+            </div>
+            <div className="sm:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-snug">
+              <strong className="text-gray-800">Set ID + number</strong> → unique ID. Non-TCG sources auto-fill Set ID
+              from Set Name. Source <strong>TCG</strong> disables auto-fill — use a custom source if Set ID stays empty.
             </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>
@@ -1488,7 +1738,164 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
             </button>
           )}
         </div>
+
+        {sessionAddLog.length > 0 && (
+          <div
+            className="mt-4 rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden"
+            aria-label="This session add attempts"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900">This session — add attempts</h3>
+              <button
+                type="button"
+                onClick={clearSessionAddLog}
+                className="text-xs font-medium text-gray-600 hover:text-gray-900 underline"
+              >
+                Clear list
+              </button>
+            </div>
+            <ul
+              className="max-h-56 overflow-y-auto divide-y divide-gray-100 text-sm"
+              aria-live="polite"
+              aria-relevant="additions text"
+            >
+              {sessionAddLog.map((row) => {
+                const st = row.status || "success";
+                const statusStyles = {
+                  pending: "bg-amber-50/80 border-l-4 border-amber-400",
+                  success: "bg-green-50/90 border-l-4 border-green-500",
+                  error: "bg-red-50/90 border-l-4 border-red-500",
+                  partial: "bg-amber-50 border-l-4 border-amber-600",
+                  duplicate: "bg-amber-50 border-l-4 border-amber-500",
+                  cancelled: "bg-gray-50 border-l-4 border-gray-400",
+                };
+                const statusLabel = {
+                  pending: "Saving…",
+                  success: "Saved",
+                  error: "Not saved",
+                  partial: "Saved locally — sync issue",
+                  duplicate: "Needs new ID",
+                  cancelled: "Cancelled",
+                };
+                return (
+                  <li
+                    key={row.id}
+                    className={`px-3 py-2 ${statusStyles[st] || statusStyles.pending}`}
+                  >
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="font-medium text-gray-900">{row.label}</span>
+                      {row.cardId && (
+                        <span className="font-mono text-xs text-gray-600">{row.cardId}</span>
+                      )}
+                      <span className="text-xs font-medium text-gray-700">
+                        — {statusLabel[st] || st}
+                      </span>
+                    </div>
+                    {row.detail ? (
+                      <p className="text-xs text-gray-700 mt-1 leading-snug">{row.detail}</p>
+                    ) : null}
+                    {row.at ? (
+                      <p className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
+                        {new Date(row.at).toLocaleTimeString()}
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50/80 border-t border-gray-100 space-y-1">
+              {isSupabase ? (
+                <p>
+                  Cards that reached the database are listed under{" "}
+                  <Link to="/dashboard" className="text-green-700 font-medium hover:underline">
+                    Dashboard → My submitted cards
+                  </Link>
+                  . <strong>Recent edits</strong> on the same page lists annotation changes (Workbench, card detail, batch)—not card creation.
+                </p>
+              ) : (
+                <p>
+                  This list stays in this browser tab until you clear it or close the tab. Failed attempts are not stored
+                  server-side—fix the issue and try again.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </form>
     </div>
+
+    <Dialog
+      open={duplicateIdModalOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setDuplicateIdModalOpen(false);
+          setDupModalError(null);
+        }
+      }}
+    >
+      <DialogContent className="fixed left-1/2 top-1/2 max-w-md w-[min(100%-1rem,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-0 shadow-xl">
+        <div className="p-5 space-y-4">
+          <DialogTitle className="text-lg font-semibold text-gray-900 pr-6">
+            This card ID is already in the database
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">
+            Card IDs are built from <span className="font-medium">Set ID</span> and{" "}
+            <span className="font-medium">Card number</span>. Use a combination that is not taken yet, then check and save.
+          </DialogDescription>
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Set ID</label>
+              <input
+                type="text"
+                value={dupEditSetId}
+                onChange={(e) => setDupEditSetId(e.target.value)}
+                className={inputClass + " w-full"}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Card number</label>
+              <input
+                type="text"
+                value={dupEditNumber}
+                onChange={(e) => setDupEditNumber(e.target.value)}
+                className={inputClass + " w-full"}
+                autoComplete="off"
+              />
+            </div>
+            {dupPreviewId ? (
+              <p className="text-xs text-gray-600">
+                Preview ID:{" "}
+                <code className="text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded text-[13px]">{dupPreviewId}</code>
+              </p>
+            ) : null}
+            {dupModalError ? (
+              <p className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{dupModalError}</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2 justify-end pt-1">
+            <button
+              type="button"
+              className="px-3 py-2 text-sm rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 font-medium"
+              onClick={() => {
+                setDuplicateIdModalOpen(false);
+                setDupModalError(null);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={dupChecking}
+              className="px-3 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium disabled:opacity-50"
+              onClick={() => void handleDuplicateApply()}
+            >
+              {dupChecking ? "Checking…" : "Check & save"}
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

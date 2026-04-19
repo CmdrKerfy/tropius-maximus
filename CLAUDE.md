@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History, migrations `001`–`015`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`017`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -39,15 +39,17 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Paused work & backlog (owner paused — resume anytime)
 
-- **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`**, edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` once per Supabase project** that should support avatar upload (Storage bucket + policies); skip if already applied.
+- **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`** (**Recent edits** = annotation `edit_history`; **My submitted cards** = successful manual inserts via `created_by`), **`/history`** (**Edit history** = team annotation edits, not card creation), edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. **Custom card form** (`CustomCardForm`): **This session — add attempts** list + **`sessionStorage`** key **`tm_custom_card_add_session_log`** for per-attempt success/error/partial (e.g. DuckDB saved, GitHub sync failed)—failed adds are **not** stored server-side; Dashboard only lists cards that reached Postgres. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` once per Supabase project** that should support avatar upload (Storage bucket + policies); skip if already applied.
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
 ### UI refresh (v2 branch)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**); optional **Part B** quick-add flow for **`CustomCardForm`** — **`docs/plans/card-detail-pins-and-quick-card-add.md`**.
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**). **Quick custom card (Part B):** shipped in **`docs/plans/card-detail-pins-and-quick-card-add.md`** — includes **session add log** (per-attempt status, `sessionStorage`), duplicate-ID row updates, **`017`** transactional annotation saves (see edit/add hardening plan).
 - **Card detail pins (Part A):** **`docs/plans/card-detail-pins-and-quick-card-add.md`** — **`user_preferences.card_detail_pins`** + **`CardDetailFieldControl`**, **`CardDetailPinEditor`**; pinned fields strip on **More Info** edit; DuckDB/localStorage fallback **`tm_card_detail_pins`**. **More pinnable keys:** extend **`CARD_DETAIL_PINNABLE_KEYS`** in **`CardDetailFieldControl.jsx`**. Apply Supabase migration **`015_card_detail_pins.sql`** on each project.
 - **Custom cards + GitHub:** Decoupled for Supabase in **`CustomCardForm`** / Explore copy (see **`docs/plans/custom-card-form-supabase-github-decouple.md`**); DuckDB still optional PAT/git.
+- **`unique_id` cleanup (deferred):** Legacy annotation field often duplicates **`cards.id`**. Tracked spec — **`docs/plans/unique-id-annotation-cleanup.md`** (inventory UI/DuckDB, single canonical ID, optional data migration). Not started.
+- **Add/edit workflow hardening:** **`docs/plans/edit-add-card-workflow-hardening.md`** — Shipped: **version-checked** `patchAnnotations`, batch **typed count** confirm (≥25 cards), image **save confirm** when preview failed, delete/ stale-card UX, **humanizeError** tweaks, **transactional** annotation + `edit_history` via **`017_apply_annotation_with_history.sql`** / `apply_annotation_with_history`, **RPC conflict detection** (`isAnnotationVersionConflictFromRpc`: `message` / `details` / `hint` + code **`P0001`**).
 
 ### Optional — after the core v2 plan is finished
 
@@ -181,6 +183,7 @@ supabase/
     013_profiles.sql               -- profiles, RLS, auth trigger, indexes for history/cards
     014_storage_avatars.sql        -- Storage bucket `avatars` + RLS for per-user paths
     015_card_detail_pins.sql       -- `user_preferences.card_detail_pins` JSONB for Explore card detail
+    … (016+)                       -- manual card IDs, avatars, profiles, etc.; **`017_apply_annotation_with_history.sql`** — RPC: annotation + `edit_history` in one transaction
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -216,9 +219,11 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   components/CardDetailFieldControl.jsx  -- shared editors for **Card detail** pins + form (pinnable keys)
   components/CardDetailPinEditor.jsx     -- modal: ordered **Edit pins** (`user_preferences.card_detail_pins`)
   pages/WorkbenchPage.jsx        -- Workbench queue + **split width presets** (`tm_workbench_split_preset`) + save chrome
-  pages/DashboardPage.jsx        -- personal dashboard (recent edits, my cards)
+  pages/DashboardPage.jsx        -- personal dashboard (**Recent edits** vs **My submitted cards** copy; `fetchMyEditHistory` / `fetchMyCards`)
+  pages/BatchEditPage.jsx        -- batch annotation patch; per-card error list (names when id in Explore preview sample)
   pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
-  pages/EditHistoryPage.jsx      -- team edit history + “only my edits”
+  pages/EditHistoryPage.jsx      -- team annotation edit history + “only my edits” (not custom card creation)
+  components/CustomCardForm.jsx  -- custom card add; **session add log** + `tm_custom_card_add_session_log`; Quick/Full, Workbench handoff
   db.js                          -- routes DuckDB vs Supabase (`data/supabase/appAdapter.js`)
   lib/github.js                  -- WILL BE DELETED
   lib/annotationOptions.js       -- WILL BE REPLACED by field_definitions table
@@ -231,6 +236,8 @@ docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
+docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
+docs/plans/edit-add-card-workflow-hardening.md  -- Draft: add/edit card UX + concurrency + batch safety
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
 docs/plans/card-detail-pins-and-quick-card-add.md  -- Card detail **pins** (Part A) + **quick custom card** (Part B)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase

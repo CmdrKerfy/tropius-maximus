@@ -1,6 +1,6 @@
 # Implementation plan: Card detail pins + quick card addition
 
-**Status:** **Part A (pins)** — **shipped** in app (apply **`supabase/migrations/015_card_detail_pins.sql`** to each Supabase project). **Part B (quick card addition)** — **B1–B3 shipped** in `CustomCardForm.jsx` (Quick/Full + `tm_custom_card_form_mode`, same-set + Save & add another, session toast, Add & send to Workbench on Supabase). **B4** (pinned-fields-only subsection) still optional / not implemented.  
+**Status:** **Part A (pins)** — **shipped** in app (apply **`supabase/migrations/015_card_detail_pins.sql`** to each Supabase project). **Part B (quick card addition)** — **B1–B3 shipped** in `CustomCardForm.jsx` (Quick/Full + `tm_custom_card_form_mode`, same-set + Save & add another, **“This session — add attempts”** per-card log + **`sessionStorage`** `tm_custom_card_add_session_log`, duplicate-ID / partial-sync rows, Add & send to Workbench on Supabase). **B4** (pinned-fields-only subsection) still optional / not implemented.  
 **Audience:** Owner, implementers, AI agents.  
 **Companion:** `docs/plans/ui-refresh-modern-ux.md` (deferred Card detail IA), `CLAUDE.md`, `006` + **`015`** migrations.
 
@@ -120,7 +120,7 @@ Persist mode in **`localStorage`** key e.g. `tm_custom_card_form_mode` = `quick`
 | **Save & add another** | After successful save: reset **card-specific** fields (id/name/number/image/…); **retain** user-chosen **set** + **source** + **card table (TCG/Pocket)** if “Same set” toggle is on (default **on** for quick mode). |
 | **Same set toggle** | Checkbox: “Keep set & source for next card” — reduces re-entry for a single-set batch. |
 | **Focus** | After reset, focus **name** or **number** (whichever is first empty). |
-| **Optional toast** | “Card added — N saved this session” for morale / undo affordance later. |
+| **Session add log** | **“This session — add attempts”** (below form actions): one row per attempt with **name**, **card id** (when known), **status** (Saving / Saved / Not saved / Needs new ID / Partial sync / Cancelled), **detail** + time; persisted in **`sessionStorage`** (`tm_custom_card_add_session_log`, capped list). Supabase copy links **Dashboard → My submitted cards** (successful DB rows only) vs **Recent edits** (annotations). DuckDB: partial when DB/local save succeeded but GitHub sync failed. |
 | **Open in Workbench** | Optional secondary button **“Add & send to Workbench”** if Supabase + queue exists (reuse existing send pattern from Explore). |
 
 ### Relation to pins (optional integration)
@@ -134,7 +134,7 @@ Persist mode in **`localStorage`** key e.g. `tm_custom_card_form_mode` = `quick`
 |--------|--------|
 | **B1** | [x] Quick vs Full toggle + `localStorage` (`tm_custom_card_form_mode`); optional fields in one **Details & annotations** `<details>` in Quick |
 | **B2** | [x] “Same set” retention + **Save & add another** reset + focus |
-| **B3** | [x] **Add & send to Workbench** (Supabase); session counter toast on add |
+| **B3** | [x] **Add & send to Workbench** (Supabase); **session add log** + storage; success toasts suppressed when log is primary |
 | **B4** | [ ] Optional **pinned-fields-only** subsection under details |
 
 ### Files (likely)
@@ -162,4 +162,4 @@ Alternatively: **A1–A2** first if Workbench/Batch alignment is the top priorit
 ## Exit criteria
 
 - **Part A:** User can set ≥1 pin, order persists across sessions; editing in pin strip updates the same values as in sections; no duplicate conflicting saves.
-- **Part B:** Quick mode allows adding multiple cards with minimal scrolling; “same set” works; Full mode restores comprehensive layout.
+- **Part B:** Quick mode allows adding multiple cards with minimal scrolling; “same set” works; Full mode restores comprehensive layout; users can **audit each add attempt** in the session log (failures are not on Dashboard until a row exists in Postgres).

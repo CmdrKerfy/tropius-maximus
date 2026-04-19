@@ -10,7 +10,9 @@ import {
   annotationRowToFlat,
   parseOverrides,
   flatToAnnotationPayload,
+  ANNOTATION_ROW_INSERT_DEFAULTS,
 } from "./annotationBridge.js";
+import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
 import { mergeExploreFilterOptions } from "../../lib/mergeExploreFilterOptions.js";
 
@@ -690,6 +692,7 @@ export async function fetchCard(id, _source = "TCG") {
   const merged = { ...baseCard, ...overrides };
 
   const annotations = annotationRowToFlat(annRow);
+  // Legacy v1 annotation field: duplicate of cards.id for "Unique ID" in UI; prefer cards.id for new code.
   if (!annotations.unique_id) annotations.unique_id = id;
 
   const profileIds = [row.created_by, annotations.updated_by].filter(Boolean);
@@ -1086,26 +1089,20 @@ function serializeEditHistoryValue(val) {
   }
 }
 
-/** Best-effort audit rows; failures are logged but do not block the annotation save. */
-async function insertEditHistoryRows(sb, cardId, patch, prevFlat) {
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData?.user?.id ?? null;
+/** Payload for `apply_annotation_with_history` (edited_by set server-side). */
+function buildEditHistoryPayload(patch, prevFlat) {
   const rows = [];
   for (const [k, v] of Object.entries(patch)) {
     const oldVal = prevFlat[k];
     const newVal = v === null || v === undefined ? undefined : v;
     if (annotationValuesEqual(oldVal, newVal)) continue;
     rows.push({
-      card_id: cardId,
       field_name: k,
       old_value: serializeEditHistoryValue(oldVal),
       new_value: serializeEditHistoryValue(newVal),
-      edited_by: uid,
     });
   }
-  if (!rows.length) return;
-  const { error } = await sb.from("edit_history").insert(rows);
-  if (error) console.error("edit_history insert failed:", error.message || error);
+  return rows;
 }
 
 /**
@@ -1328,49 +1325,97 @@ export async function fetchMyCards({ limit = 40 } = {}) {
   return data || [];
 }
 
+/** Thrown when `annotations.version` changed between read and write (concurrent edit). */
+export const ANNOTATION_VERSION_CONFLICT_MESSAGE =
+  "ANNOTATION_VERSION_CONFLICT: This card was updated elsewhere. Refresh and try again.";
+
+const PATCH_ANNOTATIONS_MAX_ATTEMPTS = 6;
+
+/**
+ * `apply_annotation_with_history` raises `ERRCODE = P0001` and a message containing
+ * `ANNOTATION_VERSION_CONFLICT`. PostgREST sometimes splits text across `message`, `details`, and `hint`.
+ * @param {{ message?: string, details?: string, hint?: string, code?: string } | null | undefined} rpcErr
+ */
+function isAnnotationVersionConflictFromRpc(rpcErr) {
+  if (!rpcErr || typeof rpcErr !== "object") return false;
+  if (rpcErr.code === "P0001") return true;
+  const parts = [rpcErr.message, rpcErr.details, rpcErr.hint].filter(
+    (x) => typeof x === "string" && x.trim() !== ""
+  );
+  return /ANNOTATION_VERSION_CONFLICT/i.test(parts.join(" "));
+}
+
+/**
+ * Merge annotation patch into Supabase via `apply_annotation_with_history` (single transaction with
+ * `edit_history`). Insert races retry on `23505`; concurrent edits map RPC errors to {@link ANNOTATION_VERSION_CONFLICT_MESSAGE}.
+ * @param {string} cardId
+ * @param {Record<string, unknown>} patch
+ */
 export async function patchAnnotations(cardId, patch) {
   const sb = await sbReady();
-  const { data: cur, error: readErr } = await sb
-    .from("annotations")
-    .select("*")
-    .eq("card_id", cardId)
-    .maybeSingle();
-  if (readErr) throw readErr;
+  const patchForHistoryBase = { ...patch };
+  delete patchForHistoryBase.updated_by;
+  delete patchForHistoryBase.updated_at;
 
-  const prevFlat = annotationRowToFlat(cur);
-  const merged = { ...prevFlat };
-  for (const [k, v] of Object.entries(patch)) {
-    if (v === null || v === undefined) delete merged[k];
-    else merged[k] = v;
+  for (let attempt = 0; attempt < PATCH_ANNOTATIONS_MAX_ATTEMPTS; attempt++) {
+    const { data: cur, error: readErr } = await sb
+      .from("annotations")
+      .select("*")
+      .eq("card_id", cardId)
+      .maybeSingle();
+    if (readErr) throw readErr;
+
+    const prevFlat = annotationRowToFlat(cur);
+    const merged = { ...prevFlat };
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null || v === undefined) delete merged[k];
+      else merged[k] = v;
+    }
+
+    const prevExtra = (cur?.extra && typeof cur.extra === "object" ? cur.extra : {}) || {};
+    const { typed, extra } = flatToAnnotationPayload(merged, prevExtra);
+
+    const { data: authData } = await sb.auth.getUser();
+    const uid = authData?.user?.id ?? null;
+    const audit = { updated_at: new Date().toISOString() };
+    if (uid) audit.updated_by = uid;
+
+    const ver = cur?.version ?? 0;
+    const row = stripUndefined({
+      card_id: cardId,
+      ...typed,
+      extra,
+      version: ver + 1,
+      ...audit,
+    });
+
+    const patchForHistory = { ...patchForHistoryBase };
+    const historyPayload = buildEditHistoryPayload(patchForHistory, prevFlat);
+    const fullRowForRpc = !cur
+      ? { ...ANNOTATION_ROW_INSERT_DEFAULTS, ...row }
+      : { ...cur, ...row };
+
+    const { error: rpcErr } = await sb.rpc("apply_annotation_with_history", {
+      p_is_insert: !cur,
+      p_expected_version: cur ? ver : null,
+      p_row: fullRowForRpc,
+      p_history: historyPayload,
+    });
+
+    if (rpcErr) {
+      if (rpcErr.code === "23505" && !cur) {
+        continue;
+      }
+      if (isAnnotationVersionConflictFromRpc(rpcErr)) {
+        throw new Error(ANNOTATION_VERSION_CONFLICT_MESSAGE);
+      }
+      throw rpcErr;
+    }
+
+    return fetchAnnotations(cardId);
   }
 
-  const prevExtra = (cur?.extra && typeof cur.extra === "object" ? cur.extra : {}) || {};
-  const { typed, extra } = flatToAnnotationPayload(merged, prevExtra);
-
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData?.user?.id ?? null;
-  const audit = { updated_at: new Date().toISOString() };
-  if (uid) audit.updated_by = uid;
-
-  const row = stripUndefined({
-    card_id: cardId,
-    ...typed,
-    extra,
-    version: (cur?.version ?? 0) + 1,
-    ...audit,
-  });
-
-  const { error: upErr } = await sb.from("annotations").upsert(row, {
-    onConflict: "card_id",
-  });
-  if (upErr) throw upErr;
-
-  const patchForHistory = { ...patch };
-  delete patchForHistory.updated_by;
-  delete patchForHistory.updated_at;
-  await insertEditHistoryRows(sb, cardId, patchForHistory, prevFlat);
-
-  return fetchAnnotations(cardId);
+  throw new Error("Could not save annotation after retries.");
 }
 
 export async function fetchAttributes() {
@@ -1580,6 +1625,28 @@ export async function addCustomSet() {
   throw new Error("addCustomSet via Supabase is not implemented yet (Phase 5+).");
 }
 
+/** Canonical manual card id from Postgres `generate_card_id` (collision check on server). */
+export async function rpcGenerateManualCardId(setId, number) {
+  const sb = await sbReady();
+  const { data, error } = await sb.rpc("generate_card_id", {
+    p_set_id: String(setId ?? "").trim(),
+    p_number: String(number ?? "").trim(),
+  });
+  if (error) {
+    const msg = error.message || String(error);
+    if (/already exists/i.test(msg)) {
+      throw new Error(
+        "A card with this set and number already exists. Change the number or use a different set."
+      );
+    }
+    throw new Error(msg);
+  }
+  if (typeof data !== "string" || !data) {
+    throw new Error("Could not generate card ID.");
+  }
+  return data;
+}
+
 const TCG_CARD_BODY_SKIP = new Set([
   "id",
   "name",
@@ -1650,7 +1717,7 @@ export async function addTcgCard(card) {
     rarity: card.rarity || null,
     artist: card.artist || null,
     set_id: card.set_id,
-    number: card.number != null ? String(card.number) : "",
+    number: normalizeCardNumberForStorage(card.number),
     set_name: card.set_name || "",
     set_series: card.set_series || "",
     regulation_mark: card.regulation_mark || null,
@@ -1710,7 +1777,7 @@ export async function addPocketCard(card) {
     artist: null,
     illustrator: card.illustrator || "",
     set_id: card.set_id,
-    number: card.number != null ? String(card.number) : "",
+    number: normalizeCardNumberForStorage(card.number),
     set_name: card.set_name || card.set_id || "",
     set_series: card.set_series || "",
     image_small: card.image_url || card.image_small,

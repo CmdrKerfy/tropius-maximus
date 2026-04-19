@@ -39,7 +39,7 @@ export function humanizeError(err) {
   }
 
   if (/\b401\b|unauthorized\b/i.test(low)) {
-    return "You need to sign in to continue.";
+    return "You need to sign in to continue. Open Log in from the menu if you were signed out.";
   }
 
   if (/\b403\b|forbidden\b/i.test(low) && !/permission denied for relation/i.test(low)) {
@@ -72,6 +72,10 @@ export function humanizeError(err) {
 
   if (/value too long|exceeds maximum|character varying\(\d+\)/i.test(low)) {
     return "That text is too long for this field. Shorten it and try again.";
+  }
+
+  if (/annotation_version_conflict/i.test(low)) {
+    return "Someone else saved changes to this card first. Reopen the card or refresh, then try again.";
   }
 
   if (/pgrst116|0 rows|contains 0 rows|json object requested.*multiple \(or no\) rows/i.test(low)) {

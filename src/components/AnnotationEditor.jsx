@@ -15,7 +15,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { patchAnnotations } from "../db";
+import { patchAnnotations, fetchAnnotations } from "../db";
 import { toastError } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
 
@@ -189,6 +189,36 @@ export default function AnnotationEditor({
       } catch (err) {
         console.error("Failed to save annotation:", err);
         toastError(err);
+        const msg = String(err?.message ?? err ?? "");
+        if (/ANNOTATION_VERSION_CONFLICT/i.test(msg)) {
+          void (async () => {
+            try {
+              const fresh = await fetchAnnotations(cardId);
+              setValues(fresh);
+              serverSnapshotRef.current = { ...fresh };
+            } catch {
+              setValues((prev) => {
+                const next = { ...prev };
+                if (!Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)) {
+                  delete next[key];
+                } else {
+                  next[key] = cloneForUndo(serverSnapshotRef.current[key]);
+                }
+                return next;
+              });
+            }
+          })();
+        } else {
+          setValues((prev) => {
+            const next = { ...prev };
+            if (!Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)) {
+              delete next[key];
+            } else {
+              next[key] = cloneForUndo(serverSnapshotRef.current[key]);
+            }
+            return next;
+          });
+        }
         onSaveStatusChange?.({
           phase: "error",
           detail: humanizeError(err),

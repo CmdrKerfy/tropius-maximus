@@ -137,7 +137,9 @@ export default function EditHistoryPage() {
 
             <p className="text-xs text-gray-500">
               Values are stored as text (JSON for lists/objects). Opens in Explore with the card drawer when you
-              follow a card link.
+              follow a card link. This list is <strong>annotation edits</strong> only—not custom card creation; new cards
+              you add appear under <Link to="/dashboard" className="text-green-700 font-medium hover:underline">Dashboard</Link>{" "}
+              and the add form’s session list.
             </p>
 
             {isPending && <p className="text-sm text-gray-500">Loading…</p>}

@@ -710,16 +710,22 @@ export default function ExplorePage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                      No GitHub PAT —{" "}
-                      <button
-                        type="button"
-                        onClick={() => setShowTokenInput(true)}
-                        className="text-amber-800 font-medium hover:underline"
-                      >
-                        Add PAT
-                      </button>{" "}
-                      to sync annotations and cards across devices.
+                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 space-y-1">
+                      <p>
+                        No GitHub PAT —{" "}
+                        <button
+                          type="button"
+                          onClick={() => setShowTokenInput(true)}
+                          className="text-amber-800 font-medium hover:underline"
+                        >
+                          Add PAT
+                        </button>{" "}
+                        to sync annotations and cards across devices.
+                      </p>
+                      <p className="text-amber-800/90 font-normal text-[11px] leading-snug">
+                        Without it, custom cards and edits stay in this browser only (DuckDB / local workflow — not
+                        Supabase).
+                      </p>
                     </div>
                   )}
                   {(!patSaved || showTokenInput) && <p className="text-xs text-gray-500 font-medium">Paste token here</p>}

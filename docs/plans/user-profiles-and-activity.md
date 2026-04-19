@@ -69,7 +69,7 @@ Collaborators are not highly technical. A **visible profile** (display name, opt
 |------|--------|
 | SQL | `supabase/migrations/013_profiles.sql`, `014_storage_avatars.sql` |
 | Routes | `src/App.jsx` — `/profile`, `/profile/:userId`, `/dashboard` |
-| UI | `src/pages/ProfilePage.jsx`, `src/pages/DashboardPage.jsx`, `src/pages/EditHistoryPage.jsx` |
+| UI | `src/pages/ProfilePage.jsx`, `src/pages/DashboardPage.jsx` (**Recent edits** vs **My submitted cards**), `src/pages/EditHistoryPage.jsx` (annotation edits, not card creation); `src/components/CustomCardForm.jsx` — **session add log** (`tm_custom_card_add_session_log`) for per-attempt add status |
 | Data | `src/data/supabase/appAdapter.js` — `fetchProfile`, `fetchProfileById`, `upsertProfile`, `uploadProfileAvatar`, `removeProfileAvatar`, edit history helpers, card inserts + `created_by` |
 | Router | `src/db.js` — re-exports above |
 
@@ -89,4 +89,4 @@ Collaborators are not highly technical. A **visible profile** (display name, opt
 
 ---
 
-*Last updated: 2026-04-17 — aligned with repo (`013`, `014`, Profile / Dashboard / History / Storage UI).*
+*Last updated: 2026-04-18 — Dashboard / History / custom card form copy: edits vs created cards vs browser session add log.*

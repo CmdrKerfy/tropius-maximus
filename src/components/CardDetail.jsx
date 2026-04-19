@@ -31,6 +31,8 @@ import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 import { splitUiLabel } from "../lib/splitUiLabel.js";
+import { toastError } from "../lib/toast.js";
+import { humanizeError } from "../lib/humanizeError.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -127,6 +129,14 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
   const [saveMessage, setSaveMessage] = useState("");
+  /** Supabase: per-field / image_override saves — visible status next to Done (not only console). */
+  const [annSaveUi, setAnnSaveUi] = useState({
+    phase: "idle",
+    savedAt: null,
+    errorDetail: null,
+  });
+  const annPendingRef = useRef(0);
+  const annSaveClearTimerRef = useRef(null);
   const [syncRetryCount, setSyncRetryCount] = useState(0);
   const ghPushTimer = useRef(null);
   const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
@@ -171,12 +181,28 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     setEditingImage(false);
     setSaveStatus(null);
     setSaveMessage("");
+    setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
+    clearTimeout(annSaveClearTimerRef.current);
     setSyncRetryCount(0);
     fetchCard(cardId, source)
       .then(setCard)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [cardId, source]);
+
+  // Supabase: when returning to the tab, refresh the card if not mid-edit (reduces stale detail after time away).
+  useEffect(() => {
+    if (!useSupabaseBackend()) return undefined;
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      if (isEditMode || editingImage || loading || imageEnlarged) return;
+      fetchCard(cardId, source)
+        .then(setCard)
+        .catch(() => {});
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [cardId, source, isEditMode, editingImage, loading, imageEnlarged]);
 
   // Keyboard navigation: Escape, ArrowLeft, ArrowRight.
   useEffect(() => {
@@ -255,7 +281,42 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const inputClass =
     "w-full px-3 py-1.5 border border-gray-300 rounded text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
-  useEffect(() => () => clearTimeout(ghPushTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(ghPushTimer.current);
+      clearTimeout(annSaveClearTimerRef.current);
+    },
+    []
+  );
+
+  /**
+   * Wraps Supabase annotation writes so Explore inline edits show saving / saved / error like Workbench.
+   */
+  async function withSupabaseAnnotationSave(work) {
+    annPendingRef.current += 1;
+    setAnnSaveUi((s) => ({ ...s, phase: "saving", errorDetail: null }));
+    let succeeded = false;
+    try {
+      const result = await work();
+      succeeded = true;
+      return result;
+    } catch (err) {
+      console.error(err);
+      toastError(err);
+      setAnnSaveUi({ phase: "error", savedAt: null, errorDetail: humanizeError(err) });
+      throw err;
+    } finally {
+      annPendingRef.current = Math.max(0, annPendingRef.current - 1);
+      if (annPendingRef.current === 0 && succeeded) {
+        const at = new Date();
+        setAnnSaveUi({ phase: "saved", savedAt: at, errorDetail: null });
+        clearTimeout(annSaveClearTimerRef.current);
+        annSaveClearTimerRef.current = setTimeout(() => {
+          setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
+        }, 4000);
+      }
+    }
+  }
 
   // Debounce GitHub push so a quick pass through many cards produces one commit and one workflow run.
   const GITHUB_PUSH_DEBOUNCE_MS = 5000;
@@ -432,15 +493,34 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     if (key === "background_pokemon" && Array.isArray(stored)) {
       stored = stored.map((s) => s.toLowerCase());
     }
-    try {
+    const run = async () => {
       const updatedFlat = await patchAnnotations(card.id, { [key]: stored });
       setCard((prev) => ({
         ...prev,
         annotations: useSupabaseBackend() ? updatedFlat : { ...parseAnnotations(prev), [key]: stored },
       }));
       if (!useSupabaseBackend()) scheduleGitHubPush();
+      return updatedFlat;
+    };
+    try {
+      if (useSupabaseBackend()) {
+        await withSupabaseAnnotationSave(run);
+      } else {
+        await run();
+      }
     } catch (err) {
-      console.error("Failed to save annotation:", err);
+      if (!useSupabaseBackend()) {
+        console.error("Failed to save annotation:", err);
+      } else {
+        fetchCard(cardId, source)
+          .then(setCard)
+          .catch((e) => {
+            const m = String(e?.message ?? e ?? "").toLowerCase();
+            if (/not found|pgrst116|could not find|0 rows/i.test(m)) {
+              onClose?.();
+            }
+          });
+      }
     }
   };
 
@@ -448,6 +528,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     setDeleteInProgress(true);
     try {
       const deleted = await deleteCardsById([card.id]);
+      if (deleted.length === 0) {
+        toastError(
+          "This card could not be deleted. Only manually added cards can be removed, or you may need permission to delete."
+        );
+        return;
+      }
       if (deleted.length > 0 && getToken() && !useSupabaseBackend()) {
         try {
           await deleteCardsFromGitHub(getToken(), deleted);
@@ -728,7 +814,7 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                             onClick={async () => {
                               if (!newImageUrl.trim()) return;
                               setSavingImage(true);
-                              try {
+                              const saveImg = async () => {
                                 const updated = await patchAnnotations(cardId, {
                                   image_override: newImageUrl.trim(),
                                 });
@@ -738,8 +824,26 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                                 }));
                                 setEditingImage(false);
                                 setNewImageUrl("");
+                              };
+                              try {
+                                if (useSupabaseBackend()) {
+                                  await withSupabaseAnnotationSave(saveImg);
+                                } else {
+                                  await saveImg();
+                                }
                               } catch (err) {
-                                console.error("Failed to save image:", err);
+                                if (!useSupabaseBackend()) {
+                                  console.error("Failed to save image:", err);
+                                } else {
+                                  fetchCard(cardId, source)
+                                    .then(setCard)
+                                    .catch((e) => {
+                                      const m = String(e?.message ?? e ?? "").toLowerCase();
+                                      if (/not found|pgrst116|could not find|0 rows/i.test(m)) {
+                                        onClose?.();
+                                      }
+                                    });
+                                }
                               } finally {
                                 setSavingImage(false);
                               }
@@ -906,8 +1010,23 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     {isEditMode && (
                       <>
                         {useSupabaseBackend() ? (
-                          <span className="text-xs text-gray-500 max-w-[14rem] text-right leading-snug">
-                            Changes save to the database as you edit.
+                          <span className="text-xs max-w-[min(100%,18rem)] text-right leading-snug break-words">
+                            {annSaveUi.phase === "saving" && (
+                              <span className="text-amber-700 font-medium">Saving…</span>
+                            )}
+                            {annSaveUi.phase === "saved" && annSaveUi.savedAt && (
+                              <span className="text-green-700 font-medium">
+                                Saved {annSaveUi.savedAt.toLocaleTimeString()}
+                              </span>
+                            )}
+                            {annSaveUi.phase === "error" && annSaveUi.errorDetail && (
+                              <span className="text-red-700 font-medium" title={annSaveUi.errorDetail}>
+                                Not saved
+                              </span>
+                            )}
+                            {annSaveUi.phase === "idle" && (
+                              <span className="text-gray-500">Changes save as you edit.</span>
+                            )}
                           </span>
                         ) : (
                           <>
@@ -953,6 +1072,22 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     )}
                   </div>
                 </div>
+
+                {/* Supabase: inline save failed — toast also shown; dismiss clears sticky error text */}
+                {useSupabaseBackend() && isEditMode && annSaveUi.phase === "error" && annSaveUi.errorDetail && (
+                  <div className="mt-2 flex items-start gap-2 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                    <span className="flex-1 min-w-0">{annSaveUi.errorDetail}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null })
+                      }
+                      className="shrink-0 text-red-600 hover:text-red-800 font-medium text-xs"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
 
                 {/* Sync error (GitHub path only — Supabase saves per field to Postgres) */}
                 {!useSupabaseBackend() && saveStatus === "error" && saveMessage && (
@@ -1030,8 +1165,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                     {isEditMode ? (
                       <div className="space-y-4">
                         {useSupabaseBackend() ? (
-                          <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
-                            Annotation changes save to the database for everyone who can sign in.
+                          <div className="text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                            Edits apply as you change each field. Save status appears next to{" "}
+                            <strong className="font-semibold">Done</strong> (and you get a toast if a save fails).
                           </div>
                         ) : getToken() ? (
                           <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">

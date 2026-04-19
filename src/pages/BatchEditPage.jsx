@@ -2,7 +2,7 @@
  * Batch annotation edit — same filter set as Explore (query string), one field at a time.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -116,6 +116,7 @@ export default function BatchEditPage() {
   const [textValue, setTextValue] = useState("");
   const [boolValue, setBoolValue] = useState(false);
   const [confirmLarge, setConfirmLarge] = useState(false);
+  const [batchCountConfirm, setBatchCountConfirm] = useState("");
   const [batchProgress, setBatchProgress] = useState(null);
 
   const selectedAttr = useMemo(
@@ -124,12 +125,23 @@ export default function BatchEditPage() {
   );
 
   const LARGE_THRESHOLD = 75;
+  /** Require typing the exact match count before running (reduces mistaken wide updates). */
+  const TYPED_COUNT_THRESHOLD = 25;
+  const needsTypedCount = total >= TYPED_COUNT_THRESHOLD;
+  const typedCountOk = !needsTypedCount || batchCountConfirm.trim() === String(total);
   const needsConfirm = total > LARGE_THRESHOLD;
+
+  useEffect(() => {
+    setBatchCountConfirm("");
+  }, [total]);
 
   const runBatch = useMutation({
     mutationFn: async () => {
       if (!selectedAttr) throw new Error("Choose a field.");
       if (total === 0) throw new Error("No cards match these filters.");
+      if (needsTypedCount && batchCountConfirm.trim() !== String(total)) {
+        throw new Error(`Type the matching card count (${total}) in the confirmation box.`);
+      }
       if (needsConfirm && !confirmLarge) throw new Error("Confirm the large update below.");
 
       const patch = buildPatch(selectedAttr, mode, textValue, boolValue);
@@ -166,6 +178,15 @@ export default function BatchEditPage() {
     () => [...attributes].sort((a, b) => (a.label || a.key).localeCompare(b.label || b.key)),
     [attributes]
   );
+
+  /** Sample preview cards only — names shown when the failing id appears in the first page of results. */
+  const previewNameById = useMemo(() => {
+    const m = new Map();
+    for (const c of previewResult?.cards || []) {
+      if (c?.id) m.set(c.id, c.name || "");
+    }
+    return m;
+  }, [previewResult]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -242,6 +263,26 @@ export default function BatchEditPage() {
                   <span className="font-semibold tabular-nums text-gray-900">{total.toLocaleString()}</span>
                 )}
               </p>
+              {total > 0 && needsTypedCount && (
+                <div className="mt-2 space-y-1">
+                  <label className="block text-xs font-semibold text-gray-600">
+                    Type the card count to confirm ({total.toLocaleString()} cards)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={batchCountConfirm}
+                    onChange={(e) => setBatchCountConfirm(e.target.value)}
+                    placeholder={String(total)}
+                    className="w-full max-w-[12rem] border border-gray-300 rounded-lg px-3 py-2 text-sm tabular-nums"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Prevents accidental huge updates when filters are broader than you meant.
+                  </p>
+                </div>
+              )}
+
               {total > 0 && needsConfirm && (
                 <label className="flex items-start gap-2 mt-2 text-amber-900">
                   <input
@@ -420,6 +461,7 @@ export default function BatchEditPage() {
                   runBatch.isPending ||
                   !selectedAttr ||
                   total === 0 ||
+                  !typedCountOk ||
                   (needsConfirm && !confirmLarge) ||
                   countPending
                 }
@@ -459,17 +501,36 @@ export default function BatchEditPage() {
                     {runBatch.data.updated !== 1 ? "s" : ""}.
                   </p>
                   {runBatch.data.errors.length > 0 && (
-                    <details className="text-amber-900">
+                    <details
+                      className="text-amber-950 border border-amber-200/80 rounded-md bg-amber-50/50 px-2 py-1.5"
+                      open
+                    >
                       <summary className="cursor-pointer font-medium">
-                        {runBatch.data.errors.length} error{runBatch.data.errors.length !== 1 ? "s" : ""} (show list)
+                        {runBatch.data.errors.length} card{runBatch.data.errors.length !== 1 ? "s" : ""} not updated
+                        (show list)
                       </summary>
-                      <ul className="mt-2 max-h-40 overflow-y-auto font-mono text-xs space-y-1">
-                        {runBatch.data.errors.map((e) => (
-                          <li key={e.cardId}>
-                            {e.cardId}: {e.message}
-                          </li>
-                        ))}
+                      <ul className="mt-2 max-h-48 overflow-y-auto text-xs space-y-2">
+                        {runBatch.data.errors.map((e) => {
+                          const nm = previewNameById.get(e.cardId);
+                          return (
+                            <li key={e.cardId} className="border-b border-amber-100/80 pb-2 last:border-0 last:pb-0">
+                              <div className="font-medium text-gray-900">
+                                {nm ? (
+                                  <>
+                                    <span>{nm}</span>
+                                    <span className="text-gray-500 font-normal"> · </span>
+                                  </>
+                                ) : null}
+                                <span className="font-mono text-gray-700">{e.cardId}</span>
+                              </div>
+                              <div className="text-amber-900/90 mt-0.5">{e.message}</div>
+                            </li>
+                          );
+                        })}
                       </ul>
+                      <p className="text-[11px] text-amber-900/80 mt-2">
+                        Names appear when the card is in the Explore preview sample; otherwise only the card id is shown.
+                      </p>
                     </details>
                   )}
                 </div>

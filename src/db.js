@@ -5,6 +5,9 @@
  */
 import * as duck from "./db.duckdb.js";
 import { SOURCE_OPTIONS } from "./lib/annotationOptions.js";
+import { buildManualCardId, normalizeCardNumberForStorage } from "./lib/manualCardId.js";
+
+export { buildManualCardId, normalizeCardNumberForStorage };
 
 /** True when the app should use Postgres via Supabase (Explore, Workbench, etc.). */
 export function useSupabaseBackend() {
@@ -190,6 +193,17 @@ export async function addCustomCard(card) {
   return useSupabaseBackend()
     ? (await sb()).addCustomCard(card)
     : duck.addCustomCard(card);
+}
+
+/** Resolves manual card id: Supabase RPC `generate_card_id`, else local `buildManualCardId`. */
+export async function generateManualCardId(setId, number) {
+  if (useSupabaseBackend()) {
+    return (await import("./data/supabase/appAdapter.js")).rpcGenerateManualCardId(
+      setId,
+      number
+    );
+  }
+  return buildManualCardId(setId, number);
 }
 
 export async function deleteCardsById(cardIds) {
