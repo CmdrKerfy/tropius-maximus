@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Image as ImageIcon, Pencil, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Image as ImageIcon, Pencil, Plus, Share2, X } from "lucide-react";
 import {
   fetchCard,
   patchAnnotations,
@@ -31,7 +31,7 @@ import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 import { splitUiLabel } from "../lib/splitUiLabel.js";
-import { toastError } from "../lib/toast.js";
+import { toastError, toastSuccess } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
@@ -734,6 +734,25 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                 <ChevronRight className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
               </button>
             </div>
+            {useSupabaseBackend() && card && !loading && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = `${window.location.origin}/share/card/${encodeURIComponent(card.id)}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    toastSuccess("Share link copied");
+                  } catch {
+                    toastError("Could not copy link");
+                  }
+                }}
+                className="shrink-0 px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 border border-slate-200/80 inline-flex items-center gap-1"
+                title="Copy read-only link for this card"
+              >
+                <Share2 className="w-3.5 h-3.5" aria-hidden />
+                Copy share link
+              </button>
+            )}
             {onSendToWorkbench && card && !loading && (
               <button
                 type="button"

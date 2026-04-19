@@ -15,6 +15,7 @@ import AuthCallbackPage from "./pages/AuthCallbackPage.jsx";
 import AuthResetPasswordPage from "./pages/AuthResetPasswordPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import PublicShareCardPage from "./pages/PublicShareCardPage.jsx";
 import { isEmailAuthRequired } from "./lib/authInvite.js";
 
 function Protected({ children }) {
@@ -28,6 +29,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/reset-password" element={<AuthResetPasswordPage />} />
+      <Route path="/share/card/:cardId" element={<PublicShareCardPage />} />
       <Route
         element={
           <Protected>

@@ -3,7 +3,7 @@
  * Phase 3: browse + annotations + filters + form options (static-heavy).
  */
 
-import { getSupabase } from "../../lib/supabaseClient.js";
+import { assertSupabaseConfigured, getSupabase } from "../../lib/supabaseClient.js";
 import { ensureSupabaseSession } from "../../lib/supabaseAuthBootstrap.js";
 import {
   normalizeEmbeddedAnnotation,
@@ -778,6 +778,21 @@ export async function fetchCard(id, _source = "TCG") {
     creator_display_name,
     annotation_editor_display_name,
   };
+}
+
+/**
+ * Single card JSON for public /share/card/:id — no session required (RPC granted to anon).
+ * @returns {Promise<object | null>}
+ */
+export async function fetchPublicCardForShare(cardId) {
+  assertSupabaseConfigured();
+  const sb = getSupabase();
+  const id = String(cardId ?? "").trim();
+  if (!id) return null;
+  const { data, error } = await sb.rpc("get_public_card_for_share", { p_card_id: id });
+  if (error) throw error;
+  if (data == null || data === undefined) return null;
+  return typeof data === "object" ? data : null;
 }
 
 export async function fetchFilterOptions(source = "TCG") {
