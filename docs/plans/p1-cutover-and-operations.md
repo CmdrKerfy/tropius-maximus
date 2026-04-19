@@ -2,7 +2,7 @@
 
 **Use when:** v2 meets your test criteria and you are ready to treat it as production, or when you want a shared checklist for Vercel / Pages / monitoring without merging yet.
 
-**Blocked until you decide:** merging `v2/supabase-migration` → `main` (explicitly deferred until your QA bar is met).
+**Blocked until you decide:** merging `v2/supabase-migration` → `main` — **only with your explicit instruction** (documented in `CLAUDE.md` + `.cursor/rules/merge-main-owner-only.mdc`). QA and Vercel branch changes do **not** require merging.
 
 ---
 
@@ -72,9 +72,11 @@ Official guide: [Custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ---
 
-## 6. When you _are_ ready to merge (your gate)
+## 6. When you _are_ ready to merge (your gate — owner-initiated only)
 
-1. Final QA on Vercel production (or prod branch) against Supabase.
+**Merges into `main` are done only when you explicitly choose to** (not by automation or agent default).
+
+1. Final QA on Vercel production (or prod branch) against Supabase (see **`docs/plans/e2e-vercel-smoke-checklist.md`**).
 2. Merge `v2/supabase-migration` → `main` **or** keep branch split and only move Vercel prod branch — align with **§2** above.
 3. Run **Ingest and push to Supabase** once if `push_duckdb_to_supabase.py` / migrations changed on `main`.
 4. Re-read **Production checklist** in `CLAUDE.md` (RLS, anon auth, env flags).

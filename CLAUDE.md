@@ -32,9 +32,9 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Post–Phase 7 (current focus)
 
-- [ ] E2E testing on **Vercel** (preview + production) against Supabase.
+- [ ] E2E testing on **Vercel** (preview + production) against Supabase — manual smoke checklist: **`docs/plans/e2e-vercel-smoke-checklist.md`**.
 - [ ] **Production checklist** — Anonymous auth / RLS / `VITE_SUPABASE_AUTO_ANON_AUTH` (see below).
-- [ ] **Cutover when ready** — merge **`v2/supabase-migration` → `main`** and/or set Vercel production branch; align GitHub Pages vs Vercel-only strategy. **Runbook (monitoring, rollback, SMTP, Vercel branch without merging):** `docs/plans/p1-cutover-and-operations.md`.
+- [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
 ### Paused work & backlog (owner paused — resume anytime)
@@ -241,7 +241,8 @@ api/share-og.js                  -- Serverless HTML + `og:image` for link previe
 public/og-card-placeholder.svg   -- Default preview when card has no image URL
 docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see plan status)
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
-docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder)
+docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder; merge to `main` only on owner say-so)
+docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
 docs/plans/edit-add-card-workflow-hardening.md  -- Draft: add/edit card UX + concurrency + batch safety
@@ -256,13 +257,15 @@ docs/plans/public-card-share-and-social-preview.md  -- Public `/share/card/…` 
 - Do NOT include `Co-Authored-By` lines in commit messages
 - **Default:** do not change **`main`** frontend / Pages-facing app except **live bugfixes** for the current GitHub Pages site.
 - **Exception:** sync **ingest-only** CI files to `main` (workflow + `push_duckdb_to_supabase.py` + `requirements-ci.txt` + `ingest.py`) when needed so Actions lists **Ingest and push to Supabase**; expect an extra Pages deploy on each such push.
-- All **v2 product work** on **`v2/supabase-migration`** (merge to `main` only at cutover).
+- All **v2 product work** on **`v2/supabase-migration`**. **Merging into `main`** (cutover) happens **only when the owner explicitly says to** — not on agent initiative. See **`docs/ai-agent-merge-policy.md`** (and **`.cursor/rules/merge-main-owner-only.mdc`** if present locally).
 - Secret key (SUPABASE_SERVICE_KEY) is NEVER stored in any file — passed as env var only
 - Backup directory is gitignored — safety net data lives only locally
 
 ## AI agents (Cursor / assistants)
 
 When asking the user for **permission** before doing something (destructive edits, `git push`, installing packages, broad refactors, scope changes, etc.), always pair the ask with a **brief plain-English summary** of the intended actions—what files or systems will be touched and what will happen. Do not only ask “Should I proceed?” without stating *what* will be done, so the owner can decide without inferring intent.
+
+**Never merge to `main` or open a PR that merges into `main`** unless the owner **explicitly** requests that merge in the conversation. Pushes to **`v2/supabase-migration`** are fine when asked. Policy: **`docs/ai-agent-merge-policy.md`**.
 
 ## Memory System
 

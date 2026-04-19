@@ -1,0 +1,10 @@
+---
+description: Never merge v2 branch into main without explicit owner approval
+alwaysApply: true
+---
+
+# Git: no merge to `main` without owner
+
+- **Do not** merge **`v2/supabase-migration`** (or any feature branch) **into `main`**, open a PR that merges to `main`, or run `git merge` targeting `main` **unless the repository owner explicitly asks for that merge** in the current conversation.
+- It is fine to **commit and push** to **`v2/supabase-migration`** (or other non-default branches) when asked.
+- If cutover or merge is discussed, **remind** the owner that merge to `main` waits on their explicit go-ahead; offer checklist/docs instead.
