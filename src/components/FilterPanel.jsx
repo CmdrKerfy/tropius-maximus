@@ -689,7 +689,7 @@ export default function FilterPanel({
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Filters</DialogTitle>
                 <DialogDescription className="sr-only">Change catalog filters and annotation-based options.</DialogDescription>
-                <p className="text-xs text-gray-500 mt-0.5">Scroll to adjust filters. Sort and Done stay fixed below.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Scroll to adjust filters. Sort and Apply stay fixed below.</p>
               </div>
               <DialogClose asChild>
                 <button
@@ -702,11 +702,11 @@ export default function FilterPanel({
               </DialogClose>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-12">
               {renderFilterBody()}
             </div>
 
-            <div className="shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_16px_-4px_rgba(0,0,0,0.06)]">
+            <div className="shrink-0 border-t border-gray-200 bg-white px-4 pt-5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_16px_-4px_rgba(0,0,0,0.06)]">
               <div className="flex flex-wrap gap-3 items-start">
                 <div className="flex flex-col min-w-[10rem] flex-1">
                   <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
@@ -739,7 +739,7 @@ export default function FilterPanel({
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="mt-4 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={handleClearOrReset}
@@ -747,8 +747,15 @@ export default function FilterPanel({
                 >
                   Clear filters
                 </button>
-                <Button type="button" variant="ghost" size="md" onClick={() => setSheetOpen(false)}>
-                  Done
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  className="min-w-[7.5rem] font-semibold shadow-sm"
+                  aria-label="Apply filters and close panel"
+                  onClick={() => setSheetOpen(false)}
+                >
+                  Apply
                 </Button>
               </div>
             </div>
