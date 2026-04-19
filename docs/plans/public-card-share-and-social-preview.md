@@ -95,4 +95,18 @@
 
 ---
 
-*Last updated: 2026-04-18 — shipped + follow-ups (docs, bot list, cache, placeholder).*
+## Deferred — tabled (owner decision)
+
+The following were considered as follow-ups; they are **not planned** for now because the expected use case is **sharing among people who already use the site** plus **a small number of occasional external viewers**—not a broad public catalog or high-risk data exposure.
+
+| Item | Why table | Revisit when |
+|------|-----------|----------------|
+| **Opaque share tokens** (anti-enumeration; URLs that hide `card_id`) | Guessable `/share/card/:id` is acceptable for low-profile, trust-based sharing; adds schema, new routes, OG param, and migration work. | Public launch or growth where **URL scanning / guessing** becomes a concern; highly sensitive manual cards; compliance asks for non-guessable links. |
+| **Share analytics** (privacy-sensitive logging) | Insight is optional; logging needs careful PII/retention design. | You need **usage metrics**, **debugging** preview issues at scale, or **audit** requirements. |
+| **Stricter “who can copy a share link”** (roles / minting) | Any logged-in collaborator sharing with teammates is the intended default; UI-only gates don’t stop manual URL sharing—real enforcement pairs with **token minting** policy. | Abuse (spam links), **compliance** (“only role X may publish public links”), or **paid tiers** where sharing must be restricted. |
+
+**Recommendation:** Keep the shipped **card-id URLs** and **Copy share link** as-is until one of the triggers above applies. Re-open this section before implementing any of the three.
+
+---
+
+*Last updated: 2026-04-18 — shipped + follow-ups (docs, bot list, cache, placeholder); deferred items tabled with rationale.*
