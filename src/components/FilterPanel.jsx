@@ -684,12 +684,12 @@ export default function FilterPanel({
 
       {!isLg && (
         <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-          <DialogContent className="inset-x-2 bottom-2 top-[8dvh] max-w-2xl mx-auto overflow-y-auto rounded-xl border border-gray-200 p-4">
-            <div className="sticky top-0 -mx-4 px-4 -mt-4 pt-4 pb-3 bg-white border-b border-gray-100 flex items-start gap-3 z-10">
+          <DialogContent className="inset-x-2 bottom-2 top-[8dvh] max-w-2xl mx-auto flex h-auto max-h-[92dvh] min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 p-0">
+            <div className="shrink-0 border-b border-gray-100 bg-white px-4 pt-4 pb-3 flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Filters</DialogTitle>
                 <DialogDescription className="sr-only">Change catalog filters and annotation-based options.</DialogDescription>
-                <p className="text-xs text-gray-500 mt-0.5">Adjust filters and sort, then tap Done.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Scroll to adjust filters. Sort and Done stay fixed below.</p>
               </div>
               <DialogClose asChild>
                 <button
@@ -702,11 +702,11 @@ export default function FilterPanel({
               </DialogClose>
             </div>
 
-            <div className="pt-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4">
               {renderFilterBody()}
             </div>
 
-            <div className="mt-4 border-t border-gray-200 pt-3">
+            <div className="shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_16px_-4px_rgba(0,0,0,0.06)]">
               <div className="flex flex-wrap gap-3 items-start">
                 <div className="flex flex-col min-w-[10rem] flex-1">
                   <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
