@@ -11,7 +11,9 @@ normal upsert by primary key).
 Environment (same as ``migrate_data.py``):
 
   SUPABASE_URL          https://xxx.supabase.co
-  SUPABASE_SERVICE_KEY  service_role JWT or sb_secret_... (never commit)
+  SUPABASE_SERVICE_KEY  **service_role** secret from Supabase → Settings → API (never commit).
+  Do **not** use the ``anon`` / ``publishable`` key — PostgREST will hit RLS and upserts fail with
+  ``42501 new row violates row-level security policy``.
 
 Usage::
 
@@ -22,6 +24,7 @@ Optional: run after ``python scripts/ingest.py`` or use ``ingest.py --push-supab
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
@@ -40,6 +43,31 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_DUCKDB = SCRIPT_DIR.parent / "public" / "data" / "pokemon.duckdb"
 BATCH_SIZE = 500
 DRY_RUN = "--dry-run" in sys.argv
+
+
+def exit_if_jwt_is_anon_key(key: str) -> None:
+    """PostgREST bypasses RLS only with the service_role JWT; anon key triggers 42501 on writes."""
+    if not key or not key.startswith("eyJ"):
+        return
+    parts = key.split(".")
+    if len(parts) != 3:
+        return
+    try:
+        payload = parts[1]
+        pad = (4 - len(payload) % 4) % 4
+        if pad:
+            payload += "=" * pad
+        data = json.loads(base64.urlsafe_b64decode(payload))
+        if data.get("role") == "anon":
+            print(
+                "ERROR: SUPABASE_SERVICE_KEY is the anon (publishable) JWT.\n"
+                "Use the service_role secret from Supabase → Project Settings → API.\n"
+                "The anon key cannot bypass RLS; upserts will fail with policy violations.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    except (ValueError, json.JSONDecodeError, IndexError):
+        return
 
 
 def create_rest_client(url: str, key: str) -> SyncPostgrestClient:
@@ -248,6 +276,8 @@ def main() -> None:
     if not DRY_RUN and (not url or not key):
         print("Set SUPABASE_URL and SUPABASE_SERVICE_KEY (same as migrate_data.py).", file=sys.stderr)
         sys.exit(1)
+    if not DRY_RUN and key:
+        exit_if_jwt_is_anon_key(key)
 
     if not duck_path.is_file():
         print(f"DuckDB file not found: {duck_path}", file=sys.stderr)
