@@ -2,6 +2,7 @@
  * Vercel serverless: HTML with Open Graph tags for link previews (bots redirected here from middleware).
  */
 import { createClient } from "@supabase/supabase-js";
+import { absoluteUrl } from "../src/lib/absoluteUrl.js";
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -13,17 +14,6 @@ function escapeHtml(s) {
 
 /** Served from `public/`; Vercel/static deploy exposes at site root. */
 const OG_PLACEHOLDER_PATH = "/og-card-placeholder.svg";
-
-function absoluteUrl(maybeUrl, baseOrigin) {
-  if (!maybeUrl || typeof maybeUrl !== "string") return "";
-  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl;
-  if (maybeUrl.startsWith("//")) return `https:${maybeUrl}`;
-  try {
-    return new URL(maybeUrl, baseOrigin).href;
-  } catch {
-    return "";
-  }
-}
 
 function cacheHeaders(status) {
   if (status === 200) {
@@ -76,9 +66,10 @@ export default async function handler(req, res) {
   const { data, error } = await sb.rpc("get_public_card_for_share", { p_card_id: cardId });
 
   if (error) {
+    console.error("[share-og] RPC get_public_card_for_share:", error.message || error);
     res.status(502).setHeader("Content-Type", "text/plain; charset=utf-8");
     Object.entries(cacheHeaders(502)).forEach(([k, v]) => res.setHeader(k, v));
-    res.end(error.message || "RPC error");
+    res.end("Could not load card preview.");
     return;
   }
 

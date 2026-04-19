@@ -5,8 +5,10 @@ import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPublicCardForShare, useSupabaseBackend } from "../db";
+import { absoluteUrl } from "../lib/absoluteUrl.js";
 
 const DEFAULT_TITLE = "Tropius Maximus";
+const OG_PLACEHOLDER_PATH = "/og-card-placeholder.svg";
 
 export default function PublicShareCardPage() {
   const { cardId: rawId } = useParams();
@@ -85,7 +87,9 @@ export default function PublicShareCardPage() {
   }
 
   const img = card.image_large || card.image_small;
-  const displayImage = img || "/og-card-placeholder.svg";
+  const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const resolved = absoluteUrl(img, baseOrigin);
+  const displayImage = resolved || OG_PLACEHOLDER_PATH;
   const subtitle = [card.set_name, card.number ? `#${card.number}` : null].filter(Boolean).join(" · ");
 
   return (
