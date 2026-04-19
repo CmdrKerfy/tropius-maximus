@@ -107,6 +107,128 @@ function mergeSortedUniqueStrings(existing, additions) {
   return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
+/** PostgREST/jsonb arrays from `get_explore_filter_options_db` RPC. */
+function rpcJsonToStringArray(val) {
+  if (!Array.isArray(val)) return [];
+  return val.map((x) => (x == null ? "" : String(x))).filter((s) => s.trim() !== "");
+}
+
+function rpcJsonToNumberArray(val) {
+  if (!Array.isArray(val)) return [];
+  return val.map((x) => (typeof x === "number" ? x : Number(x))).filter((n) => !Number.isNaN(n));
+}
+
+function rpcJsonToSets(val) {
+  if (!Array.isArray(val)) return [];
+  return val
+    .map((r) => {
+      if (!r || typeof r !== "object") return null;
+      const id = r.id != null ? String(r.id) : "";
+      if (!id) return null;
+      return {
+        id,
+        name: r.name != null ? String(r.name) : "",
+        series: r.series != null ? String(r.series) : "",
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildTcgFilterOptionsFromRpc(tcg) {
+  const t = tcg && typeof tcg === "object" ? tcg : {};
+  const st = rpcJsonToStringArray(t.supertypes);
+  const dbRegions = rpcJsonToStringArray(t.pokemon_metadata_regions);
+  const regions = [...new Set([...annOpts.PKMN_REGION_OPTIONS, ...dbRegions])].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+  const generations = rpcJsonToNumberArray(t.generations).sort((a, b) => a - b);
+  const colors = rpcJsonToStringArray(t.colors);
+  const evoRaw = rpcJsonToStringArray(t.evo_raw);
+  const evolution_lines = mergeEvolutionLines(evoRaw);
+  const sets = rpcJsonToSets(t.sets);
+  const merge = (staticOpts, dbVals) => [...new Set([...staticOpts, ...dbVals])];
+  return {
+    supertypes: mergeSupertypes(st),
+    rarities: rpcJsonToStringArray(t.rarities).sort(),
+    sets,
+    regions,
+    generations,
+    colors,
+    artists: rpcJsonToStringArray(t.artists).sort(),
+    evolution_lines,
+    trainer_types: [],
+    specialties: [],
+    background_pokemon: merge([], rpcJsonToStringArray(t.pokemon_metadata_names)),
+    card_types: [],
+    elements: [],
+    stages: [],
+    weathers: mergeSortedUniqueStrings(annOpts.WEATHER_OPTIONS, rpcJsonToStringArray(t.annotations_weather)),
+    environments: mergeSortedUniqueStrings(
+      annOpts.ENVIRONMENT_OPTIONS,
+      rpcJsonToStringArray(t.annotations_environment)
+    ),
+    actions: mergeSortedUniqueStrings(annOpts.ACTIONS_OPTIONS, []),
+    poses: mergeSortedUniqueStrings(annOpts.POSE_OPTIONS, []),
+  };
+}
+
+function buildPocketFilterOptionsFromRpc(pocket) {
+  const p = pocket && typeof pocket === "object" ? pocket : {};
+  return {
+    supertypes: [],
+    rarities: rpcJsonToStringArray(p.rarities).sort(),
+    sets: rpcJsonToSets(p.sets),
+    regions: [],
+    generations: [],
+    colors: [],
+    artists: [],
+    evolution_lines: [],
+    trainer_types: [],
+    specialties: [],
+    background_pokemon: [],
+    card_types: rpcJsonToStringArray(p.card_types).sort(),
+    elements: rpcJsonToStringArray(p.elements).sort(),
+    stages: rpcJsonToStringArray(p.stages).sort(),
+    weathers: [],
+    environments: [],
+    actions: [],
+    poses: [],
+  };
+}
+
+function buildCustomFilterOptionsFromRpc(custom) {
+  const c = custom && typeof custom === "object" ? custom : {};
+  return {
+    supertypes: mergeSupertypes(rpcJsonToStringArray(c.supertypes)),
+    rarities: rpcJsonToStringArray(c.rarities).sort(),
+    sets: rpcJsonToSets(c.sets),
+    regions: [],
+    generations: [],
+    colors: [],
+    artists: rpcJsonToStringArray(c.artists).sort(),
+    evolution_lines: [],
+    trainer_types: [],
+    specialties: [],
+    background_pokemon: [],
+    card_types: [],
+    elements: [],
+    stages: [],
+    weathers: [],
+    environments: [],
+    actions: [],
+    poses: [],
+  };
+}
+
+async function fetchExploreFilterOptionsClientPaged() {
+  const [tcg, pocket, custom] = await Promise.all([
+    fetchFilterOptions("TCG"),
+    fetchFilterOptions("Pocket"),
+    fetchFilterOptions("Custom"),
+  ]);
+  return mergeExploreFilterOptions(tcg, pocket, custom);
+}
+
 /** DB JSONB array column → camelCase key on fetchFormOptions() result. */
 const ANN_JSONB_ARRAY_TO_FORM = {
   art_style: "artStyle",
@@ -206,6 +328,101 @@ async function mergeAnnotationUsageIntoOptions(out) {
     const fk = ANN_TEXT_TO_FORM[col];
     out[fk] = mergeSortedUniqueStrings(out[fk], [...setsByCol[col]]);
   }
+}
+
+/** Same merges as mergeAnnotationUsageIntoOptions using `get_form_options_db` payload. */
+function mergeAnnotationUsageIntoOptionsFromRpc(out, annPayload) {
+  if (!annPayload || typeof annPayload !== "object") return;
+  for (const col of Object.keys(ANN_JSONB_ARRAY_TO_FORM)) {
+    const fk = ANN_JSONB_ARRAY_TO_FORM[col];
+    const extra = rpcJsonToStringArray(annPayload[col]);
+    out[fk] = mergeSortedUniqueStrings(out[fk], extra);
+  }
+  for (const col of Object.keys(ANN_TEXT_TO_FORM)) {
+    const fk = ANN_TEXT_TO_FORM[col];
+    const extra = rpcJsonToStringArray(annPayload[col]);
+    out[fk] = mergeSortedUniqueStrings(out[fk], extra);
+  }
+}
+
+function buildFormOptionsFromRpcPayload(data) {
+  const merge = (a, b) => [...new Set([...a, ...b])];
+  const cards = data.cards && typeof data.cards === "object" ? data.cards : {};
+  const pm = data.pokemon_metadata && typeof data.pokemon_metadata === "object" ? data.pokemon_metadata : {};
+  const ann = data.annotations && typeof data.annotations === "object" ? data.annotations : {};
+
+  const rarity = rpcJsonToStringArray(cards.rarity).sort();
+  const artist = rpcJsonToStringArray(cards.artist).sort();
+  const names = rpcJsonToStringArray(cards.name).sort();
+
+  const setRows = Array.isArray(data.sets) ? data.sets : [];
+  const setSeries = [...new Set(setRows.map((r) => r?.series).filter(Boolean))].sort();
+  const setId = [...new Set(setRows.map((r) => (r?.id != null ? String(r.id) : "")).filter(Boolean))].sort();
+  const setName = [...new Set(setRows.map((r) => r?.name).filter(Boolean))].sort();
+
+  const dbRegions = rpcJsonToStringArray(pm.regions);
+  const pkmnMerged = merge(annOpts.PKMN_REGION_OPTIONS, dbRegions).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+
+  const out = {
+    rarity,
+    artist,
+    pkmnRegion: pkmnMerged,
+    cardRegion: pkmnMerged,
+    setSeries,
+    types: [],
+    subtypes: [],
+    emotion: [...annOpts.EMOTION_OPTIONS],
+    pose: [...annOpts.POSE_OPTIONS],
+    cameraAngle: [...annOpts.CAMERA_ANGLE_OPTIONS],
+    perspective: [...annOpts.PERSPECTIVE_OPTIONS],
+    weather: [...annOpts.WEATHER_OPTIONS],
+    environment: [...annOpts.ENVIRONMENT_OPTIONS],
+    storytelling: [],
+    cardLocations: [...annOpts.CARD_LOCATIONS_OPTIONS],
+    items: [...annOpts.ITEMS_OPTIONS],
+    actions: [...annOpts.ACTIONS_OPTIONS],
+    videoTitle: [],
+    setId,
+    setName,
+    name: names,
+    source: [...annOpts.SOURCE_OPTIONS],
+    heldItem: [...annOpts.HELD_ITEM_OPTIONS],
+    pokeball: [...annOpts.POKEBALL_OPTIONS],
+    trainerCardType: [...annOpts.TRAINER_CARD_TYPE_OPTIONS],
+    stamp: [...annOpts.STAMP_OPTIONS],
+    artStyle: [...annOpts.ART_STYLE_OPTIONS],
+    mainCharacter: [],
+    backgroundPokemon: merge([], rpcJsonToStringArray(pm.names)),
+    backgroundHumans: [...annOpts.BACKGROUND_HUMANS_OPTIONS],
+    additionalCharacters: [...annOpts.ADDITIONAL_CHARACTERS_OPTIONS],
+    backgroundDetails: [...annOpts.BACKGROUND_DETAILS_OPTIONS],
+    evolutionLine: mergeEvolutionLines(rpcJsonToStringArray(pm.evo_raw)),
+    cardSubcategory: [...annOpts.CARD_SUBCATEGORY_OPTIONS],
+    evolutionItems: [...annOpts.EVOLUTION_ITEMS_OPTIONS],
+    berries: [...annOpts.BERRIES_OPTIONS],
+    holidayTheme: [...annOpts.HOLIDAY_THEME_OPTIONS],
+    multiCard: [...annOpts.MULTI_CARD_OPTIONS],
+    trainerCardSubgroup: [...annOpts.TRAINER_CARD_SUBGROUP_OPTIONS],
+    videoType: [...annOpts.VIDEO_TYPE_OPTIONS],
+    videoRegion: [...annOpts.VIDEO_REGION_OPTIONS],
+    videoLocation: [...annOpts.VIDEO_LOCATION_OPTIONS],
+    cardBorder: [...annOpts.CARD_BORDER_OPTIONS],
+    energyType: [...annOpts.ENERGY_TYPE_OPTIONS],
+    rivalGroup: [...annOpts.RIVAL_GROUP_OPTIONS],
+    primaryColor: [],
+    secondaryColor: [],
+    shape: [],
+    top10Themes: [],
+    wtpcEpisode: [],
+    videoGame: [],
+    videoGameLocation: [],
+    additionalCharacterTheme: [],
+  };
+
+  mergeAnnotationUsageIntoOptionsFromRpc(out, ann);
+  return out;
 }
 
 /** Paginated distinct values for a scalar column on `cards` (dev-costly but no RPC required). */
@@ -375,18 +592,6 @@ async function attachProfileDisplayNames(sb, rows) {
   }));
 }
 
-/** Batch-resolve `profiles.display_name` for attribution on `fetchCard` (does not throw on failure). */
-async function fetchProfileDisplayNamesByIds(sb, ids) {
-  const uniq = [...new Set((ids || []).filter(Boolean))];
-  if (!uniq.length) return new Map();
-  const { data, error } = await sb.from("profiles").select("id, display_name").in("id", uniq);
-  if (error) {
-    console.warn("fetchProfileDisplayNamesByIds:", error.message || error);
-    return new Map();
-  }
-  return new Map((data || []).map((p) => [p.id, p.display_name]));
-}
-
 function pickAnnotationFlatFromCustomCard(card, skipKeys) {
   const flat = {};
   for (const [k, v] of Object.entries(card)) {
@@ -430,32 +635,48 @@ function jsonbArrayContainsOneString(s) {
   return JSON.stringify([String(s)]);
 }
 
-function gridRowFromCard(c, profileNameMap) {
-  const ann = normalizeEmbeddedAnnotation(c.annotations);
-  const created_by = c.created_by ?? null;
+/** `profiles` row from PostgREST embed (object or single-element array). */
+function displayNameFromProfileEmbed(embed) {
+  if (embed == null) return null;
+  const p = Array.isArray(embed) ? embed[0] : embed;
+  if (!p || typeof p !== "object") return null;
+  const n = p.display_name;
+  if (n == null || String(n).trim() === "") return null;
+  return String(n).trim();
+}
+
+function gridRowFromCard(row) {
+  const ann = normalizeEmbeddedAnnotation(row.annotations);
+  const created_by = row.created_by ?? null;
   const annotation_updated_by = ann?.updated_by ?? null;
   const annotation_updated_at = ann?.updated_at ?? null;
   return {
-    id: c.id,
-    name: c.name,
-    set_name: c.set_name,
-    image_small: c.image_small,
-    image_large: c.image_large,
+    id: row.id,
+    name: row.name,
+    set_name: row.set_name,
+    image_small: row.image_small,
+    image_large: row.image_large,
     image_override: ann?.image_override || null,
-    number: c.number,
-    hp: c.hp,
-    rarity: c.rarity,
-    is_custom: c.origin === "manual",
+    number: row.number,
+    hp: row.hp,
+    rarity: row.rarity,
+    is_custom: row.origin === "manual",
     created_by,
-    creator_display_name: created_by ? profileNameMap.get(created_by) ?? null : null,
+    creator_display_name: created_by ? displayNameFromProfileEmbed(row.profiles) : null,
     annotation_updated_by,
     annotation_updated_at,
     annotation_editor_display_name: annotation_updated_by
-      ? profileNameMap.get(annotation_updated_by) ?? null
+      ? displayNameFromProfileEmbed(ann?.profiles)
       : null,
   };
 }
 
+/**
+ * Paginated card grid for Explore (and batch tooling).
+ * @param {object} [params]
+ * @param {boolean} [params.exact_count] — If true, use `count: exact` (batch confirm, ID lists).
+ *   Default false uses planner `count: planned` for faster Explore totals.
+ */
 export async function fetchCards(params = {}) {
   const sb = await sbReady();
   const {
@@ -477,6 +698,7 @@ export async function fetchCards(params = {}) {
     sort_dir = "asc",
     page = 1,
     page_size = 40,
+    exact_count = false,
   } = params;
 
   const pageInt = parseInt(page, 10) || 1;
@@ -502,15 +724,17 @@ export async function fetchCards(params = {}) {
   const useAnnInner =
     hasRegion || hasWeather || hasEnvironment || hasBg || hasActions || hasPose;
 
+  // Grid only: omit profiles embeds — nested embeds can interact badly with nullable FKs
+  // under some PostgREST versions; creator/editor names are optional here (detail view embeds).
   const annSelect = useAnnInner
-    ? "annotations!inner(image_override, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)"
-    : "annotations(image_override, updated_by, updated_at)";
+    ? `annotations!inner(image_override, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)`
+    : `annotations(image_override, updated_by, updated_at)`;
 
   let query = sb
     .from("cards")
     .select(
       `id, name, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, created_by, ${annSelect}`,
-      { count: "exact" }
+      { count: exact_count ? "exact" : "planned" }
     );
 
   if (source === "TCG") {
@@ -593,15 +817,7 @@ export async function fetchCards(params = {}) {
   const { data, error, count } = await query;
   if (error) throw error;
 
-  const profileIds = [];
-  for (const row of data || []) {
-    if (row.created_by) profileIds.push(row.created_by);
-    const ann = normalizeEmbeddedAnnotation(row.annotations);
-    if (ann?.updated_by) profileIds.push(ann.updated_by);
-  }
-  const profileNameMap = await fetchProfileDisplayNamesByIds(sb, profileIds);
-
-  const cards = (data || []).map((row) => gridRowFromCard(row, profileNameMap));
+  const cards = (data || []).map((row) => gridRowFromCard(row));
   return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
 }
 
@@ -615,7 +831,7 @@ const BATCH_ID_PAGE_SIZE = 500;
  */
 export async function fetchMatchingCardIds(params = {}) {
   const { page: _p, page_size: _ps, ...rest } = params;
-  const probe = await fetchCards({ ...rest, page: 1, page_size: 1 });
+  const probe = await fetchCards({ ...rest, page: 1, page_size: 1, exact_count: true });
   if (probe.total > BATCH_EDIT_MAX_CARDS) {
     throw new Error(
       `This filter matches more than ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards. Narrow filters on Explore, then try again.`
@@ -628,6 +844,7 @@ export async function fetchMatchingCardIds(params = {}) {
       ...rest,
       page,
       page_size: BATCH_ID_PAGE_SIZE,
+      exact_count: true,
     });
     for (const c of cards) ids.push(c.id);
     if (ids.length >= total || cards.length === 0) break;
@@ -663,46 +880,51 @@ export async function fetchCard(id, _source = "TCG") {
   const sb = await sbReady();
   const { data: row, error } = await sb
     .from("cards")
-    .select("*, annotations(*)")
+    .select(
+      "*, profiles!cards_created_by_fkey(display_name), annotations(*, profiles!annotations_updated_by_fkey(display_name))"
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (error) throw error;
   if (!row) throw new Error("Card not found");
 
+  const isPocket = row.origin === "tcgdex";
+
   const annRow = normalizeEmbeddedAnnotation(row.annotations);
+  const creator_display_name = row.created_by ? displayNameFromProfileEmbed(row.profiles) : null;
+  const annotation_editor_display_name = annRow?.updated_by
+    ? displayNameFromProfileEmbed(annRow.profiles)
+    : null;
+
   const raw_data =
     row.raw_data && typeof row.raw_data === "object" ? row.raw_data : {};
   const pokedex_numbers = raw_data?.nationalPokedexNumbers || [];
 
+  // Pocket cards do not use pokemon_metadata in the returned shape; skip the extra round trip.
   let pm = null;
-  const dex = pokedex_numbers[0];
-  if (dex != null) {
-    const { data: pmd } = await sb
-      .from("pokemon_metadata")
-      .select("*")
-      .eq("pokedex_number", dex)
-      .maybeSingle();
-    pm = pmd;
+  if (!isPocket) {
+    const dex = pokedex_numbers[0];
+    if (dex != null) {
+      const { data: pmd } = await sb
+        .from("pokemon_metadata")
+        .select("*")
+        .eq("pokedex_number", dex)
+        .maybeSingle();
+      pm = pmd;
+    }
   }
 
   const overrides = parseOverrides(annRow?.overrides);
   const baseCard = { ...row };
   delete baseCard.annotations;
+  delete baseCard.profiles;
   const merged = { ...baseCard, ...overrides };
 
   const annotations = annotationRowToFlat(annRow);
   // Legacy v1 annotation field: duplicate of cards.id for "Unique ID" in UI; prefer cards.id for new code.
   if (!annotations.unique_id) annotations.unique_id = id;
 
-  const profileIds = [row.created_by, annotations.updated_by].filter(Boolean);
-  const profileNameMap = await fetchProfileDisplayNamesByIds(sb, profileIds);
-  const creator_display_name = row.created_by ? profileNameMap.get(row.created_by) ?? null : null;
-  const annotation_editor_display_name = annotations.updated_by
-    ? profileNameMap.get(annotations.updated_by) ?? null
-    : null;
-
-  const isPocket = row.origin === "tcgdex";
   const prices = row.prices && typeof row.prices === "object" ? row.prices : {};
 
   if (isPocket) {
@@ -967,15 +1189,36 @@ export async function fetchFilterOptions(source = "TCG") {
 
 /** Explore: one merged option list so changing Source does not hide/show filter dropdowns. */
 export async function fetchExploreFilterOptions() {
-  const [tcg, pocket, custom] = await Promise.all([
-    fetchFilterOptions("TCG"),
-    fetchFilterOptions("Pocket"),
-    fetchFilterOptions("Custom"),
-  ]);
-  return mergeExploreFilterOptions(tcg, pocket, custom);
+  const sb = await sbReady();
+  // Phase 6 rollback: set VITE_USE_FILTER_OPTIONS_RPC=false to skip RPC (many paged reads) without redeploying SQL.
+  if (import.meta.env.VITE_USE_FILTER_OPTIONS_RPC === "false") {
+    return fetchExploreFilterOptionsClientPaged();
+  }
+  const { data, error } = await sb.rpc("get_explore_filter_options_db");
+  if (!error && data != null && typeof data === "object") {
+    try {
+      const tcg = buildTcgFilterOptionsFromRpc(data.tcg);
+      const pocket = buildPocketFilterOptionsFromRpc(data.pocket);
+      const custom = buildCustomFilterOptionsFromRpc(data.custom);
+      return mergeExploreFilterOptions(tcg, pocket, custom);
+    } catch (e) {
+      console.warn(
+        "get_explore_filter_options_db parse:",
+        e?.message || e,
+        "— using client-paged filter options"
+      );
+    }
+  } else if (error) {
+    console.warn(
+      "get_explore_filter_options_db:",
+      error.message || error,
+      "— using client-paged filter options"
+    );
+  }
+  return fetchExploreFilterOptionsClientPaged();
 }
 
-export async function fetchFormOptions() {
+async function fetchFormOptionsClientPaged() {
   const sb = await sbReady();
   const [rarity, artist, regions, series, setIds, setNames, names] =
     await Promise.all([
@@ -1065,6 +1308,29 @@ export async function fetchFormOptions() {
 
   await mergeAnnotationUsageIntoOptions(out);
   return out;
+}
+
+export async function fetchFormOptions() {
+  const sb = await sbReady();
+  const { data, error } = await sb.rpc("get_form_options_db");
+  if (!error && data != null && typeof data === "object") {
+    try {
+      return buildFormOptionsFromRpcPayload(data);
+    } catch (e) {
+      console.warn(
+        "get_form_options_db parse:",
+        e?.message || e,
+        "— using client-paged form options"
+      );
+    }
+  } else if (error) {
+    console.warn(
+      "get_form_options_db:",
+      error.message || error,
+      "— using client-paged form options"
+    );
+  }
+  return fetchFormOptionsClientPaged();
 }
 
 export async function fetchAnnotations(cardId) {

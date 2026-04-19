@@ -66,7 +66,16 @@ export function normalizeEmbeddedAnnotation(embedded) {
 /** Flat object for CardDetail / patchAnnotations (excludes overrides — those merge onto card). */
 export function annotationRowToFlat(row) {
   if (!row) return {};
-  const { overrides: _ov, extra, card_id, version, updated_by, updated_at, ...typed } = row;
+  const {
+    overrides: _ov,
+    extra,
+    card_id,
+    version,
+    updated_by,
+    updated_at,
+    profiles: _profilesEmbed,
+    ...typed
+  } = row;
   const out = { ...typed };
   if (extra && typeof extra === "object" && !Array.isArray(extra)) {
     Object.assign(out, extra);

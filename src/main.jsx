@@ -5,10 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import "./index.css";
 import { initDB, fetchExploreFilterOptions } from "./db";
+import App from "./App.jsx";
 
 /** Keep in sync with ExplorePage FILTER_OPTIONS_STALE_MS */
 const FILTER_OPTIONS_STALE_MS = 30 * 60 * 1000;
-import App from "./App.jsx";
 
 const useSupabase =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -17,6 +17,27 @@ const useSupabase =
 
 const requireEmailAuth =
   useSupabase && import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true";
+
+/**
+ * Phase 5 (explore-supabase-performance): warm `["filterOptions","explore"]` off the critical path
+ * so first paint / router mount are not contending with the filter-options network call.
+ */
+function scheduleExploreFilterOptionsPrefetch(queryClient) {
+  const run = () => {
+    void queryClient.prefetchQuery({
+      queryKey: ["filterOptions", "explore"],
+      queryFn: fetchExploreFilterOptions,
+      staleTime: FILTER_OPTIONS_STALE_MS,
+    });
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(run, { timeout: useSupabase ? 2500 : 4000 });
+  } else {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
+    });
+  }
+}
 
 function Root() {
   const [ready, setReady] = useState(false);
@@ -49,12 +70,8 @@ function Root() {
             return;
           }
         }
-        void queryClient.prefetchQuery({
-          queryKey: ["filterOptions", "explore"],
-          queryFn: fetchExploreFilterOptions,
-          staleTime: FILTER_OPTIONS_STALE_MS,
-        });
         setReady(true);
+        scheduleExploreFilterOptionsPrefetch(queryClient);
       })
       .catch((err) => {
         clearTimeout(timeout);

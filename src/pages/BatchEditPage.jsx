@@ -14,6 +14,7 @@ import {
   fetchAttributes,
   fetchMatchingCardIds,
   batchPatchAnnotations,
+  FORM_OPTIONS_QUERY_KEY,
 } from "../db";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
@@ -77,6 +78,7 @@ export default function BatchEditPage() {
       ...filters,
       page: 1,
       page_size: 1,
+      exact_count: true,
     }),
     [q, filters]
   );
@@ -157,7 +159,7 @@ export default function BatchEditPage() {
       queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
       queryClient.invalidateQueries({ queryKey: ["batchCardCount"] });
       queryClient.invalidateQueries({ queryKey: ["batchPreview"] });
-      queryClient.invalidateQueries({ queryKey: ["formOptions"] });
+      queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["editHistory"] });
       if (result.errors.length === 0) {
         setConfirmLarge(false);

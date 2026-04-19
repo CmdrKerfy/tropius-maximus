@@ -23,6 +23,7 @@ Usage:
     python ingest.py --pocket          # Only fetch Pocket data (skip TCG + Pokemon)
     python ingest.py --force           # Re-download all sets even if already present
     python ingest.py --push-supabase   # After ingest, run push_duckdb_to_supabase.py (needs SUPABASE_* env)
+    python ingest.py --fail-on-partial # Exit 1 if any fetch step skipped data (for CI alerting)
 
 Features:
     - Resume: Automatically skips sets that are already fully ingested
@@ -40,10 +41,30 @@ import subprocess
 import sys
 import time
 import unicodedata
+from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 import duckdb
+
+
+@dataclass
+class IngestFailureSummary:
+    """Counts of API/data steps that logged a warning and continued (CI can fail on these)."""
+
+    tcg_set_fetch_failures: int = 0
+    pokemon_species_fetch_failures: int = 0
+    pocket_set_fetch_failures: int = 0
+    pocket_card_fetch_failures: int = 0
+
+    def has_partial_failures(self) -> bool:
+        return (
+            self.tcg_set_fetch_failures
+            + self.pokemon_species_fetch_failures
+            + self.pocket_set_fetch_failures
+            + self.pocket_card_fetch_failures
+        ) > 0
+
 
 # ── Configuration ────────────────────────────────────────────────────────
 
@@ -338,10 +359,13 @@ def get_existing_card_count(conn, set_id: str) -> int:
     return result[0] if result else 0
 
 
-def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = False) -> int:
+def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = False) -> tuple[int, int]:
     """Download cards from the pokemontcg.io API and upsert into the cards table.
 
     If force=False (default), skips sets that already have cards in the database.
+
+    Returns (total_ingested_cards, set_fetch_failures) where set_fetch_failures counts
+    sets that hit an API error and were skipped (including rows written to failed_sets).
     """
     if set_id:
         set_ids = [set_id]
@@ -354,6 +378,7 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
     conn = get_connection()
     total_ingested = 0
     skipped_count = 0
+    set_fetch_failures = 0
 
     # Load permanently-failed sets so we don't retry them
     failed_sets = {row[0] for row in conn.execute("SELECT set_id FROM failed_sets").fetchall()}
@@ -379,6 +404,7 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
         try:
             cards = fetch_cards_from_api(sid)
         except httpx.HTTPStatusError as e:
+            set_fetch_failures += 1
             if e.response.status_code < 500:
                 conn.execute(
                     "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
@@ -389,6 +415,7 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
                 print(f"failed after {MAX_RETRIES} retries (HTTP {e.response.status_code})")
             continue
         except (httpx.HTTPError, httpx.TimeoutException) as e:
+            set_fetch_failures += 1
             print(f"failed after {MAX_RETRIES} retries ({e})")
             continue
 
@@ -451,8 +478,10 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
         parts.append(f"{skipped_count} sets already complete.")
     if perm_skipped:
         parts.append(f"{perm_skipped} sets permanently unavailable (skipped).")
+    if set_fetch_failures:
+        parts.append(f"{set_fetch_failures} set(s) had fetch errors this run.")
     print("Done! " + " ".join(parts))
-    return total_ingested
+    return total_ingested, set_fetch_failures
 
 
 # ── Pokemon metadata ingestion ──────────────────────────────────────────
@@ -502,8 +531,11 @@ def get_existing_pokemon_count(conn) -> int:
     return result[0] if result else 0
 
 
-def ingest_pokemon_metadata(force: bool = False) -> int:
-    """Fetch all Pokemon species from PokeAPI and store metadata."""
+def ingest_pokemon_metadata(force: bool = False) -> tuple[int, int]:
+    """Fetch all Pokemon species from PokeAPI and store metadata.
+
+    Returns (species_rows_ingested_this_run, species_fetch_failures).
+    """
     print("Fetching Pokemon metadata from PokeAPI...")
 
     conn = get_connection()
@@ -524,7 +556,7 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
         if existing >= total_count:
             print(f"  Skipped (already have {existing} species)")
             conn.close()
-            return existing
+            return existing, 0
 
     # Fetch all species in batches
     all_species = []
@@ -548,6 +580,7 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
     # Cache for evolution chains to avoid re-fetching
     chain_cache = {}
     ingested = 0
+    species_fetch_failures = 0
 
     for i, species_info in enumerate(all_species, 1):
         print(f"  [{i}/{len(all_species)}] {species_info['name']}...", end="\r")
@@ -609,12 +642,15 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
                 time.sleep(0.1)
 
         except Exception as e:
+            species_fetch_failures += 1
             print(f"\n  Warning: Failed to fetch {species_info['name']}: {e}")
             continue
 
     conn.close()
     print(f"\nDone! Ingested {ingested} Pokemon species.")
-    return ingested
+    if species_fetch_failures:
+        print(f"  ({species_fetch_failures} species fetch error(s) this run.)")
+    return ingested, species_fetch_failures
 
 
 # ── Pocket ingestion ────────────────────────────────────────────────────
@@ -657,8 +693,11 @@ def ingest_pocket_sets() -> None:
     print(f"  Saved {count} Pocket sets.")
 
 
-def ingest_pocket_cards(force: bool = False) -> int:
-    """Fetch Pocket cards from the TCGdex API and upsert into pocket_cards."""
+def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
+    """Fetch Pocket cards from the TCGdex API and upsert into pocket_cards.
+
+    Returns (cards_ingested, pocket_set_fetch_failures, pocket_card_fetch_failures).
+    """
     conn = get_connection()
 
     # Resume check
@@ -668,7 +707,7 @@ def ingest_pocket_cards(force: bool = False) -> int:
         if existing > 0:
             print(f"Pocket cards: skipped (already have {existing} cards). Use --force to re-download.")
             conn.close()
-            return existing
+            return existing, 0, 0
 
     print("Fetching Pocket cards from TCGdex...")
 
@@ -681,6 +720,8 @@ def ingest_pocket_cards(force: bool = False) -> int:
 
     conn.execute("DELETE FROM pocket_cards")
     ingested = 0
+    pocket_set_fetch_failures = 0
+    pocket_card_fetch_failures = 0
     for set_idx, set_info in enumerate(sets_list, 1):
         set_id = set_info["id"]
         print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
@@ -691,6 +732,7 @@ def ingest_pocket_cards(force: bool = False) -> int:
             set_resp.raise_for_status()
             set_data = set_resp.json()
         except Exception as e:
+            pocket_set_fetch_failures += 1
             print(f"failed ({e})")
             continue
 
@@ -706,6 +748,7 @@ def ingest_pocket_cards(force: bool = False) -> int:
                 card_resp.raise_for_status()
                 card = card_resp.json()
             except Exception as e:
+                pocket_card_fetch_failures += 1
                 print(f"\n    Warning: Failed to fetch {card_id}: {e}")
                 time.sleep(0.05)
                 continue
@@ -774,35 +817,52 @@ def ingest_pocket_cards(force: bool = False) -> int:
 
     conn.close()
     print(f"  Saved {ingested} Pocket cards.")
-    return ingested
+    if pocket_set_fetch_failures or pocket_card_fetch_failures:
+        print(
+            f"  ({pocket_set_fetch_failures} pocket set fetch error(s), "
+            f"{pocket_card_fetch_failures} pocket card fetch error(s) this run.)"
+        )
+    return ingested, pocket_set_fetch_failures, pocket_card_fetch_failures
 
 
-def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, skip_tcg: bool = False, pocket_only: bool = False, force: bool = False) -> int:
+def run_ingestion(
+    set_id: Optional[str] = None,
+    skip_pokemon: bool = False,
+    skip_pocket: bool = False,
+    skip_tcg: bool = False,
+    pocket_only: bool = False,
+    force: bool = False,
+) -> IngestFailureSummary:
     """Run the full ingestion pipeline."""
+    stats = IngestFailureSummary()
     initialize_database()
 
     if pocket_only:
         ingest_pocket_sets()
-        ingest_pocket_cards(force=force)
-        return 0
+        _, se, ce = ingest_pocket_cards(force=force)
+        stats.pocket_set_fetch_failures = se
+        stats.pocket_card_fetch_failures = ce
+        return stats
 
     # Ingest Pokemon metadata first (unless skipped)
     if not skip_pokemon:
-        ingest_pokemon_metadata(force=force)
+        _, pe = ingest_pokemon_metadata(force=force)
+        stats.pokemon_species_fetch_failures = pe
 
     # Ingest main TCG cards (unless skipped)
     if not skip_tcg:
         set_lookup = ingest_sets()
-        total = ingest_cards(set_lookup, set_id=set_id, force=force)
-    else:
-        total = 0
+        _, te = ingest_cards(set_lookup, set_id=set_id, force=force)
+        stats.tcg_set_fetch_failures = te
 
     # Ingest Pocket data (unless skipped)
     if not skip_pocket:
         ingest_pocket_sets()
-        ingest_pocket_cards(force=force)
+        _, se, ce = ingest_pocket_cards(force=force)
+        stats.pocket_set_fetch_failures = se
+        stats.pocket_card_fetch_failures = ce
 
-    return total
+    return stats
 
 
 def main():
@@ -861,6 +921,12 @@ def main():
         action="store_true",
         help="After ingest, run push_duckdb_to_supabase.py (set SUPABASE_URL + SUPABASE_SERVICE_KEY).",
     )
+    parser.add_argument(
+        "--fail-on-partial",
+        dest="fail_on_partial",
+        action="store_true",
+        help="Exit with status 1 if any API step skipped data (TCG sets, PokeAPI species, Pocket). For CI.",
+    )
     args = parser.parse_args()
     if args.normalize_only:
         conn = get_connection()
@@ -873,7 +939,26 @@ def main():
         deleted = conn.execute("DELETE FROM failed_sets").rowcount
         conn.close()
         print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
-    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, pocket_only=args.pocket_only, force=args.force)
+    summary = run_ingestion(
+        set_id=args.set_id,
+        skip_pokemon=args.skip_pokemon,
+        skip_pocket=args.skip_pocket,
+        skip_tcg=args.skip_tcg,
+        pocket_only=args.pocket_only,
+        force=args.force,
+    )
+
+    if args.fail_on_partial and summary.has_partial_failures():
+        print(
+            "Ingest completed with partial API failures — "
+            f"TCG sets: {summary.tcg_set_fetch_failures}, "
+            f"PokeAPI species: {summary.pokemon_species_fetch_failures}, "
+            f"Pocket sets: {summary.pocket_set_fetch_failures}, "
+            f"Pocket cards: {summary.pocket_card_fetch_failures}. "
+            "Exiting with status 1 (--fail-on-partial).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     if args.push_supabase:
         push_script = os.path.join(SCRIPT_DIR, "push_duckdb_to_supabase.py")

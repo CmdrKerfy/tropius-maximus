@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`019`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`023`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -54,9 +54,15 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Optional — after the core v2 plan is finished
 
-Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a performance pass when Explore feels slow loading filter dropdowns.
+Performance work is tracked in **`docs/plans/explore-supabase-performance.md`**.
 
-- [ ] **Server-side filter options** — Today `fetchFilterOptions` in `src/data/supabase/appAdapter.js` builds distinct values by paging through `cards` / `annotations` in the client. Replace with a Postgres RPC (e.g. `get_filter_options(p_source text) RETURNS jsonb`) that runs `SELECT DISTINCT` (and existing `sets` / `pokemon_metadata` queries) in one round-trip; call it from `appAdapter.js` via `supabase.rpc`. Align `SECURITY`/RLS/`GRANT EXECUTE` with current policies. Add indexes on `(origin, …)` only if profiling shows they help.
+- [x] **Explore filter options (RPC)** — **`020_explore_filter_options_rpc.sql`**: `get_explore_filter_options_db()` returns distincts in one round-trip; `fetchExploreFilterOptions` in `src/data/supabase/appAdapter.js` calls `supabase.rpc`, merges static lists from `annotationOptions.js`, then `mergeExploreFilterOptions`. Falls back to legacy client paging if the RPC errors. **`SECURITY INVOKER`** + `GRANT` to `authenticated` / `service_role` (no anon; aligns with **019**).
+- [x] **Form options (RPC) + shared TanStack cache** — **`021_form_options_rpc.sql`**: `get_form_options_db()` returns cards / sets / `pokemon_metadata` / per-column annotation distincts in one RPC; `fetchFormOptions` builds the same shape as before via `buildFormOptionsFromRpcPayload` + `mergeAnnotationUsageIntoOptionsFromRpc`, with **`fetchFormOptionsClientPaged`** fallback. **`FORM_OPTIONS_QUERY_KEY`** in `src/db.js`; Workbench, **CardDetail**, and **CustomCardForm** use `useQuery` so options share cache (5‑min `staleTime`). Batch edit invalidates the same key after runs.
+- [x] **Explore grid counts + indexes (Phase 2)** — **`022_grid_search_indexes.sql`**: `pg_trgm` GIN on `cards.name`, composite `(origin, set_id)`. `fetchCards` uses **`count: "planned"`** by default; pass **`exact_count: true`** for batch / `fetchMatchingCardIds`. See **`docs/plans/explore-supabase-performance.md`**.
+- [x] **Grid + detail profile embed (Phase 3)** — **`023_cards_annotations_profiles_fk.sql`** (**must be applied** on each Supabase env or embeds fail): `created_by` / `updated_by` FK → **`profiles`**. **`fetchCard`** embeds **`profiles!…_fkey(display_name)`** (card detail attribution). **`fetchCards`** (Explore grid) omits profile embeds to avoid PostgREST edge cases; tile-level creator/editor names deferred. **`annotationRowToFlat`** drops embed **`profiles`**. Explore uses **`exact_count: true`** + page clamp vs URL `?page=` (see `ExplorePage.jsx`).
+- [x] **Card detail path (Phase 4)** — **`fetchCard`**: skip **`pokemon_metadata`** for Pocket (`tcgdex`). **`CardDetail.jsx`**: card load via **`useQuery`** `['cardDetail', cardId, source]` + **`setQueryData`** / **`invalidateQueries`** for saves and tab visibility (see **`docs/plans/explore-supabase-performance.md`**).
+- [x] **Startup prefetch (Phase 5)** — **`main.jsx`**: after **`setReady(true)`**, Explore **`fetchExploreFilterOptions`** prefetch runs via **`requestIdleCallback`** (fallback double **`requestAnimationFrame`**), same **`queryKey`** as **`ExplorePage`** for dedupe.
+- [x] **Verification & rollback (Phase 6)** — Runbook + checklist in **`docs/plans/explore-supabase-performance.md`**; optional **`VITE_USE_FILTER_OPTIONS_RPC=false`** forces legacy client-paged Explore filter options (**`appAdapter.js`**); cross-link in **`docs/plans/e2e-vercel-smoke-checklist.md`**. Owner items: RLS smoke + v1/v2 sign-off remain manual.
 
 ### Before finishing the v2 plan (production checklist)
 
@@ -187,6 +193,10 @@ supabase/
     017_apply_annotation_with_history.sql  -- RPC: annotation + `edit_history` in one transaction
     018_public_card_share_rpc.sql            -- `get_public_card_for_share` for anonymous share + OG
     019_rls_exclude_anonymous_sessions.sql   -- RLS: real members only (JWT is_anonymous); share RPC unchanged
+    020_explore_filter_options_rpc.sql       -- `get_explore_filter_options_db`: Explore filter distincts in one RPC
+    021_form_options_rpc.sql                 -- `get_form_options_db`: form combobox distincts (Workbench / detail / custom form)
+    022_grid_search_indexes.sql              -- pg_trgm + indexes for Explore grid / name search
+    023_cards_annotations_profiles_fk.sql    -- FK → profiles for PostgREST embed (no extra profile query)
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules

@@ -54,7 +54,7 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
-        run: python scripts/ingest.py --clear-failed
+        run: python scripts/ingest.py --clear-failed --fail-on-partial
 
       - name: Export to Parquet
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

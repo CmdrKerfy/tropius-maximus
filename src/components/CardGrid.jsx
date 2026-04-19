@@ -9,7 +9,9 @@
  */
 
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { Check, Sparkles } from "lucide-react";
+import { isEmailAuthRequired } from "../lib/authInvite.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
@@ -122,6 +124,8 @@ export default function CardGrid({
   onToggleSelection,
   onResetExplore,
   showResetWhenEmpty = false,
+  /** True when Supabase session is anonymous; migration 019 blocks reads — grid is empty with no PostgREST error. */
+  anonymousRlsBlocked = false,
 }) {
   // Loading state: show placeholder skeleton cards.
   if (loading) {
@@ -139,6 +143,25 @@ export default function CardGrid({
 
   // Empty state: no cards match the current search/filters.
   if (cards.length === 0) {
+    if (anonymousRlsBlocked) {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-6 py-14 text-center max-w-lg mx-auto">
+          <p className="text-lg font-semibold text-amber-950">Guest session cannot load the catalog</p>
+          <p className="text-sm text-amber-900/90 mt-2 leading-relaxed">
+            Row-level security (migration 019) hides cards from anonymous Supabase sign-ins. Use your team sign-in, or
+            for local dev turn off automatic anonymous auth in environment settings.
+          </p>
+          {isEmailAuthRequired() ? (
+            <NavLink
+              to="/login"
+              className="mt-6 inline-flex items-center justify-center rounded-lg bg-tm-leaf px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-tm-leaf-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tm-mist"
+            >
+              Sign in
+            </NavLink>
+          ) : null}
+        </div>
+      );
+    }
     return (
       <div className="rounded-xl border border-gray-200 bg-gray-50/80 px-6 py-14 text-center max-w-lg mx-auto">
         <p className="text-lg font-semibold text-gray-800">

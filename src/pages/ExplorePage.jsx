@@ -43,6 +43,7 @@ import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
+import { getSupabase } from "../lib/supabaseClient.js";
 
 const USE_SUPABASE_APP =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -183,6 +184,8 @@ export default function ExplorePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showSqlConsole, setShowSqlConsole] = useState(false);
   const [showCustomCardForm, setShowCustomCardForm] = useState(false);
+  /** Anonymous JWT: RLS 019 allows zero rows with no PostgREST error — explain in CardGrid. */
+  const [supabaseSessionIsAnonymous, setSupabaseSessionIsAnonymous] = useState(false);
 
   // ── GitHub PAT state ─────────────────────────────────────────────────
   const patSectionRef = useRef(null);
@@ -240,12 +243,24 @@ export default function ExplorePage() {
         ...filters,
         page,
         page_size: pageSize,
+        // Exact total matches the filtered set (planned can disagree badly with filters/embeds).
+        ...(USE_SUPABASE_APP ? { exact_count: true } : {}),
       }),
     placeholderData: keepPreviousData,
   });
 
   const cards = cardsResult?.cards ?? [];
   const total = cardsResult?.total ?? 0;
+
+  // Stale ?page= in the URL (or history) can point past the last page: PostgREST returns [] with a
+  // non-zero Content-Range total → "N cards found" but an empty grid.
+  useEffect(() => {
+    if (sqlCards || !cardsResult) return;
+    const { total: t, page_size } = cardsResult;
+    if (typeof t !== "number" || t <= 0 || !page_size) return;
+    const maxPage = Math.max(1, Math.ceil(t / page_size));
+    setPage((p) => (p > maxPage ? maxPage : p));
+  }, [cardsResult, sqlCards]);
   const error = cardsQueryFailed ? cardsQueryError?.message ?? "Failed to load cards" : null;
   /** Skeleton only when there is no list data yet (keeps previous page visible while paginating). */
   const listAwaitingFirstData = !sqlCards && cardsResult === undefined && cardsPending;
@@ -253,6 +268,22 @@ export default function ExplorePage() {
   useEffect(() => {
     localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
   }, [filters]);
+
+  useEffect(() => {
+    if (!USE_SUPABASE_APP) {
+      setSupabaseSessionIsAnonymous(false);
+      return;
+    }
+    const sb = getSupabase();
+    const apply = (session) => {
+      setSupabaseSessionIsAnonymous(Boolean(session?.user?.is_anonymous));
+    };
+    void sb.auth.getSession().then(({ data: { session } }) => apply(session));
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => apply(session));
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(SEARCH_STORAGE_KEY, searchQuery);
@@ -1084,6 +1115,7 @@ export default function ExplorePage() {
             onToggleSelection={showSqlConsole ? handleToggleCardSelection : null}
             onResetExplore={resetExploreFilters}
             showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
+            anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}
           />
         )}
 

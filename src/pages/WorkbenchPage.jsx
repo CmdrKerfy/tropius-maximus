@@ -19,6 +19,7 @@ import {
   fetchCard,
   fetchAttributes,
   fetchFormOptions,
+  FORM_OPTIONS_QUERY_KEY,
   updateWorkbenchQueue,
   fetchProfile,
 } from "../db";
@@ -143,7 +144,7 @@ export default function WorkbenchPage() {
   });
 
   const { data: formOptions } = useQuery({
-    queryKey: ["formOptions"],
+    queryKey: FORM_OPTIONS_QUERY_KEY,
     queryFn: fetchFormOptions,
     enabled: USE_SB,
     staleTime: 300_000,

@@ -15,6 +15,7 @@ import {
   fetchCard,
   patchAnnotations,
   fetchFormOptions,
+  FORM_OPTIONS_QUERY_KEY,
   exportAllAnnotations,
   deleteCardsById,
   useSupabaseBackend,
@@ -114,14 +115,25 @@ function parseAnnotations(card) {
 }
 
 export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed, onRegisterSyncRunner, workflowBuildingRef, onSendToWorkbench }) {
-  const [card, setCard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
+  const cardDetailQueryKey = useMemo(() => ["cardDetail", cardId, source], [cardId, source]);
+  const {
+    data: card = null,
+    isPending: cardPending,
+    isError: cardFetchFailed,
+    error: cardFetchError,
+  } = useQuery({
+    queryKey: cardDetailQueryKey,
+    queryFn: () => fetchCard(cardId, source),
+    enabled: Boolean(cardId),
+    staleTime: 60_000,
+  });
+  const loading = cardPending;
+  const error = cardFetchFailed ? cardFetchError?.message ?? "Failed to load card" : null;
   const [editingImage, setEditingImage] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [savingImage, setSavingImage] = useState(false);
   const [imageEnlarged, setImageEnlarged] = useState(false);
-  const [formOpts, setFormOpts] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
@@ -141,7 +153,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const ghPushTimer = useRef(null);
   const ghPushInProgressRef = useRef(false); // prevents duplicate commits while one is in flight
   const runSyncNowRef = useRef(null);
-  const queryClient = useQueryClient();
 
   const { data: userPrefs } = useQuery({
     queryKey: ["userPreferences"],
@@ -154,6 +165,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     queryFn: fetchProfile,
     staleTime: 60_000,
     enabled: useSupabaseBackend(),
+  });
+
+  const { data: formOpts = {} } = useQuery({
+    queryKey: FORM_OPTIONS_QUERY_KEY,
+    queryFn: fetchFormOptions,
+    staleTime: 300_000,
   });
 
   const normalizedCardDetailPins = useMemo(
@@ -169,14 +186,8 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     },
   });
 
+  // When the modal switches card or source, reset transient UI (card body comes from TanStack Query).
   useEffect(() => {
-    fetchFormOptions().then(setFormOpts).catch((err) => console.warn("Failed to load form options:", err.message));
-  }, []);
-
-  // Fetch full card details when the modal opens or card changes.
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
     setImageEnlarged(false);
     setEditingImage(false);
     setSaveStatus(null);
@@ -184,10 +195,6 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
     clearTimeout(annSaveClearTimerRef.current);
     setSyncRetryCount(0);
-    fetchCard(cardId, source)
-      .then(setCard)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
   }, [cardId, source]);
 
   // Supabase: when returning to the tab, refresh the card if not mid-edit (reduces stale detail after time away).
@@ -196,13 +203,11 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     const onVis = () => {
       if (document.visibilityState !== "visible") return;
       if (isEditMode || editingImage || loading || imageEnlarged) return;
-      fetchCard(cardId, source)
-        .then(setCard)
-        .catch(() => {});
+      void queryClient.invalidateQueries({ queryKey: cardDetailQueryKey });
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [cardId, source, isEditMode, editingImage, loading, imageEnlarged]);
+  }, [cardId, source, isEditMode, editingImage, loading, imageEnlarged, queryClient, cardDetailQueryKey]);
 
   // Keyboard navigation: Escape, ArrowLeft, ArrowRight.
   useEffect(() => {
@@ -495,10 +500,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     }
     const run = async () => {
       const updatedFlat = await patchAnnotations(card.id, { [key]: stored });
-      setCard((prev) => ({
-        ...prev,
-        annotations: useSupabaseBackend() ? updatedFlat : { ...parseAnnotations(prev), [key]: stored },
-      }));
+      queryClient.setQueryData(cardDetailQueryKey, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          annotations: useSupabaseBackend() ? updatedFlat : { ...parseAnnotations(prev), [key]: stored },
+        };
+      });
       if (!useSupabaseBackend()) scheduleGitHubPush();
       return updatedFlat;
     };
@@ -512,14 +520,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       if (!useSupabaseBackend()) {
         console.error("Failed to save annotation:", err);
       } else {
-        fetchCard(cardId, source)
-          .then(setCard)
-          .catch((e) => {
+        void (async () => {
+          try {
+            const fresh = await fetchCard(cardId, source);
+            queryClient.setQueryData(cardDetailQueryKey, fresh);
+          } catch (e) {
             const m = String(e?.message ?? e ?? "").toLowerCase();
             if (/not found|pgrst116|could not find|0 rows/i.test(m)) {
               onClose?.();
             }
-          });
+          }
+        })();
       }
     }
   };
@@ -837,10 +848,9 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                                 const updated = await patchAnnotations(cardId, {
                                   image_override: newImageUrl.trim(),
                                 });
-                                setCard((prev) => ({
-                                  ...prev,
-                                  annotations: updated,
-                                }));
+                                queryClient.setQueryData(cardDetailQueryKey, (prev) =>
+                                  prev ? { ...prev, annotations: updated } : prev
+                                );
                                 setEditingImage(false);
                                 setNewImageUrl("");
                               };
@@ -854,14 +864,17 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
                                 if (!useSupabaseBackend()) {
                                   console.error("Failed to save image:", err);
                                 } else {
-                                  fetchCard(cardId, source)
-                                    .then(setCard)
-                                    .catch((e) => {
+                                  void (async () => {
+                                    try {
+                                      const fresh = await fetchCard(cardId, source);
+                                      queryClient.setQueryData(cardDetailQueryKey, fresh);
+                                    } catch (e) {
                                       const m = String(e?.message ?? e ?? "").toLowerCase();
                                       if (/not found|pgrst116|could not find|0 rows/i.test(m)) {
                                         onClose?.();
                                       }
-                                    });
+                                    }
+                                  })();
                                 }
                               } finally {
                                 setSavingImage(false);

@@ -2,11 +2,11 @@
  * Profile dropdown in the app header (Phase 1 primitive adoption).
  */
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getSupabase } from "../lib/supabaseClient.js";
 import { isEmailAuthRequired } from "../lib/authInvite.js";
-import { fetchProfile } from "../db.js";
+import { fetchProfile, useSupabaseBackend } from "../db.js";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +24,15 @@ function initialsFrom(value) {
 
 export default function AuthUserMenu() {
   const navigate = useNavigate();
+  const supabaseBackend = useSupabaseBackend();
   const [email, setEmail] = useState(null);
   const [userId, setUserId] = useState(null);
 
+  const trackSession =
+    isEmailAuthRequired() || (import.meta.env.DEV && supabaseBackend);
+
   useEffect(() => {
-    if (!isEmailAuthRequired()) return undefined;
+    if (!trackSession) return undefined;
     let cancelled = false;
     getSupabase()
       .auth.getUser()
@@ -54,12 +58,12 @@ export default function AuthUserMenu() {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [trackSession]);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", "headerMenu", userId || "no-user"],
     queryFn: () => fetchProfile(),
-    enabled: isEmailAuthRequired() && Boolean(userId),
+    enabled: trackSession && Boolean(userId),
     staleTime: 60_000,
   });
 
@@ -74,7 +78,21 @@ export default function AuthUserMenu() {
   const initials = useMemo(() => initialsFrom(displayName), [displayName]);
   const avatarUrl = profile?.avatar_url || null;
 
-  if (!isEmailAuthRequired() || !email) return null;
+  if (!trackSession) return null;
+
+  if (!email) {
+    if (!isEmailAuthRequired()) {
+      return (
+        <NavLink
+          to="/login"
+          className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+        >
+          Sign in
+        </NavLink>
+      );
+    }
+    return null;
+  }
 
   return (
     <DropdownMenu>

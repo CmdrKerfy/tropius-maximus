@@ -40,10 +40,13 @@ jobs:
           restore-keys: |
             duckdb-${{ runner.os }}-
 
+      # --clear-failed drops bogus failed_sets rows (e.g. after API blips) so ingest
+      # is not stuck skipping most sets; same as deploy-pages.yml scheduled ingest.
+      # --fail-on-partial exits 1 so GitHub can notify on incomplete API pulls (no silent green).
       - name: Ingest (TCG + PokeAPI + Pocket)
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
-        run: python scripts/ingest.py
+        run: python scripts/ingest.py --clear-failed --fail-on-partial
 
       - name: Push DuckDB → Supabase
         env:

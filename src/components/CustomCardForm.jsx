@@ -6,11 +6,13 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Layers } from "lucide-react";
 import {
   addTcgCard,
   addPocketCard,
   fetchFormOptions,
+  FORM_OPTIONS_QUERY_KEY,
   useSupabaseBackend,
   generateManualCardId,
   normalizeCardNumberForStorage,
@@ -129,6 +131,7 @@ function SectionShell({ quick, title, defaultOpen = true, children }) {
 }
 
 export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddAndSendToWorkbench }) {
+  const queryClient = useQueryClient();
   const isSupabase = useSupabaseBackend();
   const [hasGitHubPat, setHasGitHubPat] = useState(false);
   // ── Card table picker ──
@@ -227,8 +230,12 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const [imageError, setImageError] = useState(false);
   const [setIdManual, setSetIdManual] = useState(false);
 
-  // ── Combobox options (loaded from DB) ──
-  const [opts, setOpts] = useState({});
+  // ── Combobox options (loaded from DB; shared cache with Workbench / CardDetail) ──
+  const { data: opts = {} } = useQuery({
+    queryKey: FORM_OPTIONS_QUERY_KEY,
+    queryFn: fetchFormOptions,
+    staleTime: 300_000,
+  });
 
   const [formMode, setFormMode] = useState(() => {
     try {
@@ -299,12 +306,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       .toLowerCase();
     setSetIdVal(derived);
   }, [setNameVal, source, setIdManual, cardTable]);
-
-  useEffect(() => {
-    fetchFormOptions()
-      .then(setOpts)
-      .catch((err) => console.warn("Failed to load form options:", err.message));
-  }, []);
 
   useEffect(() => {
     if (isSupabase) return;
@@ -502,7 +503,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       setNumber(String(idOverride.number ?? ""));
       if (cardTable === "tcg") setSetIdManual(true);
     }
-    fetchFormOptions().then(setOpts).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
     if (intent === "submit") {
       resetAllFields();
       const next = sessionAddCount + 1;

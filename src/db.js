@@ -78,6 +78,9 @@ export async function fetchFormOptions() {
   return useSupabaseBackend() ? (await sb()).fetchFormOptions() : duck.fetchFormOptions();
 }
 
+/** TanStack Query key for `fetchFormOptions` (Workbench, CardDetail, CustomCardForm). */
+export const FORM_OPTIONS_QUERY_KEY = ["formOptions"];
+
 export async function fetchAnnotations(cardId) {
   return useSupabaseBackend()
     ? (await sb()).fetchAnnotations(cardId)

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getSupabase } from "../lib/supabaseClient.js";
 import { getInviteSetPasswordUrl, isEmailAuthRequired, isNonAnonymousSession } from "../lib/authInvite.js";
+import { useSupabaseBackend } from "../db.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,7 +24,9 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!isEmailAuthRequired()) {
+    const allowLoginPage =
+      isEmailAuthRequired() || (import.meta.env.DEV && useSupabaseBackend());
+    if (!allowLoginPage) {
       navigate("/", { replace: true });
       return;
     }

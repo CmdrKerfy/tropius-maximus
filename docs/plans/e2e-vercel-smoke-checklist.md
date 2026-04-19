@@ -28,6 +28,10 @@ Use after **preview** or **production** deploys, or before calling cutover “go
 - [x] **Open card detail** — image and fields load.
 - [x] **Send to Workbench** (if used) adds card to queue without error.
 
+### Explore performance (Phases 1–6)
+
+After deploys that touch **`main.jsx`**, **`appAdapter.js`**, or migrations **020**–**023**, run the **Network / timing / RLS** table in **`docs/plans/explore-supabase-performance.md`** (Phase 6). Emergency RPC bypass: **`VITE_USE_FILTER_OPTIONS_RPC=false`** (see **`.env.example`**).
+
 ---
 
 ## Workbench
