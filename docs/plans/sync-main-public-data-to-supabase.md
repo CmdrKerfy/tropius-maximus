@@ -47,6 +47,10 @@ This upserts **manual** `cards`, related **`sets`** stubs, and **`annotations`**
 - Explore: filter by new set (e.g. **Perfect Order** / `me3`).
 - Search for a known custom card id from `custom_cards.json`.
 
+## Troubleshooting
+
+- **`42501` / “violates row-level security policy”** on upsert: you are using the **`anon`** (publishable) key. Set **`SUPABASE_SERVICE_KEY`** to the **`service_role`** secret (Supabase → **Project Settings → API**), not the anon key. The push script now errors early if the JWT role is `anon`.
+
 ## Notes
 
 - **Service role** env vars are only for local/CI use; never commit.
