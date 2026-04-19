@@ -11,10 +11,22 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import pocketCardBg from "../../images/pocketcardbackground.png";
+import { useSupabaseBackend } from "../db";
+import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
 
 function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
+  const supabase = useSupabaseBackend();
+  const attributionTitle =
+    supabase &&
+    buildCardAttributionPlainText({
+      createdById: card.created_by,
+      creatorDisplayName: card.creator_display_name,
+      annotationUpdatedById: card.annotation_updated_by,
+      annotationUpdatedByName: card.annotation_editor_display_name,
+      annotationUpdatedAt: card.annotation_updated_at,
+    });
 
   return (
     <div className="relative aspect-[2.5/3.5]">
@@ -47,7 +59,9 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
       )}
 
       <button
+        type="button"
         onClick={() => onCardClick(card.id)}
+        title={attributionTitle || undefined}
         className={`w-full h-full group rounded-lg overflow-hidden shadow-sm hover:shadow-xl
                    transition-all duration-200 hover:scale-105 focus:outline-none
                    focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-white

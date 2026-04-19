@@ -20,8 +20,10 @@ import {
   fetchAttributes,
   fetchFormOptions,
   updateWorkbenchQueue,
+  fetchProfile,
 } from "../db";
 import AnnotationEditor from "../components/AnnotationEditor";
+import CardAttributionLine from "../components/CardAttributionLine.jsx";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
@@ -119,6 +121,20 @@ export default function WorkbenchPage() {
     queryFn: () => fetchCard(currentCardId, "TCG"),
     enabled: USE_SB && Boolean(currentCardId),
   });
+
+  const { data: myProfile } = useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: fetchProfile,
+    staleTime: 60_000,
+    enabled: USE_SB,
+  });
+
+  const annotationEditorDisplayName = useMemo(() => {
+    if (!card) return null;
+    const uid = card.annotations?.updated_by;
+    if (uid && myProfile?.id === uid) return myProfile.display_name ?? null;
+    return card.annotation_editor_display_name ?? null;
+  }, [card, myProfile]);
 
   const { data: attributes = [] } = useQuery({
     queryKey: ["attributes"],
@@ -355,6 +371,15 @@ export default function WorkbenchPage() {
                       <p className="text-xs text-gray-500 truncate">
                         {[card.set_name, card.number].filter(Boolean).join(" · ") || card.id}
                       </p>
+                      <div className="mt-1 max-w-md mx-auto text-center">
+                        <CardAttributionLine
+                          createdById={card.created_by}
+                          creatorDisplayName={card.creator_display_name}
+                          annotationUpdatedById={card.annotations?.updated_by}
+                          annotationUpdatedByName={annotationEditorDisplayName}
+                          annotationUpdatedAt={card.annotations?.updated_at}
+                        />
+                      </div>
                     </div>
                   </>
                 )}

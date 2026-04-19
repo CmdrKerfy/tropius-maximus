@@ -373,6 +373,18 @@ async function attachProfileDisplayNames(sb, rows) {
   }));
 }
 
+/** Batch-resolve `profiles.display_name` for attribution on `fetchCard` (does not throw on failure). */
+async function fetchProfileDisplayNamesByIds(sb, ids) {
+  const uniq = [...new Set((ids || []).filter(Boolean))];
+  if (!uniq.length) return new Map();
+  const { data, error } = await sb.from("profiles").select("id, display_name").in("id", uniq);
+  if (error) {
+    console.warn("fetchProfileDisplayNamesByIds:", error.message || error);
+    return new Map();
+  }
+  return new Map((data || []).map((p) => [p.id, p.display_name]));
+}
+
 function pickAnnotationFlatFromCustomCard(card, skipKeys) {
   const flat = {};
   for (const [k, v] of Object.entries(card)) {
@@ -416,8 +428,11 @@ function jsonbArrayContainsOneString(s) {
   return JSON.stringify([String(s)]);
 }
 
-function gridRowFromCard(c) {
+function gridRowFromCard(c, profileNameMap) {
   const ann = normalizeEmbeddedAnnotation(c.annotations);
+  const created_by = c.created_by ?? null;
+  const annotation_updated_by = ann?.updated_by ?? null;
+  const annotation_updated_at = ann?.updated_at ?? null;
   return {
     id: c.id,
     name: c.name,
@@ -429,6 +444,13 @@ function gridRowFromCard(c) {
     hp: c.hp,
     rarity: c.rarity,
     is_custom: c.origin === "manual",
+    created_by,
+    creator_display_name: created_by ? profileNameMap.get(created_by) ?? null : null,
+    annotation_updated_by,
+    annotation_updated_at,
+    annotation_editor_display_name: annotation_updated_by
+      ? profileNameMap.get(annotation_updated_by) ?? null
+      : null,
   };
 }
 
@@ -479,13 +501,13 @@ export async function fetchCards(params = {}) {
     hasRegion || hasWeather || hasEnvironment || hasBg || hasActions || hasPose;
 
   const annSelect = useAnnInner
-    ? "annotations!inner(image_override, weather, environment, pkmn_region, background_pokemon, actions, pose)"
-    : "annotations(image_override)";
+    ? "annotations!inner(image_override, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)"
+    : "annotations(image_override, updated_by, updated_at)";
 
   let query = sb
     .from("cards")
     .select(
-      `id, name, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, ${annSelect}`,
+      `id, name, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, created_by, ${annSelect}`,
       { count: "exact" }
     );
 
@@ -569,7 +591,15 @@ export async function fetchCards(params = {}) {
   const { data, error, count } = await query;
   if (error) throw error;
 
-  const cards = (data || []).map(gridRowFromCard);
+  const profileIds = [];
+  for (const row of data || []) {
+    if (row.created_by) profileIds.push(row.created_by);
+    const ann = normalizeEmbeddedAnnotation(row.annotations);
+    if (ann?.updated_by) profileIds.push(ann.updated_by);
+  }
+  const profileNameMap = await fetchProfileDisplayNamesByIds(sb, profileIds);
+
+  const cards = (data || []).map((row) => gridRowFromCard(row, profileNameMap));
   return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
 }
 
@@ -662,6 +692,13 @@ export async function fetchCard(id, _source = "TCG") {
   const annotations = annotationRowToFlat(annRow);
   if (!annotations.unique_id) annotations.unique_id = id;
 
+  const profileIds = [row.created_by, annotations.updated_by].filter(Boolean);
+  const profileNameMap = await fetchProfileDisplayNamesByIds(sb, profileIds);
+  const creator_display_name = row.created_by ? profileNameMap.get(row.created_by) ?? null : null;
+  const annotation_editor_display_name = annotations.updated_by
+    ? profileNameMap.get(annotations.updated_by) ?? null
+    : null;
+
   const isPocket = row.origin === "tcgdex";
   const prices = row.prices && typeof row.prices === "object" ? row.prices : {};
 
@@ -696,6 +733,10 @@ export async function fetchCard(id, _source = "TCG") {
       element: row.element || null,
       source: "Pocket",
       is_custom: false,
+      created_by: row.created_by ?? null,
+      created_at: row.created_at ?? null,
+      creator_display_name,
+      annotation_editor_display_name,
     };
   }
 
@@ -729,6 +770,10 @@ export async function fetchCard(id, _source = "TCG") {
     genus: pm?.genus || null,
     source: merged.origin === "manual" ? merged.origin_detail || "TCG" : "TCG",
     is_custom: merged.origin === "manual",
+    created_by: row.created_by ?? null,
+    created_at: row.created_at ?? null,
+    creator_display_name,
+    annotation_editor_display_name,
   };
 }
 
@@ -1302,11 +1347,17 @@ export async function patchAnnotations(cardId, patch) {
   const prevExtra = (cur?.extra && typeof cur.extra === "object" ? cur.extra : {}) || {};
   const { typed, extra } = flatToAnnotationPayload(merged, prevExtra);
 
+  const { data: authData } = await sb.auth.getUser();
+  const uid = authData?.user?.id ?? null;
+  const audit = { updated_at: new Date().toISOString() };
+  if (uid) audit.updated_by = uid;
+
   const row = stripUndefined({
     card_id: cardId,
     ...typed,
     extra,
     version: (cur?.version ?? 0) + 1,
+    ...audit,
   });
 
   const { error: upErr } = await sb.from("annotations").upsert(row, {
@@ -1314,7 +1365,10 @@ export async function patchAnnotations(cardId, patch) {
   });
   if (upErr) throw upErr;
 
-  await insertEditHistoryRows(sb, cardId, patch, prevFlat);
+  const patchForHistory = { ...patch };
+  delete patchForHistory.updated_by;
+  delete patchForHistory.updated_at;
+  await insertEditHistoryRows(sb, cardId, patchForHistory, prevFlat);
 
   return fetchAnnotations(cardId);
 }

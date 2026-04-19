@@ -1071,7 +1071,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2 justify-between">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-50" role="group" aria-label="Form layout">
             <button
               type="button"
@@ -1092,7 +1092,12 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
               Full form
             </button>
           </div>
-          {quick && (
+        </div>
+        {quick && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-600">
+              Required fields stay on top; open <strong>Details &amp; annotations</strong> for the rest (or add them later in Explore or Workbench).
+            </p>
             <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -1102,12 +1107,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
               />
               Keep set &amp; source for next card
             </label>
-          )}
-        </div>
-        {quick && (
-          <p className="text-xs text-gray-600 -mt-1">
-            Required fields stay on top; open <strong>Details &amp; annotations</strong> for the rest (or add them later in Explore or Workbench).
-          </p>
+          </div>
         )}
 
         {/* ── Identity: TCG ── */}

@@ -74,6 +74,8 @@ export function annotationRowToFlat(row) {
   for (const k of Object.keys(out)) {
     if (out[k] === null || out[k] === undefined) delete out[k];
   }
+  if (updated_by != null) out.updated_by = updated_by;
+  if (updated_at != null) out.updated_at = updated_at;
   return out;
 }
 
@@ -91,7 +93,14 @@ export function flatToAnnotationPayload(flat, prevExtra = {}) {
   const typed = {};
   const extra = { ...prevExtra };
   for (const [k, v] of Object.entries(flat)) {
-    if (k === "card_id" || k === "version" || k === "overrides") continue;
+    if (
+      k === "card_id" ||
+      k === "version" ||
+      k === "overrides" ||
+      k === "updated_by" ||
+      k === "updated_at"
+    )
+      continue;
     if (ANNOTATION_TYPED_COLUMNS.has(k)) typed[k] = v;
     else {
       if (v === null || v === undefined) delete extra[k];

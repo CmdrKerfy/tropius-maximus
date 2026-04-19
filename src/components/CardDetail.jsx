@@ -20,7 +20,9 @@ import {
   useSupabaseBackend,
   fetchUserPreferences,
   upsertUserPreferences,
+  fetchProfile,
 } from "../db";
+import CardAttributionLine from "./CardAttributionLine.jsx";
 import CardDetailFieldControl from "./CardDetailFieldControl.jsx";
 import CardDetailPinEditor from "./CardDetailPinEditor.jsx";
 import { normalizeCardDetailPins } from "../lib/cardDetailPinRegistry.js";
@@ -137,6 +139,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
     staleTime: 30_000,
   });
 
+  const { data: myProfile } = useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: fetchProfile,
+    staleTime: 60_000,
+    enabled: useSupabaseBackend(),
+  });
+
   const normalizedCardDetailPins = useMemo(
     () => normalizeCardDetailPins(userPrefs?.card_detail_pins),
     [userPrefs?.card_detail_pins]
@@ -234,6 +243,12 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
   const types = card ? parseJson(card.types) : [];
 
   const ann = card ? parseAnnotations(card) : {};
+  const annotationEditorDisplayName = useMemo(() => {
+    if (!card) return null;
+    const uid = parseAnnotations(card).updated_by;
+    if (uid && myProfile?.id === uid) return myProfile.display_name ?? null;
+    return card.annotation_editor_display_name ?? null;
+  }, [card, myProfile]);
   const opts = formOpts || {};
   // Ensure ComboBox/MultiComboBox always receive an array (avoid .filter on non-array).
   const optArr = (v) => (Array.isArray(v) ? v : []);
@@ -418,10 +433,10 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
       stored = stored.map((s) => s.toLowerCase());
     }
     try {
-      await patchAnnotations(card.id, { [key]: stored });
+      const updatedFlat = await patchAnnotations(card.id, { [key]: stored });
       setCard((prev) => ({
         ...prev,
-        annotations: { ...parseAnnotations(prev), [key]: stored },
+        annotations: useSupabaseBackend() ? updatedFlat : { ...parseAnnotations(prev), [key]: stored },
       }));
       if (!useSupabaseBackend()) scheduleGitHubPush();
     } catch (err) {
@@ -800,6 +815,13 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 {/* Card name and basic info — always visible above tabs */}
                 <h2 className="text-2xl font-bold">{card.name}</h2>
+                <CardAttributionLine
+                  createdById={card.created_by}
+                  creatorDisplayName={card.creator_display_name}
+                  annotationUpdatedById={ann.updated_by}
+                  annotationUpdatedByName={annotationEditorDisplayName}
+                  annotationUpdatedAt={ann.updated_at}
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="px-2 py-0.5 bg-gray-100 rounded text-sm text-gray-600">
                     {card.supertype}
