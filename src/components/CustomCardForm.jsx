@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Layers } from "lucide-react";
 import { addTcgCard, addPocketCard, fetchFormOptions, useSupabaseBackend } from "../db";
 import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
@@ -1094,19 +1094,40 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
           </div>
         </div>
         {quick && (
-          <div className="space-y-2">
-            <p className="text-xs text-gray-600">
+          <div
+            className="rounded-xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 p-3 shadow-sm ring-1 ring-emerald-500/10"
+            role="region"
+            aria-label="Quick add options"
+          >
+            <p className="text-xs text-gray-600 leading-relaxed">
               Required fields stay on top; open <strong>Details &amp; annotations</strong> for the rest (or add them later in Explore or Workbench).
             </p>
-            <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={sameSetNext}
-                onChange={(e) => setSameSetNext(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              Keep set &amp; source for next card
-            </label>
+            <div className="mt-3 flex flex-col gap-2 border-t border-emerald-200/70 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 shadow-sm">
+                  <Layers className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">Keep set &amp; source</p>
+                  <p className="text-xs text-gray-600">
+                    Reuse the same set and source after you save—handy for multi-card runs.
+                  </p>
+                </div>
+              </div>
+              <label className="flex shrink-0 cursor-pointer items-center gap-3 self-end rounded-lg sm:self-center focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2">
+                <span className="sr-only">Keep set and source for next card</span>
+                <input
+                  type="checkbox"
+                  checked={sameSetNext}
+                  onChange={(e) => setSameSetNext(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span
+                  className="relative inline-block h-6 w-11 shrink-0 rounded-full border border-gray-300/90 bg-gray-200 transition-colors peer-checked:border-emerald-500 peer-checked:bg-emerald-500 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200 after:ease-out peer-checked:after:translate-x-5"
+                  aria-hidden
+                />
+              </label>
+            </div>
           </div>
         )}
 

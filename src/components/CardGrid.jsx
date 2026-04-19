@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
@@ -53,8 +53,12 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
       )}
 
       {card.is_custom && (
-        <div className="absolute top-2 right-2 z-10 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded pointer-events-none">
-          Custom
+        <div
+          className="pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full border border-white/30 bg-black/35 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md backdrop-blur-md"
+          title="Custom / manual card"
+        >
+          <Sparkles className="h-3 w-3 opacity-95" strokeWidth={2} aria-hidden />
+          <span>Custom</span>
         </div>
       )}
 
