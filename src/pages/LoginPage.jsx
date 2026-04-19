@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getSupabase } from "../lib/supabaseClient.js";
-import { getInviteSetPasswordUrl, isEmailAuthRequired } from "../lib/authInvite.js";
+import { getInviteSetPasswordUrl, isEmailAuthRequired, isNonAnonymousSession } from "../lib/authInvite.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,8 +30,13 @@ export default function LoginPage() {
     let cancelled = false;
     getSupabase()
       .auth.getSession()
-      .then(({ data: { session } }) => {
-        if (!cancelled && session) navigate(from, { replace: true });
+      .then(async ({ data: { session } }) => {
+        if (cancelled) return;
+        if (session?.user?.is_anonymous) {
+          await getSupabase().auth.signOut();
+          return;
+        }
+        if (isNonAnonymousSession(session)) navigate(from, { replace: true });
       });
     return () => {
       cancelled = true;

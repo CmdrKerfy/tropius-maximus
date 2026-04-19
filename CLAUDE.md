@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`018`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`019`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -33,7 +33,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 ### Post–Phase 7 (current focus)
 
 - [ ] E2E testing on **Vercel** (preview + production) against Supabase — manual smoke checklist: **`docs/plans/e2e-vercel-smoke-checklist.md`**.
-- [ ] **Production checklist** — Anonymous auth / RLS / `VITE_SUPABASE_AUTO_ANON_AUTH` (see below).
+- [ ] **Production checklist** — Anonymous auth / RLS / Vercel env (**`docs/plans/production-hardening-anon-auth.md`**).
 - [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
@@ -60,8 +60,7 @@ Do **not** bundle this into Phases 1–2 or the main migration sequence; it is a
 
 ### Before finishing the v2 plan (production checklist)
 
-- [ ] **Turn off Supabase Anonymous sign-in** (Authentication → Providers → Anonymous) **or** replace it with real auth (magic links per stack above) **and** tighten RLS so anonymous/guest access is not equivalent to full member access on a public URL. Anonymous is fine for **local Phase 3 testing** only; **do not ship production** with Anonymous left on unless RLS explicitly accounts for it.
-- [ ] Remove or set `VITE_SUPABASE_AUTO_ANON_AUTH=false` in production/Vercel env; do not rely on auto anonymous login in the live app unless that is an intentional product decision.
+- [ ] **Anonymous auth & RLS** — Apply **`019_rls_exclude_anonymous_sessions.sql`**; turn off **Anonymous** provider in Supabase for production; set **`VITE_SUPABASE_AUTO_ANON_AUTH`** off/unset on Vercel; use **`VITE_REQUIRE_EMAIL_AUTH=true`** for invite/email-only access. Step-by-step: **`docs/plans/production-hardening-anon-auth.md`**.
 
 ## V1 Architecture (current live site on `main`)
 
@@ -187,6 +186,7 @@ supabase/
     016_generate_card_id_manual.sql
     017_apply_annotation_with_history.sql  -- RPC: annotation + `edit_history` in one transaction
     018_public_card_share_rpc.sql            -- `get_public_card_for_share` for anonymous share + OG
+    019_rls_exclude_anonymous_sessions.sql   -- RLS: real members only (JWT is_anonymous); share RPC unchanged
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -243,6 +243,7 @@ docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder; merge to `main` only on owner say-so)
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
+docs/plans/production-hardening-anon-auth.md  -- production: migration 019 + disable anon + Vercel env
 docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`

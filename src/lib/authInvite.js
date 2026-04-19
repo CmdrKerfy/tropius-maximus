@@ -20,3 +20,11 @@ export function isEmailAuthRequired() {
     import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true"
   );
 }
+
+/**
+ * True when the session is a real member (email/password, magic link, OAuth).
+ * Anonymous Supabase sessions are excluded so they cannot access protected routes or prefetch app data.
+ */
+export function isNonAnonymousSession(session) {
+  return Boolean(session?.user && !session.user.is_anonymous);
+}

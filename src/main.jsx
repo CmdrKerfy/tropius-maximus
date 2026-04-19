@@ -40,10 +40,11 @@ function Root() {
         clearTimeout(timeout);
         if (requireEmailAuth) {
           const { getSupabase } = await import("./lib/supabaseClient.js");
+          const { isNonAnonymousSession } = await import("./lib/authInvite.js");
           const {
             data: { session },
           } = await getSupabase().auth.getSession();
-          if (!session) {
+          if (!isNonAnonymousSession(session)) {
             setReady(true);
             return;
           }

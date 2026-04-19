@@ -1,10 +1,11 @@
 /**
- * When VITE_REQUIRE_EMAIL_AUTH=true, redirects anonymous users to /login.
+ * When VITE_REQUIRE_EMAIL_AUTH=true, redirects to /login unless the session is a
+ * non-anonymous user (anonymous Supabase JWT is treated as signed-out).
  */
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { getSupabase } from "../lib/supabaseClient.js";
-import { isEmailAuthRequired } from "../lib/authInvite.js";
+import { isEmailAuthRequired, isNonAnonymousSession } from "../lib/authInvite.js";
 
 export default function RequireAuth({ children }) {
   const location = useLocation();
@@ -19,13 +20,13 @@ export default function RequireAuth({ children }) {
     getSupabase()
       .auth.getSession()
       .then(({ data: { session } }) => {
-        if (!cancelled) setOk(Boolean(session));
+        if (!cancelled) setOk(isNonAnonymousSession(session));
       })
       .catch(() => {
         if (!cancelled) setOk(false);
       });
     const { data: sub } = getSupabase().auth.onAuthStateChange((_event, session) => {
-      if (!cancelled) setOk(Boolean(session));
+      if (!cancelled) setOk(isNonAnonymousSession(session));
     });
     return () => {
       cancelled = true;

@@ -7,26 +7,26 @@ Use after **preview** or **production** deploys, or before calling cutover “go
 
 | Environment | Base URL |
 |-------------|----------|
-| Production | |
-| Preview | |
+| Production | | tropius-maximus-htumntgv5-cmdrkerfys-projects.vercel.app
+| Preview | | tropius-maximus-9f3070850-cmdrkerfys-projects.vercel.app
 
 ---
 
 ## Auth
 
-- [ ] **Sign in** works (`/login` or your configured entry) when `VITE_REQUIRE_EMAIL_AUTH` is on.
-- [ ] **Sign out** clears session; protected routes redirect or prompt login as expected.
-- [ ] **Auth callback** (`/auth/callback`) completes without error for your auth method (password / magic link as configured).
-- [ ] **Session persists** across refresh on a normal page (e.g. Explore).
+- [x] **Sign in** works (`/login` or your configured entry) when `VITE_REQUIRE_EMAIL_AUTH` is on.
+- [x] **Sign out** clears session; protected routes redirect or prompt login as expected.
+- [x] **Auth callback** (`/auth/callback`) completes without error for your auth method (password / magic link as configured).
+- [x] **Session persists** across refresh on a normal page (e.g. Explore).
 
 ---
 
 ## Explore
 
-- [ ] **`/`** loads grid without console errors.
-- [ ] **Search / filters** return results; clear filters restores list.
-- [ ] **Open card detail** — image and fields load.
-- [ ] **Send to Workbench** (if used) adds card to queue without error.
+- [x] **`/`** loads grid without console errors.
+- [x] **Search / filters** return results; clear filters restores list.
+- [x] **Open card detail** — image and fields load.
+- [x] **Send to Workbench** (if used) adds card to queue without error.
 
 ---
 
@@ -40,36 +40,36 @@ Use after **preview** or **production** deploys, or before calling cutover “go
 
 ## Other app routes (spot-check)
 
-- [ ] **`/health`** — loads (even if empty).
-- [ ] **`/fields`**, **`/batch`**, **`/history`** — open without crash (permissions as designed).
-- [ ] **`/dashboard`** / **`/profile`** — match your auth expectations.
+- [x] **`/health`** — loads (even if empty).
+- [x] **`/fields`**, **`/batch`**, **`/history`** — open without crash (permissions as designed).
+- [x] **`/dashboard`** / **`/profile`** — match your auth expectations.
 
 ---
 
 ## Public share (no login)
 
-- [ ] **`/share/card/{validCardId}`** — read-only card view; image or placeholder.
-- [ ] **Invalid id** — friendly not found.
-- [ ] **Copy share link** from Card detail (signed in) — URL opens in incognito.
+- [x] **`/share/card/{validCardId}`** — read-only card view; image or placeholder.
+- [x] **Invalid id** — friendly not found.
+- [x] **Copy share link** from Card detail (signed in) — URL opens in incognito.
 
 ---
 
 ## Link previews (optional)
 
-- [ ] Paste share URL in **iMessage** or **WhatsApp** (self-chat) — thumbnail/title reasonable.
+- [x] Paste share URL in **iMessage** or **WhatsApp** (self-chat) — thumbnail/title reasonable.
 
 ---
 
 ## Supabase / env sanity
 
-- [ ] **Production env** on Vercel: `VITE_USE_SUPABASE`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` present; redeploy after changes.
-- [ ] **Supabase Auth** redirect URLs include your Vercel host(s) if using hosted auth flows.
+- [x] **Production env** on Vercel: `VITE_USE_SUPABASE`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` present; redeploy after changes.
+- [x] **Supabase Auth** redirect URLs include your Vercel host(s) if using hosted auth flows.
 
 ---
 
 ## Production checklist (before public launch)
 
-Re-read **`CLAUDE.md` → Before finishing the v2 plan (production checklist)** — anonymous sign-in, RLS, `VITE_SUPABASE_AUTO_ANON_AUTH`.
+Follow **`docs/plans/production-hardening-anon-auth.md`** (migration **019**, Supabase Anonymous provider, Vercel env).
 
 ---
 
