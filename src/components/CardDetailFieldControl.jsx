@@ -6,6 +6,7 @@
 import ComboBox from "./ComboBox.jsx";
 import MultiComboBox from "./MultiComboBox.jsx";
 import FormFieldLabel from "./ui/FormFieldLabel.jsx";
+import { formatEvolutionLineLabel, normalizeEvolutionLineOptions } from "../lib/evolutionLineFormat.js";
 import {
   CARD_SUBCATEGORY_OPTIONS,
   HELD_ITEM_OPTIONS,
@@ -64,7 +65,8 @@ const fullSpan = "col-span-1 sm:col-span-2 xl:col-span-3";
  *   saveAnnotation: function,
  *   formOpts: object,
  *   inputClass: string,
- *   idSuffix?: string
+ *   idSuffix?: string,
+ *   onFilterClick?: (filterKey: string, filterValue: string) => void
  * }} props
  */
 export default function CardDetailFieldControl({
@@ -77,6 +79,7 @@ export default function CardDetailFieldControl({
   formOpts,
   inputClass,
   idSuffix = "",
+  onFilterClick,
 }) {
   const opts = formOpts || {};
   const suf = idSuffix;
@@ -163,9 +166,9 @@ export default function CardDetailFieldControl({
         <div>
           <FormFieldLabel>Evolution line</FormFieldLabel>
           <ComboBox
-            value={annValue("evolution_line")}
+            value={formatEvolutionLineLabel(annValue("evolution_line"))}
             onChange={(v) => saveAnnotation("evolution_line", v)}
-            options={optArr(opts.evolutionLine)}
+            options={normalizeEvolutionLineOptions(optArr(opts.evolutionLine))}
             placeholder="Pichu → Pikachu → Raichu"
             className={inputClass + " w-full"}
           />
@@ -415,6 +418,13 @@ export default function CardDetailFieldControl({
             onChange={(v) => saveAnnotation("background_pokemon", v)}
             options={optArr(opts.backgroundPokemon)}
             placeholder="Squirtle, Pikachu, etc."
+            onTagClick={
+              onFilterClick
+                ? (tag) => {
+                    if (tag) onFilterClick("background_pokemon", tag);
+                  }
+                : undefined
+            }
           />
         </div>
       );

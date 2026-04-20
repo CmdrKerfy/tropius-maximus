@@ -15,9 +15,14 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { patchAnnotations, fetchAnnotations } from "../db";
+import { patchAnnotations, fetchAnnotations, FORM_OPTIONS_QUERY_KEY } from "../db";
 import { toastError } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
+import { normalizeEvolutionLineOptions } from "../lib/evolutionLineFormat.js";
+import { shouldRefreshFormOptionsForAnnotationKey } from "../lib/formOptionsRefreshKeys.js";
+import ComboBox from "./ComboBox";
+import MultiComboBox from "./MultiComboBox";
+import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 
 /** Stack marker: field was absent before save (undo → clear). */
 const UNDO_ABSENT = Symbol("tm_undo_absent");
@@ -33,9 +38,6 @@ function cloneForUndo(val) {
   }
   return val;
 }
-import ComboBox from "./ComboBox";
-import MultiComboBox from "./MultiComboBox";
-import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 
 /** field_definitions.name (snake_case) → fetchFormOptions() camelCase key. */
 const FORM_OPTS_KEY_OVERRIDES = {
@@ -71,6 +73,9 @@ function mergedSuggestionOptions(attr, formOptions) {
   const curated = curatedToOptions(attr.options);
   const fk = formOptsKeyForAttr(attr.key);
   const fromForm = Array.isArray(formOptions?.[fk]) ? formOptions[fk] : [];
+  if (attr.key === "evolution_line") {
+    return normalizeEvolutionLineOptions([...curated, ...fromForm]);
+  }
   const set = new Set(
     [...curated, ...fromForm].filter((x) => x != null && String(x).trim() !== "")
   );
@@ -134,6 +139,9 @@ export default function AnnotationEditor({
         setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
         setUndoCount(undoStackRef.current.length);
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+        if (shouldRefreshFormOptionsForAnnotationKey(item.key)) {
+          queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+        }
         onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
         console.error("Undo failed:", err);
@@ -185,6 +193,9 @@ export default function AnnotationEditor({
         setUndoCount(undoStackRef.current.length);
         setLastSaved(new Date());
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+        if (shouldRefreshFormOptionsForAnnotationKey(key)) {
+          queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+        }
         onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
         console.error("Failed to save annotation:", err);

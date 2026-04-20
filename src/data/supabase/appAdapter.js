@@ -16,6 +16,7 @@ import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
 import { mergeExploreFilterOptions } from "../../lib/mergeExploreFilterOptions.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
+import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
 
 export { BATCH_EDIT_MAX_CARDS };
 
@@ -33,27 +34,6 @@ function normalizeSupertypeDisplay(s) {
   return s;
 }
 
-function fixMojibake(s) {
-  if (!s || typeof s !== "string") return s;
-  return s
-    .replace(/Ã©/g, "é")
-    .replace(/Ã‰/g, "É")
-    .replace(/Ã /g, "à")
-    .replace(/Ã€/g, "À")
-    .replace(/Ã¨/g, "è")
-    .replace(/Ã‡/g, "Ç")
-    .replace(/Ã§/g, "ç")
-    .replace(/Ã¢/g, "â")
-    .replace(/Ã®/g, "î")
-    .replace(/Ã´/g, "ô")
-    .replace(/Ã»/g, "û")
-    .replace(/Ã¹/g, "ù")
-    .replace(/Ã¯/g, "ï")
-    .replace(/Ã«/g, "ë")
-    .replace(/Ã¼/g, "ü")
-    .replace(/ÃÂ/g, "");
-}
-
 function evoLabel(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -67,14 +47,16 @@ function mergeEvolutionLines(arr) {
   const seenLabels = new Set();
   const result = [];
   for (const raw of arr) {
-    const s = fixMojibake(String(raw).trim());
+    const s = fixDisplayText(String(raw).trim());
     if (!s) continue;
-    const label = evoLabel(s).toLowerCase();
-    if (seenLabels.has(label)) continue;
-    seenLabels.add(label);
-    result.push(s);
+    const label = fixDisplayText(String(evoLabel(s)).trim());
+    if (!label) continue;
+    const key = label.toLowerCase();
+    if (seenLabels.has(key)) continue;
+    seenLabels.add(key);
+    result.push(label);
   }
-  return result.sort((a, b) => evoLabel(a).localeCompare(evoLabel(b)));
+  return result.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 function mergeSupertypes(arr) {
@@ -656,6 +638,7 @@ function gridRowFromCard(row) {
   return {
     id: row.id,
     name: row.name,
+    set_id: row.set_id ?? null,
     set_name: row.set_name,
     image_small: row.image_small,
     image_large: row.image_large,
@@ -687,6 +670,7 @@ export async function fetchCards(params = {}) {
     supertype = "",
     rarity = [],
     set_id = [],
+    element = [],
     artist = [],
     evolution_line = [],
     region = [],
@@ -738,7 +722,7 @@ export async function fetchCards(params = {}) {
   let query = sb
     .from("cards")
     .select(
-      `id, name, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, created_by, ${annSelect}`,
+      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, created_by, ${annSelect}`,
       { count: exact_count ? "exact" : "planned" }
     );
 
@@ -766,6 +750,22 @@ export async function fetchCards(params = {}) {
 
   if (Array.isArray(rarity) && rarity.length) query = query.in("rarity", rarity);
   if (Array.isArray(set_id) && set_id.length) query = query.in("set_id", set_id);
+
+  if (Array.isArray(element) && element.length) {
+    if (source === "Pocket") {
+      query = query.in("element", element);
+    } else if (source === "") {
+      const clauses = [];
+      for (const e of element) {
+        clauses.push(`types.cs.${jsonbArrayContainsOneString(e)}`);
+        clauses.push(`element.eq.${postgrestOrEqValue(e)}`);
+      }
+      query = query.or(clauses.join(","));
+    } else {
+      const parts = element.map((e) => `types.cs.${jsonbArrayContainsOneString(e)}`);
+      query = query.or(parts.join(","));
+    }
+  }
 
   if (Array.isArray(artist) && artist.length) {
     if (source === "Pocket") {
@@ -1888,6 +1888,11 @@ export async function patchAnnotations(cardId, patch, options = {}) {
         continue;
       }
       if (isAnnotationVersionConflictFromRpc(rpcErr)) {
+        // Rapid local edits can race each other (same card/version). Re-read and retry
+        // so the patch rebases onto the newest row before surfacing a conflict.
+        if (attempt < PATCH_ANNOTATIONS_MAX_ATTEMPTS - 1) {
+          continue;
+        }
         throw new Error(ANNOTATION_VERSION_CONFLICT_MESSAGE);
       }
       throw rpcErr;
@@ -2057,7 +2062,42 @@ export async function appendCuratedOptionsForCustomField(fieldName, newStrings) 
   return { appended };
 }
 
-export async function executeSql() {
+const MANUAL_DEDUPE_PREFLIGHT_SQL_RE =
+  /^\s*(?:--[^\n]*\n\s*)*select\s+\*\s+from\s+get_manual_card_dedupe_preflight\s*\(\s*\)\s*;?\s*$/i;
+
+function rpcRowsToSqlConsoleShape(data) {
+  const defaultCols = [
+    "explore_dedupe_row_key",
+    "k_sid",
+    "k_nm",
+    "k_img",
+    "role",
+    "id",
+    "name",
+    "set_id",
+    "number",
+    "image_small",
+    "image_large",
+    "origin",
+    "is_custom",
+  ];
+  if (!data?.length) {
+    return { columns: defaultCols, rows: [], row_count: 0 };
+  }
+  const columns = Object.keys(data[0]);
+  const rows = data.map((row) => columns.map((c) => row[c] ?? null));
+  return { columns, rows, row_count: rows.length };
+}
+
+/** SQL console: only whitelisted reads; arbitrary SQL is not exposed to the browser. */
+export async function executeSql(query) {
+  const trimmed = String(query ?? "").trim();
+  if (MANUAL_DEDUPE_PREFLIGHT_SQL_RE.test(trimmed)) {
+    const sb = await sbReady();
+    const { data, error } = await sb.rpc("get_manual_card_dedupe_preflight");
+    if (error) throw error;
+    return rpcRowsToSqlConsoleShape(data ?? []);
+  }
   throw new Error("SQL console is not available with the Supabase data layer.");
 }
 
@@ -2074,6 +2114,7 @@ export async function fetchDataHealthSummary() {
     queuesRes,
     customFieldsRes,
     healthRes,
+    manualIdHealthRes,
   ] = await Promise.all([
     sb.from("cards").select("id", { count: "exact", head: true }),
     sb.from("annotations").select("card_id", { count: "exact", head: true }),
@@ -2088,11 +2129,18 @@ export async function fetchDataHealthSummary() {
       .select("check_type, severity, title, details, checked_at")
       .order("checked_at", { ascending: false })
       .limit(25),
+    sb.rpc("get_manual_card_id_health_issues", { p_limit: 25 }),
   ]);
+  const manualHealthRpcMissing =
+    manualIdHealthRes.error &&
+    /Could not find the function public\.get_manual_card_id_health_issues/i.test(
+      String(manualIdHealthRes.error?.message || "")
+    );
   for (const r of [cardsRes, annRes, setsRes, fieldsRes, pmRes, normRes, queuesRes, customFieldsRes]) {
     if (r.error) throw r.error;
   }
   if (healthRes.error) throw healthRes.error;
+  if (manualIdHealthRes.error && !manualHealthRpcMissing) throw manualIdHealthRes.error;
 
   const totalCards = cardsRes.count ?? 0;
   const annotationRows = annRes.count ?? 0;
@@ -2109,6 +2157,23 @@ export async function fetchDataHealthSummary() {
   originKeys.forEach((o, i) => {
     cardsByOrigin[o] = originCounts[i].count ?? 0;
   });
+  const manualIdHealthRows = Array.isArray(manualIdHealthRes.data) ? manualIdHealthRes.data : [];
+  const manualCardIdHealth = manualHealthRpcMissing
+    ? null
+    : {
+        totalIssues:
+          manualIdHealthRows.length > 0
+            ? Number(manualIdHealthRows[0]?.total_issues ?? manualIdHealthRows.length) || 0
+            : 0,
+        sample: manualIdHealthRows.map((r) => ({
+          id: r.id,
+          set_id: r.set_id,
+          number: r.number,
+          expected_id: r.expected_id,
+          issue: r.issue,
+        })),
+      };
+
   return {
     totalCards,
     annotationRows,
@@ -2120,8 +2185,70 @@ export async function fetchDataHealthSummary() {
     normalizationRules: normRes.count ?? 0,
     workbenchQueues: queuesRes.count ?? 0,
     healthCheckResults: healthRes.data || [],
+    manualCardIdHealth,
+    missingHealthRpcs: manualHealthRpcMissing ? ["get_manual_card_id_health_issues"] : [],
     cardsByOrigin,
   };
+}
+
+/** Data Health: distinct annotation array values with card counts (triage list). */
+export async function fetchAnnotationValueIssues({ limit = 100, minCount = 2 } = {}) {
+  const sb = await sbReady();
+  const { data, error } = await sb.rpc("get_annotation_value_issues", {
+    p_limit: Math.max(0, Number(limit) || 100),
+    p_min_count: Math.max(1, Number(minCount) || 2),
+  });
+  if (error) throw error;
+  return (data || []).map((r) => ({
+    field_key: r.field_key,
+    field_value: r.field_value,
+    card_count: Number(r.card_count || 0),
+  }));
+}
+
+/** Data Health: cards currently containing one annotation array value. */
+export async function fetchCardsForAnnotationValueIssue({ fieldKey, value, limit = 200 } = {}) {
+  const fk = String(fieldKey || "").trim();
+  const val = String(value || "").trim();
+  if (!fk || !val) return [];
+  const sb = await sbReady();
+  const { data, error } = await sb.rpc("get_cards_for_annotation_value_issue", {
+    p_field_key: fk,
+    p_value: val,
+    p_limit: Math.max(0, Number(limit) || 200),
+  });
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Data Health bulk cleanup for one annotation array value.
+ * @returns {{ updatedRows: number }}
+ */
+export async function applyAnnotationValueCleanup({
+  fieldKey,
+  oldValue,
+  newValue = null,
+  mode = "replace",
+} = {}) {
+  const fk = String(fieldKey || "").trim();
+  const oldv = String(oldValue || "").trim();
+  const newv = newValue == null ? null : String(newValue).trim();
+  const m = String(mode || "replace").toLowerCase();
+  if (!fk || !oldv) throw new Error("fieldKey and oldValue are required.");
+  if (!["replace", "remove"].includes(m)) throw new Error("mode must be replace or remove.");
+  if (m === "replace" && !newv) throw new Error("newValue is required in replace mode.");
+
+  const sb = await sbReady();
+  const { data, error } = await sb.rpc("apply_annotation_value_cleanup", {
+    p_field_key: fk,
+    p_old_value: oldv,
+    p_new_value: m === "replace" ? newv : null,
+    p_mode: m,
+  });
+  if (error) throw error;
+  const updatedRows = Number(data?.[0]?.updated_rows ?? 0) || 0;
+  return { updatedRows };
 }
 
 export async function exportAllAnnotations() {

@@ -3,18 +3,29 @@ import { useState, useRef, useEffect } from "react";
 export default function ComboBox({ value, onChange, options = [], placeholder = "", className = "" }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const [draft, setDraft] = useState(value == null ? "" : String(value));
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
   const opts = Array.isArray(options) ? options : [];
+  const currentValue = value == null ? "" : String(value);
+  const inputValue = isFocused ? draft : currentValue;
   const filtered = opts.filter(
-    (opt) => opt.toLowerCase().includes((filter || value || "").toLowerCase())
+    (opt) => opt.toLowerCase().includes((filter || inputValue || "").toLowerCase())
   );
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDraft(currentValue);
+    }
+  }, [currentValue, isFocused]);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setOpen(false);
+        setIsFocused(false);
         setFilter("");
       }
     }
@@ -24,27 +35,37 @@ export default function ComboBox({ value, onChange, options = [], placeholder = 
 
   function handleInputChange(e) {
     const v = e.target.value;
+    setDraft(v);
     onChange(v);
     setFilter(v);
     if (!open) setOpen(true);
   }
 
   function handleFocus() {
+    setIsFocused(true);
+    setDraft(currentValue);
     setOpen(true);
     setFilter("");
+  }
+
+  function handleBlur() {
+    setIsFocused(false);
   }
 
   function handleKeyDown(e) {
     if (e.key === "Escape") {
       setOpen(false);
+      setIsFocused(false);
       setFilter("");
       inputRef.current?.blur();
     }
   }
 
   function selectOption(opt) {
+    setDraft(opt);
     onChange(opt);
     setOpen(false);
+    setIsFocused(false);
     setFilter("");
   }
 
@@ -53,9 +74,10 @@ export default function ComboBox({ value, onChange, options = [], placeholder = 
       <input
         ref={inputRef}
         type="text"
-        value={value}
+        value={inputValue}
         onChange={handleInputChange}
         onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={className}
@@ -68,7 +90,7 @@ export default function ComboBox({ value, onChange, options = [], placeholder = 
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => selectOption(opt)}
               className={`px-3 py-1.5 cursor-pointer hover:bg-green-50 ${
-                opt === value ? "bg-green-100 font-medium" : ""
+                opt === inputValue ? "bg-green-100 font-medium" : ""
               }`}
             >
               {opt}

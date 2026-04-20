@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`025`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`028`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -34,6 +34,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 - [ ] E2E testing on **Vercel** (preview + production) against Supabase — manual smoke checklist: **`docs/plans/e2e-vercel-smoke-checklist.md`**.
 - [ ] **Production checklist** — Anonymous auth / RLS / Vercel env (**`docs/plans/production-hardening-anon-auth.md`**).
+- [ ] **Final production-readiness pass** — operator checklist + rollout order (**`docs/plans/production-readiness-final-pass.md`**). Includes staging/prod migration parity through **`028`**, Data Health RPC verification, and release gate checks.
 - [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
@@ -47,11 +48,12 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### UI refresh (v2 branch)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**). **Annotator onboarding (shipped):** collapsible **About Workbench / About Batch** (**`WorkflowModeHelp.jsx`** on **`WorkbenchPage`**, **`BatchEditPage`**); Batch nav **`title`** tooltips (Explore + **`AppShellHeader`**); empty Workbench queue copy links to Explore vs Batch. **Quick custom card (Part B):** shipped in **`docs/plans/card-detail-pins-and-quick-card-add.md`** — includes **session add log** (per-attempt status, `sessionStorage`), duplicate-ID row updates, **`017`** transactional annotation saves (see edit/add hardening plan).
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**); **Workbench queue ←/→ keyboard** (Phase 5 follow-up — **`batch-future-enhancements.md`** row **8**). **Annotator onboarding (shipped):** collapsible **About Workbench / About Batch** (**`WorkflowModeHelp.jsx`** on **`WorkbenchPage`**, **`BatchEditPage`**); Batch nav **`title`** tooltips (Explore + **`AppShellHeader`**); empty Workbench queue copy links to Explore vs Batch. **Quick custom card (Part B):** shipped in **`docs/plans/card-detail-pins-and-quick-card-add.md`** — includes **session add log** (per-attempt status, `sessionStorage`), duplicate-ID row updates, **`017`** transactional annotation saves (see edit/add hardening plan).
 - **Card detail pins (Part A):** **`docs/plans/card-detail-pins-and-quick-card-add.md`** — **`user_preferences.card_detail_pins`** + **`CardDetailFieldControl`**, **`CardDetailPinEditor`**; pinned fields strip on **More Info** edit; DuckDB/localStorage fallback **`tm_card_detail_pins`**. **More pinnable keys:** extend **`CARD_DETAIL_PINNABLE_KEYS`** in **`CardDetailFieldControl.jsx`**. Apply Supabase migration **`015_card_detail_pins.sql`** on each project.
 - **Custom cards + GitHub:** Decoupled for Supabase in **`CustomCardForm`** / Explore copy (see **`docs/plans/custom-card-form-supabase-github-decouple.md`**); DuckDB still optional PAT/git.
 - **`unique_id` cleanup (deferred):** Legacy annotation field often duplicates **`cards.id`**. Tracked spec — **`docs/plans/unique-id-annotation-cleanup.md`** (inventory UI/DuckDB, single canonical ID, optional data migration). Not started.
 - **Add/edit workflow hardening:** **`docs/plans/edit-add-card-workflow-hardening.md`** — Shipped: **version-checked** `patchAnnotations`, batch **typed count** confirm (≥25 cards), image **save confirm** when preview failed, delete/ stale-card UX, **humanizeError** tweaks, **transactional** annotation + `edit_history` via **`017_apply_annotation_with_history.sql`** / `apply_annotation_with_history`, **RPC conflict detection** (`isAnnotationVersionConflictFromRpc`: `message` / `details` / `hint` + code **`P0001`**).
+- **Data Health polish (shipped on v2 branch):** graceful fallback copy when health RPCs are missing (migration guidance instead of raw function-cache errors), selected-issue **Copy deep link**, session-level **last cleanup** note + replace-mode undo prep, **View cards** render cap with **Load more**, hover preview skeleton, cleanup mode helper copy, and color semantics alignment (amber warning / slate triage / red destructive).
 
 ### Optional — after the core v2 plan is finished
 
@@ -200,6 +202,10 @@ supabase/
     023_cards_annotations_profiles_fk.sql    -- FK → profiles for PostgREST embed (no extra profile query)
     024_batch_selections.sql                 -- per-user Batch list sync (Explore selection bar)
     025_batch_runs_edit_history.sql         -- batch_runs + edit_history.batch_run_id; RPC p_batch_run_id
+    025b_manual_card_dedupe_preflight_rpc.sql -- RPC `get_manual_card_dedupe_preflight` (read-only; run before 026)
+    026_manual_card_id_cleanup.sql          -- dedupe legacy manual card ids; rewire refs; CHECK no whitespace in cards.id
+    027_manual_card_id_health_check.sql    -- read-only Data Health RPC for non-canonical manual card IDs
+    028_annotation_value_issues_and_cleanup_rpc.sql -- Data Health value issue triage + view cards + bulk replace/remove RPCs
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
@@ -265,12 +271,13 @@ docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / mi
 docs/site-checks.md  -- local `npm run check` / `check:quick` + Playwright vs Vercel smoke
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
 docs/plans/production-hardening-anon-auth.md  -- production: migration 019 + disable anon + Vercel env
+docs/plans/production-readiness-final-pass.md  -- final release gate checklist (migration parity, hardening, smoke, Data Health verification)
 docs/plans/sync-main-public-data-to-supabase.md  -- merge `public/data` from `main` + push DuckDB/custom cards to Supabase
 docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
 docs/plans/batch-redesign-visual-selection.md  -- visual batch list + wizard + optional curated append (shipped on v2 branch)
-docs/plans/batch-future-enhancements.md  -- backlog (server list, History grouping, multi-field, E2E automation, etc.)
+docs/plans/batch-future-enhancements.md  -- backlog (server list, History grouping, multi-field, E2E; **row 8** Workbench ←/→ queue nav)
 docs/plans/tcg-data-refresh-coverage.md  -- ingest verification, `failed_sets`, CI ingest flags
 docs/plans/edit-add-card-workflow-hardening.md  -- add/edit card UX + concurrency + batch safety (shipped phases); see also batch redesign plan
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)

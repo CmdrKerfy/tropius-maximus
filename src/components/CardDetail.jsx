@@ -34,6 +34,9 @@ import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 import { splitUiLabel } from "../lib/splitUiLabel.js";
 import { toastError, toastSuccess } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
+import { fixDisplayText, sanitizeCardRawDataForDisplay } from "../lib/fixUtf8Mojibake.js";
+import { formatEvolutionLineLabel, normalizeEvolutionLineOptions } from "../lib/evolutionLineFormat.js";
+import { shouldRefreshFormOptionsForAnnotationKey } from "../lib/formOptionsRefreshKeys.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -273,6 +276,7 @@ export default function CardDetail({
   };
 
   // Extract useful data from the raw API payload (guard empty string — invalid JSON).
+  // Clone + sanitize so we never mutate TanStack cache; fix mojibake in flavor/rules/attacks/abilities.
   let raw = null;
   if (card) {
     if (typeof card.raw_data === "string") {
@@ -281,9 +285,12 @@ export default function CardDetail({
       } catch {
         raw = null;
       }
+    } else if (card.raw_data && typeof card.raw_data === "object") {
+      raw = { ...card.raw_data };
     } else {
-      raw = card.raw_data || null;
+      raw = null;
     }
+    if (raw) raw = sanitizeCardRawDataForDisplay(raw);
   }
   const attacks = raw?.attacks || [];
   const weaknesses = raw?.weaknesses || [];
@@ -520,6 +527,15 @@ export default function CardDetail({
       stored = stored.map((s) => s.toLowerCase());
     }
     const run = async () => {
+      // Optimistic UI: reflect field edits immediately in the detail form while save is in flight.
+      queryClient.setQueryData(cardDetailQueryKey, (prev) => {
+        if (!prev) return prev;
+        const prevAnn = parseAnnotations(prev);
+        const nextAnn = { ...prevAnn };
+        if (stored === null || stored === undefined || stored === "") delete nextAnn[key];
+        else nextAnn[key] = stored;
+        return { ...prev, annotations: nextAnn };
+      });
       const updatedFlat = await patchAnnotations(card.id, { [key]: stored });
       queryClient.setQueryData(cardDetailQueryKey, (prev) => {
         if (!prev) return prev;
@@ -528,6 +544,9 @@ export default function CardDetail({
           annotations: useSupabaseBackend() ? updatedFlat : { ...parseAnnotations(prev), [key]: stored },
         };
       });
+      if (useSupabaseBackend() && shouldRefreshFormOptionsForAnnotationKey(key)) {
+        queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+      }
       if (!useSupabaseBackend()) scheduleGitHubPush();
       return updatedFlat;
     };
@@ -588,9 +607,51 @@ export default function CardDetail({
   };
 
   const renderAnnotationView = () => {
+    const mapLabelToFilter = (label, rawValue) => {
+      if (!onFilterClick) return null;
+      const val = typeof rawValue === "string" ? rawValue.trim() : String(rawValue ?? "").trim();
+      if (!val) return null;
+      const splitVals = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      switch (label) {
+        case "Type":
+          return { filterKey: "element", values: splitVals };
+        case "Rarity":
+          return { filterKey: "rarity", values: splitVals };
+        case "Evolution Line":
+          return { filterKey: "evolution_line", values: [val] };
+        case "Featured Region":
+          return { filterKey: "region", values: splitVals };
+        case "Weather":
+          return { filterKey: "weather", values: splitVals };
+        case "Environment":
+          return { filterKey: "environment", values: splitVals };
+        case "Actions":
+          return { filterKey: "actions", values: splitVals };
+        case "Pose":
+          return { filterKey: "pose", values: splitVals };
+        case "Background Pokémon":
+          return { filterKey: "background_pokemon", values: splitVals.map((x) => x.toLowerCase()) };
+        case "Set Name":
+          return card?.set_id ? { filterKey: "set_id", values: [String(card.set_id)] } : { filterKey: "q", values: [val] };
+        default:
+          return { filterKey: "q", values: [val] };
+      }
+    };
+
     const field = (label, value) => {
       if (value === null || value === undefined || value === "" || value === false) return null;
       const { primary, secondary } = splitUiLabel(label);
+      const isBool = value === true;
+      const display =
+        isBool ? "Yes" : typeof value === "string" ? fixDisplayText(value) : value;
+      const target = isBool ? null : mapLabelToFilter(label, String(display));
+      const pieces =
+        target && target.values.length > 1
+          ? target.values
+          : [String(display)];
       return (
         <div key={label} className="flex gap-2 text-sm min-w-0">
           <span className="text-gray-500 shrink-0 max-w-[min(100%,11rem)] leading-snug">
@@ -600,7 +661,25 @@ export default function CardDetail({
             ) : null}
             :
           </span>
-          <span className="text-gray-900 min-w-0 break-words">{value === true ? "Yes" : value}</span>
+          <span className="text-gray-900 min-w-0 break-words">
+            {target ? (
+              pieces.map((p, idx) => (
+                <span key={`${label}-${p}-${idx}`}>
+                  <button
+                    type="button"
+                    onClick={() => onFilterClick(target.filterKey, p)}
+                    className="text-left underline decoration-dotted underline-offset-2 hover:text-green-700"
+                    title={`Find cards with ${p}`}
+                  >
+                    {p}
+                  </button>
+                  {idx < pieces.length - 1 ? ", " : ""}
+                </span>
+              ))
+            ) : (
+              display
+            )}
+          </span>
         </div>
       );
     };
@@ -1275,6 +1354,7 @@ export default function CardDetail({
                                 inputClass={inputClass}
                                 idSuffix="-pin"
                                 types={types}
+                                onFilterClick={onFilterClick}
                               />
                             ))}
                           </div>
@@ -1325,7 +1405,7 @@ export default function CardDetail({
                             </div>
                             <div>
                               <FormFieldLabel>Evolution Line</FormFieldLabel>
-                              <ComboBox value={annValue("evolution_line")} onChange={(v) => saveAnnotation("evolution_line", v)} options={optArr(opts.evolutionLine)} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
+                              <ComboBox value={formatEvolutionLineLabel(annValue("evolution_line"))} onChange={(v) => saveAnnotation("evolution_line", v)} options={normalizeEvolutionLineOptions(optArr(opts.evolutionLine))} placeholder="Pichu → Pikachu → Raichu" className={inputClass + " w-full"} />
                             </div>
                             <div>
                               <FormFieldLabel>Card Border Color</FormFieldLabel>
@@ -1437,7 +1517,8 @@ export default function CardDetail({
                             </div>
                             <div>
                               <FormFieldLabel>Background Pokemon</FormFieldLabel>
-                              <MultiComboBox value={annValue("background_pokemon", true)} onChange={(v) => saveAnnotation("background_pokemon", v)} options={optArr(opts.backgroundPokemon)} placeholder="Squirtle, Pikachu, etc." />
+                              <MultiComboBox value={annValue("background_pokemon", true)} onChange={(v) => saveAnnotation("background_pokemon", v)} options={optArr(opts.backgroundPokemon)} placeholder="Squirtle, Pikachu, etc." onTagClick={onFilterClick ? (tag) => onFilterClick("background_pokemon", tag) : undefined} />
+                              <p className="mt-1 text-[11px] text-gray-500">Tip: click a tag to filter Explore by that value.</p>
                             </div>
                             <div>
                               <FormFieldLabel>Background People Type</FormFieldLabel>
@@ -1585,22 +1666,31 @@ export default function CardDetail({
                         )}
                         {card.evolves_from && (
                           <p className="text-sm text-gray-600">
-                            Evolves from: <strong>{card.evolves_from}</strong>
+                            Evolves from: <strong>{fixDisplayText(String(card.evolves_from))}</strong>
                           </p>
                         )}
                         {(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && (
                           <p className="text-sm text-gray-600">
-                            Evolution Line: <strong>{Array.isArray(ann.evolution_line) ? ann.evolution_line.join(" → ") : ann.evolution_line}</strong>
+                            Evolution Line:{" "}
+                            <strong>
+                              {formatEvolutionLineLabel(
+                                Array.isArray(ann.evolution_line)
+                                  ? JSON.stringify(ann.evolution_line)
+                                  : String(ann.evolution_line)
+                              )}
+                            </strong>
                           </p>
                         )}
                         {card.genus && (
-                          <p className="text-sm text-gray-600 italic">{card.genus}</p>
+                          <p className="text-sm text-gray-600 italic">{fixDisplayText(card.genus)}</p>
                         )}
                         {rules.length > 0 && (
                           <div>
                             <h3 className="font-semibold text-sm text-gray-700 mb-1">Rules</h3>
                             {rules.map((rule, i) => (
-                              <p key={i} className="text-sm text-gray-600 mt-1">{rule}</p>
+                              <p key={i} className="text-sm text-gray-600 mt-1">
+                                {String(rule)}
+                              </p>
                             ))}
                           </div>
                         )}
@@ -1610,17 +1700,17 @@ export default function CardDetail({
                             {abilities.map((ab, i) => (
                               <div key={i} className="mt-2">
                                 <p className="text-sm font-medium text-purple-700">
-                                  {ab.name}
+                                  {String(ab.name ?? "")}
                                   <span className="text-gray-400 ml-1">({ab.type})</span>
                                 </p>
-                                <p className="text-sm text-gray-600">{ab.text}</p>
+                                <p className="text-sm text-gray-600">{String(ab.text ?? "")}</p>
                               </div>
                             ))}
                           </div>
                         )}
-                        {raw?.flavorText && (
+                        {(raw?.flavorText || raw?.flavor_text) && (
                           <p className="text-sm text-gray-600 italic border-l-2 border-gray-300 pl-3">
-                            {raw.flavorText}
+                            {String(raw.flavorText ?? raw.flavor_text)}
                           </p>
                         )}
                         {attacks.length > 0 && (
@@ -1629,7 +1719,7 @@ export default function CardDetail({
                             {attacks.map((atk, i) => (
                               <div key={i} className="mt-2 p-2 bg-gray-50 rounded">
                                 <div className="flex items-center justify-between">
-                                  <span className="font-medium text-sm">{atk.name}</span>
+                                  <span className="font-medium text-sm">{String(atk.name ?? "")}</span>
                                   {atk.damage && (
                                     <span className="text-green-600 font-bold text-sm">{atk.damage}</span>
                                   )}
@@ -1638,7 +1728,7 @@ export default function CardDetail({
                                   <p className="text-xs text-gray-400 mt-0.5">Cost: {atk.cost.join(", ")}</p>
                                 )}
                                 {atk.text && (
-                                  <p className="text-sm text-gray-600 mt-1">{atk.text}</p>
+                                  <p className="text-sm text-gray-600 mt-1">{String(atk.text)}</p>
                                 )}
                               </div>
                             ))}
@@ -1674,7 +1764,7 @@ export default function CardDetail({
                             )}
                           </div>
                         )}
-                        {!ann.unique_id && !card.evolves_from && !(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && !card.genus && !rules.length && !abilities.length && !raw?.flavorText && !attacks.length && !weaknesses.length && !resistances.length && !retreatCost.length && (
+                        {!ann.unique_id && !card.evolves_from && !(ann.evolution_line && (Array.isArray(ann.evolution_line) ? ann.evolution_line.length : ann.evolution_line)) && !card.genus && !rules.length && !abilities.length && !raw?.flavorText && !raw?.flavor_text && !attacks.length && !weaknesses.length && !resistances.length && !retreatCost.length && (
                           <p className="text-sm text-gray-400 text-center py-8">No additional information available.</p>
                         )}
                       </div>

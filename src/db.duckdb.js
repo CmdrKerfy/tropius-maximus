@@ -17,6 +17,7 @@ import {
   CARD_BORDER_OPTIONS, ENERGY_TYPE_OPTIONS, RIVAL_GROUP_OPTIONS,
 } from "./lib/annotationOptions.js";
 import { mergeExploreFilterOptions } from "./lib/mergeExploreFilterOptions.js";
+import { fixDisplayText } from "./lib/fixUtf8Mojibake.js";
 // Local worker + WASM (main thread fetches WASM, passes blob URL to worker so worker never does CDN/path fetch)
 import duckdb_wasm_mvp from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import duckdb_wasm_eh from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
@@ -1647,18 +1648,6 @@ function mergeSupertypes(arr) {
   });
 }
 
-// Fix common UTF-8/Latin-1 mojibake in strings (e.g. Ã© → é).
-function fixMojibake(s) {
-  if (!s || typeof s !== "string") return s;
-  return s
-    .replace(/Ã©/g, "é").replace(/Ã‰/g, "É")
-    .replace(/Ã /g, "à").replace(/Ã€/g, "À")
-    .replace(/Ã¨/g, "è").replace(/Ã‡/g, "Ç").replace(/Ã§/g, "ç")
-    .replace(/Ã¢/g, "â").replace(/Ã®/g, "î").replace(/Ã´/g, "ô").replace(/Ã»/g, "û")
-    .replace(/Ã¹/g, "ù").replace(/Ã¯/g, "ï").replace(/Ã«/g, "ë").replace(/Ã¼/g, "ü")
-    .replace(/ÃÂ/g, ""); // strip remaining artifacts
-}
-
 // Parse a raw evolution_chain value (JSON array or plain string) to its display label.
 function evoLabel(raw) {
   try {
@@ -1674,14 +1663,16 @@ function mergeEvolutionLines(arr) {
   const seenLabels = new Set();
   const result = [];
   for (const raw of arr) {
-    const s = fixMojibake(String(raw).trim());
+    const s = fixDisplayText(String(raw).trim());
     if (!s) continue;
-    const label = evoLabel(s).toLowerCase();
-    if (seenLabels.has(label)) continue;
-    seenLabels.add(label);
-    result.push(s);
+    const label = fixDisplayText(String(evoLabel(s)).trim());
+    if (!label) continue;
+    const key = label.toLowerCase();
+    if (seenLabels.has(key)) continue;
+    seenLabels.add(key);
+    result.push(label);
   }
-  return result.sort((a, b) => evoLabel(a).localeCompare(evoLabel(b)));
+  return result.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 // Build a SQL condition for the supertype column that matches "Pokémon", "Pokemon", and mojibake variants.

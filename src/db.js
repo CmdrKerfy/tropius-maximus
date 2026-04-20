@@ -221,6 +221,23 @@ export async function fetchDataHealthSummary() {
     : duck.fetchDataHealthSummary();
 }
 
+export async function fetchAnnotationValueIssues(opts) {
+  if (!useSupabaseBackend()) return [];
+  return (await sb()).fetchAnnotationValueIssues(opts);
+}
+
+export async function fetchCardsForAnnotationValueIssue(opts) {
+  if (!useSupabaseBackend()) return [];
+  return (await sb()).fetchCardsForAnnotationValueIssue(opts);
+}
+
+export async function applyAnnotationValueCleanup(opts) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Data Health cleanup requires Supabase (v2).");
+  }
+  return (await sb()).applyAnnotationValueCleanup(opts);
+}
+
 export async function syncMutableTablesToIndexedDB() {
   return useSupabaseBackend()
     ? (await sb()).syncMutableTablesToIndexedDB()

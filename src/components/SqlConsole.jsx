@@ -85,6 +85,16 @@ export default function SqlConsole({
   onDataChanged,
   selectedCardIds = new Set(),
 }) {
+  const exampleQueries = useSupabaseBackend()
+    ? [
+        ...EXAMPLES,
+        {
+          label: "Manual dedupe preflight (026) — keeper + loser, images",
+          query: "SELECT * FROM get_manual_card_dedupe_preflight();",
+        },
+      ]
+    : EXAMPLES;
+
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -259,7 +269,7 @@ export default function SqlConsole({
       {/* Example queries */}
       <div className="mb-3">
         <span className="text-xs text-gray-500 mr-2">Examples:</span>
-        {EXAMPLES.map((ex) => (
+            {exampleQueries.map((ex) => (
           <button
             key={ex.label}
             onClick={() => handleExample(ex.query)}

@@ -45,6 +45,7 @@ import { useBatchSelection } from "../hooks/useBatchSelection.js";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
+import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
 import { getSupabase } from "../lib/supabaseClient.js";
 
@@ -449,22 +450,24 @@ export default function ExplorePage() {
 
   const handleShowInGrid = (cards) => setSqlCards(cards);
 
-  // Dedupe by id so each card appears once (fixes duplicate keys / stuck layout).
-  // When the same id appears twice (e.g. API + custom Pikachu), prefer the custom card so it shows in the grid.
+  // Dedupe so each card appears once (Explore grid):
+  // - Manual: same set + name + artwork URL (legacy duplicate PKs / spaced ids vs canonical).
+  // - All: trimmed `id` collisions; custom wins over API on same raw id.
   const displayedCards = useMemo(() => {
     const raw = sqlCards || cards;
-    const byId = new Map();
+    const byKey = new Map();
     const order = [];
     for (const c of raw) {
-      const existing = byId.get(c.id);
+      const key = exploreGridRowDedupeKey(c);
+      const existing = byKey.get(key);
       if (!existing) {
-        byId.set(c.id, c);
-        order.push(c.id);
-      } else if (c.is_custom && !existing.is_custom) {
-        byId.set(c.id, c);
+        byKey.set(key, c);
+        order.push(key);
+        continue;
       }
+      byKey.set(key, pickExploreGridDuplicateWinner(existing, c));
     }
-    return order.map((id) => byId.get(id));
+    return order.map((k) => byKey.get(k));
   }, [sqlCards, cards]);
 
   // ── Card selection handlers ──────────────────────────────────────
@@ -523,6 +526,18 @@ export default function ExplorePage() {
     }
   }, [batchSelection, filters, searchQuery]);
 
+  /** Optional toast action — stay on Explore by default; users open Workbench when ready. */
+  const workbenchToastAction = useCallback(
+    () => ({
+      duration: 7000,
+      action: {
+        label: "Open Workbench",
+        onClick: () => navigate("/workbench"),
+      },
+    }),
+    [navigate]
+  );
+
   const handleBatchListToWorkbench = useCallback(async () => {
     if (batchSelection.count === 0) return;
     setWorkbenchListAppendBusy(true);
@@ -533,7 +548,8 @@ export default function ExplorePage() {
         toastWarning("Every card in your batch list was already in your Workbench queue.");
       } else {
         toastSuccess(
-          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to your Workbench queue.`
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to your Workbench queue.`,
+          workbenchToastAction()
         );
       }
     } catch (e) {
@@ -541,7 +557,7 @@ export default function ExplorePage() {
     } finally {
       setWorkbenchListAppendBusy(false);
     }
-  }, [batchSelection.count, batchSelection.ids, queryClient]);
+  }, [batchSelection.count, batchSelection.ids, queryClient, workbenchToastAction]);
 
   const handleDeleteSelected = async () => {
     setDeleteInProgress(true);
@@ -688,14 +704,13 @@ export default function ExplorePage() {
         await appendCardToDefaultQueue(cardId);
         queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
         setSelectedCardId(null);
-        toastSuccess("Card added to your Workbench queue.");
-        navigate("/workbench");
+        toastSuccess("Card added to your Workbench queue.", workbenchToastAction());
       } catch (err) {
         console.error(err);
         toastError(err);
       }
     },
-    [navigate, queryClient]
+    [queryClient, workbenchToastAction]
   );
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -1349,8 +1364,13 @@ export default function ExplorePage() {
               onNext={() => setSelectedCardId(cardIds[currentIndex + 1])}
               onFilterClick={(filterKey, filterValue) => {
                 setSelectedCardId(null);
-                setSearchQuery("");
                 setPage(1);
+                if (filterKey === "q") {
+                  setSearchQuery(String(filterValue ?? ""));
+                  setFilters({ ...DEFAULT_FILTERS });
+                  return;
+                }
+                setSearchQuery("");
                 setFilters({
                   ...DEFAULT_FILTERS,
                   [filterKey]: ARRAY_FILTER_KEYS.has(filterKey) ? [filterValue] : filterValue,

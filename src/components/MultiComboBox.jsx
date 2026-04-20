@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function MultiComboBox({ value, onChange, options = [], placeholder = "", className = "" }) {
+export default function MultiComboBox({
+  value,
+  onChange,
+  options = [],
+  placeholder = "",
+  className = "",
+  onTagClick,
+}) {
   const [open, setOpen] = useState(false);
   const [inputVal, setInputVal] = useState("");
   const wrapperRef = useRef(null);
@@ -97,10 +104,24 @@ export default function MultiComboBox({ value, onChange, options = [], placehold
             key={tag + i}
             className="inline-flex items-center gap-0.5 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full"
           >
-            {tag}
+            {onTagClick ? (
+              <button
+                type="button"
+                onClick={() => onTagClick(tag)}
+                className="underline decoration-dotted underline-offset-2 hover:text-green-900"
+                title={`Find cards with "${tag}"`}
+              >
+                {tag}
+              </button>
+            ) : (
+              tag
+            )}
             <button
               type="button"
-              onClick={() => removeTag(i)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(i);
+              }}
               className="text-green-600 hover:text-green-900 leading-none ml-0.5"
             >
               &times;

@@ -2,7 +2,7 @@
 
 **Purpose:** Track optional follow-ups after **`batch-redesign-visual-selection.md`** shipped. Not scheduled; revisit when pain or capacity appears.
 
-**Related:** **`docs/plans/batch-redesign-visual-selection.md`** (complete), **`docs/plans/e2e-vercel-smoke-checklist.md`** (manual QA).
+**Related:** **`docs/plans/batch-redesign-visual-selection.md`** (complete), **`docs/plans/e2e-vercel-smoke-checklist.md`** (manual QA). **Workbench-only items** also land here as a single backlog file (see row **8**).
 
 ---
 
@@ -17,6 +17,7 @@
 | 5 | **Richer error UX** (beyond buckets) | Copy suggested fixes per error code | **Shipped:** **`src/lib/batchErrorHints.js`** + hints under each failed card in **`BatchWizard`**. |
 | 6 | **Edit history: “batch run” grouping** | One row per run, expand to cards | **Shipped:** migration **`025_batch_runs_edit_history.sql`**, **`batch_runs`** + **`edit_history.batch_run_id`**, History **Batch runs** tab + **`run=`** URL filter; RPC **`p_batch_run_id`**. |
 | 7 | **Multi-field batch** | Power feature; large scope (review, confirm, rollback story) | **Shipped:** up to **`MAX_FIELD_STEPS` (5)** in **`BatchWizard`** + **`BatchFieldStepBlock`**; merged patch per card. |
+| 8 | **Workbench: keyboard prev/next on queue** | Today only **Previous / Next** buttons update `current_index` (`WorkbenchPage.jsx`). **Explore → card detail** already supports **← / →** between grid cards (`CardDetail.jsx`). Binding the same affordance on Workbench (plain arrows vs **Ctrl/Cmd + arrows** when focus is in inputs—TBD) speeds sequential passes without the mouse. | Workbench keyboard / polish milestone; after onboarding feedback; **mirror:** **`docs/plans/ui-refresh-modern-ux.md`** Phase 5 unchecked item |
 
 ---
 

@@ -121,6 +121,7 @@
 - [x] Persistent **save status** in workbench chrome: Idle / Saving / Saved / Error (+ **Retry**). `AnnotationEditor` reports lifecycle via **`onSaveStatusChange`**; **`WorkbenchPage`** shows status in the Annotations panel header.
 - [x] **Card image + form** layout: **`lg+`** column ratio presets (**Image** / **Balanced** / **Form**), persisted in **`localStorage`** key **`tm_workbench_split_preset`**; wider image well on **`xl`**.
 - [x] **Card detail drawer** (Explore): **`CollapsibleSection`** visual grouping; field labels use **`FormFieldLabel`** + **`splitUiLabel.js`** (parentheticals on a second line). **Deeper IA** (restructure tabs/sections) — **deferred** until collaborators exercise the app; see **Deferred checklist** at the bottom of this file.
+- [ ] **Workbench queue keyboard (polish):** **← / →** (and/or **Ctrl/Cmd + arrows**, TBD) should call the same **Previous / Next** queue actions as the buttons on **`WorkbenchPage`**, skipping when focus is in **inputs** / **contentEditable** (parity with **Explore → card detail** modal arrows in **`CardDetail.jsx`**). **Tracked together with** **`docs/plans/batch-future-enhancements.md`** row **8**.
 
 **Exit criteria:** Annotator never unsure whether last save stuck; detail drawer passes a quick **5-second comprehension** test with a collaborator.
 
