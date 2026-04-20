@@ -35,6 +35,8 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - [ ] E2E testing on **Vercel** (preview + production) against Supabase — manual smoke checklist: **`docs/plans/e2e-vercel-smoke-checklist.md`**.
 - [ ] **Production checklist** — Anonymous auth / RLS / Vercel env (**`docs/plans/production-hardening-anon-auth.md`**).
 - [ ] **Final production-readiness pass** — operator checklist + rollout order (**`docs/plans/production-readiness-final-pass.md`**). Includes staging/prod migration parity through **`028`**, Data Health RPC verification, and release gate checks.
+- [ ] **Tackle-now implementation queue** — auth endpoint abuse hardening, Data Health cleanup audit trail, full manual smoke sign-off, and DuckDB/Supabase bundle-boundary optimization (Phase 4 in **`docs/plans/production-readiness-final-pass.md`**).
+- [ ] **Cross-functional panel cadence** — run specialist review regularly and after major changes (**`docs/plans/cross-functional-panel-review.md`**).
 - [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
@@ -273,12 +275,13 @@ docs/site-checks.md  -- local `npm run check` / `check:quick` + Playwright vs Ve
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
 docs/plans/production-hardening-anon-auth.md  -- production: migration 019 + disable anon + Vercel env
 docs/plans/production-readiness-final-pass.md  -- final release gate checklist (migration parity, hardening, smoke, Data Health verification)
+docs/plans/cross-functional-panel-review.md  -- recurring multi-role review findings + reminder cadence after major edits/features
 docs/plans/sync-main-public-data-to-supabase.md  -- merge `public/data` from `main` + push DuckDB/custom cards to Supabase
 docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
 docs/plans/batch-redesign-visual-selection.md  -- visual batch list + wizard + optional curated append (shipped on v2 branch)
-docs/plans/batch-future-enhancements.md  -- backlog (server list, History grouping, multi-field, E2E; **row 8** Workbench ←/→ queue nav)
+docs/plans/batch-future-enhancements.md  -- backlog (batch + release follow-ups: Playwright/CI smoke, invite lookup scalability, migration naming hygiene, OG host hardening, Workbench queue nav)
 docs/plans/tcg-data-refresh-coverage.md  -- ingest verification, `failed_sets`, CI ingest flags
 docs/plans/edit-add-card-workflow-hardening.md  -- add/edit card UX + concurrency + batch safety (shipped phases); see also batch redesign plan
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
@@ -310,6 +313,8 @@ Full write-up: **`docs/site-checks.md`**.
 When asking the user for **permission** before doing something (destructive edits, `git push`, installing packages, broad refactors, scope changes, etc.), always pair the ask with a **brief plain-English summary** of the intended actions—what files or systems will be touched and what will happen. Do not only ask “Should I proceed?” without stating *what* will be done, so the owner can decide without inferring intent.
 
 **Never merge to `main` or open a PR that merges into `main`** unless the owner **explicitly** requests that merge in the conversation. Pushes to **`v2/supabase-migration`** are fine when asked. Policy: **`docs/ai-agent-merge-policy.md`**.
+
+After major feature work, migrations, auth/session changes, or pre-release milestones, agents should prompt for a **cross-functional panel review** and use **`docs/plans/cross-functional-panel-review.md`** as the checklist baseline.
 
 ## Memory System
 

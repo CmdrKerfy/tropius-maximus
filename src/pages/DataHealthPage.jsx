@@ -108,6 +108,7 @@ export default function DataHealthPage() {
   const [cleanupMode, setCleanupMode] = useState("replace");
   const [replacementValue, setReplacementValue] = useState("");
   const [cleanupConfirmed, setCleanupConfirmed] = useState(false);
+  const [deepLinkCopied, setDeepLinkCopied] = useState(false);
   const [lastCleanup, setLastCleanup] = useState(null);
   const [hoverPreview, setHoverPreview] = useState(null); // { src, name, x, y }
   const [hoverPreviewLoaded, setHoverPreviewLoaded] = useState(false);
@@ -486,6 +487,7 @@ export default function DataHealthPage() {
                                         field_key: issue.field_key,
                                         field_value: issue.field_value,
                                       });
+                                      setDeepLinkCopied(false);
                                       setVisibleIssueCards(ISSUE_CARDS_VISIBLE_PAGE);
                                       setCleanupMode("replace");
                                       setReplacementValue("");
@@ -534,6 +536,8 @@ export default function DataHealthPage() {
                           const href = issueExploreHref(selectedIssue);
                           const absoluteHref = `${window.location.origin}${href}`;
                           await navigator.clipboard.writeText(absoluteHref);
+                          setDeepLinkCopied(true);
+                          setTimeout(() => setDeepLinkCopied(false), 1500);
                           toastSuccess("Copied Explore deep link.");
                         } catch (e) {
                           toastError(e);
@@ -541,13 +545,14 @@ export default function DataHealthPage() {
                       }}
                       className="text-[11px] px-2 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 normal-case text-slate-700"
                     >
-                      Copy deep link
+                      {deepLinkCopied ? "Copied" : "Copy deep link"}
                     </button>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedIssue(null);
+                      setDeepLinkCopied(false);
                       setCleanupConfirmed(false);
                       setReplacementValue("");
                       setCleanupMode("replace");

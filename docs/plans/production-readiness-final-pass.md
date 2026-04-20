@@ -150,9 +150,59 @@ Acceptance criteria:
 
 ---
 
+## Phase 4 - Tackle now implementation plan (pre-launch)
+
+### 4.1 Auth edge abuse hardening
+
+- [ ] Add per-IP and per-email rate limiting to `request-magic-link` and `invite-set-password`.
+- [ ] Collapse invite/auth failure responses to generic user-facing copy (avoid allowlist/code enumeration signal).
+- [ ] Add bot friction (Turnstile or equivalent) for invite/auth submission paths.
+- [ ] Rotate `INVITE_SECRET` and document rotation cadence.
+
+Acceptance criteria:
+
+- Invite endpoints reject repeated abuse patterns predictably.
+- Auth failures do not reveal whether code/email check failed.
+
+### 4.2 Data Health cleanup audit trail
+
+- [ ] Add persistent audit log for bulk cleanup operations (edit_history-compatible rows or dedicated `bulk_edit_history` table).
+- [ ] Record actor, timestamp, field, old value, new value/mode, and affected row count.
+- [ ] Link the run metadata in Data Health UI after apply.
+
+Acceptance criteria:
+
+- Every bulk cleanup is traceable after the fact.
+- Operators can answer “who changed what and when” for cleanup actions.
+
+### 4.3 Full manual smoke completion + sign-off
+
+- [ ] Execute all checks in `docs/plans/manual-smoke-checkbox-run.md`.
+- [ ] Capture PASS/FAIL with blocking/non-blocking notes.
+- [ ] Require explicit owner go/no-go after checklist closeout.
+
+Acceptance criteria:
+
+- Complete checklist log exists for the intended release build.
+- No unresolved blocking failures remain.
+
+### 4.4 DuckDB/Supabase bundle boundary optimization
+
+- [ ] Lazy-load DuckDB adapter paths from `src/db.js` so Supabase mode does not eagerly include heavy DuckDB code.
+- [ ] Confirm no regressions in DuckDB mode and Supabase mode routing.
+- [ ] Compare build artifact size and first-load behavior before/after.
+
+Acceptance criteria:
+
+- Supabase runtime path no longer pays unnecessary DuckDB bundle cost.
+- Startup feels faster on authenticated Supabase sessions.
+
+---
+
 ## Verification checklist before owner go/no-go
 
 - [ ] Confirm all Phase 1 items complete (blocking).
+- [ ] Confirm all Phase 4 items complete (blocking for launch).
 - [ ] Validate Data Health end-to-end on production project:
   - [x] Manual ID health loads
   - [x] Annotation value issues load

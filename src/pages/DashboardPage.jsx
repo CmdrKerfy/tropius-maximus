@@ -3,6 +3,7 @@
  */
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
   fetchProfile,
   fetchMyEditHistory,
@@ -12,7 +13,13 @@ import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 
 export default function DashboardPage() {
+  const MY_CARDS_PAGE_SIZE = 75;
   const experimentalNav = useExperimentalAppNav();
+  const [cardSetFilter, setCardSetFilter] = useState("");
+  const [cardSearch, setCardSearch] = useState("");
+  const [cardSort, setCardSort] = useState("set_number_asc");
+  const [visibleMyCards, setVisibleMyCards] = useState(MY_CARDS_PAGE_SIZE);
+
   const { data: profile, isLoading: pLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: () => fetchProfile(),
@@ -24,11 +31,60 @@ export default function DashboardPage() {
   });
 
   const { data: myCards = [], isLoading: cLoading } = useQuery({
-    queryKey: ["myCards"],
-    queryFn: () => fetchMyCards({ limit: 25 }),
+    queryKey: ["myCards", cardSetFilter, cardSearch, cardSort],
+    queryFn: () =>
+      fetchMyCards({
+        limit: 1000,
+        set_id: cardSetFilter,
+        q: cardSearch,
+        sort: cardSort,
+      }),
+  });
+
+  const { data: myCardsFilterBase = [] } = useQuery({
+    queryKey: ["myCardsSetOptions"],
+    queryFn: () => fetchMyCards({ limit: 1000, sort: "set_number_asc" }),
   });
 
   const display = profile?.display_name?.trim() || profile?.id?.slice(0, 8) || "there";
+  const cardSetOptions = useMemo(() => {
+    const bySet = new Map();
+    for (const row of myCardsFilterBase) {
+      const sid = String(row.set_id || "").trim();
+      if (!sid || bySet.has(sid)) continue;
+      bySet.set(sid, row.set_name || sid);
+    }
+    return [...bySet.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }));
+  }, [myCardsFilterBase]);
+  const cardsBySetSummary = useMemo(() => {
+    const bySet = new Map();
+    for (const row of myCards) {
+      const sid = String(row.set_id || "").trim();
+      if (!sid) continue;
+      const prev = bySet.get(sid);
+      if (prev) {
+        prev.count += 1;
+      } else {
+        bySet.set(sid, {
+          id: sid,
+          name: row.set_name || sid,
+          count: 1,
+        });
+      }
+    }
+    return [...bySet.values()].sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
+    });
+  }, [myCards]);
+  const displayedMyCards = useMemo(() => myCards.slice(0, visibleMyCards), [myCards, visibleMyCards]);
+  const canLoadMoreMyCards = myCards.length > displayedMyCards.length;
+
+  useEffect(() => {
+    setVisibleMyCards(MY_CARDS_PAGE_SIZE);
+  }, [cardSetFilter, cardSearch, cardSort]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -110,6 +166,82 @@ export default function DashboardPage() {
           <p className="text-xs text-gray-500 mb-3">
             Successful database inserts only. Use Explore’s custom card form for live per-attempt status in this session.
           </p>
+          <div className="mb-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Search (name or card ID)</label>
+              <input
+                value={cardSearch}
+                onChange={(e) => setCardSearch(e.target.value)}
+                placeholder="e.g. Pikachu or custom-myset-12"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Set</label>
+              <select
+                value={cardSetFilter}
+                onChange={(e) => setCardSetFilter(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+              >
+                <option value="">All sets</option>
+                {cardSetOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Sort</label>
+              <select
+                value={cardSort}
+                onChange={(e) => setCardSort(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+              >
+                <option value="set_number_asc">Set then card number</option>
+                <option value="recent_desc">Most recently added</option>
+                <option value="name_asc">Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-gray-500">
+              Showing {displayedMyCards.length.toLocaleString()} of {myCards.length.toLocaleString()} submitted cards.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setCardSetFilter("");
+                setCardSearch("");
+                setCardSort("set_number_asc");
+              }}
+              className="text-[11px] px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+            >
+              Clear filters
+            </button>
+          </div>
+          {!cLoading && cardsBySetSummary.length > 0 && (
+            <div className="mb-3 rounded border border-gray-200 bg-gray-50 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-medium text-gray-600">Cards by set (current results):</span>
+                {cardsBySetSummary.map((setRow) => (
+                  <button
+                    key={setRow.id}
+                    type="button"
+                    onClick={() => setCardSetFilter(setRow.id)}
+                    className={`text-[11px] px-2 py-1 rounded border ${
+                      cardSetFilter === setRow.id
+                        ? "border-green-300 bg-green-50 text-green-800"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                    }`}
+                    title={`Filter to ${setRow.name}`}
+                  >
+                    {setRow.name} ({setRow.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {cLoading ? (
             <p className="text-sm text-gray-500">Loading…</p>
           ) : myCards.length === 0 ? (
@@ -118,7 +250,7 @@ export default function DashboardPage() {
             </p>
           ) : (
             <ul className="divide-y divide-gray-100 text-sm">
-              {myCards.map((row) => (
+              {displayedMyCards.map((row) => (
                 <li key={row.id} className="py-2 flex flex-wrap gap-2 items-baseline">
                   <Link
                     to={`/?card=${encodeURIComponent(row.id)}`}
@@ -129,6 +261,7 @@ export default function DashboardPage() {
                   <span className="text-gray-800">{row.name}</span>
                   <span className="text-gray-500">
                     {row.set_name || row.set_id}
+                    {row.number ? ` #${row.number}` : ""}
                     {row.origin ? ` · ${row.origin}` : ""}
                   </span>
                   {row.created_at && (
@@ -139,6 +272,17 @@ export default function DashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {!cLoading && canLoadMoreMyCards && (
+            <div className="mt-3 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setVisibleMyCards((n) => n + MY_CARDS_PAGE_SIZE)}
+                className="px-3 py-1.5 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50"
+              >
+                Load more
+              </button>
+            </div>
           )}
         </section>
       </main>

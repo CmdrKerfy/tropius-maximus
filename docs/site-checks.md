@@ -7,6 +7,17 @@ Use this doc as the **standard entry point** for “did we break the site?” be
 - **`npm run dev`** → Vite’s default **`http://localhost:5173`** — use this for everyday manual testing.
 - **Playwright** (`playwright.config.mjs`) starts **`vite preview` on `127.0.0.1:5174`** so it does not collide with a dev server on 5173. You do not need to open 5174 unless you are debugging the E2E preview server.
 
+## Node version (important for Playwright stability)
+
+- Use **Node 24** locally (repo now includes **`.nvmrc`** with `24`).
+- If you use `nvm`, run:
+
+```bash
+nvm use
+```
+
+- Running newer unsupported Node versions can cause flaky or hanging Playwright behavior.
+
 ## npm scripts
 
 | Script | What it runs | Typical use |
@@ -38,9 +49,13 @@ After the `playwright test` line, Playwright may print **nothing for a long time
 
 1. **Wait** at least as long as a fresh **`npm run build`** plus ~30s for preview + Chromium (or use **`DEBUG=pw:webserver`** above).
 2. **Stop other Vite / Playwright** processes using **port 5174** (`lsof -i :5174` on macOS).
-3. Run Playwright with a clean server: **`CI=1 npm run test:e2e`** (`reuseExistingServer` is off when `CI` is set — see `playwright.config.mjs`).
-4. Confirm **`npm run build`** succeeds alone; the E2E webServer runs build again on a cold start.
-5. If it sits past **~6 minutes**, check the webServer **`timeout`** in `playwright.config.mjs` (300s) — then it should error rather than hang forever.
+3. Confirm you are on **Node 24** (`node -v`, `nvm use`).
+4. Confirm **`npm run build`** succeeds alone; the E2E webServer runs build again before preview.
+5. If it sits past **~7 minutes**, check `playwright.config.mjs` webServer timeout (**420s**) and run with debug logs:
+
+```bash
+DEBUG=pw:webserver npm run test:e2e
+```
 
 ## GitHub Actions
 

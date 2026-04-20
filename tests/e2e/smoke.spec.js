@@ -1,14 +1,29 @@
 import { test, expect } from "@playwright/test";
 
+async function waitForAppReady(page) {
+  await expect
+    .poll(
+      async () => {
+        const body = (await page.textContent("body")) || "";
+        return body.replace(/\s+/g, " ").trim();
+      },
+      { timeout: 120_000, intervals: [500, 1000, 1500] }
+    )
+    .not.toContain("Loading Tropius Maximus");
+}
+
 test.describe("Smoke (local DuckDB, no Supabase)", () => {
-  test("Explore loads and shows the app title", async ({ page }) => {
+  test("Explore loads and shows core shell", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Tropius Maximus Pokemon Tracker/i })).toBeVisible();
+    await waitForAppReady(page);
+    await expect(page.getByText(/Tropius Maximus/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/Search cards/i)).toBeVisible();
   });
 
   test("Batch page shows Supabase-only notice when not configured", async ({ page }) => {
     await page.goto("/batch");
-    await expect(page.getByRole("heading", { name: /Batch edit/i })).toBeVisible();
+    await waitForAppReady(page);
+    await expect(page.getByText(/Batch edit/i)).toBeVisible();
     await expect(page.getByText(/Batch edit uses Supabase/i)).toBeVisible();
   });
 });

@@ -6,7 +6,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
+  timeout: 120_000,
+  globalTimeout: 600_000,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: "list",
@@ -20,7 +23,8 @@ export default defineConfig({
     command:
       "VITE_REQUIRE_EMAIL_AUTH=false VITE_USE_SUPABASE=false npm run build && VITE_REQUIRE_EMAIL_AUTH=false VITE_USE_SUPABASE=false npx vite preview --host 127.0.0.1 --port 5174 --strictPort",
     url: "http://127.0.0.1:5174",
-    reuseExistingServer: !process.env.CI,
-    timeout: 300_000,
+    // Always boot a fresh preview for deterministic env/mode and fewer stale-process hangs.
+    reuseExistingServer: false,
+    timeout: 420_000,
   },
 });

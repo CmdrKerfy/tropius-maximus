@@ -1787,18 +1787,45 @@ export async function fetchMyEditHistory({ limit = 40 } = {}) {
 }
 
 /** Cards created by the signed-in user (manual / custom inserts). */
-export async function fetchMyCards({ limit = 40 } = {}) {
+export async function fetchMyCards({ limit = 200, set_id = "", q = "", sort = "recent_desc" } = {}) {
   const sb = await sbReady();
   const { data: authData } = await sb.auth.getUser();
   const uid = authData?.user?.id;
   if (!uid) return [];
-  const lim = Math.min(200, Math.max(1, Number(limit) || 40));
-  const { data, error } = await sb
+  const lim = Math.min(1000, Math.max(1, Number(limit) || 200));
+  let query = sb
     .from("cards")
-    .select("id, name, set_id, set_name, set_series, origin, created_at, created_by")
+    .select("id, name, set_id, set_name, set_series, number, origin, created_at, created_by")
     .eq("created_by", uid)
-    .order("created_at", { ascending: false })
     .limit(lim);
+
+  const sid = String(set_id || "").trim();
+  if (sid) query = query.eq("set_id", sid);
+
+  const term = String(q || "").trim();
+  if (term) {
+    query = query.or(`name.ilike.%${term}%,id.ilike.%${term}%`);
+  }
+
+  const sortKey = String(sort || "recent_desc");
+  if (sortKey === "set_number_asc") {
+    query = query
+      .order("set_name", { ascending: true, nullsFirst: false })
+      .order("set_id", { ascending: true, nullsFirst: false })
+      .order("number_sort_key", { ascending: true, nullsFirst: false })
+      .order("id", { ascending: true, nullsFirst: false });
+  } else if (sortKey === "name_asc") {
+    query = query
+      .order("name", { ascending: true, nullsFirst: false })
+      .order("set_name", { ascending: true, nullsFirst: false })
+      .order("number_sort_key", { ascending: true, nullsFirst: false });
+  } else {
+    query = query
+      .order("created_at", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: true, nullsFirst: false });
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
