@@ -14,13 +14,19 @@ This plan covers:
 
 ### 1.1 Verify migration parity on staging and production
 
-- [ ] Confirm both projects have all required migrations through `028`:
+- [x] Confirm linked project has required migrations through `028` and follow-up fix `029`:
   - `025b_manual_card_dedupe_preflight_rpc.sql`
   - `026_manual_card_id_cleanup.sql`
   - `027_manual_card_id_health_check.sql`
   - `028_annotation_value_issues_and_cleanup_rpc.sql`
-- [ ] Capture migration status evidence (SQL editor output or `supabase migration list` screenshot/log).
-- [ ] Re-run app smoke on both projects after migration sync.
+- [x] Capture migration status evidence (`supabase migration list --linked` + RPC query checks).
+- [x] Re-run protected-route smoke on production + fresh v2 preview after migration sync.
+
+Notes:
+
+- Remote `supabase_migrations.schema_migrations` was empty while schema already existed; repaired with `supabase migration repair --status applied 001..028`.
+- `025b` is intentionally non-standard (`025b_...`) and skipped by Supabase CLI history matching, so it is tracked by function presence (`get_manual_card_dedupe_preflight`) instead of history row.
+- `029_fix_annotation_value_cleanup_rpc.sql` added and applied after runtime SQL error in `apply_annotation_value_cleanup`.
 
 Acceptance criteria:
 
@@ -33,13 +39,13 @@ Acceptance criteria:
 
 Follow `docs/plans/production-hardening-anon-auth.md`.
 
-- [ ] Apply `019_rls_exclude_anonymous_sessions.sql` on production Supabase project.
-- [ ] Disable Anonymous provider in Supabase Auth settings (production).
-- [ ] Verify Vercel production env:
-  - [ ] `VITE_SUPABASE_AUTO_ANON_AUTH` unset or `false`
-  - [ ] `VITE_REQUIRE_EMAIL_AUTH=true` (invite-only mode)
-  - [ ] Supabase URL + anon key present and correct
-- [ ] Redeploy production after env updates.
+- [x] Apply `019_rls_exclude_anonymous_sessions.sql` on production Supabase project.
+- [x] Disable Anonymous provider in Supabase Auth settings (production).
+- [x] Verify Vercel production env:
+  - [x] `VITE_SUPABASE_AUTO_ANON_AUTH` unset or `false`
+  - [x] `VITE_REQUIRE_EMAIL_AUTH=true` (invite-only mode)
+  - [x] Supabase URL + anon key present and correct
+- [x] Redeploy production after env updates.
 
 Acceptance criteria:
 
@@ -55,7 +61,15 @@ Follow `docs/plans/e2e-vercel-smoke-checklist.md` end-to-end.
 
 - [ ] Run full checklist on staging preview URL.
 - [ ] Run full checklist on production URL.
-- [ ] Log any regressions and block launch if critical paths fail.
+- [x] Log any regressions and block launch if critical paths fail.
+
+Progress so far:
+
+- Protected-route smoke passed on production and fresh v2 preview:
+  - `/` -> 200
+  - `/health` -> 200
+  - `/share/card/A1-001` -> 200
+- Earlier preview 404 on `/health` was from a `main`-alias preview URL, not the v2 deployment.
 
 Acceptance criteria:
 
@@ -140,11 +154,12 @@ Acceptance criteria:
 
 - [ ] Confirm all Phase 1 items complete (blocking).
 - [ ] Validate Data Health end-to-end on production project:
-  - [ ] Manual ID health loads
-  - [ ] Annotation value issues load
-  - [ ] View cards works
-  - [ ] Cleanup runs successfully and refreshes issue counts
-- [ ] Run `npm run check:quick` locally.
+  - [x] Manual ID health loads
+  - [x] Annotation value issues load
+  - [x] View cards works
+  - [x] Cleanup RPC executes successfully (verified with no-op sentinel value)
+  - [ ] Cleanup mutation of a real production value + post-mutation count refresh (requires owner-approved value change)
+- [x] Run `npm run check:quick` locally.
 - [ ] Run `npm run check` (includes Playwright) if time permits.
 - [ ] Re-test Explore/CardDetail filter interactions for regressions after Data Health updates.
 

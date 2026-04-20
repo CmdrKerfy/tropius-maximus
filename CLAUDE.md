@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`028`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`029`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -206,6 +206,7 @@ supabase/
     026_manual_card_id_cleanup.sql          -- dedupe legacy manual card ids; rewire refs; CHECK no whitespace in cards.id
     027_manual_card_id_health_check.sql    -- read-only Data Health RPC for non-canonical manual card IDs
     028_annotation_value_issues_and_cleanup_rpc.sql -- Data Health value issue triage + view cards + bulk replace/remove RPCs
+    029_fix_annotation_value_cleanup_rpc.sql -- fixes runtime SQL error in apply_annotation_value_cleanup (target alias in LATERAL)
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
