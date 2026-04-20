@@ -15,6 +15,9 @@ import {
 import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
 import { mergeExploreFilterOptions } from "../../lib/mergeExploreFilterOptions.js";
+import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
+
+export { BATCH_EDIT_MAX_CARDS };
 
 async function sbReady() {
   await ensureSupabaseSession();
@@ -712,6 +715,8 @@ export async function fetchCards(params = {}) {
     hp: "hp",
     rarity: "rarity",
     set_name: "set_name",
+    /** Row insert time in Postgres (API/manual ingest); good for “new to database” ordering. */
+    recent: "created_at",
   };
   const orderCol = sortMap[sort_by] || "name";
 
@@ -811,6 +816,8 @@ export async function fetchCards(params = {}) {
   query = query.order(orderCol, { ascending, nullsFirst: false });
   if (sort_by === "number") {
     query = query.order("id", { ascending: true, nullsFirst: false });
+  } else if (sort_by === "recent") {
+    query = query.order("id", { ascending: true, nullsFirst: false });
   }
   query = query.range(offset, offset + pageSizeInt - 1);
 
@@ -821,9 +828,97 @@ export async function fetchCards(params = {}) {
   return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
 }
 
-/** Max cards a single batch annotation run may touch (safety). */
-const BATCH_EDIT_MAX_CARDS = 5000;
 const BATCH_ID_PAGE_SIZE = 500;
+
+/**
+ * First `limit` card IDs matching the same filters as `fetchCards` (stable server sort order).
+ * Use for Explore "select all matching" when total may exceed {@link BATCH_EDIT_MAX_CARDS}.
+ * @returns {{ ids: string[], totalMatch: number, capped: boolean }}
+ */
+export async function fetchFirstNMatchingCardIds(params = {}, limit = BATCH_EDIT_MAX_CARDS) {
+  const { page: _p, page_size: _ps, ...rest } = params;
+  const probe = await fetchCards({ ...rest, page: 1, page_size: 1, exact_count: true });
+  const totalMatch = typeof probe.total === "number" ? probe.total : 0;
+  const cap = Math.min(Math.max(0, limit), totalMatch);
+  if (cap === 0) {
+    return { ids: [], totalMatch, capped: false };
+  }
+  const ids = [];
+  let page = 1;
+  while (ids.length < cap) {
+    const pageSize = Math.min(BATCH_ID_PAGE_SIZE, cap - ids.length);
+    const { cards } = await fetchCards({
+      ...rest,
+      page,
+      page_size: pageSize,
+      exact_count: true,
+    });
+    for (const c of cards) {
+      ids.push(c.id);
+      if (ids.length >= cap) break;
+    }
+    if (!cards || cards.length === 0) break;
+    page++;
+  }
+  return { ids, totalMatch, capped: totalMatch > cap };
+}
+
+const BATCH_WIZARD_PREVIEW_LIMIT = 48;
+const CARD_NAME_FETCH_CHUNK = 200;
+
+/**
+ * Minimal rows for Batch wizard review (first N ids in list order).
+ * @param {string[]} cardIds
+ * @param {string} fieldKey
+ * @returns {{ cards: { id: string, name: string | null, image_small: string | null, image_large: string | null, previousValue: unknown }[] }}
+ */
+export async function fetchBatchWizardPreview(cardIds, fieldKey) {
+  const sb = await sbReady();
+  const chunk = cardIds.slice(0, BATCH_WIZARD_PREVIEW_LIMIT).filter(Boolean);
+  if (chunk.length === 0) return { cards: [] };
+  const { data, error } = await sb
+    .from("cards")
+    .select("id, name, image_small, image_large, annotations(*)")
+    .in("id", chunk);
+  if (error) throw error;
+  const byId = new Map((data || []).map((row) => [row.id, row]));
+  return {
+    cards: chunk.map((id) => {
+      const row = byId.get(id);
+      if (!row) {
+        return { id, name: null, image_small: null, image_large: null, previousValue: null };
+      }
+      const ann = normalizeEmbeddedAnnotation(row.annotations);
+      const flat = annotationRowToFlat(ann);
+      const previousValue = flat[fieldKey];
+      return {
+        id: row.id,
+        name: row.name,
+        image_small: row.image_small,
+        image_large: row.image_large,
+        previousValue: previousValue === undefined ? null : previousValue,
+      };
+    }),
+  };
+}
+
+/**
+ * @param {string[]} cardIds
+ * @returns {Record<string, string>}
+ */
+export async function fetchCardNamesByIds(cardIds) {
+  const sb = await sbReady();
+  const chunk = [...new Set(cardIds.filter(Boolean))];
+  if (chunk.length === 0) return {};
+  const out = {};
+  for (let i = 0; i < chunk.length; i += CARD_NAME_FETCH_CHUNK) {
+    const slice = chunk.slice(i, i + CARD_NAME_FETCH_CHUNK);
+    const { data, error } = await sb.from("cards").select("id, name").in("id", slice);
+    if (error) throw error;
+    for (const c of data || []) out[c.id] = c.name || "";
+  }
+  return out;
+}
 
 /**
  * All card IDs matching the same filters as `fetchCards` (paginates internally).
@@ -859,14 +954,14 @@ export async function fetchMatchingCardIds(params = {}) {
  * @returns {{ updated: number, errors: { cardId: string, message: string }[] }}
  */
 export async function batchPatchAnnotations(cardIds, patch, options = {}) {
-  const { onProgress } = options;
+  const { onProgress, batchRunId } = options;
   const errors = [];
   let updated = 0;
   const total = cardIds.length;
   for (let i = 0; i < total; i++) {
     const cardId = cardIds[i];
     try {
-      await patchAnnotations(cardId, patch);
+      await patchAnnotations(cardId, patch, { batchRunId });
       updated++;
     } catch (e) {
       errors.push({ cardId, message: e?.message || String(e) });
@@ -1387,18 +1482,38 @@ function buildEditHistoryPayload(patch, prevFlat) {
 }
 
 /**
- * Recent annotation edits (newest first). Optional filter by card.
- * @param {{ card_id?: string | null, limit?: number, only_mine?: boolean }} [opts]
+ * Recent annotation edits (newest first). Optional filter by card, field, or time window.
+ * @param {{
+ *   card_id?: string | null,
+ *   field_name?: string | null,
+ *   edited_after?: string | null,
+ *   batch_run_id?: string | null,
+ *   limit?: number,
+ *   only_mine?: boolean
+ * }} [opts]
  */
-export async function fetchEditHistory({ card_id = null, limit = 200, only_mine = false } = {}) {
+export async function fetchEditHistory({
+  card_id = null,
+  field_name = null,
+  edited_after = null,
+  batch_run_id = null,
+  limit = 200,
+  only_mine = false,
+} = {}) {
   const sb = await sbReady();
   const lim = Math.min(500, Math.max(1, Number(limit) || 200));
   let q = sb
     .from("edit_history")
-    .select("id, card_id, field_name, old_value, new_value, edited_at, edited_by")
+    .select("id, card_id, field_name, old_value, new_value, edited_at, edited_by, batch_run_id")
     .order("edited_at", { ascending: false })
     .limit(lim);
   if (card_id) q = q.eq("card_id", card_id);
+  const fieldTrim = field_name != null ? String(field_name).trim() : "";
+  if (fieldTrim) q = q.eq("field_name", fieldTrim);
+  const afterTrim = edited_after != null ? String(edited_after).trim() : "";
+  if (afterTrim) q = q.gte("edited_at", afterTrim);
+  const br = batch_run_id != null ? String(batch_run_id).trim() : "";
+  if (br) q = q.eq("batch_run_id", br);
   if (only_mine) {
     const { data: authData } = await sb.auth.getUser();
     const uid = authData?.user?.id;
@@ -1408,6 +1523,88 @@ export async function fetchEditHistory({ card_id = null, limit = 200, only_mine 
   const { data, error } = await q;
   if (error) throw error;
   return attachProfileDisplayNames(sb, data || []);
+}
+
+/**
+ * Server copy of the Batch card ID list (signed-in, non-anonymous users only).
+ * @returns {Promise<{ card_ids: string[], updated_at: string } | null>}
+ */
+export async function fetchBatchSelection() {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const user = authData?.user;
+  if (!user?.id || user.is_anonymous === true) return null;
+  const { data, error } = await sb
+    .from("batch_selections")
+    .select("card_ids, updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const ids = Array.isArray(data.card_ids) ? data.card_ids.filter((x) => typeof x === "string" && x.length > 0) : [];
+  return { card_ids: ids, updated_at: data.updated_at };
+}
+
+/**
+ * Upsert the Batch card ID list for the current user.
+ * @param {string[]} cardIds
+ */
+export async function upsertBatchSelection(cardIds) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const user = authData?.user;
+  if (!user?.id || user.is_anonymous === true) return;
+  const unique = [...new Set((cardIds || []).filter((x) => typeof x === "string" && x.length > 0))].slice(
+    0,
+    BATCH_EDIT_MAX_CARDS
+  );
+  const { error } = await sb.from("batch_selections").upsert(
+    {
+      user_id: user.id,
+      card_ids: unique,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw error;
+}
+
+/**
+ * Record one Batch wizard apply (before per-card writes). RLS: own rows only.
+ * @param {{ field_name: string, card_count: number }} meta
+ * @returns {Promise<string>} batch run id (uuid)
+ */
+export async function createBatchRun({ field_name, card_count }) {
+  const sb = await sbReady();
+  const { data: authData } = await sb.auth.getUser();
+  const user = authData?.user;
+  if (!user?.id || user.is_anonymous === true) {
+    throw new Error("Sign in required to run batch.");
+  }
+  const { data, error } = await sb
+    .from("batch_runs")
+    .insert({
+      user_id: user.id,
+      field_name: String(field_name || "").trim() || "(batch)",
+      card_count: Math.max(0, Number(card_count) || 0),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+/** Recent batch runs for the signed-in user (newest first). */
+export async function fetchBatchRuns({ limit = 40 } = {}) {
+  const sb = await sbReady();
+  const lim = Math.min(100, Math.max(1, Number(limit) || 40));
+  const { data, error } = await sb
+    .from("batch_runs")
+    .select("id, field_name, card_count, created_at")
+    .order("created_at", { ascending: false })
+    .limit(lim);
+  if (error) throw error;
+  return data || [];
 }
 
 /** Current user's profile row (or null). */
@@ -1631,8 +1828,10 @@ function isAnnotationVersionConflictFromRpc(rpcErr) {
  * `edit_history`). Insert races retry on `23505`; concurrent edits map RPC errors to {@link ANNOTATION_VERSION_CONFLICT_MESSAGE}.
  * @param {string} cardId
  * @param {Record<string, unknown>} patch
+ * @param {{ batchRunId?: string | null }} [options]
  */
-export async function patchAnnotations(cardId, patch) {
+export async function patchAnnotations(cardId, patch, options = {}) {
+  const { batchRunId } = options;
   const sb = await sbReady();
   const patchForHistoryBase = { ...patch };
   delete patchForHistoryBase.updated_by;
@@ -1681,6 +1880,7 @@ export async function patchAnnotations(cardId, patch) {
       p_expected_version: cur ? ver : null,
       p_row: fullRowForRpc,
       p_history: historyPayload,
+      p_batch_run_id: batchRunId ?? null,
     });
 
     if (rpcErr) {
@@ -1796,6 +1996,65 @@ export async function deleteAttribute(key) {
   }
   const { error } = await sb.from("field_definitions").delete().eq("name", name).eq("category", "custom");
   if (error) throw error;
+}
+
+/**
+ * Append string tokens to `curated_options` for a **custom** select / multi_select field (RLS allows updates only for `category = custom`).
+ * Dedupes case-insensitively; keeps existing order and appends new values at the end.
+ * @param {string} fieldName — `field_definitions.name`
+ * @param {string[]} newStrings
+ * @returns {{ appended: string[] }}
+ */
+export async function appendCuratedOptionsForCustomField(fieldName, newStrings) {
+  const sb = await sbReady();
+  const name = String(fieldName);
+  const toAdd = (newStrings || [])
+    .map((s) => (s == null ? "" : String(s).trim()))
+    .filter(Boolean);
+  if (toAdd.length === 0) return { appended: [] };
+
+  const { data: row, error: readErr } = await sb
+    .from("field_definitions")
+    .select("name, category, field_type, curated_options")
+    .eq("name", name)
+    .maybeSingle();
+  if (readErr) throw readErr;
+  if (!row) throw new Error(`Field '${name}' not found`);
+  if (row.category !== "custom") {
+    throw new Error("Only custom fields can update curated options from Batch.");
+  }
+  if (row.field_type !== "select" && row.field_type !== "multi_select") {
+    throw new Error("Curated options apply to select or multi-select fields only.");
+  }
+
+  let rawOpts = row.curated_options;
+  if (typeof rawOpts === "string") {
+    try {
+      rawOpts = JSON.parse(rawOpts);
+    } catch {
+      rawOpts = [];
+    }
+  }
+  const existing = Array.isArray(rawOpts) ? [...rawOpts] : [];
+  const seen = new Set(existing.map((x) => String(x).toLowerCase()));
+  const appended = [];
+  for (const t of toAdd) {
+    const tl = t.toLowerCase();
+    if (!seen.has(tl)) {
+      seen.add(tl);
+      existing.push(t);
+      appended.push(t);
+    }
+  }
+  if (appended.length === 0) return { appended: [] };
+
+  const { error: upErr } = await sb
+    .from("field_definitions")
+    .update({ curated_options: existing })
+    .eq("name", name)
+    .eq("category", "custom");
+  if (upErr) throw upErr;
+  return { appended };
 }
 
 export async function executeSql() {
@@ -2185,4 +2444,32 @@ export async function appendCardToDefaultQueue(cardId) {
     card_ids: ids,
     current_index: ids.length - 1,
   });
+}
+
+/**
+ * Append many card ids in one update (deduped against existing queue order; new ids appended in given order).
+ * @param {string[]} cardIds
+ * @returns {Promise<{ added: number, queue: object }>}
+ */
+export async function appendCardsToDefaultQueue(cardIds) {
+  const q = await ensureDefaultWorkbenchQueue();
+  const existing = asCardIdArray(q.card_ids);
+  const seen = new Set(existing.map((id) => String(id)));
+  const merged = [...existing];
+  let added = 0;
+  for (const raw of cardIds || []) {
+    const id = raw == null ? "" : String(raw).trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    merged.push(id);
+    added++;
+  }
+  if (added === 0) {
+    return { added: 0, queue: q };
+  }
+  const data = await updateWorkbenchQueue(q.id, {
+    card_ids: merged,
+    current_index: merged.length - 1,
+  });
+  return { added, queue: data };
 }

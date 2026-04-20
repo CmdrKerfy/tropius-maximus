@@ -11,7 +11,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`023`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`025`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -22,13 +22,13 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 - [x] Phase 3: Supabase client + `src/data/supabase/appAdapter.js` + `src/db.js` router (`VITE_USE_SUPABASE=true`); TanStack Query provider in `main.jsx`. Browse / filters / annotations + field_definitions wired; SQL console & custom card CRUD still stubbed.
 - [x] Phase 4: Explore Mode — `react-router-dom` + `src/pages/ExplorePage.jsx` at `/`; TanStack Query for cards, filter options, attributes; filter prefetch / cache tuning; numeric sort for Supabase (`008` + `number_sort_key`); manual set normalization (`009`, `manual_set_normalize.py`, `normalize_custom_cards_json.py`); FilterPanel set grouping (short series slugs: owner may refine later). **Deferred (optional):** `useSearchParams` instead of ad-hoc URL sync; hide GitHub PAT / sync UI when Supabase-only; any remaining filter/sort parity.
 - [x] Phase 5: Workbench Mode — `/workbench`, default queue CRUD, card image + `AnnotationEditor` + `fetchFormOptions` merged suggestions, Explore/Workbench nav, **Send to Workbench** from `CardDetail` (Supabase).
-- [x] Phase 6: Supporting features — **Data Health** `/health`; **Field management** `/fields`; **Batch edit** `/batch`; **Edit history** `/history`; Workbench **Ctrl+Shift+Z** / **⌘⇧Z** undo (outside text fields); migrations **`010`**, **`011`**.
+- [x] Phase 6: Supporting features — **Data Health** `/health`; **Field management** `/fields`; **Batch edit** `/batch` (saved-list wizard + review/confirm; see **`docs/plans/batch-redesign-visual-selection.md`**); **Edit history** `/history`; Workbench **Ctrl+Shift+Z** / **⌘⇧Z** undo (outside text fields); migrations **`010`**, **`011`**.
 
 ### UI feedback (Phase 4+)
 
 When polishing Explore/Workbench, **batch UI issues** for the owner: note what screen, what you expected, what happened (screenshot optional). The best times to report are **after a Phase milestone** or when asked **“any UI regressions?”** — avoid one-off fixes mid-refactor unless something is blocking. The AI should **prompt the owner** at natural checkpoints: *“If you notice sorting, filter labels, or layout issues, list them now so we can fix them in the next pass.”* **Phase 5 checkpoint:** after the first Workbench slice lands (route + queue + one save path), ask the same for workbench-specific UX.
 
-- [x] Phase 7: **Ingest → Supabase + Vercel** — `push_duckdb_to_supabase.py` upserts API-sourced `sets`, `cards`, `pokemon_metadata` from ingest’s DuckDB; `ingest.py --push-supabase` chains locally. **Actions:** workflow on **`main`** (so GitHub lists it) and on **`v2/supabase-migration`**; **Run workflow** can target **`v2/supabase-migration`**; weekly schedule uses **default branch**. Actions use `checkout@v5`, `setup-python@v6`, `cache@v5` (Node 24). Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`; optional `POKEMON_TCG_API_KEY`. **Vercel:** `vercel.json` SPA rewrites; env **`VITE_USE_SUPABASE`**, **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_ANON_KEY`** — **confirmed** in project settings (redeploy after changes). **Not done yet:** merge v2 app into `main`; production checklist below.
+- [x] Phase 7: **Ingest → Supabase + Vercel** — `push_duckdb_to_supabase.py` upserts API-sourced `sets`, `cards`, `pokemon_metadata` from ingest’s DuckDB; `ingest.py --push-supabase` chains locally. **Actions:** workflow on **`main`** (so GitHub lists it) and on **`v2/supabase-migration`**; **Run workflow** can target **`v2/supabase-migration`**; weekly schedule uses **default branch**. Actions use `checkout@v5`, `setup-python@v6`, `cache@v5` (Node 24). Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`; optional **`POKEMON_TCG_API_KEY`** (higher pokemontcg.io limits). **Ingest flags (CI):** **`deploy-pages.yml`** and **`ingest-supabase.yml`** run `python scripts/ingest.py --clear-failed --fail-on-partial` — clears stale `failed_sets` after API blips and **fails the job** if any ingest step skipped data (so Actions can notify); see **`docs/plans/tcg-data-refresh-coverage.md`**. **Vercel:** `vercel.json` SPA rewrites; env **`VITE_USE_SUPABASE`**, **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_ANON_KEY`** — **confirmed** in project settings (redeploy after changes). **Not done yet:** merge v2 app into `main`; production checklist below.
 
 ### Post–Phase 7 (current focus)
 
@@ -41,12 +41,13 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 - **Public card share (shipped on v2 branch):** Read-only **`/share/card/:cardId`** (**`PublicShareCardPage`**); RPC **`get_public_card_for_share`** (**`018_public_card_share_rpc.sql`**); **`api/share-og`** + root **`middleware.js`** (crawlers → OG HTML with **`og:image`**); **`public/og-card-placeholder.svg`** when artwork missing; **Copy share link** in **`CardDetail`**. Plan: **`docs/plans/public-card-share-and-social-preview.md`**. **Tabled (not scheduled):** opaque tokens, share analytics, role-based who may copy—see plan **“Deferred — tabled”** for rationale and revisit triggers.
 - **Profiles & activity (shipped on v2 branch):** **`013_profiles.sql`**, **`/profile`** + **`/profile/:userId`**, **`/dashboard`** (**Recent edits** = annotation `edit_history`; **My submitted cards** = successful manual inserts via `created_by`), **`/history`** (**Edit history** = team annotation edits, not card creation), edit history display names + “only my edits”, **`created_by`** on manual cards, **`014_storage_avatars.sql`** + Profile photo upload/remove. **Custom card form** (`CustomCardForm`): **This session — add attempts** list + **`sessionStorage`** key **`tm_custom_card_add_session_log`** for per-attempt success/error/partial (e.g. DuckDB saved, GitHub sync failed)—failed adds are **not** stored server-side; Dashboard only lists cards that reached Postgres. Spec: **`docs/plans/user-profiles-and-activity.md`**. **Apply `014` once per Supabase project** that should support avatar upload (Storage bucket + policies); skip if already applied.
+- **Batch redesign (shipped on v2 branch):** `localStorage` batch list, **Explore** checkboxes + bar + **Add all matching** (capped) + **Card detail** add/remove; **`BatchWizard`** on **`/batch`** (field → review → confirm → apply, retry failed, clear vs keep list, optional append to **`field_definitions.curated_options`** for **custom** select / multi_select). URL-scoped batch + **`BatchQuickAnnotationScope`** removed (Phase 7). Spec: **`docs/plans/batch-redesign-visual-selection.md`**.
 - **Next v2 feature (approved, paused):** **User dashboards + email/password auth** (primary UX) — **`docs/plans/user-dashboards-and-password-auth.md`**.
 - **Auth shipped on v2 branch (context for agents):** Invite-only sign-in — Edge Function **`request-magic-link`**, table **`signup_allowlist`**, routes **`/login`** + **`/auth/callback`**, **`VITE_REQUIRE_EMAIL_AUTH`**. Browser client uses **`flowType: 'implicit'`** in `src/lib/supabaseClient.js` so magic-link emails work when opened in a **different** browser/device than the one that requested the link.
 
 ### UI refresh (v2 branch)
 
-- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**). **Quick custom card (Part B):** shipped in **`docs/plans/card-detail-pins-and-quick-card-add.md`** — includes **session add log** (per-attempt status, `sessionStorage`), duplicate-ID row updates, **`017`** transactional annotation saves (see edit/add hardening plan).
+- **Plan:** **`docs/plans/ui-refresh-modern-ux.md`**. **Shipped:** Phases **1–7** (shell, Explore filters, Workbench polish, power-tool cleanup, Lucide + Dialog motion + copy). **Deferred:** Card detail **IA** restructure (tabs/sections — see plan **Deferred checklist**). **Annotator onboarding (shipped):** collapsible **About Workbench / About Batch** (**`WorkflowModeHelp.jsx`** on **`WorkbenchPage`**, **`BatchEditPage`**); Batch nav **`title`** tooltips (Explore + **`AppShellHeader`**); empty Workbench queue copy links to Explore vs Batch. **Quick custom card (Part B):** shipped in **`docs/plans/card-detail-pins-and-quick-card-add.md`** — includes **session add log** (per-attempt status, `sessionStorage`), duplicate-ID row updates, **`017`** transactional annotation saves (see edit/add hardening plan).
 - **Card detail pins (Part A):** **`docs/plans/card-detail-pins-and-quick-card-add.md`** — **`user_preferences.card_detail_pins`** + **`CardDetailFieldControl`**, **`CardDetailPinEditor`**; pinned fields strip on **More Info** edit; DuckDB/localStorage fallback **`tm_card_detail_pins`**. **More pinnable keys:** extend **`CARD_DETAIL_PINNABLE_KEYS`** in **`CardDetailFieldControl.jsx`**. Apply Supabase migration **`015_card_detail_pins.sql`** on each project.
 - **Custom cards + GitHub:** Decoupled for Supabase in **`CustomCardForm`** / Explore copy (see **`docs/plans/custom-card-form-supabase-github-decouple.md`**); DuckDB still optional PAT/git.
 - **`unique_id` cleanup (deferred):** Legacy annotation field often duplicates **`cards.id`**. Tracked spec — **`docs/plans/unique-id-annotation-cleanup.md`** (inventory UI/DuckDB, single canonical ID, optional data migration). Not started.
@@ -58,7 +59,7 @@ Performance work is tracked in **`docs/plans/explore-supabase-performance.md`**.
 
 - [x] **Explore filter options (RPC)** — **`020_explore_filter_options_rpc.sql`**: `get_explore_filter_options_db()` returns distincts in one round-trip; `fetchExploreFilterOptions` in `src/data/supabase/appAdapter.js` calls `supabase.rpc`, merges static lists from `annotationOptions.js`, then `mergeExploreFilterOptions`. Falls back to legacy client paging if the RPC errors. **`SECURITY INVOKER`** + `GRANT` to `authenticated` / `service_role` (no anon; aligns with **019**).
 - [x] **Form options (RPC) + shared TanStack cache** — **`021_form_options_rpc.sql`**: `get_form_options_db()` returns cards / sets / `pokemon_metadata` / per-column annotation distincts in one RPC; `fetchFormOptions` builds the same shape as before via `buildFormOptionsFromRpcPayload` + `mergeAnnotationUsageIntoOptionsFromRpc`, with **`fetchFormOptionsClientPaged`** fallback. **`FORM_OPTIONS_QUERY_KEY`** in `src/db.js`; Workbench, **CardDetail**, and **CustomCardForm** use `useQuery` so options share cache (5‑min `staleTime`). Batch edit invalidates the same key after runs.
-- [x] **Explore grid counts + indexes (Phase 2)** — **`022_grid_search_indexes.sql`**: `pg_trgm` GIN on `cards.name`, composite `(origin, set_id)`. `fetchCards` uses **`count: "planned"`** by default; pass **`exact_count: true`** for batch / `fetchMatchingCardIds`. See **`docs/plans/explore-supabase-performance.md`**.
+- [x] **Explore grid counts + indexes (Phase 2)** — **`022_grid_search_indexes.sql`**: `pg_trgm` GIN on `cards.name`, composite `(origin, set_id)`. `fetchCards` uses **`count: "planned"`** by default; pass **`exact_count: true`** when an exact total is required (Explore page clamp, `fetchMatchingCardIds`, etc.). See **`docs/plans/explore-supabase-performance.md`**.
 - [x] **Grid + detail profile embed (Phase 3)** — **`023_cards_annotations_profiles_fk.sql`** (**must be applied** on each Supabase env or embeds fail): `created_by` / `updated_by` FK → **`profiles`**. **`fetchCard`** embeds **`profiles!…_fkey(display_name)`** (card detail attribution). **`fetchCards`** (Explore grid) omits profile embeds to avoid PostgREST edge cases; tile-level creator/editor names deferred. **`annotationRowToFlat`** drops embed **`profiles`**. Explore uses **`exact_count: true`** + page clamp vs URL `?page=` (see `ExplorePage.jsx`).
 - [x] **Card detail path (Phase 4)** — **`fetchCard`**: skip **`pokemon_metadata`** for Pocket (`tcgdex`). **`CardDetail.jsx`**: card load via **`useQuery`** `['cardDetail', cardId, source]` + **`setQueryData`** / **`invalidateQueries`** for saves and tab visibility (see **`docs/plans/explore-supabase-performance.md`**).
 - [x] **Startup prefetch (Phase 5)** — **`main.jsx`**: after **`setReady(true)`**, Explore **`fetchExploreFilterOptions`** prefetch runs via **`requestIdleCallback`** (fallback double **`requestAnimationFrame`**), same **`queryKey`** as **`ExplorePage`** for dedupe.
@@ -150,7 +151,7 @@ Performance work is tracked in **`docs/plans/explore-supabase-performance.md`**.
 - Card grid with visual completion indicators (green/yellow/gray)
 - Search + filters
 - Read-only card detail panel
-- "Send to Workbench" action
+- "Send to Workbench" action; **Batch** nav may include current `location.search` for convenience; **`/batch`** applies to the **saved batch list** from Explore (not URL scope)
 
 **Workbench Mode** — edit, annotate, add cards:
 - Split-pane: card image (left) + annotation form (right)
@@ -197,17 +198,20 @@ supabase/
     021_form_options_rpc.sql                 -- `get_form_options_db`: form combobox distincts (Workbench / detail / custom form)
     022_grid_search_indexes.sql              -- pg_trgm + indexes for Explore grid / name search
     023_cards_annotations_profiles_fk.sql    -- FK → profiles for PostgREST embed (no extra profile query)
+    024_batch_selections.sql                 -- per-user Batch list sync (Explore selection bar)
+    025_batch_runs_edit_history.sql         -- batch_runs + edit_history.batch_run_id; RPC p_batch_run_id
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules
 
 scripts/
-  ingest.py                      -- DuckDB ingest; `--push-supabase` → push to Postgres
+  ingest.py                      -- DuckDB ingest; `--push-supabase` → push to Postgres; **`--clear-failed`**, **`--fail-on-partial`** (CI alerting)
   push_duckdb_to_supabase.py     -- upsert API-sourced rows from DuckDB → Supabase
   requirements-ci.txt            -- duckdb + httpx + postgrest (Actions ingest job)
   migrate_data.py                -- one-time migration: backup/ → Supabase
   manual_set_normalize.py        -- custom card set_id / set_name normalization
   normalize_custom_cards_json.py -- rewrite custom_cards.json with same rules
+  strip_custom_card_ids.py       -- strip/normalize whitespace in `id` fields before `migrate_data.py`
   export_parquet.py              -- TO BE DELETED (no longer needed)
 
 backup/                          -- gitignored, contains pre-migration data snapshots
@@ -233,7 +237,9 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   components/CardDetailPinEditor.jsx     -- modal: ordered **Edit pins** (`user_preferences.card_detail_pins`)
   pages/WorkbenchPage.jsx        -- Workbench queue + **split width presets** (`tm_workbench_split_preset`) + save chrome
   pages/DashboardPage.jsx        -- personal dashboard (**Recent edits** vs **My submitted cards** copy; `fetchMyEditHistory` / `fetchMyCards`)
-  pages/BatchEditPage.jsx        -- batch annotation patch; per-card error list (names when id in Explore preview sample)
+  pages/BatchEditPage.jsx        -- **`BatchWizard`** (saved list); **`WorkflowModeHelp`** when list empty — **`docs/plans/batch-redesign-visual-selection.md`**
+  components/BatchWizard.jsx            -- field → review → confirm → apply (saved `localStorage` ids)
+  components/WorkflowModeHelp.jsx       -- collapsible onboarding (Workbench / Batch)
   pages/PublicShareCardPage.jsx  -- read-only **`/share/card/:id`** (outside **`Protected`**)
   pages/ProfilePage.jsx          -- edit own profile / view teammate (display name + avatar)
   pages/EditHistoryPage.jsx      -- team annotation edit history + “only my edits” (not custom card creation)
@@ -242,6 +248,10 @@ src/                             -- React frontend (v2 routes + Supabase layer o
   lib/github.js                  -- WILL BE DELETED
   lib/annotationOptions.js       -- WILL BE REPLACED by field_definitions table
   components/                    -- WILL BE decomposed into Explore/ and Workbench/ dirs
+
+package.json                   -- `npm run dev` / `build`; **`check:quick`**, **`check`**, **`test:e2e`** (see **Site checks** + **`docs/site-checks.md`**)
+playwright.config.mjs          -- Playwright smoke: `vite preview` on **127.0.0.1:5174** (not the dev default **5173**)
+tests/e2e/smoke.spec.js        -- minimal Explore + Batch smoke (DuckDB mode)
 
 .env.local                       -- gitignored, contains VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 .env.example                     -- template for .env.local
@@ -252,18 +262,31 @@ public/og-card-placeholder.svg   -- Default preview when card has no image URL
 docs/plans/user-profiles-and-activity.md  -- profiles / dashboard / avatars (see plan status)
 docs/plans/user-dashboards-and-password-auth.md  -- password-primary auth + dashboard (cross-ref profiles)
 docs/plans/p1-cutover-and-operations.md  -- cutover runbook (Vercel / merge / migrations reminder; merge to `main` only on owner say-so)
+docs/site-checks.md  -- local `npm run check` / `check:quick` + Playwright vs Vercel smoke
 docs/plans/e2e-vercel-smoke-checklist.md  -- manual QA after deploy (Supabase + Vercel)
 docs/plans/production-hardening-anon-auth.md  -- production: migration 019 + disable anon + Vercel env
 docs/plans/sync-main-public-data-to-supabase.md  -- merge `public/data` from `main` + push DuckDB/custom cards to Supabase
 docs/ai-agent-merge-policy.md  -- never merge to `main` without owner (cross-ref CLAUDE Conventions)
 docs/plans/custom-card-form-supabase-github-decouple.md  -- Custom cards: Supabase-only UX (no PAT)
 docs/plans/unique-id-annotation-cleanup.md  -- Deferred: dedupe legacy `annotations.unique_id` vs `cards.id`
-docs/plans/edit-add-card-workflow-hardening.md  -- Draft: add/edit card UX + concurrency + batch safety
+docs/plans/batch-redesign-visual-selection.md  -- visual batch list + wizard + optional curated append (shipped on v2 branch)
+docs/plans/batch-future-enhancements.md  -- backlog (server list, History grouping, multi-field, E2E automation, etc.)
+docs/plans/tcg-data-refresh-coverage.md  -- ingest verification, `failed_sets`, CI ingest flags
+docs/plans/edit-add-card-workflow-hardening.md  -- add/edit card UX + concurrency + batch safety (shipped phases); see also batch redesign plan
 docs/plans/ui-refresh-modern-ux.md  -- Modern UI/UX: shell, toasts, filters, tokens (phased)
 docs/plans/card-detail-pins-and-quick-card-add.md  -- Card detail **pins** (Part A) + **quick custom card** (Part B)
 docs/plans/public-card-share-and-social-preview.md  -- Public `/share/card/…` + Open Graph thumbnails (**shipped**)
+.github/workflows/site-checks.yml  -- push/PR: `npm run check:quick` (build + unit tests)
 .github/workflows/ingest-supabase.yml  -- weekly ingest + push to Supabase
 ```
+
+## Site checks (local)
+
+- **`npm run check:quick`** — production build + Node unit tests (fast, no browser).
+- **`npm run check`** — **`check:quick`** + Playwright smoke (DuckDB preview; see `playwright.config.mjs`).
+- **Hosted v2 / Supabase** is not exercised by Playwright here; use **`docs/plans/e2e-vercel-smoke-checklist.md`** after deploy.
+
+Full write-up: **`docs/site-checks.md`**.
 
 ## Conventions
 

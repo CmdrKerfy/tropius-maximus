@@ -114,7 +114,28 @@ function parseAnnotations(card) {
   return a;
 }
 
-export default function CardDetail({ cardId, attributes, source = "TCG", onClose, onCardDeleted, hasPrev, hasNext, onPrev, onNext, onFilterClick, onSyncQueued, onSyncStarted, onSyncCompleted, onSyncFailed, onRegisterSyncRunner, workflowBuildingRef, onSendToWorkbench }) {
+export default function CardDetail({
+  cardId,
+  attributes,
+  source = "TCG",
+  onClose,
+  onCardDeleted,
+  hasPrev,
+  hasNext,
+  onPrev,
+  onNext,
+  onFilterClick,
+  onSyncQueued,
+  onSyncStarted,
+  onSyncCompleted,
+  onSyncFailed,
+  onRegisterSyncRunner,
+  workflowBuildingRef,
+  onSendToWorkbench,
+  inBatchList = false,
+  onAddToBatchList,
+  onRemoveFromBatchList,
+}) {
   const queryClient = useQueryClient();
   const cardDetailQueryKey = useMemo(() => ["cardDetail", cardId, source], [cardId, source]);
   const {
@@ -772,6 +793,25 @@ export default function CardDetail({ cardId, attributes, source = "TCG", onClose
               >
                 Send to Workbench
               </button>
+            )}
+            {onAddToBatchList && onRemoveFromBatchList && card && !loading && (
+              inBatchList ? (
+                <button
+                  type="button"
+                  onClick={() => onRemoveFromBatchList()}
+                  className="shrink-0 px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-900 rounded-lg hover:bg-amber-100 border border-amber-200/80"
+                >
+                  Remove from batch list
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onAddToBatchList()}
+                  className="shrink-0 px-2.5 py-1 text-xs font-medium bg-sky-50 text-sky-900 rounded-lg hover:bg-sky-100 border border-sky-200/80"
+                >
+                  Add to batch list
+                </button>
+              )
             )}
           </div>
           <button

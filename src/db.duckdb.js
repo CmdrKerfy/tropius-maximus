@@ -1036,10 +1036,13 @@ function arrowToRows(result) {
 const ALLOWED_SORT = new Set([
   "name", "hp", "set_name", "rarity", "number", "set_id", "supertype", "id", "price",
   "generation", "region", "pokedex",
+  /** v1 DuckDB: no created_at; sorts by card id string (rough proxy). */
+  "recent",
 ]);
 
 const POCKET_ALLOWED_SORT = new Set([
   "name", "hp", "set_name", "rarity", "number", "id",
+  "recent",
 ]);
 
 /**
@@ -1159,12 +1162,14 @@ export async function fetchCards(params = {}) {
     );
     const total = countResult.toArray()[0].cnt;
 
-    const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id", "number", "hp", "rarity"]);
+    const ALL_ALLOWED_SORT = new Set(["name", "set_name", "id", "number", "hp", "rarity", "recent"]);
     const allSortBy = ALL_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const allOrderBy =
       allSortBy === "number"
         ? "TRY_CAST(list_element(string_split(CAST(COALESCE(number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
-        : allSortBy;
+        : allSortBy === "recent"
+          ? "id"
+          : allSortBy;
     const dataResult = await conn.query(`
       SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom
       FROM (${dedupedSQL}) counted
@@ -1206,6 +1211,8 @@ export async function fetchCards(params = {}) {
       sortExpr = "pc.number";
     } else if (safeSortBy === "set_name") {
       sortExpr = "ps.name";
+    } else if (safeSortBy === "recent") {
+      sortExpr = "pc.id";
     } else {
       sortExpr = `pc.${safeSortBy}`;
     }
@@ -1281,12 +1288,16 @@ export async function fetchCards(params = {}) {
     );
     const total = countResult.toArray()[0].cnt;
 
-    const CUSTOM_ALLOWED_SORT = new Set(["name", "hp", "set_name", "rarity", "number", "set_id", "supertype", "id"]);
+    const CUSTOM_ALLOWED_SORT = new Set([
+      "name", "hp", "set_name", "rarity", "number", "set_id", "supertype", "id", "recent",
+    ]);
     const safeSortBy = CUSTOM_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     const sortExpr =
       safeSortBy === "number"
         ? "TRY_CAST(list_element(string_split(CAST(COALESCE(c.number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
-        : `c.${safeSortBy}`;
+        : safeSortBy === "recent"
+          ? "c.id"
+          : `c.${safeSortBy}`;
 
     const dataResult = await conn.query(`
       SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
@@ -1364,6 +1375,8 @@ export async function fetchCards(params = {}) {
     sortExpr = "pm.generation";
   } else if (safeSortBy === "region") {
     sortExpr = "c.pkmn_region";
+  } else if (safeSortBy === "recent") {
+    sortExpr = "c.id";
   } else {
     sortExpr = `c.${safeSortBy}`;
   }
@@ -2349,7 +2362,7 @@ export async function fetchAnnotations(cardId) {
  * Merge annotation updates into a card's existing annotations.
  * Uses JSON merge patch semantics. Write-through to IndexedDB.
  */
-export async function patchAnnotations(cardId, annotations) {
+export async function patchAnnotations(cardId, annotations, _options) {
   // Read current
   const current = await fetchAnnotations(cardId);
 
@@ -2384,11 +2397,43 @@ export async function fetchMatchingCardIds() {
   throw new Error("Batch edit requires Supabase (set VITE_USE_SUPABASE=true in .env.local).");
 }
 
+export async function fetchFirstNMatchingCardIds() {
+  throw new Error("Batch selection requires Supabase (set VITE_USE_SUPABASE=true in .env.local).");
+}
+
 export async function batchPatchAnnotations() {
   throw new Error("Batch edit requires Supabase (set VITE_USE_SUPABASE=true in .env.local).");
 }
 
+export async function fetchBatchWizardPreview() {
+  throw new Error("Batch edit requires Supabase (set VITE_USE_SUPABASE=true in .env.local).");
+}
+
+export async function fetchCardNamesByIds() {
+  throw new Error("Batch edit requires Supabase (set VITE_USE_SUPABASE=true in .env.local).");
+}
+
+export async function appendCuratedOptionsForCustomField() {
+  throw new Error("Field options require Supabase (set VITE_USE_SUPABASE=true in .env.local).");
+}
+
 export async function fetchEditHistory() {
+  return [];
+}
+
+export async function fetchBatchSelection() {
+  return null;
+}
+
+export async function upsertBatchSelection() {
+  return undefined;
+}
+
+export async function createBatchRun() {
+  throw new Error("Batch runs require Supabase (set VITE_USE_SUPABASE=true in .env.local).");
+}
+
+export async function fetchBatchRuns() {
   return [];
 }
 
@@ -3070,5 +3115,9 @@ export async function updateWorkbenchQueue() {
 }
 
 export async function appendCardToDefaultQueue() {
+  throw new Error("Workbench queues require Supabase (set VITE_USE_SUPABASE=true).");
+}
+
+export async function appendCardsToDefaultQueue() {
   throw new Error("Workbench queues require Supabase (set VITE_USE_SUPABASE=true).");
 }

@@ -1,5 +1,10 @@
 node_modules/
 dist/
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/
 .DS_Store
 
 # Local tooling / caches

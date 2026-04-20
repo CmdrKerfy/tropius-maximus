@@ -4,6 +4,8 @@
 
 **Goal:** Address friction, misleading UI, and data-integrity gaps in custom card creation, inline annotation edits (Explore), Workbench `AnnotationEditor`, batch updates, and related Supabase paths.
 
+**Related (future Batch UX):** **`docs/plans/batch-redesign-visual-selection.md`** — visual selection + wizard + explicit review; apply path should remain **per-card `apply_annotation_with_history`** for audit parity with this plan.
+
 **Branch / rollout:** **`v2/supabase-migration`**. **Apply:** migration **`017_apply_annotation_with_history.sql`** for transactional saves; optimistic locking still uses existing `annotations.version`.
 
 ---
@@ -105,6 +107,6 @@
 - `src/components/CardDetail.jsx` — delete toast, refetch + close on missing card, visibility refetch (Supabase)
 - `src/pages/ExplorePage.jsx` — DuckDB “no PAT” local vs Supabase copy
 - `src/components/CustomCardForm.jsx` — image confirm, help text, `SAVE_CANCELLED`
-- `src/pages/BatchEditPage.jsx` — typed count confirmation; batch error list (names when in preview)
+- `src/pages/BatchEditPage.jsx` / **`BatchWizard.jsx`** — typed count confirmation; batch error names; saved-list wizard (**`batch-redesign-visual-selection.md`**)
 - `src/pages/DashboardPage.jsx` / `EditHistoryPage.jsx` — copy: edits vs submitted cards vs add session log
 - `src/lib/humanizeError.js` — conflict + 401 copy

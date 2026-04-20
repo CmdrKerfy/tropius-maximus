@@ -87,10 +87,10 @@ export async function fetchAnnotations(cardId) {
     : duck.fetchAnnotations(cardId);
 }
 
-export async function patchAnnotations(cardId, annotations) {
+export async function patchAnnotations(cardId, annotations, options) {
   return useSupabaseBackend()
-    ? (await sb()).patchAnnotations(cardId, annotations)
-    : duck.patchAnnotations(cardId, annotations);
+    ? (await sb()).patchAnnotations(cardId, annotations, options)
+    : duck.patchAnnotations(cardId, annotations, options);
 }
 
 export async function fetchMatchingCardIds(params) {
@@ -99,16 +99,63 @@ export async function fetchMatchingCardIds(params) {
     : duck.fetchMatchingCardIds(params);
 }
 
+/** First N matching card IDs (same filters as Explore); Supabase only. */
+export async function fetchFirstNMatchingCardIds(params, limit) {
+  return useSupabaseBackend()
+    ? (await sb()).fetchFirstNMatchingCardIds(params, limit)
+    : duck.fetchFirstNMatchingCardIds(params, limit);
+}
+
+export { BATCH_EDIT_MAX_CARDS } from "./lib/batchLimits.js";
+
 export async function batchPatchAnnotations(cardIds, patch, options) {
   return useSupabaseBackend()
     ? (await sb()).batchPatchAnnotations(cardIds, patch, options)
     : duck.batchPatchAnnotations(cardIds, patch, options);
 }
 
+export async function fetchBatchWizardPreview(cardIds, fieldKey) {
+  return useSupabaseBackend()
+    ? (await sb()).fetchBatchWizardPreview(cardIds, fieldKey)
+    : duck.fetchBatchWizardPreview(cardIds, fieldKey);
+}
+
+export async function fetchCardNamesByIds(cardIds) {
+  return useSupabaseBackend()
+    ? (await sb()).fetchCardNamesByIds(cardIds)
+    : duck.fetchCardNamesByIds(cardIds);
+}
+
+export async function appendCuratedOptionsForCustomField(fieldName, newStrings) {
+  return useSupabaseBackend()
+    ? (await sb()).appendCuratedOptionsForCustomField(fieldName, newStrings)
+    : duck.appendCuratedOptionsForCustomField(fieldName, newStrings);
+}
+
 export async function fetchEditHistory(params) {
   return useSupabaseBackend()
     ? (await sb()).fetchEditHistory(params)
     : duck.fetchEditHistory(params);
+}
+
+/** Server-backed Batch list (Supabase); null when unsigned-in or anonymous. */
+export async function fetchBatchSelection() {
+  return useSupabaseBackend() ? (await sb()).fetchBatchSelection() : duck.fetchBatchSelection();
+}
+
+/** Persist Batch list to Supabase (no-op in v1 / anonymous). */
+export async function upsertBatchSelection(cardIds) {
+  return useSupabaseBackend()
+    ? (await sb()).upsertBatchSelection(cardIds)
+    : duck.upsertBatchSelection(cardIds);
+}
+
+export async function createBatchRun(meta) {
+  return useSupabaseBackend() ? (await sb()).createBatchRun(meta) : duck.createBatchRun(meta);
+}
+
+export async function fetchBatchRuns(opts) {
+  return useSupabaseBackend() ? (await sb()).fetchBatchRuns(opts) : duck.fetchBatchRuns(opts);
 }
 
 export async function fetchProfile() {
@@ -243,6 +290,12 @@ export async function appendCardToDefaultQueue(cardId) {
   return useSupabaseBackend()
     ? (await sb()).appendCardToDefaultQueue(cardId)
     : duck.appendCardToDefaultQueue(cardId);
+}
+
+export async function appendCardsToDefaultQueue(cardIds) {
+  return useSupabaseBackend()
+    ? (await sb()).appendCardsToDefaultQueue(cardIds)
+    : duck.appendCardsToDefaultQueue(cardIds);
 }
 
 const LS_CARD_DETAIL_PINS = "tm_card_detail_pins";

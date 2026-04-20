@@ -13,6 +13,7 @@ import {
   deleteCardsById,
   syncMutableTablesToIndexedDB,
   appendCardToDefaultQueue,
+  appendCardsToDefaultQueue,
   useSupabaseBackend,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
@@ -38,7 +39,9 @@ import {
   readUrlState,
   buildUrlParams,
 } from "../lib/exploreUrlState.js";
-import { toastSuccess, toastError } from "../lib/toast.js";
+import { toastSuccess, toastError, toastWarning } from "../lib/toast.js";
+import { BATCH_EDIT_MAX_CARDS } from "../lib/batchLimits.js";
+import { useBatchSelection } from "../hooks/useBatchSelection.js";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShellNavStyles.js";
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
@@ -63,6 +66,9 @@ function sortCards(arr, sort_by, sort_dir) {
     } else if (sort_by === "hp") {
       av = Number(a.hp) || 0;
       bv = Number(b.hp) || 0;
+    } else if (sort_by === "recent") {
+      av = new Date(a.created_at || 0).getTime();
+      bv = new Date(b.created_at || 0).getTime();
     } else {
       av = String(a[sort_by] || "").toLowerCase();
       bv = String(b[sort_by] || "").toLowerCase();
@@ -75,6 +81,9 @@ function sortCards(arr, sort_by, sort_dir) {
 
 const FILTER_STORAGE_KEY = "tm_filters";
 const SEARCH_STORAGE_KEY = "tm_search";
+
+/** Stable empty set for CardGrid when batch/SQL selection is off. */
+const EMPTY_SELECTED_CARD_IDS = new Set();
 
 /** Catches render errors in card detail modal so the app doesn't go blank. */
 class CardDetailErrorBoundary extends Component {
@@ -147,6 +156,13 @@ export default function ExplorePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const experimentalNav = useExperimentalAppNav();
+  const batchSelection = useBatchSelection(USE_SUPABASE_APP);
+  /** Collapse batch chrome when the list is empty — saves space; opens automatically when count > 0. */
+  const [batchExploreExpanded, setBatchExploreExpanded] = useState(false);
+
+  useEffect(() => {
+    if (batchSelection.count > 0) setBatchExploreExpanded(true);
+  }, [batchSelection.count]);
 
   // ── Card list state ─────────────────────────────────────────────────
   const [page, setPage] = useState(() => readUrlState().page);
@@ -159,6 +175,7 @@ export default function ExplorePage() {
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [workbenchListAppendBusy, setWorkbenchListAppendBusy] = useState(false);
 
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -186,6 +203,16 @@ export default function ExplorePage() {
   const [showCustomCardForm, setShowCustomCardForm] = useState(false);
   /** Anonymous JWT: RLS 019 allows zero rows with no PostgREST error — explain in CardGrid. */
   const [supabaseSessionIsAnonymous, setSupabaseSessionIsAnonymous] = useState(false);
+
+  /** Grid batch checkboxes only when tools are expanded or the list is non-empty (SQL mode keeps its own selection). */
+  const batchModeActive = useMemo(
+    () =>
+      USE_SUPABASE_APP &&
+      !sqlCards &&
+      !showSqlConsole &&
+      (batchExploreExpanded || batchSelection.count > 0),
+    [sqlCards, showSqlConsole, batchExploreExpanded, batchSelection.count]
+  );
 
   // ── GitHub PAT state ─────────────────────────────────────────────────
   const patSectionRef = useRef(null);
@@ -455,6 +482,67 @@ export default function ExplorePage() {
 
   const handleClearSelection = () => setSelectedCardIds(new Set());
 
+  const handleToggleBatchCard = useCallback(
+    (cardId) => {
+      if (batchSelection.idSet.has(cardId)) batchSelection.remove(cardId);
+      else {
+        const ok = batchSelection.add(cardId);
+        if (!ok) {
+          toastWarning(
+            `Batch list holds at most ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards. Remove some or clear the list.`
+          );
+        }
+      }
+    },
+    [batchSelection]
+  );
+
+  const handleAddAllMatchingToBatch = useCallback(async () => {
+    try {
+      const { added, totalMatch, capped } = await batchSelection.selectAllMatchingExplore({
+        q: searchQuery,
+        ...filters,
+      });
+      if (totalMatch === 0) {
+        toastWarning("No cards match your current search and filters.");
+        return;
+      }
+      if (added === 0) {
+        toastWarning("No new cards to add — they may already be in your batch list.");
+        return;
+      }
+      if (capped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} new card(s). Your filters match ${totalMatch.toLocaleString()} cards total; only the first ${BATCH_EDIT_MAX_CARDS.toLocaleString()} can be added at once — narrow filters to include the rest.`
+        );
+      } else {
+        toastSuccess(`Added ${added.toLocaleString()} card(s) to your batch list.`);
+      }
+    } catch (e) {
+      toastError(e);
+    }
+  }, [batchSelection, filters, searchQuery]);
+
+  const handleBatchListToWorkbench = useCallback(async () => {
+    if (batchSelection.count === 0) return;
+    setWorkbenchListAppendBusy(true);
+    try {
+      const { added } = await appendCardsToDefaultQueue(batchSelection.ids);
+      queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
+      if (added === 0) {
+        toastWarning("Every card in your batch list was already in your Workbench queue.");
+      } else {
+        toastSuccess(
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to your Workbench queue.`
+        );
+      }
+    } catch (e) {
+      toastError(e);
+    } finally {
+      setWorkbenchListAppendBusy(false);
+    }
+  }, [batchSelection.count, batchSelection.ids, queryClient]);
+
   const handleDeleteSelected = async () => {
     setDeleteInProgress(true);
     try {
@@ -635,7 +723,11 @@ export default function ExplorePage() {
               <NavLink to="/fields" className={exploreNavLinkClass}>
                 Fields
               </NavLink>
-              <NavLink to={{ pathname: "/batch", search: location.search }} className={exploreNavLinkClass}>
+              <NavLink
+                to={{ pathname: "/batch", search: location.search }}
+                className={exploreNavLinkClass}
+                title="Batch edit uses your current Explore filters (same URL). Set filters first."
+              >
                 Batch
               </NavLink>
               <NavLink to="/history" className={exploreNavLinkClass}>
@@ -893,6 +985,97 @@ export default function ExplorePage() {
           onResetAll={resetExploreFilters}
         />
 
+        {USE_SUPABASE_APP && !sqlCards && !showSqlConsole && (
+          <div className="relative z-20 mb-7 mt-1">
+            {batchSelection.count === 0 && !batchExploreExpanded ? (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setBatchExploreExpanded(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-tm-leaf/35 bg-tm-cream px-2.5 py-1.5 text-xs font-semibold text-tm-canopy shadow-sm hover:border-tm-leaf/55 hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-tm-mist/80 transition-colors"
+                  aria-expanded={false}
+                >
+                  Batch tools
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-tm-leaf/20 bg-gradient-to-b from-white to-tm-cream/30 px-3 py-3 shadow-sm space-y-2.5 ring-1 ring-black/[0.04]">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-gray-800 min-w-0">
+                    <span className="font-semibold tabular-nums text-tm-canopy">{batchSelection.count}</span>
+                    <span>
+                      card{batchSelection.count !== 1 ? "s" : ""} in <span className="font-medium">batch list</span>
+                    </span>
+                    <span className="text-xs text-gray-500">(this browser)</span>
+                  </div>
+                  {batchSelection.count === 0 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 -mr-1 -mt-0.5 text-gray-500"
+                      onClick={() => setBatchExploreExpanded(false)}
+                      aria-expanded
+                    >
+                      Hide
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-[11px] text-gray-600 leading-relaxed">
+                  <span className="text-tm-canopy font-medium">Selection:</span> checkboxes on cards while this panel is open
+                  or your list is non-empty.{" "}
+                  <span className="text-tm-info font-medium">Workbench:</span> separate queue —{" "}
+                  <span className="font-medium text-gray-700">Add list to Workbench</span> appends these IDs (deduped).{" "}
+                  <span className="text-tm-leaf font-medium">Batch edit:</span> field updates on{" "}
+                  <span className="font-medium text-gray-700">Open Batch</span>.{" "}
+                  <strong className="font-medium text-gray-700">Add all matching</strong> uses current search + filters (cap{" "}
+                  {BATCH_EDIT_MAX_CARDS.toLocaleString()}).
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddAllMatchingToBatch}
+                    disabled={listAwaitingFirstData}
+                    className="border-tm-leaf/25"
+                  >
+                    Add all matching cards
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleBatchListToWorkbench}
+                    disabled={batchSelection.count === 0 || workbenchListAppendBusy}
+                    title="Append this list to your Workbench queue (deduped; does not replace the queue)"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                  >
+                    {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
+                  </button>
+                  <NavLink
+                    to="/batch"
+                    className="inline-flex items-center justify-center rounded-lg bg-tm-leaf px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-tm-leaf-muted"
+                  >
+                    Open Batch
+                  </NavLink>
+                  <span
+                    className="hidden sm:inline-block w-px h-6 bg-gray-200 mx-0.5 self-center shrink-0"
+                    aria-hidden
+                  />
+                  <button
+                    type="button"
+                    onClick={() => batchSelection.clear()}
+                    disabled={batchSelection.count === 0}
+                    title="Remove every card from your saved batch list (does not delete cards)"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold border border-tm-danger/45 bg-tm-danger-soft text-tm-danger shadow-sm hover:bg-red-200/90 hover:border-tm-danger/55 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-tm-danger-soft"
+                  >
+                    Clear batch list
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Results count (legacy header layout only — shell uses sticky strip above) */}
         {!experimentalNav && !sqlCards && (
           <div className="mt-4 mb-2 text-sm text-gray-500">
@@ -1111,8 +1294,20 @@ export default function ExplorePage() {
             cards={displayedCards}
             loading={sqlCards ? false : listAwaitingFirstData}
             onCardClick={(id) => setSelectedCardId(id)}
-            selectedCardIds={selectedCardIds}
-            onToggleSelection={showSqlConsole ? handleToggleCardSelection : null}
+            selectedCardIds={
+              showSqlConsole
+                ? selectedCardIds
+                : batchModeActive
+                  ? batchSelection.idSet
+                  : EMPTY_SELECTED_CARD_IDS
+            }
+            onToggleSelection={
+              showSqlConsole
+                ? handleToggleCardSelection
+                : batchModeActive
+                  ? handleToggleBatchCard
+                  : null
+            }
             onResetExplore={resetExploreFilters}
             showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
             anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}
@@ -1168,6 +1363,29 @@ export default function ExplorePage() {
               workflowBuildingRef={workflowBuildingRef}
               onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
               onSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
+              inBatchList={USE_SUPABASE_APP ? batchSelection.isInBatch(selectedCardId) : false}
+              onAddToBatchList={
+                USE_SUPABASE_APP
+                  ? () => {
+                      const ok = batchSelection.add(selectedCardId);
+                      if (!ok) {
+                        toastWarning(
+                          `Batch list holds at most ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards. Remove some or clear the list.`
+                        );
+                      } else {
+                        toastSuccess("Added to batch list.");
+                      }
+                    }
+                  : undefined
+              }
+              onRemoveFromBatchList={
+                USE_SUPABASE_APP
+                  ? () => {
+                      batchSelection.remove(selectedCardId);
+                      toastSuccess("Removed from batch list.");
+                    }
+                  : undefined
+              }
             />
             </CardDetailErrorBoundary>
           );

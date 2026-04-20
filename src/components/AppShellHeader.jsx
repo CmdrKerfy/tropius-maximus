@@ -61,11 +61,15 @@ function MobileNavMenu() {
               Fields
             </NavLink>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <NavLink to={{ pathname: "/batch", search: search || "" }} className={shellDropdownNavLinkClass}>
-              Batch
-            </NavLink>
-          </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <NavLink
+                  to={{ pathname: "/batch", search: search || "" }}
+                  className={shellDropdownNavLinkClass}
+                  title="Uses current Explore filters from the URL. Narrow filters on Explore first."
+                >
+                  Batch
+                </NavLink>
+              </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <NavLink to="/health" className={shellDropdownNavLinkClass}>
               Data Health
@@ -141,7 +145,11 @@ export default function AppShellHeader() {
                 </NavLink>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <NavLink to={{ pathname: "/batch", search }} className={shellDropdownNavLinkClass}>
+                <NavLink
+                  to={{ pathname: "/batch", search }}
+                  className={shellDropdownNavLinkClass}
+                  title="Uses current Explore filters from the URL. Narrow filters on Explore first."
+                >
                   Batch
                 </NavLink>
               </DropdownMenuItem>

@@ -49,6 +49,11 @@
 2. **Schedule:** e.g. weekly ingest on a branch or `main` per release cadence.
 3. **Document** in README or ops doc: env vars (`POKEMON_TCG_API_KEY`), `SUPABASE_*` if pushing to Supabase (`--push-supabase`).
 
+### v2 ingest jobs (Supabase + Pages)
+
+- **`.github/workflows/deploy-pages.yml`** (Pages data path): `python scripts/ingest.py --clear-failed --fail-on-partial` before Parquet export — clears bogus **`failed_sets`** rows after API blips and **fails the workflow** if ingest skipped any API-backed sets/species/Pocket fetches (GitHub can notify on red runs).
+- **`.github/workflows/ingest-supabase.yml`**: same ingest flags, then **`push_duckdb_to_supabase.py`**. Optional repo secret **`POKEMON_TCG_API_KEY`** for higher pokemontcg.io rate limits.
+
 ## Phase 5 — v2 / Supabase (defer / batch)
 
 - Not required for the **same** Explore bug class if **`sets`** is the source of truth and data is migrated.

@@ -163,6 +163,7 @@ const SORT_LABELS = {
   set_name: "Set",
   price: "Price",
   region: "Featured region",
+  recent: "Recently added",
 };
 
 export default function FilterPanel({
@@ -343,7 +344,14 @@ export default function FilterPanel({
   const filtersActive = exploreFiltersAreActive(filters);
   const q = String(searchQuery || "").trim();
   const sortLabel = SORT_LABELS[filters.sort_by] || filters.sort_by || "Name";
-  const orderLabel = filters.sort_dir === "desc" ? "high → low" : "low → high";
+  const orderLabel =
+    filters.sort_by === "recent"
+      ? filters.sort_dir === "desc"
+        ? "newest first"
+        : "oldest first"
+      : filters.sort_dir === "desc"
+        ? "high → low"
+        : "low → high";
   const sourceLabel = filters.source ? filters.source : "All catalogs";
 
   const handleClearOrReset = () => {
@@ -721,6 +729,7 @@ export default function FilterPanel({
                     <option value="hp">HP</option>
                     <option value="rarity">Rarity</option>
                     <option value="set_name">Set</option>
+                    <option value="recent">Recently added</option>
                     {isTCG && <option value="price">Price</option>}
                     {isTCG && <option value="region">Featured Region</option>}
                   </select>
@@ -738,6 +747,12 @@ export default function FilterPanel({
                   </select>
                 </div>
               </div>
+              {filters.sort_by === "recent" ? (
+                <p className="text-[11px] text-gray-500 mt-2 max-w-md">
+                  Uses each card&apos;s database <strong>created_at</strong> (when the row was first inserted). Bulk-migrated
+                  cards may share a similar timestamp; choose <strong>Order: Z → A / High → Low</strong> for newest-first.
+                </p>
+              ) : null}
 
               <div className="mt-4 flex items-center justify-between gap-3">
                 <button
@@ -807,6 +822,7 @@ export default function FilterPanel({
             <option value="hp">HP</option>
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
+            <option value="recent">Recently added</option>
             {isTCG && <option value="price">Price</option>}
             {isTCG && <option value="region">Featured Region</option>}
           </select>
@@ -823,6 +839,13 @@ export default function FilterPanel({
             <option value="desc">Z → A / High → Low</option>
           </select>
         </div>
+
+        {filters.sort_by === "recent" ? (
+          <p className="text-[11px] text-gray-500 w-full basis-full">
+            Sorts by <strong>created_at</strong> in Supabase. Newest-first: pick order <strong>Z → A</strong>. Migrated rows may
+            cluster in time.
+          </p>
+        ) : null}
 
         <div className="flex flex-col">
           <span className="block text-xs mb-1 invisible select-none" aria-hidden="true">

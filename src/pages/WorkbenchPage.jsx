@@ -26,6 +26,7 @@ import {
 import AnnotationEditor from "../components/AnnotationEditor";
 import CardAttributionLine from "../components/CardAttributionLine.jsx";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
+import WorkflowModeHelp from "../components/WorkflowModeHelp.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { toastError } from "../lib/toast.js";
@@ -243,6 +244,38 @@ export default function WorkbenchPage() {
           </div>
         )}
 
+        <div className="mb-4">
+          <WorkflowModeHelp summary="About Workbench — when to use it">
+            <p>
+              Workbench is a <strong>personal queue</strong> of cards you work through in order: large artwork, full
+              annotation form, and <strong>Previous / Next</strong> without returning to the grid each time.
+            </p>
+            <ul className="list-disc space-y-1.5 pl-5">
+              <li>
+                <strong>Adding cards:</strong> on Explore, open a card, then choose <strong>Send to Workbench</strong>.
+                That appends the card to your default queue (you can remove it from the queue here later).
+              </li>
+              <li>
+                <strong>Use Workbench</strong> when you already know <em>which</em> cards need work (backlog, QA
+                list, or cards you sent from Explore) and want a focused editing pass.
+              </li>
+              <li>
+                <strong>Use Explore / card detail</strong> for quick fixes while browsing, or when you are still{" "}
+                <strong>discovering</strong> cards. Same data—Workbench is for queue-driven sessions.
+              </li>
+              <li>
+                <strong>Batch</strong> is different: it applies <strong>one field</strong> to <strong>all cards matching
+                your Explore filters</strong>, not a hand-built queue.
+              </li>
+            </ul>
+            {!USE_SB && (
+              <p className="text-gray-600 text-xs border-t border-gray-100 pt-2 mt-2">
+                Turn on Supabase in this deployment to load and save your queue.
+              </p>
+            )}
+          </WorkflowModeHelp>
+        </div>
+
         {USE_SB && isPending && <p className="text-sm text-gray-500">Loading queue…</p>}
 
         {USE_SB && isError && (
@@ -302,9 +335,19 @@ export default function WorkbenchPage() {
         )}
 
         {USE_SB && queue && cardIds.length === 0 && (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500 text-sm">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500 text-sm space-y-2">
             <Inbox className="h-10 w-10 mx-auto mb-3 text-gray-300" strokeWidth={1.5} aria-hidden />
-            Queue is empty. From Explore, open a card and choose <strong>Send to Workbench</strong>.
+            <p>
+              Queue is empty. Go to <NavLink to="/" className="text-green-700 font-semibold underline">Explore</NavLink>
+              , open a card, then choose <strong>Send to Workbench</strong>.
+            </p>
+            <p className="text-xs text-gray-400 max-w-md mx-auto">
+              Workbench is not for picking cards from filters—it is a list you build. For bulk changes by filter, use{" "}
+              <NavLink to="/batch" className="text-green-700 font-medium underline">
+                Batch
+              </NavLink>{" "}
+              (set filters on Explore first, then open Batch from the nav).
+            </p>
           </div>
         )}
 

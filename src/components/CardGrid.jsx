@@ -6,6 +6,7 @@
  * Shows a loading skeleton while cards are being fetched.
  *
  * When SQL console is open, cards can be selected for bulk operations via checkboxes.
+ * On Explore (Supabase), batch checkboxes appear only when batch tools are expanded or the batch list is non-empty.
  */
 
 import { useState } from "react";

@@ -1,7 +1,10 @@
 # Manual smoke checklist — Vercel + Supabase (v2)
 
-Use after **preview** or **production** deploys, or before calling cutover “good enough.”  
-**Automated E2E** (Playwright, etc.) is not in-repo yet; this is the stand-in.
+**When to run:** Treat this checklist as the **final verification** immediately **before** you merge or cut over (after migrations are applied on the target Supabase project and Vercel env matches). Earlier deploy testing is fine, but don’t skip this pass at the end.
+
+**Before this checklist:** complete infra steps in **`docs/plans/p1-cutover-and-operations.md`** (§1 Vercel env + “Pre-merge: Supabase migrations + production policy”).
+
+Use after **preview** or **production** deploys when you’re validating a release. **Local automation:** see **`docs/site-checks.md`** — run **`npm run check:quick`** often; run **`npm run check`** (adds Playwright) when you have time. Neither replaces this Vercel + real Supabase list.
 
 **URLs:** Record your Vercel preview/production base URL(s) here when testing.
 
@@ -39,6 +42,21 @@ After deploys that touch **`main.jsx`**, **`appAdapter.js`**, or migrations **02
 - [ ] **`/workbench`** loads queue and card pane.
 - [ ] **Save annotation** succeeds; no silent failure (toast or inline feedback).
 - [ ] **Navigate queue** (if multiple cards) works.
+- [ ] **About Workbench** (`WorkflowModeHelp`) expands; copy mentions Send to Workbench vs Explore vs Batch.
+
+---
+
+## Batch (saved list + wizard — see **`docs/plans/batch-redesign-visual-selection.md`**)
+
+- [ ] **Explore:** expand **Batch tools** (or have cards in list); grid shows batch checkboxes; **Clear batch list** styling is visible.
+- [ ] **Explore:** **Add all matching** / **Add list to Workbench** / **Open Batch** behave as expected (cap warning if > max cards).
+- [ ] **`/batch`** with a non-empty list: **BatchWizard** — field(s) → review → confirm → apply; optional **trial run** (first 3/5/10 cards); **View these edits in history** opens **`/history`** with `since`, `mine=1`, and **`run=`** (batch id) when **`025`** is applied (or `field=` for single-field runs). **History** flat list filters sync to the URL (`card`, `field`, `since`, `run`, `mine`).
+- [ ] After **`024_batch_selections`**: sign in on two browsers — batch list changes sync (debounced); anonymous / unsigned stays local-only.
+- [ ] After **`025_batch_runs_edit_history`**: **History → Batch runs** tab lists runs; **View rows** expands; **`edit_history`** rows show **Batch run** links in flat list; multi-field batch creates one run with comma-separated field names.
+- [ ] Partial failure: error list shows **grouped** reasons + per-card **hint** line; **Retry failed only** / **Copy failed IDs** work.
+- [ ] Post-run: **Clear batch list** vs **Keep list — new field**; optional **curated options** per custom select step (if applicable).
+
+**Backlog status:** **`docs/plans/batch-future-enhancements.md`** (items 3–7 addressed in app + migrations **`024`** / **`025`**).
 
 ---
 

@@ -50,6 +50,8 @@ This plan orders work by **impact vs effort** and keeps **RLS/security** aligned
 
 **Success:** One **`rpc`** call for form options (after cache miss) instead of many paged reads; modal/custom form reuse Workbench cache when possible.
 
+**Note:** **Batch redesign** (**`docs/plans/batch-redesign-visual-selection.md`**) scopes **`/batch`** by saved card ids (`fetchBatchWizardPreview`, `batchPatchAnnotations`); **`fetchMatchingCardIds`** remains in **`appAdapter`** for tooling. **`FORM_OPTIONS_QUERY_KEY`** invalidation after batch runs should remain.
+
 ---
 
 ## Phase 2 — Grid query cost: counts, search, indexes — **implemented**
@@ -58,7 +60,7 @@ This plan orders work by **impact vs effort** and keeps **RLS/security** aligned
 
 **What shipped:**
 
-1. **`fetchCards`** (`appAdapter.js`): optional **`exact_count`** (default **`false`**). Explore uses PostgREST **`count: "planned"`** (planner estimate — faster than exact). **`exact_count: true`** uses **`count: "exact"`** for **batch match count** (`BatchEditPage`) and **`fetchMatchingCardIds`** so typed confirmations and ID walks stay accurate.
+1. **`fetchCards`** (`appAdapter.js`): optional **`exact_count`** (default **`false`**). Explore uses PostgREST **`count: "planned"`** (planner estimate — faster than exact). **`exact_count: true`** uses **`count: "exact"`** where an exact total is required (e.g. **`fetchMatchingCardIds`** for scripts) and for Explore when the UI clamps **`?page=`** against the total.
 2. **Migration `022_grid_search_indexes.sql`:** **`pg_trgm`**, **GIN** index **`idx_cards_name_trgm`** on **`cards.name`**, composite **`idx_cards_origin_set_id`** on **`(origin, set_id)`**.
 3. **UI:** Explore still shows **“X cards found”** from the planned count (usually close to exact; can differ slightly under heavy stats skew). Pagination uses the same total.
 
