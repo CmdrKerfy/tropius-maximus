@@ -8,6 +8,8 @@ Pokemon TCG database and collection tracker. 15,000+ cards from multiple APIs, w
 
 The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v2 (Supabase + Vercel). **Both versions coexist in the repo on different branches.**
 
+**Owner decision (ongoing):** Keep **GitHub Pages (v1)** and **Vercel (v2)** **separate** for now—no merge to `main` required for two live URLs. **Freeze the old site for submissions** so users do not add custom cards or annotations on v1 by mistake; canonical editing is **Vercel v2** only. Enforcement can be operational (stop sharing the old URL, replace Pages with a static “moved” page) and/or a small **v1** deploy on `main` (banner + disable write paths) if the Pages URL must stay reachable for read-only reference.
+
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.

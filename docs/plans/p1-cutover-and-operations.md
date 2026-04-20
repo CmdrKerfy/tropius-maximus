@@ -4,6 +4,8 @@
 
 **Blocked until you decide:** merging `v2/supabase-migration` → `main` — **only with your explicit instruction** (documented in `CLAUDE.md` + `.cursor/rules/merge-main-owner-only.mdc`). QA and Vercel branch changes do **not** require merging.
 
+**Current stance (owner):** **Pages (v1) and Vercel (v2) stay separate** until a later cutover. **V1 is frozen for user submissions** (no new custom cards / no relying on v1 as an editing surface); send everyone to the **Vercel** app for work. Document how you enforce that (URL policy, static replacement page on Pages, or a minimal `main` deploy that blocks writes + shows a banner).
+
 ---
 
 ## 1. Vercel (no merge required — can do anytime)
