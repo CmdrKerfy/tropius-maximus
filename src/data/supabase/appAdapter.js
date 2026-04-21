@@ -817,7 +817,8 @@ export async function fetchCards(params = {}) {
   if (sort_by === "number") {
     query = query.order("id", { ascending: true, nullsFirst: false });
   } else if (sort_by === "recent") {
-    query = query.order("id", { ascending: true, nullsFirst: false });
+    // Keep "recent desc" stable when many rows share near-identical created_at.
+    query = query.order("id", { ascending, nullsFirst: false });
   }
   query = query.range(offset, offset + pageSizeInt - 1);
 

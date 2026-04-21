@@ -494,6 +494,7 @@ async function _doInit() {
       alt_name        VARCHAR,
       source          VARCHAR DEFAULT 'TCG',
       is_custom       BOOLEAN DEFAULT FALSE,
+      custom_added_seq BIGINT,
       ${PROMOTED_COLS_DDL}
     )
   `);
@@ -503,11 +504,11 @@ async function _doInit() {
     INSERT INTO tcg_cards (
       id, name, supertype, subtypes, hp, types, evolves_from, rarity, artist,
       set_id, set_name, set_series, number, regulation_mark, image_small, image_large,
-      raw_data, prices, source, is_custom
+      raw_data, prices, source, is_custom, custom_added_seq
     )
     SELECT id, name, supertype, subtypes, hp, types, evolves_from, rarity, artist,
            set_id, set_name, set_series, number, regulation_mark, image_small, image_large,
-           raw_data, prices, 'TCG', FALSE
+           raw_data, prices, 'TCG', FALSE, NULL
     FROM 'cards.parquet'
   `);
 
@@ -564,6 +565,7 @@ async function _doInit() {
         raw_data        JSON,
         is_custom       BOOLEAN DEFAULT FALSE,
         source          VARCHAR DEFAULT 'Pocket',
+        custom_added_seq BIGINT,
         ${PROMOTED_COLS_DDL}
       )
     `);
@@ -571,11 +573,11 @@ async function _doInit() {
       INSERT INTO pocket_cards (
         id, name, set_id, number, rarity, card_type, element, hp, stage,
         retreat_cost, weakness, evolves_from, packs, image_url, image_filename,
-        illustrator, raw_data, is_custom, source
+        illustrator, raw_data, is_custom, source, custom_added_seq
       )
       SELECT id, name, set_id, number, rarity, card_type, element, hp, stage,
              retreat_cost, weakness, evolves_from, packs, image_url, image_filename,
-             illustrator, raw_data, FALSE, 'Pocket'
+             illustrator, raw_data, FALSE, 'Pocket', NULL
       FROM 'pocket_cards.parquet'
     `);
   } else {
@@ -600,6 +602,7 @@ async function _doInit() {
         raw_data        JSON,
         is_custom       BOOLEAN DEFAULT FALSE,
         source          VARCHAR DEFAULT 'Pocket',
+        custom_added_seq BIGINT,
         ${PROMOTED_COLS_DDL}
       )
     `);
@@ -707,8 +710,10 @@ async function _doInit() {
       const pocketRows = [];
       const tcgRows = [];
 
-      for (const card of uniqueCustomCards) {
+      for (let idx = 0; idx < uniqueCustomCards.length; idx += 1) {
+        const card = uniqueCustomCards[idx];
         if (!card.id) continue;
+        const customAddedSeq = idx + 1;
         const isPocket = card._table === 'pocket';
         const columnFields = isPocket ? pocketColumnFields : tcgColumnFields;
 
@@ -772,7 +777,7 @@ async function _doInit() {
             ${escapeStr(strVal('evolves_from'))},
             ${escapeStr(Array.isArray(card.packs) ? JSON.stringify(card.packs) : (card.packs || '[]'))},
             ${escapeStr(strVal('image_url'))}, ${escapeStr(strVal('illustrator'))},
-            'Pocket', TRUE,
+            'Pocket', TRUE, ${customAddedSeq},
             ${promotedVals}
           )`);
         } else {
@@ -788,7 +793,7 @@ async function _doInit() {
             ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
             ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
             ${escapeStr(card.image_small || card.image_url || '')}, ${escapeStr(card.image_large || card.image_url || '')},
-            ${escapeStr(card.source || 'TCG')}, TRUE,
+            ${escapeStr(card.source || 'TCG')}, TRUE, ${customAddedSeq},
             ${promotedVals}
           )`);
         }
@@ -801,7 +806,7 @@ async function _doInit() {
           INSERT INTO pocket_cards (
             id, name, set_id, rarity, card_type, element, hp, stage,
             retreat_cost, weakness, evolves_from,
-            packs, image_url, illustrator, source, is_custom,
+            packs, image_url, illustrator, source, is_custom, custom_added_seq,
             ${PROMOTED_COL_NAMES}
           ) VALUES ${batch.join(',')}
         `);
@@ -813,7 +818,7 @@ async function _doInit() {
             id, name, supertype, subtypes, hp, types, evolves_from,
             rarity, special_rarity, alt_name, artist,
             set_id, set_name, set_series, number,
-            regulation_mark, image_small, image_large, source, is_custom,
+            regulation_mark, image_small, image_large, source, is_custom, custom_added_seq,
             ${PROMOTED_COL_NAMES}
           ) VALUES ${batch.join(',')}
         `);
@@ -1037,7 +1042,7 @@ function arrowToRows(result) {
 const ALLOWED_SORT = new Set([
   "name", "hp", "set_name", "rarity", "number", "set_id", "supertype", "id", "price",
   "generation", "region", "pokedex",
-  /** v1 DuckDB: no created_at; sorts by card id string (rough proxy). */
+  /** DuckDB recent: use custom insertion sequence, then id fallback. */
   "recent",
 ]);
 
@@ -1134,13 +1139,13 @@ export async function fetchCards(params = {}) {
 
     const tcgSelect = `
       SELECT c.id, c.name, c.set_name, c.image_small, c.image_large, c.image_override, c.source AS _source,
-             c.number, c.hp, c.rarity, c.is_custom
+             c.number, c.hp, c.rarity, c.is_custom, c.custom_added_seq
       FROM tcg_cards c ${pmJoin} ${tcgWhere}`;
 
     const pocketSelect = `
       SELECT pc.id, pc.name, ps.name AS set_name,
              pc.image_url AS image_small, pc.image_url AS image_large, NULL AS image_override, 'Pocket' AS _source,
-             CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity, FALSE AS is_custom
+             CAST(pc.number AS VARCHAR) AS number, CAST(pc.hp AS VARCHAR) AS hp, pc.rarity, FALSE AS is_custom, pc.custom_added_seq
       FROM pocket_cards pc
       LEFT JOIN pocket_sets ps ON ps.id = pc.set_id
       ${pocketWhere}`;
@@ -1151,7 +1156,7 @@ export async function fetchCards(params = {}) {
 
     // Dedupe by id preferring custom card when same id exists as both API and custom (e.g. Pikachu xyp-JP279).
     const dedupedSQL = `
-      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom
+      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom, custom_added_seq
       FROM (
         SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY is_custom DESC) AS rn
         FROM (${unionSQL}) combined
@@ -1169,12 +1174,16 @@ export async function fetchCards(params = {}) {
       allSortBy === "number"
         ? "TRY_CAST(list_element(string_split(CAST(COALESCE(number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
         : allSortBy === "recent"
-          ? "id"
+          ? "COALESCE(custom_added_seq, 0), id"
           : allSortBy;
+    const allOrderClause =
+      allSortBy === "recent"
+        ? `COALESCE(custom_added_seq, 0) ${safeSortDir}, id ${safeSortDir}`
+        : `${allOrderBy} ${safeSortDir}`;
     const dataResult = await conn.query(`
-      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom
+      SELECT id, name, set_name, image_small, image_large, image_override, _source, number, hp, rarity, is_custom, custom_added_seq
       FROM (${dedupedSQL}) counted
-      ORDER BY ${allOrderBy} ${safeSortDir}
+      ORDER BY ${allOrderClause}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);
 
@@ -1208,15 +1217,20 @@ export async function fetchCards(params = {}) {
 
     const safeSortBy = POCKET_ALLOWED_SORT.has(sort_by) ? sort_by : "name";
     let sortExpr;
+    let orderClause;
     if (safeSortBy === "number") {
       sortExpr = "pc.number";
     } else if (safeSortBy === "set_name") {
       sortExpr = "ps.name";
     } else if (safeSortBy === "recent") {
-      sortExpr = "pc.id";
+      sortExpr = "COALESCE(pc.custom_added_seq, 0), pc.id";
     } else {
       sortExpr = `pc.${safeSortBy}`;
     }
+    orderClause =
+      safeSortBy === "recent"
+        ? `COALESCE(pc.custom_added_seq, 0) ${safeSortDir}, pc.id ${safeSortDir}`
+        : `${sortExpr} ${safeSortDir}`;
 
     const joinClause = "LEFT JOIN pocket_sets ps ON ps.id = pc.set_id";
 
@@ -1241,7 +1255,7 @@ export async function fetchCards(params = {}) {
       FROM pocket_cards pc
       ${joinClause}
       ${where}
-      ORDER BY ${sortExpr} ${safeSortDir}
+      ORDER BY ${orderClause}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);
 
@@ -1297,8 +1311,12 @@ export async function fetchCards(params = {}) {
       safeSortBy === "number"
         ? "TRY_CAST(list_element(string_split(CAST(COALESCE(c.number, '') AS VARCHAR), '/'), 1) AS INTEGER)"
         : safeSortBy === "recent"
-          ? "c.id"
+          ? "COALESCE(c.custom_added_seq, 0), c.id"
           : `c.${safeSortBy}`;
+    const orderClause =
+      safeSortBy === "recent"
+        ? `COALESCE(c.custom_added_seq, 0) ${safeSortDir}, c.id ${safeSortDir}`
+        : `${sortExpr} ${safeSortDir}`;
 
     const dataResult = await conn.query(`
       SELECT c.id, c.name, c.supertype, c.subtypes, c.hp, c.types, c.rarity,
@@ -1306,7 +1324,7 @@ export async function fetchCards(params = {}) {
              c.source, c.is_custom
       FROM tcg_cards c
       ${where}
-      ORDER BY ${sortExpr} ${safeSortDir}
+      ORDER BY ${orderClause}
       LIMIT ${pageSizeInt} OFFSET ${offset}
     `);
 
@@ -1359,6 +1377,7 @@ export async function fetchCards(params = {}) {
 
   const safeSortBy = ALLOWED_SORT.has(sort_by) ? sort_by : "name";
   let sortExpr;
+  let orderClause;
   if (safeSortBy === "number") {
     sortExpr = "TRY_CAST(list_element(string_split(CAST(COALESCE(c.number, '') AS VARCHAR), '/'), 1) AS INTEGER)";
   } else if (safeSortBy === "pokedex") {
@@ -1377,10 +1396,14 @@ export async function fetchCards(params = {}) {
   } else if (safeSortBy === "region") {
     sortExpr = "c.pkmn_region";
   } else if (safeSortBy === "recent") {
-    sortExpr = "c.id";
+    sortExpr = "COALESCE(c.custom_added_seq, 0), c.id";
   } else {
     sortExpr = `c.${safeSortBy}`;
   }
+  orderClause =
+    safeSortBy === "recent"
+      ? `COALESCE(c.custom_added_seq, 0) ${safeSortDir}, c.id ${safeSortDir}`
+      : `${sortExpr} ${safeSortDir}`;
 
   const joinClause = `
     LEFT JOIN pokemon_metadata pm
@@ -1402,7 +1425,7 @@ export async function fetchCards(params = {}) {
     FROM tcg_cards c
     ${joinClause}
     ${where}
-    ORDER BY ${sortExpr} ${safeSortDir}
+    ORDER BY ${orderClause}
     LIMIT ${pageSizeInt} OFFSET ${offset}
   `);
 
@@ -2889,7 +2912,16 @@ function buildCardInsertValues(card, columnFields) {
   return { arrayVal, strVal, boolVal, evolutionLine, annotations };
 }
 
-async function _insertTcgCard(card) {
+async function nextCustomAddedSeq(tableName) {
+  const result = await conn.query(`
+    SELECT COALESCE(MAX(custom_added_seq), 0)::BIGINT AS max_seq
+    FROM ${tableName}
+    WHERE is_custom = TRUE
+  `);
+  return Number(result.toArray()?.[0]?.max_seq || 0) + 1;
+}
+
+async function _insertTcgCard(card, customAddedSeq = null) {
   const { arrayVal, strVal, boolVal, evolutionLine, annotations } =
     buildCardInsertValues(card, TCG_COLUMN_FIELDS);
   const subtypesStr = Array.isArray(card.subtypes) ? JSON.stringify(card.subtypes) : (card.subtypes || '[]');
@@ -2900,7 +2932,7 @@ async function _insertTcgCard(card) {
       id, name, supertype, subtypes, hp, types, evolves_from,
       rarity, special_rarity, alt_name, artist,
       set_id, set_name, set_series, number,
-      regulation_mark, image_small, image_large, source, is_custom,
+      regulation_mark, image_small, image_large, source, is_custom, custom_added_seq,
       art_style, main_character, background_pokemon, background_humans,
       additional_characters, evolution_line, background_details,
       emotion, pose, actions, camera_angle, perspective,
@@ -2923,7 +2955,7 @@ async function _insertTcgCard(card) {
       ${escapeStr(card.set_id || '')}, ${escapeStr(card.set_name || '')}, ${escapeStr(card.set_series || '')},
       ${escapeStr(card.number || '')}, ${escapeStr(card.regulation_mark || '')},
       ${escapeStr(card.image_small || card.image_url || '')}, ${escapeStr(card.image_large || card.image_url || '')},
-      ${escapeStr(card.source || 'TCG')}, TRUE,
+      ${escapeStr(card.source || 'TCG')}, TRUE, ${customAddedSeq == null ? "NULL" : Number(customAddedSeq)},
       ${escapeStr(arrayVal('art_style'))}, ${escapeStr(arrayVal('main_character'))},
       ${escapeStr(arrayVal('background_pokemon'))}, ${escapeStr(arrayVal('background_humans'))},
       ${escapeStr(arrayVal('additional_characters'))}, ${escapeStr(evolutionLine)},
@@ -2959,7 +2991,7 @@ async function _insertTcgCard(card) {
   `);
 }
 
-async function _insertPocketCard(card) {
+async function _insertPocketCard(card, customAddedSeq = null) {
   const { arrayVal, strVal, boolVal, evolutionLine, annotations } =
     buildCardInsertValues(card, POCKET_COLUMN_FIELDS);
   const packsStr = Array.isArray(card.packs) ? JSON.stringify(card.packs) : (card.packs || '[]');
@@ -2967,7 +2999,7 @@ async function _insertPocketCard(card) {
     INSERT INTO pocket_cards (
       id, name, set_id, number, rarity, card_type, element, hp, stage,
       retreat_cost, weakness, evolves_from,
-      packs, image_url, illustrator, source, is_custom,
+      packs, image_url, illustrator, source, is_custom, custom_added_seq,
       art_style, main_character, background_pokemon, background_humans,
       additional_characters, evolution_line, background_details,
       emotion, pose, actions, camera_angle, perspective,
@@ -2989,7 +3021,7 @@ async function _insertPocketCard(card) {
       ${escapeStr(card.stage || '')}, ${escapeStr(card.retreat_cost != null ? String(card.retreat_cost) : '')},
       ${escapeStr(card.weakness || '')}, ${escapeStr(card.evolves_from || '')},
       ${escapeStr(packsStr)}, ${escapeStr(card.image_url || '')}, ${escapeStr(card.illustrator || '')},
-      'Pocket', TRUE,
+      'Pocket', TRUE, ${customAddedSeq == null ? "NULL" : Number(customAddedSeq)},
       ${escapeStr(arrayVal('art_style'))}, ${escapeStr(arrayVal('main_character'))},
       ${escapeStr(arrayVal('background_pokemon'))}, ${escapeStr(arrayVal('background_humans'))},
       ${escapeStr(arrayVal('additional_characters'))}, ${escapeStr(evolutionLine)},
@@ -3036,7 +3068,8 @@ export async function addTcgCard(card) {
     `SELECT id FROM tcg_cards WHERE id = ${escapeStr(card.id)}`
   );
   if (existing.numRows > 0) throw new Error(`Card with ID '${card.id}' already exists`);
-  await _insertTcgCard(card);
+  const customAddedSeq = await nextCustomAddedSeq("tcg_cards");
+  await _insertTcgCard(card, customAddedSeq);
   if (card.source) customSourceNames.add(card.source);
   await idbPut(STORE_CUSTOM_CARDS, { ...card, _table: 'tcg' });
   return card;
@@ -3051,7 +3084,8 @@ export async function addPocketCard(card) {
     `SELECT id FROM pocket_cards WHERE id = ${escapeStr(card.id)}`
   );
   if (existing.numRows > 0) throw new Error(`Card with ID '${card.id}' already exists`);
-  await _insertPocketCard(card);
+  const customAddedSeq = await nextCustomAddedSeq("pocket_cards");
+  await _insertPocketCard(card, customAddedSeq);
   await idbPut(STORE_CUSTOM_CARDS, { ...card, _table: 'pocket' });
   return card;
 }
