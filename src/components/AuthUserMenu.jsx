@@ -22,6 +22,13 @@ function initialsFrom(value) {
   return parts.map((p) => p.charAt(0).toUpperCase()).join("") || "U";
 }
 
+function avatarSrc(url, bust) {
+  if (!url) return null;
+  const u = String(url);
+  const sep = u.includes("?") ? "&" : "?";
+  return bust ? `${u}${sep}v=${encodeURIComponent(bust)}` : u;
+}
+
 export default function AuthUserMenu() {
   const navigate = useNavigate();
   const supabaseBackend = useSupabaseBackend();
@@ -76,7 +83,10 @@ export default function AuthUserMenu() {
   }, [email, profile?.display_name]);
 
   const initials = useMemo(() => initialsFrom(displayName), [displayName]);
-  const avatarUrl = profile?.avatar_url || null;
+  const avatarUrl = useMemo(
+    () => avatarSrc(profile?.avatar_url, profile?.updated_at),
+    [profile?.avatar_url, profile?.updated_at]
+  );
 
   if (!trackSession) return null;
 

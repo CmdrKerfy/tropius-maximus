@@ -1681,6 +1681,36 @@ async function requireNonAnonymousUserForProfileWrite(sb) {
   return user;
 }
 
+function toAvatarStorageError(err, action = "upload") {
+  const raw = String(err?.message || err || "");
+  const low = raw.toLowerCase();
+  if (/bucket|not found|does not exist/.test(low)) {
+    return new Error(
+      "Avatar storage is not configured on this Supabase project yet. Apply migration 014_storage_avatars.sql, then try again."
+    );
+  }
+  if (/row-level security|rls|violates row-level security|permission denied|forbidden|status code 403/.test(low)) {
+    return new Error(
+      "Avatar permission is blocked by Supabase Storage policies. Re-sign in, and if it still fails, apply migration 014_storage_avatars.sql on this project."
+    );
+  }
+  if (action === "remove") {
+    return new Error("Could not remove profile photo. Try again, or ask the project owner to verify avatar storage policies.");
+  }
+  return new Error("Could not upload profile photo. Try again, or ask the project owner to verify avatar storage policies.");
+}
+
+function toProfileWriteError(err) {
+  const raw = String(err?.message || err || "");
+  const low = raw.toLowerCase();
+  if (/row-level security|rls|violates row-level security|permission denied|forbidden|status code 403/.test(low)) {
+    return new Error(
+      "Photo uploaded, but saving your profile record was blocked by profiles RLS. Re-apply migration 013_profiles.sql on this project, then try again."
+    );
+  }
+  return new Error("Photo uploaded, but profile update failed. Try again, or verify profiles migration/policies.");
+}
+
 /** Upload image to Storage and set `profiles.avatar_url` (public URL). */
 export async function uploadProfileAvatar(file) {
   const sb = await sbReady();
@@ -1696,11 +1726,15 @@ export async function uploadProfileAvatar(file) {
     contentType: mime,
     cacheControl: "3600",
   });
-  if (upErr) throw upErr;
+  if (upErr) throw toAvatarStorageError(upErr, "upload");
   const { data: pub } = sb.storage.from(AVATAR_BUCKET).getPublicUrl(path);
   const url = pub?.publicUrl;
   if (!url) throw new Error("Could not resolve public URL for avatar.");
-  return upsertProfile({ avatar_url: url });
+  try {
+    return await upsertProfile({ avatar_url: url });
+  } catch (err) {
+    throw toProfileWriteError(err);
+  }
 }
 
 /** Remove Storage object and clear `profiles.avatar_url`. */
@@ -1710,7 +1744,7 @@ export async function removeProfileAvatar() {
   const uid = user.id;
   const path = profileAvatarObjectPath(uid);
   const { error: rmErr } = await sb.storage.from(AVATAR_BUCKET).remove([path]);
-  if (rmErr) console.warn("removeProfileAvatar storage:", rmErr.message);
+  if (rmErr) throw toAvatarStorageError(rmErr, "remove");
   return upsertProfile({ avatar_url: null });
 }
 
