@@ -1823,7 +1823,7 @@ export async function fetchMyCards({ limit = 200, set_id = "", q = "", sort = "r
   } else {
     query = query
       .order("created_at", { ascending: false, nullsFirst: false })
-      .order("id", { ascending: true, nullsFirst: false });
+      .order("id", { ascending: false, nullsFirst: false });
   }
 
   const { data, error } = await query;

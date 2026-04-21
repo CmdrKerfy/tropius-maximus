@@ -56,6 +56,14 @@ const USE_SUPABASE_APP =
 
 function sortCards(arr, sort_by, sort_dir) {
   const dir = sort_dir === "desc" ? -1 : 1;
+  const parseSortTime = (row) => {
+    const candidates = [row?.created_at, row?.updated_at, row?.annotation_updated_at];
+    for (const raw of candidates) {
+      const ts = new Date(raw || 0).getTime();
+      if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+    return 0;
+  };
   return [...arr].sort((a, b) => {
     let av, bv;
     if (sort_by === "pokedex") {
@@ -68,14 +76,18 @@ function sortCards(arr, sort_by, sort_dir) {
       av = Number(a.hp) || 0;
       bv = Number(b.hp) || 0;
     } else if (sort_by === "recent") {
-      av = new Date(a.created_at || 0).getTime();
-      bv = new Date(b.created_at || 0).getTime();
+      av = parseSortTime(a);
+      bv = parseSortTime(b);
     } else {
       av = String(a[sort_by] || "").toLowerCase();
       bv = String(b[sort_by] || "").toLowerCase();
     }
     if (av < bv) return -1 * dir;
     if (av > bv) return 1 * dir;
+    const aId = String(a?.id || "");
+    const bId = String(b?.id || "");
+    if (aId < bId) return -1 * dir;
+    if (aId > bId) return 1 * dir;
     return 0;
   });
 }
