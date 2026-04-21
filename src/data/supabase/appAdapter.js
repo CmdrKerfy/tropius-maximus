@@ -1668,12 +1668,24 @@ function profileAvatarObjectPath(userId) {
 const AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const AVATAR_MAX_BYTES = 1024 * 1024;
 
+async function requireNonAnonymousUserForProfileWrite(sb) {
+  const { data: sessData } = await sb.auth.getSession();
+  const fromSession = sessData?.session?.user;
+  if (fromSession?.id && fromSession.is_anonymous !== true) return fromSession;
+
+  const { data: userData, error: userErr } = await sb.auth.getUser();
+  const user = userData?.user;
+  if (userErr || !user?.id || user.is_anonymous === true) {
+    throw new Error("Sign in with your team account, then try uploading a profile photo again.");
+  }
+  return user;
+}
+
 /** Upload image to Storage and set `profiles.avatar_url` (public URL). */
 export async function uploadProfileAvatar(file) {
   const sb = await sbReady();
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData?.user?.id;
-  if (!uid) throw new Error("Sign in required to upload an avatar.");
+  const user = await requireNonAnonymousUserForProfileWrite(sb);
+  const uid = user.id;
   if (!file?.size) throw new Error("Choose an image file.");
   const mime = file.type || "";
   if (!AVATAR_MIME.has(mime)) throw new Error("Use a JPEG, PNG, or WebP image.");
@@ -1694,9 +1706,8 @@ export async function uploadProfileAvatar(file) {
 /** Remove Storage object and clear `profiles.avatar_url`. */
 export async function removeProfileAvatar() {
   const sb = await sbReady();
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData?.user?.id;
-  if (!uid) throw new Error("Sign in required.");
+  const user = await requireNonAnonymousUserForProfileWrite(sb);
+  const uid = user.id;
   const path = profileAvatarObjectPath(uid);
   const { error: rmErr } = await sb.storage.from(AVATAR_BUCKET).remove([path]);
   if (rmErr) console.warn("removeProfileAvatar storage:", rmErr.message);
@@ -1706,9 +1717,8 @@ export async function removeProfileAvatar() {
 /** Update display_name and/or avatar_url for the signed-in user (insert row if missing). */
 export async function upsertProfile({ display_name, avatar_url } = {}) {
   const sb = await sbReady();
-  const { data: authData } = await sb.auth.getUser();
-  const uid = authData?.user?.id;
-  if (!uid) throw new Error("Sign in required to update profile.");
+  const user = await requireNonAnonymousUserForProfileWrite(sb);
+  const uid = user.id;
   const patch = {};
   if (display_name !== undefined) patch.display_name = String(display_name).trim() || null;
   if (avatar_url !== undefined) patch.avatar_url = avatar_url;
