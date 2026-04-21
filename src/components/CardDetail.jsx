@@ -1335,8 +1335,9 @@ export default function CardDetail({
                           <button
                             type="button"
                             onClick={() => setPinEditorOpen(true)}
-                            className="text-xs font-medium text-tm-leaf hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-tm-leaf hover:underline"
                           >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
                             Edit pins
                           </button>
                         </div>

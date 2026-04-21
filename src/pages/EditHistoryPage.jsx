@@ -5,7 +5,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { NavLink, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchEditHistory, fetchBatchRuns } from "../db";
+import { fetchEditHistory, fetchBatchRuns, fetchCardThumbnailsByIds } from "../db";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 
@@ -23,6 +23,10 @@ function previewText(s, max = 80) {
   if (s == null || s === "") return "—";
   const t = String(s);
   return t.length > max ? `${t.slice(0, max)}…` : t;
+}
+
+function cardThumb(entry) {
+  return entry?.image_small || entry?.image_large || "";
 }
 
 export default function EditHistoryPage() {
@@ -79,6 +83,22 @@ export default function EditHistoryPage() {
     queryFn: () => fetchEditHistory({ batch_run_id: expandedRunId, limit: 500, only_mine: false }),
     enabled: USE_SB && historyTab === "runs" && Boolean(expandedRunId),
     staleTime: 10_000,
+  });
+  const cardIdsForThumbs = useMemo(() => {
+    const set = new Set();
+    for (const r of rows) {
+      if (r?.card_id) set.add(String(r.card_id));
+    }
+    for (const r of runRows) {
+      if (r?.card_id) set.add(String(r.card_id));
+    }
+    return [...set];
+  }, [rows, runRows]);
+  const { data: thumbnailsById = {} } = useQuery({
+    queryKey: ["historyCardThumbs", cardIdsForThumbs],
+    queryFn: () => fetchCardThumbnailsByIds(cardIdsForThumbs),
+    enabled: USE_SB && cardIdsForThumbs.length > 0,
+    staleTime: 60_000,
   });
 
   return (
@@ -234,6 +254,7 @@ export default function EditHistoryPage() {
                           <thead>
                             <tr className="border-b border-gray-100 text-left text-gray-500 uppercase">
                               <th className="px-2 py-1.5 font-medium">When</th>
+                              <th className="px-2 py-1.5 font-medium">Thumb</th>
                               <th className="px-2 py-1.5 font-medium">Card</th>
                               <th className="px-2 py-1.5 font-medium">Field</th>
                               <th className="px-2 py-1.5 font-medium">New</th>
@@ -249,6 +270,19 @@ export default function EditHistoryPage() {
                                         timeStyle: "short",
                                       })
                                     : "—"}
+                                </td>
+                                <td className="px-2 py-1.5">
+                                  {cardThumb(thumbnailsById[r.card_id]) ? (
+                                    <img
+                                      src={cardThumb(thumbnailsById[r.card_id])}
+                                      alt={r.card_id}
+                                      className="w-7 h-10 rounded border border-gray-200 object-cover bg-white"
+                                      loading="lazy"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : (
+                                    <div className="w-7 h-10 rounded border border-gray-200 bg-gray-100" />
+                                  )}
                                 </td>
                                 <td className="px-2 py-1.5">
                                   <Link
@@ -398,6 +432,7 @@ export default function EditHistoryPage() {
                     <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase">
                       <th className="px-3 py-2 font-medium whitespace-nowrap">When</th>
                       <th className="px-3 py-2 font-medium">Editor</th>
+                      <th className="px-3 py-2 font-medium">Thumb</th>
                       <th className="px-3 py-2 font-medium">Card</th>
                       <th className="px-3 py-2 font-medium">Field</th>
                       <th className="px-3 py-2 font-medium">Batch run</th>
@@ -428,6 +463,19 @@ export default function EditHistoryPage() {
                             </Link>
                           ) : (
                             "—"
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          {cardThumb(thumbnailsById[r.card_id]) ? (
+                            <img
+                              src={cardThumb(thumbnailsById[r.card_id])}
+                              alt={r.card_id}
+                              className="w-7 h-10 rounded border border-gray-200 object-cover bg-white"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-7 h-10 rounded border border-gray-200 bg-gray-100" />
                           )}
                         </td>
                         <td className="px-3 py-2">

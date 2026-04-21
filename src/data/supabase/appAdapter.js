@@ -922,6 +922,30 @@ export async function fetchCardNamesByIds(cardIds) {
 }
 
 /**
+ * @param {string[]} cardIds
+ * @returns {Promise<Record<string, { image_small: string | null, image_large: string | null, name: string | null }>>}
+ */
+export async function fetchCardThumbnailsByIds(cardIds) {
+  const sb = await sbReady();
+  const chunk = [...new Set(cardIds.filter(Boolean))];
+  if (chunk.length === 0) return {};
+  const out = {};
+  for (let i = 0; i < chunk.length; i += CARD_NAME_FETCH_CHUNK) {
+    const slice = chunk.slice(i, i + CARD_NAME_FETCH_CHUNK);
+    const { data, error } = await sb.from("cards").select("id, name, image_small, image_large").in("id", slice);
+    if (error) throw error;
+    for (const c of data || []) {
+      out[c.id] = {
+        image_small: c.image_small || null,
+        image_large: c.image_large || null,
+        name: c.name || null,
+      };
+    }
+  }
+  return out;
+}
+
+/**
  * All card IDs matching the same filters as `fetchCards` (paginates internally).
  * @param {object} params — same as fetchCards; `page` / `page_size` are ignored
  */
@@ -1796,7 +1820,7 @@ export async function fetchMyCards({ limit = 200, set_id = "", q = "", sort = "r
   const lim = Math.min(1000, Math.max(1, Number(limit) || 200));
   let query = sb
     .from("cards")
-    .select("id, name, set_id, set_name, set_series, number, origin, created_at, created_by")
+    .select("id, name, set_id, set_name, set_series, number, origin, created_at, created_by, image_small, image_large")
     .eq("created_by", uid)
     .limit(lim);
 
@@ -1899,6 +1923,11 @@ export async function patchAnnotations(cardId, patch, options = {}) {
 
     const patchForHistory = { ...patchForHistoryBase };
     const historyPayload = buildEditHistoryPayload(patchForHistory, prevFlat);
+    // Skip writes for no-op interactions (focus/blur, re-selecting same value, etc.).
+    // This prevents edit_history noise and avoids bumping annotation version/updated_at.
+    if (historyPayload.length === 0) {
+      return prevFlat;
+    }
     const fullRowForRpc = !cur
       ? { ...ANNOTATION_ROW_INSERT_DEFAULTS, ...row }
       : { ...cur, ...row };

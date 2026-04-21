@@ -8,9 +8,14 @@ import {
   fetchProfile,
   fetchMyEditHistory,
   fetchMyCards,
+  fetchCardThumbnailsByIds,
 } from "../db.js";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+
+function cardThumb(row) {
+  return row?.image_small || row?.image_large || "";
+}
 
 export default function DashboardPage() {
   const MY_CARDS_PAGE_SIZE = 75;
@@ -19,6 +24,9 @@ export default function DashboardPage() {
   const [cardSearch, setCardSearch] = useState("");
   const [cardSort, setCardSort] = useState("set_number_asc");
   const [visibleMyCards, setVisibleMyCards] = useState(MY_CARDS_PAGE_SIZE);
+  const [showOlderEdits, setShowOlderEdits] = useState(false);
+  const [editWindow, setEditWindow] = useState("24h");
+  const [showEditThumbs, setShowEditThumbs] = useState(false);
 
   const { data: profile, isLoading: pLoading } = useQuery({
     queryKey: ["profile"],
@@ -28,6 +36,16 @@ export default function DashboardPage() {
   const { data: edits = [], isLoading: eLoading } = useQuery({
     queryKey: ["myEditHistory"],
     queryFn: () => fetchMyEditHistory({ limit: 25 }),
+  });
+  const editCardIds = useMemo(
+    () => [...new Set(edits.map((row) => String(row?.card_id || "")).filter(Boolean))],
+    [edits]
+  );
+  const { data: editThumbsById = {} } = useQuery({
+    queryKey: ["dashboardEditThumbs", editCardIds],
+    queryFn: () => fetchCardThumbnailsByIds(editCardIds),
+    enabled: showEditThumbs && editCardIds.length > 0,
+    staleTime: 60_000,
   });
 
   const { data: myCards = [], isLoading: cLoading } = useQuery({
@@ -47,6 +65,22 @@ export default function DashboardPage() {
   });
 
   const display = profile?.display_name?.trim() || profile?.id?.slice(0, 8) || "there";
+  const { recentEdits, olderEdits } = useMemo(() => {
+    const cutoffMs =
+      editWindow === "7d"
+        ? Date.now() - 7 * 24 * 60 * 60 * 1000
+        : editWindow === "24h"
+          ? Date.now() - 24 * 60 * 60 * 1000
+          : Number.NEGATIVE_INFINITY;
+    const recent = [];
+    const older = [];
+    for (const row of edits) {
+      const ts = new Date(row?.edited_at || 0).getTime();
+      if (Number.isFinite(ts) && ts >= cutoffMs) recent.push(row);
+      else older.push(row);
+    }
+    return { recentEdits: recent, olderEdits: older };
+  }, [edits, editWindow]);
   const cardSetOptions = useMemo(() => {
     const bySet = new Map();
     for (const row of myCardsFilterBase) {
@@ -85,6 +119,9 @@ export default function DashboardPage() {
   useEffect(() => {
     setVisibleMyCards(MY_CARDS_PAGE_SIZE);
   }, [cardSetFilter, cardSearch, cardSort]);
+  useEffect(() => {
+    setShowOlderEdits(false);
+  }, [olderEdits.length]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -140,24 +177,118 @@ export default function DashboardPage() {
           ) : edits.length === 0 ? (
             <p className="text-sm text-gray-500">No edits recorded yet. Changes in Workbench or Batch appear here.</p>
           ) : (
-            <ul className="divide-y divide-gray-100 text-sm">
-              {edits.map((row) => (
-                <li key={`${row.id}-${row.edited_at}`} className="py-2 flex flex-wrap gap-2">
-                  <span className="text-gray-500 whitespace-nowrap">
-                    {row.edited_at ? new Date(row.edited_at).toLocaleString() : ""}
-                  </span>
-                  <Link
-                    to={`/?card=${encodeURIComponent(row.card_id)}`}
-                    className="text-green-700 font-medium hover:underline"
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: "24h", label: "24h" },
+                  { id: "7d", label: "7d" },
+                  { id: "all", label: "All" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setEditWindow(opt.id)}
+                    className={`text-[11px] px-2 py-1 rounded border ${
+                      editWindow === opt.id
+                        ? "border-green-300 bg-green-50 text-green-800"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
-                    {row.card_id}
-                  </Link>
-                  <span className="text-gray-700">
-                    {row.field_name}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    {opt.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowEditThumbs((v) => !v)}
+                  className={`text-[11px] px-2 py-1 rounded border ${
+                    showEditThumbs
+                      ? "border-green-300 bg-green-50 text-green-800"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {showEditThumbs ? "Hide thumbnails" : "Show thumbnails"}
+                </button>
+              </div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                {editWindow === "24h" ? "Last 24 hours" : editWindow === "7d" ? "Last 7 days" : "All edits"} (
+                {recentEdits.length})
+              </p>
+              <ul className="divide-y divide-gray-100 text-sm">
+                {recentEdits.map((row) => (
+                  <li key={`${row.id}-${row.edited_at}`} className="py-2 flex flex-wrap gap-2 items-center">
+                    {showEditThumbs ? (
+                      editThumbsById[row.card_id]?.image_small || editThumbsById[row.card_id]?.image_large ? (
+                        <img
+                          src={editThumbsById[row.card_id]?.image_small || editThumbsById[row.card_id]?.image_large}
+                          alt={row.card_id}
+                          className="w-7 h-10 rounded border border-gray-200 object-cover bg-white shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-7 h-10 rounded border border-gray-200 bg-gray-100 shrink-0" />
+                      )
+                    ) : null}
+                    <span className="text-gray-500 whitespace-nowrap">
+                      {row.edited_at ? new Date(row.edited_at).toLocaleString() : ""}
+                    </span>
+                    <Link
+                      to={`/?card=${encodeURIComponent(row.card_id)}`}
+                      className="text-green-700 font-medium hover:underline"
+                    >
+                      {row.card_id}
+                    </Link>
+                    <span className="text-gray-700">{row.field_name}</span>
+                  </li>
+                ))}
+              </ul>
+              {editWindow !== "all" && olderEdits.length > 0 && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowOlderEdits((v) => !v)}
+                    className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                  >
+                    {showOlderEdits ? "Hide" : "Show"} older edits ({olderEdits.length})
+                  </button>
+                  {showOlderEdits && (
+                    <ul className="mt-2 divide-y divide-gray-100 text-sm">
+                      {olderEdits.map((row) => (
+                        <li key={`${row.id}-${row.edited_at}`} className="py-2 flex flex-wrap gap-2 items-center">
+                          {showEditThumbs ? (
+                            editThumbsById[row.card_id]?.image_small ||
+                            editThumbsById[row.card_id]?.image_large ? (
+                              <img
+                                src={
+                                  editThumbsById[row.card_id]?.image_small ||
+                                  editThumbsById[row.card_id]?.image_large
+                                }
+                                alt={row.card_id}
+                                className="w-7 h-10 rounded border border-gray-200 object-cover bg-white shrink-0"
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-7 h-10 rounded border border-gray-200 bg-gray-100 shrink-0" />
+                            )
+                          ) : null}
+                          <span className="text-gray-500 whitespace-nowrap">
+                            {row.edited_at ? new Date(row.edited_at).toLocaleString() : ""}
+                          </span>
+                          <Link
+                            to={`/?card=${encodeURIComponent(row.card_id)}`}
+                            className="text-green-700 font-medium hover:underline"
+                          >
+                            {row.card_id}
+                          </Link>
+                          <span className="text-gray-700">{row.field_name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </section>
 
@@ -251,7 +382,19 @@ export default function DashboardPage() {
           ) : (
             <ul className="divide-y divide-gray-100 text-sm">
               {displayedMyCards.map((row) => (
-                <li key={row.id} className="py-2 flex flex-wrap gap-2 items-baseline">
+                <li key={row.id} className="py-2 flex items-start gap-2">
+                  {cardThumb(row) ? (
+                    <img
+                      src={cardThumb(row)}
+                      alt={row.name || row.id}
+                      className="w-8 h-11 rounded border border-gray-200 object-cover bg-white shrink-0 mt-0.5"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-11 rounded border border-gray-200 bg-gray-100 shrink-0 mt-0.5" />
+                  )}
+                  <div className="min-w-0 flex-1 flex flex-wrap gap-2 items-baseline">
                   <Link
                     to={`/?card=${encodeURIComponent(row.id)}`}
                     className="text-green-700 font-medium hover:underline"
@@ -269,6 +412,7 @@ export default function DashboardPage() {
                       {new Date(row.created_at).toLocaleDateString()}
                     </span>
                   )}
+                  </div>
                 </li>
               ))}
             </ul>

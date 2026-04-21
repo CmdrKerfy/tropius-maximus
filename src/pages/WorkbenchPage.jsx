@@ -2,7 +2,7 @@
  * Workbench — Phase 5: queue-backed annotation editing (Supabase).
  */
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef, useTransition } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,6 +22,7 @@ import {
   FORM_OPTIONS_QUERY_KEY,
   updateWorkbenchQueue,
   fetchProfile,
+  fetchUserPreferences,
 } from "../db";
 import AnnotationEditor from "../components/AnnotationEditor";
 import CardAttributionLine from "../components/CardAttributionLine.jsx";
@@ -29,6 +30,7 @@ import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import WorkflowModeHelp from "../components/WorkflowModeHelp.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { normalizeCardDetailPins } from "../lib/cardDetailPinRegistry.js";
 import { toastError } from "../lib/toast.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
@@ -41,12 +43,13 @@ const USE_SB =
 const EMPTY_ANNOTATIONS = {};
 
 const WB_SPLIT_STORAGE_KEY = "tm_workbench_split_preset";
+const WB_FORM_DENSITY_STORAGE_KEY = "tm_workbench_form_density";
 
 /** `lg+` two-column ratio; below `lg` the grid is a single column. */
 const WB_SPLIT_GRID_CLASS = {
   balanced: "lg:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]",
-  image: "lg:grid-cols-[minmax(0,1.14fr)_minmax(0,0.86fr)] xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]",
-  form: "lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]",
+  image: "lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.55fr)]",
+  form: "lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] xl:grid-cols-[minmax(0,0.55fr)_minmax(0,1.45fr)]",
 };
 
 const navLinkClass = ({ isActive }) =>
@@ -90,14 +93,58 @@ export default function WorkbenchPage() {
     }
     return "balanced";
   });
-
-  useEffect(() => {
+  const [formDensity, setFormDensity] = useState(() => {
     try {
-      localStorage.setItem(WB_SPLIT_STORAGE_KEY, splitPreset);
+      const v = typeof localStorage !== "undefined" && localStorage.getItem(WB_FORM_DENSITY_STORAGE_KEY);
+      if (v === "compact" || v === "comfortable") return v;
     } catch {
       /* ignore */
     }
+    return "comfortable";
+  });
+  const [, startUiTransition] = useTransition();
+  const magnifierLensRef = useRef(null);
+  const magnifierFrameRef = useRef(0);
+  const magnifierPointerRef = useRef({
+    clientX: 0,
+    clientY: 0,
+    relX: 0.5,
+    relY: 0.5,
+  });
+  const magnifierImageRef = useRef({
+    imgWidth: 1,
+    imgHeight: 1,
+    src: "",
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(WB_SPLIT_STORAGE_KEY, splitPreset);
+      } catch {
+        /* ignore */
+      }
+    }, 120);
+    return () => clearTimeout(timer);
   }, [splitPreset]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(WB_FORM_DENSITY_STORAGE_KEY, formDensity);
+      } catch {
+        /* ignore */
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [formDensity]);
+  useEffect(
+    () => () => {
+      if (magnifierFrameRef.current) {
+        cancelAnimationFrame(magnifierFrameRef.current);
+      }
+    },
+    []
+  );
 
   const { data: queue, isPending, isError, error } = useQuery({
     queryKey: ["workbenchQueue", "default"],
@@ -151,6 +198,18 @@ export default function WorkbenchPage() {
     staleTime: 300_000,
   });
 
+  const { data: userPrefs } = useQuery({
+    queryKey: ["userPreferences"],
+    queryFn: fetchUserPreferences,
+    enabled: USE_SB,
+    staleTime: 30_000,
+  });
+
+  const workbenchPinnedKeys = useMemo(
+    () => normalizeCardDetailPins(userPrefs?.card_detail_pins),
+    [userPrefs?.card_detail_pins]
+  );
+
   const patchQueue = useMutation({
     mutationFn: ({ queueId, patch }) => updateWorkbenchQueue(queueId, patch),
     onSuccess: () => {
@@ -166,6 +225,62 @@ export default function WorkbenchPage() {
     card?.image_large ||
     card?.image_small ||
     pocketCardBg;
+  const MAGNIFIER_SIZE_PX = 150;
+  const MAGNIFIER_ZOOM = 2.1;
+  const workbenchPaneHeightClass =
+    splitPreset === "image"
+      ? "lg:h-[min(84vh,calc(100vh-8.5rem))] xl:h-[min(86vh,calc(100vh-9rem))]"
+      : "lg:h-[min(76vh,calc(100vh-10rem))] xl:h-[min(78vh,calc(100vh-11rem))]";
+  const imagePreviewMaxWidthClass =
+    splitPreset === "image"
+      ? "max-w-xl xl:max-w-2xl"
+      : splitPreset === "form"
+        ? "max-w-sm xl:max-w-md"
+        : "max-w-md xl:max-w-lg";
+  const isImageMode = splitPreset === "image";
+  const hideImageMagnifier = useCallback(() => {
+    const lens = magnifierLensRef.current;
+    if (lens) lens.style.opacity = "0";
+  }, []);
+  const paintImageMagnifier = useCallback(() => {
+    if (magnifierFrameRef.current) return;
+    magnifierFrameRef.current = requestAnimationFrame(() => {
+      magnifierFrameRef.current = 0;
+      const lens = magnifierLensRef.current;
+      if (!lens) return;
+      const pointer = magnifierPointerRef.current;
+      const image = magnifierImageRef.current;
+      lens.style.opacity = "1";
+      lens.style.transform = `translate3d(${pointer.clientX}px, ${pointer.clientY}px, 0) translate(-50%, -50%)`;
+      lens.style.backgroundImage = `url("${image.src}")`;
+      lens.style.backgroundSize = `${image.imgWidth * MAGNIFIER_ZOOM}px ${image.imgHeight * MAGNIFIER_ZOOM}px`;
+      lens.style.backgroundPosition = `${MAGNIFIER_SIZE_PX / 2 - pointer.relX * image.imgWidth * MAGNIFIER_ZOOM}px ${MAGNIFIER_SIZE_PX / 2 - pointer.relY * image.imgHeight * MAGNIFIER_ZOOM}px`;
+    });
+  }, []);
+  const handleImageMagnifierMove = useCallback(
+    (event) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      magnifierPointerRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        relX: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+        relY: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
+      };
+      magnifierImageRef.current = {
+        imgWidth: rect.width,
+        imgHeight: rect.height,
+        src: displayImage,
+      };
+      paintImageMagnifier();
+    },
+    [displayImage, paintImageMagnifier]
+  );
+  useEffect(() => {
+    if (!isImageMode) {
+      hideImageMagnifier();
+    }
+  }, [isImageMode, hideImageMagnifier]);
 
   const goPrev = () => {
     if (!queue?.id || safeIndex <= 0) return;
@@ -356,81 +471,160 @@ export default function WorkbenchPage() {
             <div
               className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm"
               role="group"
-              aria-label="Workbench card and form column widths"
+              aria-label="Workbench card and form layout options"
             >
-              <span className="text-xs font-medium text-gray-600">Card / form width</span>
-              <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
-                {[
-                  { id: "image", label: "Image", Icon: ImageIcon },
-                  { id: "balanced", label: "Balanced", Icon: Columns2 },
-                  { id: "form", label: "Form", Icon: ClipboardList },
-                ].map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setSplitPreset(id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                      splitPreset === id
-                        ? "bg-white text-tm-canopy shadow-sm border border-gray-200/80"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                    aria-pressed={splitPreset === id}
-                  >
-                    <Icon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-                    {label}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-600">Card / form width</span>
+                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+                  {[
+                    { id: "image", label: "Image", Icon: ImageIcon },
+                    { id: "balanced", label: "Balanced", Icon: Columns2 },
+                    { id: "form", label: "Form", Icon: ClipboardList },
+                  ].map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        startUiTransition(() => setSplitPreset(id));
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                        splitPreset === id
+                          ? "bg-white text-tm-canopy shadow-sm border border-gray-200/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      aria-pressed={splitPreset === id}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-gray-600">Form density</span>
+                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+                  {[
+                    { id: "comfortable", label: "Comfortable" },
+                    { id: "compact", label: "Compact" },
+                  ].map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        startUiTransition(() => setFormDensity(id));
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                        formDensity === id
+                          ? "bg-white text-tm-canopy shadow-sm border border-gray-200/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      aria-pressed={formDensity === id}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div
-              className={`grid grid-cols-1 gap-6 lg:gap-8 min-h-[min(560px,calc(100vh-12rem))] ${
+              className={`grid grid-cols-1 gap-6 lg:gap-8 lg:items-center min-h-[min(560px,calc(100vh-12rem))] ${
                 WB_SPLIT_GRID_CLASS[splitPreset] || WB_SPLIT_GRID_CLASS.balanced
               }`}
             >
-            <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px]">
+            <section
+              className={`rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] ${workbenchPaneHeightClass}`}
+            >
               <div className="px-4 py-2 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Card
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center bg-gray-100 p-4 min-h-0">
+              <div
+                className={`flex-1 flex flex-col bg-gray-100 min-h-0 ${
+                  isImageMode ? "relative p-2" : "items-center justify-center p-4"
+                }`}
+              >
                 {cardLoading && <p className="text-sm text-gray-500">Loading card…</p>}
                 {cardError && (
                   <p className="text-sm text-red-600">{cardErr?.message || "Could not load card."}</p>
                 )}
                 {card && !cardLoading && (
                   <>
-                    <div className="w-full max-w-md xl:max-w-lg flex-1 min-h-[220px] flex items-center justify-center">
+                    {isImageMode && (
+                      <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md border border-black/15 bg-black/55 px-2 py-1 text-[11px] leading-tight text-white backdrop-blur-[1px]">
+                        <p className="truncate font-semibold">{card.name || "Unknown"}</p>
+                        <p className="truncate text-white/90">
+                          {[card.set_name, card.number].filter(Boolean).join(" · ") || card.id}
+                        </p>
+                      </div>
+                    )}
+                    <div
+                      className={`w-full flex-1 min-h-[220px] ${
+                        isImageMode
+                          ? "overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white p-2 cursor-none"
+                          : `${imagePreviewMaxWidthClass} flex items-center justify-center`
+                      }`}
+                    >
                       <img
                         src={displayImage}
                         alt={card.name || "Card"}
                         referrerPolicy="no-referrer"
-                        className="max-h-full max-w-full object-contain rounded-lg shadow-md bg-white"
+                        className={
+                          isImageMode
+                            ? "mx-auto block w-full h-auto object-contain rounded-lg shadow-md bg-white"
+                            : "max-h-full max-w-full object-contain rounded-lg shadow-md bg-white"
+                        }
+                        onMouseEnter={isImageMode ? handleImageMagnifierMove : undefined}
+                        onMouseMove={isImageMode ? handleImageMagnifierMove : undefined}
+                        onMouseLeave={isImageMode ? hideImageMagnifier : undefined}
                         onError={(e) => {
                           if (e.target.src !== pocketCardBg) e.target.src = pocketCardBg;
                         }}
                       />
                     </div>
-                    <div className="mt-3 text-center w-full px-2">
-                      <p className="font-semibold text-gray-900 truncate">{card.name || "Unknown"}</p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {[card.set_name, card.number].filter(Boolean).join(" · ") || card.id}
-                      </p>
-                      <div className="mt-1 max-w-md mx-auto text-center">
-                        <CardAttributionLine
-                          createdById={card.created_by}
-                          creatorDisplayName={card.creator_display_name}
-                          annotationUpdatedById={card.annotations?.updated_by}
-                          annotationUpdatedByName={annotationEditorDisplayName}
-                          annotationUpdatedAt={card.annotations?.updated_at}
-                        />
+                    {isImageMode && (
+                      <div
+                        ref={magnifierLensRef}
+                        className="fixed z-30 pointer-events-none rounded-full border-2 border-white/95 shadow-[0_8px_28px_rgba(0,0,0,0.45)] ring-1 ring-black/35"
+                        style={{
+                          width: `${MAGNIFIER_SIZE_PX}px`,
+                          height: `${MAGNIFIER_SIZE_PX}px`,
+                          left: "0px",
+                          top: "0px",
+                          transform: "translate(-50%, -50%)",
+                          backgroundImage: `url("${displayImage}")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundSize: `${MAGNIFIER_ZOOM * 100}% auto`,
+                          backgroundPosition: "50% 50%",
+                          opacity: 0,
+                          willChange: "transform, background-position",
+                        }}
+                      />
+                    )}
+                    {!isImageMode && (
+                      <div className="mt-3 text-center w-full px-2">
+                        <p className="font-semibold text-gray-900 truncate">{card.name || "Unknown"}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {[card.set_name, card.number].filter(Boolean).join(" · ") || card.id}
+                        </p>
+                        <div className="mt-1 max-w-md mx-auto text-center">
+                          <CardAttributionLine
+                            createdById={card.created_by}
+                            creatorDisplayName={card.creator_display_name}
+                            annotationUpdatedById={card.annotations?.updated_by}
+                            annotationUpdatedByName={annotationEditorDisplayName}
+                            annotationUpdatedAt={card.annotations?.updated_at}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
             </section>
 
-            <section className="rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] max-h-[calc(100vh-10rem)] xl:max-h-[calc(100vh-11rem)]">
+            <section
+              className={`rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] ${workbenchPaneHeightClass}`}
+            >
               <div className="px-4 py-2.5 border-b border-gray-100 shrink-0 flex flex-wrap items-center justify-between gap-2 bg-white">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Annotations</span>
                 <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 flex-1">
@@ -448,6 +642,9 @@ export default function WorkbenchPage() {
                       Saved {annotationSave.savedAt.toLocaleTimeString()}
                     </span>
                   )}
+                  {annotationSave.phase === "noop" && (
+                    <span className="text-xs text-gray-500 tabular-nums">No changes</span>
+                  )}
                   {annotationSave.phase === "error" && (
                     <span className="flex flex-wrap items-center justify-end gap-2 min-w-0">
                       <span className="text-xs text-tm-danger text-right leading-snug max-w-[min(100%,20rem)]">
@@ -462,7 +659,7 @@ export default function WorkbenchPage() {
                   )}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 min-h-0">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-4 min-h-0">
                 {card && (
                   <AnnotationEditor
                     key={currentCardId}
@@ -470,6 +667,8 @@ export default function WorkbenchPage() {
                     annotations={card.annotations ?? EMPTY_ANNOTATIONS}
                     attributes={attributes}
                     formOptions={formOptions || {}}
+                    pinnedKeys={workbenchPinnedKeys}
+                    density={formDensity}
                     onSaveStatusChange={onAnnotationSaveStatus}
                   />
                 )}

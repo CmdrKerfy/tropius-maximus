@@ -126,6 +126,12 @@ export async function fetchCardNamesByIds(cardIds) {
     : duck.fetchCardNamesByIds(cardIds);
 }
 
+export async function fetchCardThumbnailsByIds(cardIds) {
+  return useSupabaseBackend()
+    ? (await sb()).fetchCardThumbnailsByIds(cardIds)
+    : {};
+}
+
 export async function appendCuratedOptionsForCustomField(fieldName, newStrings) {
   return useSupabaseBackend()
     ? (await sb()).appendCuratedOptionsForCustomField(fieldName, newStrings)
