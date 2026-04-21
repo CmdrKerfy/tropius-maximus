@@ -21,6 +21,8 @@ supabase db push
 
 If a previous **019** attempt failed partway (e.g. wrong policy name), use the **latest** `019` from the repo and re-run the **whole** file in one transaction when possible, or run from the first statement that did not succeed. The function `auth_is_non_anonymous_authenticated` is idempotent (`CREATE OR REPLACE`).
 
+> **Important sequencing note (avatars):** re-running **`014_storage_avatars.sql`** after **019** can recreate avatar Storage policies without the non-anonymous helper predicate. If you re-apply `014` on a hardened project, re-apply **`019_rls_exclude_anonymous_sessions.sql`** (or an equivalent strict follow-up policy script) afterward.
+
 ---
 
 ## 2. Supabase dashboard

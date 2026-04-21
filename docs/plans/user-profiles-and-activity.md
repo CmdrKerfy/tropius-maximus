@@ -1,6 +1,6 @@
 # Plan: User profiles, profile page, and activity (v2)
 
-**Status (2026-04-17):** **Phases 1–5 implemented** on branch `v2/supabase-migration` (profiles, dashboard, history UX, `created_by`, teammate profile route, avatars + Storage). **Ops:** apply migration **`014_storage_avatars.sql`** once per Supabase project that should support avatar upload (creates bucket **`avatars`** + Storage RLS). No-op if already applied.
+**Status (2026-04-21):** **Phases 1–5 implemented** on branch `v2/supabase-migration` (profiles, dashboard, history UX, `created_by`, teammate profile route, avatars + Storage). Follow-up polish shipped: clearer avatar failure diagnostics (Storage vs profiles RLS), header avatar cache-bust after photo changes, and dashboard/history thumbnail scanability. **Ops:** apply migration **`014_storage_avatars.sql`** once per Supabase project that should support avatar upload (creates bucket **`avatars`** + Storage RLS). If strict non-anonymous policy style from **019** is in use, re-apply **019** (or equivalent strict policy script) after re-running 014.
 
 **Audience:** Future AI agents / developers.  
 **Companion context:** Root `CLAUDE.md` (project state, branches).
@@ -35,6 +35,8 @@ Collaborators are not highly technical. A **visible profile** (display name, opt
 | 8 | **“My cards” / dashboard** — **`created_by`** on manual cards; **`/dashboard`** lists recent edits + cards | Done |
 | 9 | **Avatars** — Supabase Storage **`avatars`** bucket + upload/remove on own profile | Done (app + **`014`**; DB must run **`014`**) |
 | 10 | **Deep links** — History **Editor** → `/profile/{edited_by}`; dashboard card links → `/?card=…` | Done |
+| 11 | **Activity scanability** — Dashboard/Edit History small thumbnails and recent-edit time windows | Done |
+| 12 | **Avatar UX reliability** — clearer permission toasts + header avatar cache refresh on update | Done |
 
 ## Explicit non-goals (for this plan)
 
@@ -77,6 +79,7 @@ Collaborators are not highly technical. A **visible profile** (display name, opt
 
 - [ ] New user after invite: profile row exists (trigger on signup).
 - [ ] **Apply `014`** in Supabase: bucket `avatars` exists; upload from `/profile` succeeds; image loads via public URL.
+- [ ] If strict non-anonymous RLS is required, re-apply **019** (or hardened follow-up policy SQL) after any manual 014 re-run.
 - [ ] Edit in Workbench / Batch: `edit_history.edited_by` populated; history shows **display name**; editor links to `/profile/{uuid}`.
 - [ ] “Only my edits” matches session user.
 - [ ] Custom/manual card: `created_by` set; dashboard “My submitted cards” correct.
@@ -89,4 +92,4 @@ Collaborators are not highly technical. A **visible profile** (display name, opt
 
 ---
 
-*Last updated: 2026-04-18 — Dashboard / History / custom card form copy: edits vs created cards vs browser session add log.*
+*Last updated: 2026-04-21 — avatar policy troubleshooting notes, header avatar cache-bust, and dashboard/history thumbnail + recent-edit scanability polish.*
