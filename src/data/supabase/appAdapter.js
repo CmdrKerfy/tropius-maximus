@@ -2731,6 +2731,7 @@ export async function ensureDefaultWorkbenchQueue() {
   const { data: existing, error: e1 } = await sb
     .from("workbench_queues")
     .select("*")
+    .eq("user_id", uid)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
     .limit(1);
@@ -2745,6 +2746,7 @@ export async function ensureDefaultWorkbenchQueue() {
       fields: [],
       current_index: 0,
       filters_used: {},
+      is_shared: false,
     })
     .select()
     .single();
@@ -2772,6 +2774,7 @@ export async function createWorkbenchQueue({ name = "Untitled list", card_ids = 
       fields: listFields,
       current_index: 0,
       filters_used: {},
+      is_shared: false,
       updated_at: new Date().toISOString(),
     })
     .select()
@@ -2783,7 +2786,7 @@ export async function createWorkbenchQueue({ name = "Untitled list", card_ids = 
 export async function updateWorkbenchQueue(queueId, patch) {
   const sb = await sbReady();
   await workbenchUserId(sb);
-  const allowed = ["name", "card_ids", "fields", "current_index", "filters_used"];
+  const allowed = ["name", "card_ids", "fields", "current_index", "filters_used", "is_shared"];
   const row = {};
   for (const k of allowed) {
     if (k in patch) row[k] = patch[k];

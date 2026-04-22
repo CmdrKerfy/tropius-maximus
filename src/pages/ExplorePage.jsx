@@ -1386,9 +1386,10 @@ export default function ExplorePage() {
                       <button
                         type="button"
                         onClick={() => void handleMatchingToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
-                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95"
+                        disabled={workbenchMatchingAppendBusy}
+                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                       >
-                        Add
+                        {workbenchMatchingAppendBusy ? "Adding…" : "Add"}
                       </button>
                       <button
                         type="button"
@@ -1434,9 +1435,10 @@ export default function ExplorePage() {
                       <button
                         type="button"
                         onClick={() => void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
-                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95"
+                        disabled={workbenchListAppendBusy}
+                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                       >
-                        Add
+                        {workbenchListAppendBusy ? "Adding…" : "Add"}
                       </button>
                       <button
                         type="button"
@@ -1558,9 +1560,10 @@ export default function ExplorePage() {
                 <button
                   type="button"
                   onClick={() => void handleSelectedToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
-                  className="h-8 rounded bg-sky-600 px-2.5 text-xs font-semibold text-white hover:bg-sky-700"
+                  disabled={workbenchSelectedAppendBusy}
+                  className="h-8 rounded bg-sky-600 px-2.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Add
+                  {workbenchSelectedAppendBusy ? "Adding…" : "Add"}
                 </button>
                 <button
                   type="button"

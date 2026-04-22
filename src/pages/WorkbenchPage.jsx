@@ -736,6 +736,32 @@ export default function WorkbenchPage() {
                   </option>
                 ))}
               </select>
+              {queue?.is_shared ? (
+                <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                  Shared
+                </span>
+              ) : null}
+              <label
+                className="inline-flex items-center gap-1.5 text-xs text-gray-600"
+                title="Only lists marked shared are visible to teammates."
+              >
+                <input
+                  type="checkbox"
+                  checked={Boolean(queue?.is_shared)}
+                  onChange={async (e) => {
+                    if (!queue?.id) return;
+                    try {
+                      await updateWorkbenchQueue(queue.id, { is_shared: e.target.checked });
+                      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+                    } catch (err) {
+                      toastError(err);
+                    }
+                  }}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-600"
+                />
+                Shared with team
+              </label>
+              <span className="hidden md:inline-block h-5 w-px bg-gray-200 mx-0.5" aria-hidden />
               <Button type="button" variant="secondary" size="sm" onClick={handleCreateQueue}>
                 New
               </Button>
