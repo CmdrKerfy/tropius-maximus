@@ -18,10 +18,13 @@ export const DEFAULT_FILTERS = {
   element: [],
   card_type: [],
   stage: [],
+  card_id: "",
   weather: [],
   environment: [],
   actions: [],
   pose: [],
+  annotation_field_key: "",
+  annotation_field_value: "",
   sort_by: "pokedex",
   sort_dir: "asc",
 };

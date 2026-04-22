@@ -79,6 +79,62 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "types",
 ]);
 
+function parseLooseMultiValue(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => parseLooseMultiValue(item))
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parseLooseMultiValue(parsed);
+      if (typeof parsed === "string") return parseLooseMultiValue(parsed);
+    } catch {
+      // Keep plain text split path below.
+    }
+    return raw
+      .split(/[;,，；]/g)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [String(value).trim()].filter(Boolean);
+}
+
+const MULTI_VALUE_VIEW_LABELS = new Set([
+  "Type",
+  "Card Subcategory",
+  "Trainer Card Subgroup",
+  "Environment",
+  "Background Details",
+  "Holiday Theme",
+  "Actions",
+  "Pose",
+  "Emotion",
+  "Items",
+  "Held Item",
+  "Berries (if present)",
+  "Pokeball Type (if present)",
+  "Evolution Items (if present)",
+  "Background Pokémon",
+  "Background People Type",
+  "Background People Name",
+  "Additional Character Theme",
+  "Art Style",
+  "Multi Card",
+  "Video Game",
+  "Video Game Location",
+  "Video Title",
+  "Video Type",
+  "Video Region",
+  "Top 10 Themes",
+  "WTPC Episode",
+  "Video Location",
+]);
+
 /**
  * CollapsibleSection — A reusable component for collapsible content areas.
  */
@@ -521,7 +577,7 @@ export default function CardDetail({
   const saveAnnotation = async (key, value) => {
     let stored = value;
     if (MULTI_VALUE_ANNOTATION_KEYS.has(key) && typeof value === "string") {
-      stored = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      stored = parseLooseMultiValue(value);
     }
     if (key === "background_pokemon" && Array.isArray(stored)) {
       stored = stored.map((s) => s.toLowerCase());
@@ -601,12 +657,17 @@ export default function CardDetail({
 
   const annValue = (key, multi = false) => {
     const v = ann[key];
-    if (multi && Array.isArray(v)) return v.join(", ");
+    if (multi) return parseLooseMultiValue(v).join(", ");
     if (v === null || v === undefined) return "";
     return String(v);
   };
 
   const renderAnnotationView = () => {
+    const annotationTarget = (fieldKey, values) => ({
+      filterKey: `annotation:${fieldKey}`,
+      values,
+    });
+
     const mapLabelToFilter = (label, rawValue) => {
       if (!onFilterClick) return null;
       const val = typeof rawValue === "string" ? rawValue.trim() : String(rawValue ?? "").trim();
@@ -620,6 +681,10 @@ export default function CardDetail({
           return { filterKey: "element", values: splitVals };
         case "Rarity":
           return { filterKey: "rarity", values: splitVals };
+        case "Unique ID":
+          return { filterKey: "card_id", values: [val] };
+        case "Card Subcategory":
+          return annotationTarget("card_subcategory", splitVals);
         case "Evolution Line":
           return { filterKey: "evolution_line", values: [val] };
         case "Featured Region":
@@ -628,12 +693,76 @@ export default function CardDetail({
           return { filterKey: "weather", values: splitVals };
         case "Environment":
           return { filterKey: "environment", values: splitVals };
+        case "Card Location":
+          return annotationTarget("card_locations", splitVals);
+        case "Background Details":
+          return annotationTarget("background_details", splitVals);
+        case "Holiday Theme":
+          return annotationTarget("holiday_theme", splitVals);
         case "Actions":
           return { filterKey: "actions", values: splitVals };
         case "Pose":
           return { filterKey: "pose", values: splitVals };
+        case "Emotion":
+          return annotationTarget("emotion", splitVals);
+        case "Items":
+          return annotationTarget("items", splitVals);
+        case "Held Item":
+          return annotationTarget("held_item", splitVals);
+        case "Berries (if present)":
+          return annotationTarget("berries", splitVals);
+        case "Pokeball Type (if present)":
+          return annotationTarget("pokeball", splitVals);
+        case "Evolution Items (if present)":
+          return annotationTarget("evolution_items", splitVals);
         case "Background Pokémon":
           return { filterKey: "background_pokemon", values: splitVals.map((x) => x.toLowerCase()) };
+        case "Background People Type":
+          return annotationTarget("background_humans", splitVals);
+        case "Background People Name":
+          return annotationTarget("additional_characters", splitVals);
+        case "Rival Faction":
+          return annotationTarget("rival_group", splitVals);
+        case "Additional Character Theme":
+          return annotationTarget("additional_character_theme", splitVals);
+        case "Art Style":
+          return annotationTarget("art_style", splitVals);
+        case "Camera Angle":
+          return annotationTarget("camera_angle", splitVals);
+        case "Perspective":
+          return annotationTarget("perspective", splitVals);
+        case "Multi Card":
+          return annotationTarget("multi_card", splitVals);
+        case "Video Game":
+          return annotationTarget("video_game", splitVals);
+        case "Video Game Location":
+          return annotationTarget("video_game_location", splitVals);
+        case "Video Title":
+          return annotationTarget("video_title", splitVals);
+        case "Video Type":
+          return annotationTarget("video_type", splitVals);
+        case "Video Region":
+          return annotationTarget("video_region", splitVals);
+        case "Top 10 Themes":
+          return annotationTarget("top_10_themes", splitVals);
+        case "WTPC Episode":
+          return annotationTarget("wtpc_episode", splitVals);
+        case "Video Location":
+          return annotationTarget("video_location", splitVals);
+        case "Pocket Exclusive":
+          return annotationTarget("pocket_exclusive", splitVals);
+        case "Owned":
+          return annotationTarget("owned", splitVals);
+        case "Trainer Card Type":
+          return annotationTarget("trainer_card_type", splitVals);
+        case "Trainer Card Subgroup":
+          return annotationTarget("trainer_card_subgroup", splitVals);
+        case "Energy Card Type":
+          return annotationTarget("energy_type", splitVals);
+        case "Card Border Color":
+          return annotationTarget("card_border", splitVals);
+        case "Stamp":
+          return annotationTarget("stamp", splitVals);
         case "Set Name":
           return card?.set_id ? { filterKey: "set_id", values: [String(card.set_id)] } : { filterKey: "q", values: [val] };
         default:
@@ -647,11 +776,15 @@ export default function CardDetail({
       const isBool = value === true;
       const display =
         isBool ? "Yes" : typeof value === "string" ? fixDisplayText(value) : value;
-      const target = isBool ? null : mapLabelToFilter(label, String(display));
+      const target = isBool || label === "Notes" ? null : mapLabelToFilter(label, String(display));
+      const parsedPieces =
+        !isBool && MULTI_VALUE_VIEW_LABELS.has(label) ? parseLooseMultiValue(value) : [];
       const pieces =
-        target && target.values.length > 1
-          ? target.values
-          : [String(display)];
+        parsedPieces.length > 1
+          ? parsedPieces
+          : target && target.values.length > 1
+            ? target.values
+            : [String(display)];
       return (
         <div key={label} className="flex gap-2 text-sm min-w-0">
           <span className="text-gray-500 shrink-0 max-w-[min(100%,11rem)] leading-snug">
@@ -1069,7 +1202,18 @@ export default function CardDetail({
               {/* Right: card info */}
               <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 {/* Card name and basic info — always visible above tabs */}
-                <h2 className="text-2xl font-bold">{card.name}</h2>
+                {onFilterClick ? (
+                  <button
+                    type="button"
+                    onClick={() => onFilterClick("q", card.name)}
+                    className="w-fit text-left text-2xl font-bold underline decoration-dotted underline-offset-4 hover:text-green-700"
+                    title={`Find cards named ${card.name}`}
+                  >
+                    {card.name}
+                  </button>
+                ) : (
+                  <h2 className="text-2xl font-bold">{card.name}</h2>
+                )}
                 <CardAttributionLine
                   createdById={card.created_by}
                   creatorDisplayName={card.creator_display_name}

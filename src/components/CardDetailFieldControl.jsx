@@ -52,6 +52,14 @@ const VIDEO_GAME_OPTIONS = [
 ];
 
 const optArr = (v) => (Array.isArray(v) ? v : []);
+const normalizeMultiValueString = (v) => {
+  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean).join(", ");
+  return String(v ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .join(", ");
+};
 
 const fullSpan = "col-span-1 sm:col-span-2 xl:col-span-3";
 
@@ -294,7 +302,7 @@ export default function CardDetailFieldControl({
         <div>
           <FormFieldLabel>Background details</FormFieldLabel>
           <MultiComboBox
-            value={annValue("background_details", true)}
+            value={normalizeMultiValueString(ann?.background_details ?? annValue("background_details", true))}
             onChange={(v) => saveAnnotation("background_details", v)}
             options={optArr(opts.backgroundDetails)}
             placeholder="Island, Stump, Seafloor, Bridge, etc."

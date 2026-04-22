@@ -57,6 +57,55 @@ export const ANNOTATION_TYPED_COLUMNS = new Set([
   "owned",
 ]);
 
+function uniqueTrimmedStrings(values) {
+  const out = [];
+  const seen = new Set();
+  for (const raw of values || []) {
+    const token = String(raw ?? "").trim();
+    if (!token) continue;
+    const key = token.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(token);
+  }
+  return out;
+}
+
+function splitPackedBackgroundDetailToken(raw) {
+  return String(raw ?? "")
+    .split(/[;,，；]/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Legacy rows may contain packed background_details values like
+ * ["Sky, Ocean, Island"] or "Sky, Ocean". Normalize to a clean string[].
+ */
+export function normalizeBackgroundDetailsValue(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    const expanded = [];
+    for (const item of value) {
+      for (const part of splitPackedBackgroundDetailToken(item)) expanded.push(part);
+    }
+    return uniqueTrimmedStrings(expanded);
+  }
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return normalizeBackgroundDetailsValue(parsed);
+      if (typeof parsed === "string") return normalizeBackgroundDetailsValue(parsed);
+    } catch {
+      // Keep plain text path below.
+    }
+    return uniqueTrimmedStrings(splitPackedBackgroundDetailToken(raw));
+  }
+  return uniqueTrimmedStrings([value]);
+}
+
 export function normalizeEmbeddedAnnotation(embedded) {
   if (embedded == null) return null;
   if (Array.isArray(embedded)) return embedded[0] ?? null;
@@ -82,6 +131,11 @@ export function annotationRowToFlat(row) {
   }
   for (const k of Object.keys(out)) {
     if (out[k] === null || out[k] === undefined) delete out[k];
+  }
+  if ("background_details" in out) {
+    const normalized = normalizeBackgroundDetailsValue(out.background_details);
+    if (normalized.length > 0) out.background_details = normalized;
+    else delete out.background_details;
   }
   if (updated_by != null) out.updated_by = updated_by;
   if (updated_at != null) out.updated_at = updated_at;
@@ -148,7 +202,9 @@ export function flatToAnnotationPayload(flat, prevExtra = {}) {
       k === "updated_at"
     )
       continue;
-    if (ANNOTATION_TYPED_COLUMNS.has(k)) typed[k] = v;
+    if (ANNOTATION_TYPED_COLUMNS.has(k)) {
+      typed[k] = k === "background_details" ? normalizeBackgroundDetailsValue(v) : v;
+    }
     else {
       if (v === null || v === undefined) delete extra[k];
       else extra[k] = v;

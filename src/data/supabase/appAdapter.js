@@ -11,6 +11,7 @@ import {
   parseOverrides,
   flatToAnnotationPayload,
   ANNOTATION_ROW_INSERT_DEFAULTS,
+  normalizeBackgroundDetailsValue,
 } from "./annotationBridge.js";
 import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
@@ -554,7 +555,12 @@ function coerceJsonbArray(val) {
 function normalizeAnnotationFlatForDb(flat) {
   const out = { ...flat };
   for (const k of ANNOTATION_JSONB_COLUMNS) {
-    if (k in out) out[k] = coerceJsonbArray(out[k]);
+    if (!(k in out)) continue;
+    if (k === "background_details") {
+      out[k] = normalizeBackgroundDetailsValue(out[k]);
+      continue;
+    }
+    out[k] = coerceJsonbArray(out[k]);
   }
   for (const k of ANNOTATION_BOOLEAN_COLUMNS) {
     if (k in out) out[k] = Boolean(out[k]);
@@ -620,6 +626,17 @@ function jsonbArrayContainsOneString(s) {
   return JSON.stringify([String(s)]);
 }
 
+/** Value for PostgREST `in.(...)` text literal list. */
+function postgrestInTextValue(v) {
+  const s = String(v ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"${s}"`;
+}
+
+/** Safe SQL-ish identifier fragment for PostgREST filter strings. */
+function isSafeAnnotationColumnName(v) {
+  return /^[a-z_][a-z0-9_]*$/i.test(String(v || ""));
+}
+
 /** `profiles` row from PostgREST embed (object or single-element array). */
 function displayNameFromProfileEmbed(embed) {
   if (embed == null) return null;
@@ -680,6 +697,9 @@ export async function fetchCards(params = {}) {
     background_pokemon = [],
     actions = [],
     pose = [],
+    card_id = "",
+    annotation_field_key = "",
+    annotation_field_value = "",
     source = "TCG",
     sort_by = "name",
     sort_dir = "asc",
@@ -710,8 +730,18 @@ export async function fetchCards(params = {}) {
   const hasBg = Array.isArray(background_pokemon) && background_pokemon.length > 0;
   const hasActions = Array.isArray(actions) && actions.length > 0;
   const hasPose = Array.isArray(pose) && pose.length > 0;
+  const issueFieldKey = String(annotation_field_key || "").trim();
+  const issueFieldValue = String(annotation_field_value || "").trim();
+  const hasAnnotationIssueFilter =
+    Boolean(issueFieldValue) && isSafeAnnotationColumnName(issueFieldKey);
   const useAnnInner =
-    hasRegion || hasWeather || hasEnvironment || hasBg || hasActions || hasPose;
+    hasRegion ||
+    hasWeather ||
+    hasEnvironment ||
+    hasBg ||
+    hasActions ||
+    hasPose ||
+    hasAnnotationIssueFilter;
 
   // Grid only: omit profiles embeds — nested embeds can interact badly with nullable FKs
   // under some PostgREST versions; creator/editor names are optional here (detail view embeds).
@@ -738,6 +768,7 @@ export async function fetchCards(params = {}) {
   }
 
   if (q) query = query.ilike("name", `%${q}%`);
+  if (card_id) query = query.eq("id", String(card_id));
 
   if (supertype) {
     const norm = supertype.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -770,12 +801,29 @@ export async function fetchCards(params = {}) {
   if (Array.isArray(artist) && artist.length) {
     if (source === "Pocket") {
       query = query.in("illustrator", artist);
-    } else if (source === "") {
+    } else if (source === "" || source === "TCG" || source === "Custom") {
+      let annotationArtistCardIds = [];
+      const annClauses = [];
+      for (const a of artist) {
+        annClauses.push(`extra->>artist.eq.${postgrestOrEqValue(a)}`);
+      }
+      if (annClauses.length) {
+        const { data: annRows, error: annErr } = await sb
+          .from("annotations")
+          .select("card_id")
+          .or(annClauses.join(","));
+        if (annErr) throw annErr;
+        annotationArtistCardIds = [...new Set((annRows || []).map((r) => r.card_id).filter(Boolean))];
+      }
       const clauses = [];
       for (const a of artist) {
         const e = postgrestOrEqValue(a);
         clauses.push(`artist.eq.${e}`);
         clauses.push(`illustrator.eq.${e}`);
+      }
+      if (annotationArtistCardIds.length) {
+        const idList = annotationArtistCardIds.map((id) => postgrestInTextValue(id)).join(",");
+        clauses.push(`id.in.(${idList})`);
       }
       query = query.or(clauses.join(","));
     } else {
@@ -805,6 +853,27 @@ export async function fetchCards(params = {}) {
   if (hasPose) {
     const parts = pose.map((p) => `pose.cs.${jsonbArrayContainsOneString(p)}`);
     query = query.or(parts.join(","), { referencedTable: "annotations" });
+  }
+  if (hasAnnotationIssueFilter) {
+    const parts = [];
+    const isArrayField = ANNOTATION_JSONB_COLUMNS.has(issueFieldKey);
+    if (isArrayField) {
+      parts.push(`${issueFieldKey}.cs.${jsonbArrayContainsOneString(issueFieldValue)}`);
+      // Historical rows may differ only by case; keep deep-link behavior resilient.
+      const lowerValue = issueFieldValue.toLowerCase();
+      if (lowerValue !== issueFieldValue) {
+        parts.push(`${issueFieldKey}.cs.${jsonbArrayContainsOneString(lowerValue)}`);
+      }
+    } else if (ANNOTATION_BOOLEAN_COLUMNS.has(issueFieldKey)) {
+      const wanted = issueFieldValue.toLowerCase();
+      if (wanted === "true" || wanted === "false") {
+        parts.push(`${issueFieldKey}.eq.${wanted}`);
+      }
+    } else {
+      parts.push(`${issueFieldKey}.eq.${postgrestOrEqValue(issueFieldValue)}`);
+    }
+    if (!parts.length) query = query.eq("id", "__no_match__");
+    else query = query.or(parts.join(","), { referencedTable: "annotations" });
   }
 
   if (Array.isArray(specialty) && specialty.length) {

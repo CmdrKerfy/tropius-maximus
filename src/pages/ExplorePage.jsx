@@ -400,10 +400,13 @@ export default function ExplorePage() {
           element: [],
           card_type: [],
           stage: [],
+          card_id: "",
           weather: [],
           environment: [],
           actions: [],
           pose: [],
+          annotation_field_key: "",
+          annotation_field_value: "",
           sort_by: "name",
           sort_dir: "asc",
         });
@@ -1380,6 +1383,17 @@ export default function ExplorePage() {
                 if (filterKey === "q") {
                   setSearchQuery(String(filterValue ?? ""));
                   setFilters({ ...DEFAULT_FILTERS });
+                  return;
+                }
+                if (String(filterKey).startsWith("annotation:")) {
+                  const fieldKey = String(filterKey).slice("annotation:".length).trim();
+                  if (!fieldKey) return;
+                  setSearchQuery("");
+                  setFilters({
+                    ...DEFAULT_FILTERS,
+                    annotation_field_key: fieldKey,
+                    annotation_field_value: String(filterValue ?? "").trim(),
+                  });
                   return;
                 }
                 setSearchQuery("");

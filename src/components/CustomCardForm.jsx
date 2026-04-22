@@ -324,6 +324,25 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
 
   // Parse comma-separated string into array, filtering empty
   const toArray = (s) => s ? s.split(",").map(v => v.trim()).filter(Boolean) : [];
+  const normalizeBackgroundDetailsInput = (s) => {
+    const expanded = toArray(s).flatMap((token) =>
+      String(token ?? "")
+        .split(/[;,，；]/g)
+        .map((part) => part.trim())
+        .filter(Boolean)
+    );
+    const out = [];
+    const seen = new Set();
+    for (const raw of expanded) {
+      const value = String(raw ?? "").trim();
+      if (!value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(value);
+    }
+    return out;
+  };
   // Format for JSON storage - returns JSON string of array or null
   const arrayStr = (s) => {
     const arr = toArray(s);
@@ -362,7 +381,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       perspective: perspective || "",
       weather: weather || "",
       environment: environment || "",
-      background_details: toArray(backgroundDetails),
+      background_details: normalizeBackgroundDetailsInput(backgroundDetails),
       card_locations: cardLocations || "",
       pkmn_region: pkmnRegion || "",
       card_subcategory: toArray(cardSubcategory),
@@ -812,7 +831,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       background_pokemon: bgPokemon.length ? JSON.stringify(bgPokemon) : "",
       background_humans: backgroundHumans ? arrayStr(backgroundHumans) : "",
       additional_characters: arrayStr(additionalCharacters),
-      background_details: arrayStr(backgroundDetails),
+      background_details: (() => {
+        const normalized = normalizeBackgroundDetailsInput(backgroundDetails);
+        return normalized.length > 0 ? JSON.stringify(normalized) : "";
+      })(),
       image_large: imageLarge || imageSmall,
       card_subcategory: arrayStr(cardSubcategory),
       items: arrayStr(items),

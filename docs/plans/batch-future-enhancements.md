@@ -23,6 +23,7 @@
 | 11 | **Migration naming consistency follow-up** | Non-standard version labels (e.g. `025b`) are skipped by Supabase CLI history matching and need separate function-presence checks. | Revisit in migration tooling hygiene pass; define one naming convention and migration metadata checks for all environments. |
 | 12 | **OG canonical host hardening** | `api/share-og` currently derives origin from request headers; safer to prefer trusted configured origin for canonical tags. | Revisit during share/SEO hardening pass or before public growth spike. |
 | 13 | **CI browser smoke lane** | Current CI gate is build + unit only; browser regressions rely on manual smoke and local runs. | Add separate CI browser smoke workflow when local deterministic smoke runner is stable. |
+| 14 | **Explore exact-name filter path (follow-up to clickable card names)** | Current quick behavior wires card name clicks to `q`, which is convenient but fuzzy. Add a dedicated exact-name filter (case-insensitive `name =`) for precise “show all Pikachu cards” results and optional variant matching controls. | Revisit when name-click usage grows or fuzzy `q` over-match causes confusion; likely touches `CardDetail` click map + `ExplorePage` state + `fetchCards` backend filter contract. |
 
 ---
 

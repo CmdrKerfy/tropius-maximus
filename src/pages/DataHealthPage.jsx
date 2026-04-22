@@ -61,12 +61,6 @@ const FIELD_LABELS = {
   video_location: "Video Location",
 };
 
-const ISSUE_FILTER_MAP = {
-  background_pokemon: "background_pokemon",
-  pose: "pose",
-  actions: "actions",
-};
-
 const ISSUE_CARDS_VISIBLE_PAGE = 120;
 
 const MISSING_RPC_MIGRATION = {
@@ -90,12 +84,12 @@ function missingRpcFromError(err) {
 }
 
 function issueExploreHref(issue) {
+  const key = String(issue?.field_key || "").trim();
   const value = String(issue?.field_value || "").trim();
-  if (!value) return "/";
+  if (!key || !value) return "/";
   const p = new URLSearchParams();
-  const mapped = ISSUE_FILTER_MAP[issue?.field_key] || "q";
-  if (mapped === "q") p.set("q", value);
-  else p.append(mapped, value);
+  p.set("annotation_field_key", key);
+  p.set("annotation_field_value", value);
   return `/?${p.toString()}`;
 }
 
