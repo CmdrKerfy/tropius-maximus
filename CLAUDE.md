@@ -13,7 +13,7 @@ The project is actively being migrated from v1 (GitHub Pages + DuckDB-WASM) to v
 ### Branches & deploy (as of 2026-04-06)
 
 - **`main`** — **Live site:** GitHub Pages (v1-style app + Parquet/DuckDB in browser). **Also carries** `.github/workflows/ingest-supabase.yml`, `scripts/push_duckdb_to_supabase.py`, `scripts/requirements-ci.txt`, and a synced `scripts/ingest.py` so GitHub Actions **lists** the Supabase ingest workflow (GitHub only surfaces workflows from the **default** branch). Pushing `main` still triggers **deploy-pages** — avoid merging the full v2 frontend here until intentional cutover.
-- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`029`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
+- **`v2/supabase-migration`** — **Full v2 app** (React Router, Supabase adapter, Explore / Workbench / Health / Fields / Batch / History / Dashboard, migrations `001`–`037`, etc.). Deploy previews/production on **Vercel** from this branch (or another non-`main` branch) while testing. **Manual “Run workflow”** for ingest can target this branch so the job checks out v2 code.
 - **Tag `pre-supabase-migration`** — Safety snapshot of main before any v2 work began.
 
 ### Migration Progress (as of 2026-04-06)
@@ -39,6 +39,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - [ ] **Final production-readiness pass** — operator checklist + rollout order (**`docs/plans/production-readiness-final-pass.md`**). Includes staging/prod migration parity through **`028`**, Data Health RPC verification, and release gate checks.
 - [ ] **Tackle-now implementation queue** — auth endpoint abuse hardening, Data Health cleanup audit trail, full manual smoke sign-off, and DuckDB/Supabase bundle-boundary optimization (Phase 4 in **`docs/plans/production-readiness-final-pass.md`**).
 - [ ] **Cross-functional panel cadence** — run specialist review regularly and after major changes (**`docs/plans/cross-functional-panel-review.md`**).
+- [ ] **Phase 6 shared-list QA sign-off** — run multi-user checks (private-list visibility, shared-list collaborator content edits, owner-only rename/delete/share controls).
 - [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
 - [ ] Optional: Supabase stubs — SQL console, custom card CRUD (Phase 3 deferred items).
 
@@ -58,7 +59,7 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 - **`unique_id` cleanup (deferred):** Legacy annotation field often duplicates **`cards.id`**. Tracked spec — **`docs/plans/unique-id-annotation-cleanup.md`** (inventory UI/DuckDB, single canonical ID, optional data migration). Not started.
 - **Add/edit workflow hardening:** **`docs/plans/edit-add-card-workflow-hardening.md`** — Shipped: **version-checked** `patchAnnotations`, batch **typed count** confirm (≥25 cards), image **save confirm** when preview failed, delete/ stale-card UX, **humanizeError** tweaks, **transactional** annotation + `edit_history` via **`017_apply_annotation_with_history.sql`** / `apply_annotation_with_history`, **RPC conflict detection** (`isAnnotationVersionConflictFromRpc`: `message` / `details` / `hint` + code **`P0001`**).
 - **Data Health polish (shipped on v2 branch):** graceful fallback copy when health RPCs are missing (migration guidance instead of raw function-cache errors), selected-issue **Copy deep link**, session-level **last cleanup** note + replace-mode undo prep, **View cards** render cap with **Load more**, hover preview skeleton, cleanup mode helper copy, and color semantics alignment (amber warning / slate triage / red destructive).
-- **Workbench + Card detail UX polish (shipped on v2 branch):** shared list UX now includes **selected / matching / set** enqueue flows from Explore and Batch with 5,000-cap warning parity, large-set confirm guardrails (including anti-double-click dialog protection), progressive list target pickers, explicit sharing (`is_shared`) with owner-first grouping (`My lists` / `Shared with me`), owner-only list settings (share/rename/delete), and card-detail action declutter (inline share link, quieter metadata/chips, hover-only filter underlines, and delete moved into **More** menu).
+- **Workbench + Card detail UX polish (shipped on v2 branch):** shared list UX now includes **selected / matching / set** enqueue flows from Explore and Batch with 5,000-cap warning parity, large-set confirm guardrails (including anti-double-click dialog protection), progressive list target pickers, explicit sharing (`is_shared`) with owner-first grouping (`My lists` / `Shared with me`), owner-only list settings (share/rename/delete via **`036`** + **`037`**), shared-target context hints across enqueue entry points, and card-detail action declutter (inline share link, quieter metadata/chips, hover-only filter underlines, and delete moved into **More** menu).
 
 ### Optional — after the core v2 plan is finished
 
@@ -212,6 +213,14 @@ supabase/
     027_manual_card_id_health_check.sql    -- read-only Data Health RPC for non-canonical manual card IDs
     028_annotation_value_issues_and_cleanup_rpc.sql -- Data Health value issue triage + view cards + bulk replace/remove RPCs
     029_fix_annotation_value_cleanup_rpc.sql -- fixes runtime SQL error in apply_annotation_value_cleanup (target alias in LATERAL)
+    030_normalize_background_details.sql -- split packed background_details strings into arrays
+    031_normalize_background_details_extended_delimiters.sql -- normalize extra delimiter variants in background_details
+    032_normalize_background_details_wrapped_quotes.sql -- normalize quoted packed background_details values
+    033_add_jumbo_card_annotation.sql -- add jumbo_card annotation support
+    034_manual_card_rename_with_history.sql -- manual-card rename with edit_history logging
+    035_shared_workbench_lists_v1.sql -- named shared Workbench lists + list items
+    036_workbench_list_explicit_sharing.sql -- explicit list visibility toggle (private by default)
+    037_workbench_list_owner_controls.sql -- owner-only share/rename/delete guardrails
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules

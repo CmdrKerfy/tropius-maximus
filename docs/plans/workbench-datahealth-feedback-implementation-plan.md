@@ -1,13 +1,14 @@
 # Plan: Workbench + Data Health + Search feedback implementation
 
-**Status:** In progress (Phases 1-6 implemented on branch; QA/sign-off in progress)
+**Status:** Phase 6 implementation complete on branch (manual multi-user QA/sign-off pending)
 
 **Branch:** `v2/supabase-migration`
 
 **Owner decisions captured:**
 
 - Shared Workbench lists should prioritize easiest implementation path for a 3-person collaborator group.
-- Shared list collaborators can edit/add/drop cards and rename/delete lists.
+- Lists are private by default; collaborators only see lists the owner explicitly shares.
+- Collaborators can edit list content on shared lists, while share/rename/delete remain owner-only controls.
 - Batch enqueue cap should match batch list behavior: up to 5,000 cards with warning UX.
 - Card rename is manual/custom cards only; API-ingested names remain immutable.
 - Renames should appear in history/dashboard tracking.
@@ -175,8 +176,8 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 ### Scope
 
 - Introduce named Workbench lists.
-- Default sharing model: easiest path for current team size (authenticated collaborators can edit list content).
-- Allow collaborators to add/drop/reorder cards and rename/delete lists.
+- Default sharing model: private-by-default with explicit owner opt-in (`is_shared`) for collaborator visibility.
+- Allow collaborators on shared lists to add/drop/reorder cards while owner-only settings guard share/rename/delete.
 - Add “send selected / matching / set cards to Workbench list” flow with 5,000 cap warning.
 
 ### Primary file touches
@@ -195,7 +196,9 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 ### QA pause gate (manual)
 
 - Create multiple lists, rename/delete one, reorder cards, and remove cards.
+- Verify private lists are hidden from other users until owner marks them shared.
 - Verify collaborator can edit/add/drop cards on same shared list.
+- Verify collaborator cannot rename/delete/toggle sharing on a list they do not own.
 - Try enqueue over 5,000 matching cards and verify warning/guard UX.
 
 ### Implementation snapshot (current branch state)
@@ -207,6 +210,7 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 - Card detail + Workbench copy now consistently uses **list** wording (replacing mixed queue/list phrasing).
 - Sharing model now supports **explicit visibility** (`is_shared`) so lists are private by default; cross-user visibility requires owner opt-in.
 - Ownership UX is surfaced in selectors (`My lists` / `Shared with me`) and owner-only list settings are guarded in UI + DB (rename/delete/share controls).
+- Shared-target context hints now appear in Explore, Batch, and Card Detail enqueue entry points when the active target is teammate-owned.
 
 ---
 
