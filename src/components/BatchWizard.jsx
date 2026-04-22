@@ -15,9 +15,12 @@ import {
   MAX_FIELD_STEPS,
 } from "../lib/batchEditPatch.js";
 import {
+  appendCardsToDefaultQueue,
+  appendCardsToWorkbenchQueue,
   appendCuratedOptionsForCustomField,
   batchPatchAnnotations,
   createBatchRun,
+  fetchWorkbenchQueues,
   fetchBatchWizardPreview,
   fetchCardNamesByIds,
   FORM_OPTIONS_QUERY_KEY,
@@ -34,6 +37,7 @@ import BatchFieldStepBlock, { summarizeStepPatch } from "./BatchFieldStepBlock.j
 const LARGE_THRESHOLD = 75;
 const TYPED_COUNT_THRESHOLD = 25;
 const PREVIEW_CAP = 48;
+const WORKBENCH_QUEUE_STORAGE_KEY = "tm_workbench_queue_id";
 
 function newStep() {
   return {
@@ -54,6 +58,17 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
   const ids = batchSelection.ids;
   const total = ids.length;
   const idsKey = useMemo(() => ids.join("\0"), [ids]);
+  const [workbenchQueueId, setWorkbenchQueueId] = useState(() => {
+    try {
+      return typeof localStorage !== "undefined"
+        ? localStorage.getItem(WORKBENCH_QUEUE_STORAGE_KEY) || ""
+        : "";
+    } catch {
+      return "";
+    }
+  });
+  const [workbenchListAppendBusy, setWorkbenchListAppendBusy] = useState(false);
+  const [showWorkbenchTargetPicker, setShowWorkbenchTargetPicker] = useState(false);
 
   const [phase, setPhase] = useState("field");
   const [fieldSteps, setFieldSteps] = useState(() => [newStep()]);
@@ -95,6 +110,75 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
   useEffect(() => {
     setBatchCountConfirm("");
   }, [total]);
+
+  const { data: workbenchQueues = [] } = useQuery({
+    queryKey: ["workbenchQueues"],
+    queryFn: fetchWorkbenchQueues,
+  });
+
+  const selectedWorkbenchQueue = useMemo(() => {
+    if (!workbenchQueues.length) return null;
+    const found = workbenchQueueId
+      ? workbenchQueues.find((q) => String(q.id) === String(workbenchQueueId))
+      : null;
+    return found || workbenchQueues[0];
+  }, [workbenchQueues, workbenchQueueId]);
+
+  useEffect(() => {
+    if (!selectedWorkbenchQueue?.id) return;
+    setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
+  }, [selectedWorkbenchQueue?.id]);
+
+  useEffect(() => {
+    try {
+      if (typeof localStorage !== "undefined") {
+        if (workbenchQueueId) localStorage.setItem(WORKBENCH_QUEUE_STORAGE_KEY, workbenchQueueId);
+        else localStorage.removeItem(WORKBENCH_QUEUE_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [workbenchQueueId]);
+
+  useEffect(() => {
+    if (workbenchQueues.length <= 1) setShowWorkbenchTargetPicker(false);
+  }, [workbenchQueues.length]);
+
+  const handleBatchListToWorkbench = async (queueIdOverride = null) => {
+    if (total === 0) return;
+    setWorkbenchListAppendBusy(true);
+    try {
+      const targetQueue =
+        (queueIdOverride != null
+          ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+          : null) || selectedWorkbenchQueue || null;
+      const queueId = targetQueue?.id;
+      const queueName = targetQueue?.name || "Workbench";
+      const { added, capped, max } = queueId
+        ? await appendCardsToWorkbenchQueue(queueId, ids)
+        : await appendCardsToDefaultQueue(ids);
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (queueId != null) setWorkbenchQueueId(String(queueId));
+      if (added === 0 && capped) {
+        toastWarning(
+          `"${queueName}" is full (${Number(max || batchSelection.maxCards).toLocaleString()} cards). Remove some cards before adding more.`
+        );
+      } else if (added === 0) {
+        toastWarning(`Every card in your batch list was already in "${queueName}".`);
+      } else if (capped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}". The list is capped at ${Number(max || batchSelection.maxCards).toLocaleString()} cards; some were skipped.`
+        );
+      } else {
+        toastSuccess(`Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}".`);
+      }
+      setShowWorkbenchTargetPicker(false);
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setWorkbenchListAppendBusy(false);
+    }
+  };
 
   const previewKey = useMemo(() => ids.slice(0, PREVIEW_CAP).join(","), [idsKey]);
 
@@ -355,6 +439,53 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
         <p className="text-xs text-gray-600 leading-relaxed">
           This run uses your saved list only (not the Explore URL). Clear the list from Explore if you need to start over.
         </p>
+        <div className="pt-1 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (workbenchQueues.length > 1 && !showWorkbenchTargetPicker) {
+                setShowWorkbenchTargetPicker(true);
+                return;
+              }
+              void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
+            }}
+            disabled={total === 0 || workbenchListAppendBusy}
+            title="Add this saved batch list to the selected Workbench list (deduped; does not replace the list)"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
+          </button>
+          {showWorkbenchTargetPicker && workbenchQueues.length > 1 && (
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-1.5 py-1">
+              <select
+                value={selectedWorkbenchQueue?.id ?? ""}
+                onChange={(e) => setWorkbenchQueueId(String(e.target.value))}
+                className="h-8 rounded border border-sky-300 bg-white px-2 text-xs text-sky-950"
+              >
+                {workbenchQueues.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.name || "Untitled list"}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
+                disabled={workbenchListAppendBusy}
+                className="h-8 rounded bg-sky-600 px-2.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {workbenchListAppendBusy ? "Adding…" : "Add"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWorkbenchTargetPicker(false)}
+                className="h-8 rounded border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {phase === "field" && (
