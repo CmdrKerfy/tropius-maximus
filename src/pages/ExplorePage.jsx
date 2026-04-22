@@ -1379,7 +1379,7 @@ export default function ExplorePage() {
                     }}
                     disabled={workbenchMatchingAppendBusy}
                     title="Add cards matching current filters to your selected Workbench list (deduped; capped at 5,000)"
-                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchMatchingAppendBusy ? "Adding…" : "Add matching to Workbench"}
                   </button>
@@ -1441,7 +1441,7 @@ export default function ExplorePage() {
                     }}
                     disabled={batchSelection.count === 0 || workbenchListAppendBusy}
                     title="Add your saved batch list to the selected Workbench list (deduped; does not replace the list)"
-                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
                   </button>
@@ -1490,7 +1490,7 @@ export default function ExplorePage() {
                   )}
                   <NavLink
                     to="/batch"
-                    className="inline-flex items-center justify-center rounded-lg bg-tm-leaf px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-tm-leaf-muted"
+                    className="inline-flex items-center justify-center rounded-lg bg-tm-leaf px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-tm-leaf-muted"
                   >
                     Open Batch
                   </NavLink>
@@ -1503,7 +1503,7 @@ export default function ExplorePage() {
                     onClick={() => batchSelection.clear()}
                     disabled={batchSelection.count === 0}
                     title="Remove every card from your saved batch list (does not delete cards)"
-                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold border border-tm-danger/45 bg-tm-danger-soft text-tm-danger shadow-sm hover:bg-red-200/90 hover:border-tm-danger/55 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-tm-danger-soft"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold border border-tm-danger/45 bg-tm-danger-soft text-tm-danger shadow-sm hover:bg-red-200/90 hover:border-tm-danger/55 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-tm-danger-soft"
                   >
                     Clear batch list
                   </button>

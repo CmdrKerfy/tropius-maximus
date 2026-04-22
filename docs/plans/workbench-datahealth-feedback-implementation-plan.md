@@ -211,6 +211,8 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 - Sharing model now supports **explicit visibility** (`is_shared`) so lists are private by default; cross-user visibility requires owner opt-in.
 - Ownership UX is surfaced in selectors (`My lists` / `Shared with me`) and owner-only list settings are guarded in UI + DB (rename/delete/share controls).
 - Shared-target context hints now appear in Explore, Batch, and Card Detail enqueue entry points when the active target is teammate-owned.
+- Move-selected now uses an **atomic DB RPC** with 5,000-cap enforcement, so partial failures no longer create split-brain source/target list states.
+- Bulk-remove Undo now performs **additive restore** of removed IDs (instead of full snapshot overwrite), reducing shared-list teammate edit clobber risk.
 
 ---
 
