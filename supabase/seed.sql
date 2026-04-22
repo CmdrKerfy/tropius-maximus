@@ -74,8 +74,9 @@ INSERT INTO field_definitions (name, label, field_type, category, sort_order, cu
 INSERT INTO field_definitions (name, label, field_type, category, sort_order, curated_options) VALUES
 ('owned', 'Owned', 'boolean', 'collection', 10, '[]'),
 ('pocket_exclusive', 'Pocket Exclusive', 'boolean', 'collection', 20, '[]'),
-('image_override', 'Image Override', 'url', 'collection', 30, '[]'),
-('notes', 'Notes', 'text', 'collection', 40, '[]');
+('jumbo_card', 'Jumbo Card', 'boolean', 'collection', 30, '[]'),
+('image_override', 'Image Override', 'url', 'collection', 40, '[]'),
+('notes', 'Notes', 'text', 'collection', 50, '[]');
 
 
 -- ── Normalization Rules ────────────────────────────────────

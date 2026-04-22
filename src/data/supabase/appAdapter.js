@@ -495,6 +495,7 @@ const ANNOTATION_BOOLEAN_COLUMNS = new Set([
   "region_appearance",
   "thumbnail_used",
   "pocket_exclusive",
+  "jumbo_card",
   "owned",
 ]);
 
@@ -697,6 +698,7 @@ export async function fetchCards(params = {}) {
     background_pokemon = [],
     actions = [],
     pose = [],
+    jumbo_card = "",
     card_id = "",
     annotation_field_key = "",
     annotation_field_value = "",
@@ -730,6 +732,8 @@ export async function fetchCards(params = {}) {
   const hasBg = Array.isArray(background_pokemon) && background_pokemon.length > 0;
   const hasActions = Array.isArray(actions) && actions.length > 0;
   const hasPose = Array.isArray(pose) && pose.length > 0;
+  const jumboCardFilterValue = String(jumbo_card || "").trim().toLowerCase();
+  const hasJumboCardFilter = jumboCardFilterValue === "true" || jumboCardFilterValue === "false";
   const issueFieldKey = String(annotation_field_key || "").trim();
   const issueFieldValue = String(annotation_field_value || "").trim();
   const hasAnnotationIssueFilter =
@@ -741,6 +745,7 @@ export async function fetchCards(params = {}) {
     hasBg ||
     hasActions ||
     hasPose ||
+    hasJumboCardFilter ||
     hasAnnotationIssueFilter;
 
   // Grid only: omit profiles embeds — nested embeds can interact badly with nullable FKs
@@ -853,6 +858,9 @@ export async function fetchCards(params = {}) {
   if (hasPose) {
     const parts = pose.map((p) => `pose.cs.${jsonbArrayContainsOneString(p)}`);
     query = query.or(parts.join(","), { referencedTable: "annotations" });
+  }
+  if (hasJumboCardFilter) {
+    query = query.eq("annotations.jumbo_card", jumboCardFilterValue === "true");
   }
   if (hasAnnotationIssueFilter) {
     const parts = [];

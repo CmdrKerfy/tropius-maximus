@@ -54,6 +54,7 @@ export const ANNOTATION_TYPED_COLUMNS = new Set([
   "video_region",
   "video_location",
   "pocket_exclusive",
+  "jumbo_card",
   "owned",
 ]);
 
@@ -179,6 +180,7 @@ export const ANNOTATION_ROW_INSERT_DEFAULTS = {
   region_appearance: false,
   thumbnail_used: false,
   pocket_exclusive: false,
+  jumbo_card: false,
   owned: false,
   extra: {},
   overrides: {},

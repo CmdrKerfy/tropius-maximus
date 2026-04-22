@@ -217,6 +217,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const [videoLocation, setVideoLocation] = useState("");
 
   // ── Notes fields ──
+  const [jumboCard, setJumboCard] = useState(false);
   const [owned, setOwned] = useState(false);
   const [notes, setNotes] = useState("");
 
@@ -352,6 +353,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const buildSharedAnnotationFields = (cardId) => {
     const bgPokemon = toArray(backgroundPokemon).map(v => v.toLowerCase());
     return {
+      jumbo_card: jumboCard,
       owned,
       notes: notes || "",
       art_style: toArray(artStyle),
@@ -459,6 +461,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
     setWtpcEpisode("");
     setVideoRegion("");
     setVideoLocation("");
+    setJumboCard(false);
     setOwned(false);
     setNotes("");
     setCardSubcategory("");
@@ -1366,19 +1369,8 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
             <p className="text-xs text-gray-600 leading-relaxed">
               Required fields stay on top; open <strong>Details &amp; annotations</strong> for the rest (or add them later in Explore or Workbench).
             </p>
-            <div className="mt-3 flex flex-col gap-2 border-t border-emerald-200/70 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex min-w-0 items-start gap-2">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 shadow-sm">
-                  <Layers className="h-4 w-4" strokeWidth={2} aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">Keep set &amp; source</p>
-                  <p className="text-xs text-gray-600">
-                    Reuse the same set and source after you save—handy for multi-card runs.
-                  </p>
-                </div>
-              </div>
-              <label className="flex shrink-0 cursor-pointer items-center gap-3 self-end rounded-lg sm:self-center focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2">
+            <div className="mt-3 flex items-start gap-3 border-t border-emerald-200/70 pt-3">
+              <label className="flex shrink-0 cursor-pointer items-center gap-3 rounded-lg focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2">
                 <span className="sr-only">Keep set and source for next card</span>
                 <input
                   type="checkbox"
@@ -1391,6 +1383,17 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                   aria-hidden
                 />
               </label>
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 shadow-sm">
+                  <Layers className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">Keep set &amp; source</p>
+                  <p className="text-xs text-gray-600">
+                    Reuse the same set and source after you save—handy for multi-card runs.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1457,6 +1460,18 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
               />
               <label htmlFor="pocketExclusive" className="text-sm text-gray-700">
                 Pocket Exclusive
+              </label>
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <input
+                type="checkbox"
+                id="jumboCardPrimary"
+                checked={jumboCard}
+                onChange={(e) => setJumboCard(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="jumboCardPrimary" className="text-sm text-gray-700">
+                Jumbo Card
               </label>
             </div>
             <div className="col-span-1 md:col-span-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-snug">
@@ -1526,10 +1541,6 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 className={inputClass + " w-full"}
               />
             </div>
-            <div className="sm:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-snug">
-              <strong className="text-gray-800">Set ID + number</strong> → unique ID. Non-TCG sources auto-fill Set ID
-              from Set Name. Source <strong>TCG</strong> disables auto-fill — use a custom source if Set ID stays empty.
-            </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>
                 Image URL <span className="text-red-500">*</span>
@@ -1545,6 +1556,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 required
                 className={inputClass + " w-full"}
               />
+            </div>
+            <div className="sm:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-snug">
+              <strong className="text-gray-800">Set ID + number</strong> → unique ID. Non-TCG sources auto-fill Set ID
+              from Set Name. Source <strong>TCG</strong> disables auto-fill — use a custom source if Set ID stays empty.
             </div>
           </div>
         )}
@@ -1684,6 +1699,10 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 <div className="flex items-center gap-2 sm:col-span-2 md:col-span-1 pt-1">
                   <input type="checkbox" id="pocketExclusiveQuick" checked={pocketExclusive} onChange={(e) => setPocketExclusive(e.target.checked)} className="rounded" />
                   <label htmlFor="pocketExclusiveQuick" className="text-sm text-gray-700">Pocket Exclusive</label>
+                </div>
+                <div className="flex items-center gap-2 sm:col-span-2 md:col-span-1 pt-1">
+                  <input type="checkbox" id="jumboCardQuick" checked={jumboCard} onChange={(e) => setJumboCard(e.target.checked)} className="rounded" />
+                  <label htmlFor="jumboCardQuick" className="text-sm text-gray-700">Jumbo Card</label>
                 </div>
                 <div className="sm:col-span-2 md:col-span-3">
                   <label className={labelClass}>Large Image URL [Optional]</label>

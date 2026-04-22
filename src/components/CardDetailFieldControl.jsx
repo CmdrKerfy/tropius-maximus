@@ -706,6 +706,21 @@ export default function CardDetailFieldControl({
           </label>
         </div>
       );
+    case "jumbo_card":
+      return (
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id={`cardDetail-jumboCard${suf}`}
+            checked={!!ann.jumbo_card}
+            onChange={(e) => saveAnnotation("jumbo_card", e.target.checked)}
+            className="rounded"
+          />
+          <label htmlFor={`cardDetail-jumboCard${suf}`} className="text-sm text-gray-700">
+            Jumbo card
+          </label>
+        </div>
+      );
     case "notes":
       return (
         <div className={fullSpan}>

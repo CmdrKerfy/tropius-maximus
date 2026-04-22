@@ -238,7 +238,8 @@ export default function FilterPanel({
     isActive(filters.weather) ||
     isActive(filters.environment) ||
     isActive(filters.actions) ||
-    isActive(filters.pose);
+    isActive(filters.pose) ||
+    isActive(filters.jumbo_card);
 
   const setNameById = {};
   for (const { sets } of setGroups) {
@@ -340,6 +341,13 @@ export default function FilterPanel({
       onRemove: () => onChange({ pose: (filters.pose || []).filter((x) => x !== v) }),
     });
   }
+  if (filters.jumbo_card === "true" || filters.jumbo_card === "false") {
+    activeChips.push({
+      key: `jumbo-${filters.jumbo_card}`,
+      label: `Jumbo Card: ${filters.jumbo_card === "true" ? "Yes" : "No"}`,
+      onRemove: () => onChange({ jumbo_card: "" }),
+    });
+  }
 
   const filtersActive = exploreFiltersAreActive(filters);
   const q = String(searchQuery || "").trim();
@@ -378,6 +386,7 @@ export default function FilterPanel({
       environment: [],
       actions: [],
       pose: [],
+      jumbo_card: "",
       sort_by: isTCG ? "pokedex" : "name",
       sort_dir: "asc",
       source: "",
@@ -624,6 +633,19 @@ export default function FilterPanel({
                 />
               </div>
             )}
+
+            <div className="flex flex-col min-w-0">
+              <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Jumbo Card</label>
+              <select
+                value={filters.jumbo_card || ""}
+                onChange={(e) => onChange({ jumbo_card: e.target.value })}
+                className={selectClass}
+              >
+                <option value="">All</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
           </div>
         </div>
       </details>

@@ -751,6 +751,8 @@ export default function CardDetail({
           return annotationTarget("video_location", splitVals);
         case "Pocket Exclusive":
           return annotationTarget("pocket_exclusive", splitVals);
+        case "Jumbo Card":
+          return annotationTarget("jumbo_card", splitVals);
         case "Owned":
           return annotationTarget("owned", splitVals);
         case "Trainer Card Type":
@@ -918,6 +920,7 @@ export default function CardDetail({
         title: "Notes",
         fields: [
           field("Pocket Exclusive", ann.pocket_exclusive || false),
+          field("Jumbo Card", ann.jumbo_card || false),
           field("Owned", ann.owned || false),
           field("Notes", annValue("notes")),
         ],
@@ -1781,6 +1784,10 @@ export default function CardDetail({
                                 onChange={(e) => saveAnnotation("pocket_exclusive", e.target.checked)}
                                 className="rounded" />
                               <label htmlFor="cardDetail-pocketExclusive" className="text-sm text-gray-700">Pocket Exclusive</label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input type="checkbox" id="cardDetail-jumboCard" checked={!!ann.jumbo_card} onChange={(e) => saveAnnotation("jumbo_card", e.target.checked)} className="rounded" />
+                              <label htmlFor="cardDetail-jumboCard" className="text-sm text-gray-700">Jumbo Card</label>
                             </div>
                             <div className="flex items-center gap-2">
                               <input type="checkbox" id="cardDetail-owned" checked={!!ann.owned} onChange={(e) => saveAnnotation("owned", e.target.checked)} className="rounded" />

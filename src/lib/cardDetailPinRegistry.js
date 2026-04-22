@@ -70,7 +70,7 @@ export const CARD_DETAIL_PIN_GROUPS = [
   },
   {
     title: "Notes",
-    keys: ["pocket_exclusive", "owned", "notes"],
+    keys: ["pocket_exclusive", "jumbo_card", "owned", "notes"],
   },
 ];
 
@@ -123,6 +123,7 @@ export const CARD_DETAIL_PIN_LABELS = {
   wtpc_episode: "WTPC episode",
   video_location: "Video location",
   pocket_exclusive: "Pocket exclusive",
+  jumbo_card: "Jumbo card",
   owned: "Owned",
   notes: "Notes",
 };

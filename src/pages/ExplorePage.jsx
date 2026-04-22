@@ -401,6 +401,7 @@ export default function ExplorePage() {
           card_type: [],
           stage: [],
           card_id: "",
+          jumbo_card: "",
           weather: [],
           environment: [],
           actions: [],
