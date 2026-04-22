@@ -228,6 +228,7 @@ export default function CardDetail({
   const [showWorkbenchTargetPicker, setShowWorkbenchTargetPicker] = useState(false);
   const [showSetWorkbenchTargetPicker, setShowSetWorkbenchTargetPicker] = useState(false);
   const [showCardActionsMenu, setShowCardActionsMenu] = useState(false);
+  const cardActionsMenuRef = useRef(null);
   const [activeTab, setActiveTab] = useState("info");
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
@@ -316,6 +317,8 @@ export default function CardDetail({
       if (e.key === "Escape") {
         if (imageEnlarged) {
           setImageEnlarged(false);
+        } else if (showCardActionsMenu) {
+          setShowCardActionsMenu(false);
         } else {
           handleClose();
         }
@@ -330,7 +333,19 @@ export default function CardDetail({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleClose, imageEnlarged, editingImage, hasPrev, hasNext, onPrev, onNext]);
+  }, [handleClose, imageEnlarged, editingImage, hasPrev, hasNext, onPrev, onNext, showCardActionsMenu]);
+
+  useEffect(() => {
+    if (!showCardActionsMenu) return undefined;
+    const onDocMouseDown = (e) => {
+      if (!cardActionsMenuRef.current) return;
+      if (!cardActionsMenuRef.current.contains(e.target)) {
+        setShowCardActionsMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [showCardActionsMenu]);
 
   // Prevent body scroll while modal is open.
   useEffect(() => {
@@ -1054,6 +1069,7 @@ export default function CardDetail({
                     setShowWorkbenchTargetPicker((v) => !v);
                   }}
                   className="shrink-0 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-lg hover:bg-green-200 border border-green-200/80"
+                  title="Add this card to your selected Workbench list (deduped)"
                 >
                   Send to Workbench
                 </button>
@@ -1568,7 +1584,7 @@ export default function CardDetail({
                       {isEditMode ? "Done" : "Edit"}
                     </button>
                     {!isEditMode && card?.is_custom === true && (
-                      <div className="relative">
+                      <div className="relative" ref={cardActionsMenuRef}>
                         <button
                           type="button"
                           onClick={() => setShowCardActionsMenu((v) => !v)}

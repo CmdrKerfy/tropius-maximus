@@ -1332,7 +1332,7 @@ export default function ExplorePage() {
                 <p className="text-[11px] text-gray-600 leading-relaxed">
                   <span className="text-tm-canopy font-medium">Selection:</span> checkboxes on cards while this panel is open
                   or your list is non-empty.{" "}
-                  <span className="text-tm-info font-medium">Workbench:</span> separate queue —{" "}
+                  <span className="text-tm-info font-medium">Workbench:</span> separate list workflow —{" "}
                   <span className="font-medium text-gray-700">Add list to Workbench</span> appends these IDs to your selected
                   shared list (deduped).{" "}
                   <span className="text-tm-leaf font-medium">Batch edit:</span> field updates on{" "}
@@ -1365,7 +1365,7 @@ export default function ExplorePage() {
                       void handleMatchingToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
                     }}
                     disabled={workbenchMatchingAppendBusy}
-                    title="Append the first matching cards to your selected Workbench list (deduped; up to 5,000)"
+                    title="Add cards matching current filters to your selected Workbench list (deduped; capped at 5,000)"
                     className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchMatchingAppendBusy ? "Adding…" : "Add matching to Workbench"}
@@ -1413,7 +1413,7 @@ export default function ExplorePage() {
                       void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
                     }}
                     disabled={batchSelection.count === 0 || workbenchListAppendBusy}
-                    title="Append this list to your selected Workbench list (deduped; does not replace the list)"
+                    title="Add your saved batch list to the selected Workbench list (deduped; does not replace the list)"
                     className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
@@ -1537,6 +1537,7 @@ export default function ExplorePage() {
                 void handleSelectedToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
               }}
               disabled={selectedCardIds.size === 0 || workbenchSelectedAppendBusy}
+              title="Add selected cards to your selected Workbench list (deduped; capped at 5,000)"
               className="text-sm font-medium px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {workbenchSelectedAppendBusy ? "Adding…" : "Add selected to Workbench"}

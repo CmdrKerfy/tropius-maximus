@@ -601,7 +601,7 @@ export default function WorkbenchPage() {
       toastError("Create another list before deleting this one.");
       return;
     }
-    const ok = window.confirm(`Delete list "${queue.name || "Untitled list"}"? This removes its queue cards only.`);
+    const ok = window.confirm(`Delete list "${queue.name || "Untitled list"}"? This removes cards from this list only.`);
     if (!ok) return;
     try {
       const fallback = queues.find((q) => String(q.id) !== String(queue.id));
@@ -696,7 +696,7 @@ export default function WorkbenchPage() {
             </ul>
             {!USE_SB && (
               <p className="text-gray-600 text-xs border-t border-gray-100 pt-2 mt-2">
-                Turn on Supabase in this deployment to load and save your queue.
+                Turn on Supabase in this deployment to load and save your lists.
               </p>
             )}
           </WorkflowModeHelp>

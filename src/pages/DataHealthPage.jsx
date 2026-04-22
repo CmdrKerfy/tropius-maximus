@@ -314,7 +314,7 @@ export default function DataHealthPage() {
                     </dd>
                   </div>
                   <div className="px-4 py-3 flex justify-between gap-4">
-                    <dt className="text-sm text-gray-600">Your workbench queues</dt>
+                    <dt className="text-sm text-gray-600">Your workbench lists</dt>
                     <dd className="text-sm font-medium tabular-nums">
                       {(data.workbenchQueues ?? 0).toLocaleString()}
                     </dd>

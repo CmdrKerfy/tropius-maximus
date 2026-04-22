@@ -587,7 +587,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       } else {
         const okDetail =
           intent === "workbench"
-            ? "Saved to the database and added to your default Workbench queue."
+            ? "Saved to the database and added to your default Workbench list."
             : isSupabase
               ? "Saved to the database."
               : "Saved on this device.";
@@ -658,7 +658,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
         const intent = saveIntentRef.current;
         const okDetail =
           intent === "workbench"
-            ? "Saved to the database and added to your default Workbench queue."
+            ? "Saved to the database and added to your default Workbench list."
             : isSupabase
               ? "Saved to the database."
               : "Saved on this device.";
