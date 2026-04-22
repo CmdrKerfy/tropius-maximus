@@ -2717,12 +2717,23 @@ function asCardIdArray(raw) {
 
 export async function fetchWorkbenchQueues() {
   const sb = await sbReady();
+  const uid = await workbenchUserId(sb);
   const { data, error } = await sb
     .from("workbench_queues")
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) throw error;
-  return data || [];
+  const rows = (data || []).map((row) => ({
+    ...row,
+    is_owner: String(row.user_id || "") === String(uid || ""),
+  }));
+  return rows.sort((a, b) => {
+    if (a.is_owner !== b.is_owner) return a.is_owner ? -1 : 1;
+    const at = new Date(a.updated_at || 0).getTime();
+    const bt = new Date(b.updated_at || 0).getTime();
+    if (at !== bt) return bt - at;
+    return Number(b.id || 0) - Number(a.id || 0);
+  });
 }
 
 export async function ensureDefaultWorkbenchQueue() {

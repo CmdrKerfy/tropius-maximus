@@ -743,11 +743,16 @@ export default function WorkbenchPage() {
               ) : null}
               <label
                 className="inline-flex items-center gap-1.5 text-xs text-gray-600"
-                title="Only lists marked shared are visible to teammates."
+                title={
+                  queue?.is_owner === false
+                    ? "Only the list owner can change sharing."
+                    : "Only lists marked shared are visible to teammates."
+                }
               >
                 <input
                   type="checkbox"
                   checked={Boolean(queue?.is_shared)}
+                  disabled={queue?.is_owner === false}
                   onChange={async (e) => {
                     if (!queue?.id) return;
                     try {
@@ -757,7 +762,7 @@ export default function WorkbenchPage() {
                       toastError(err);
                     }
                   }}
-                  className="rounded border-gray-300 text-green-600 focus:ring-green-600"
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-600 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
                 Shared with team
               </label>
