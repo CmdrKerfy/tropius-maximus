@@ -18,6 +18,7 @@ import {
   FORM_OPTIONS_QUERY_KEY,
   exportAllAnnotations,
   deleteCardsById,
+  renameManualCard,
   useSupabaseBackend,
   fetchUserPreferences,
   upsertUserPreferences,
@@ -217,6 +218,8 @@ export default function CardDetail({
   const [isEditMode, setIsEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [isRenamingCardName, setIsRenamingCardName] = useState(false);
+  const [renameCardNameDraft, setRenameCardNameDraft] = useState("");
   const [activeTab, setActiveTab] = useState("info");
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
@@ -272,10 +275,17 @@ export default function CardDetail({
     setEditingImage(false);
     setSaveStatus(null);
     setSaveMessage("");
+    setIsRenamingCardName(false);
+    setRenameCardNameDraft("");
     setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
     clearTimeout(annSaveClearTimerRef.current);
     setSyncRetryCount(0);
   }, [cardId, source]);
+
+  useEffect(() => {
+    if (!card?.id || isRenamingCardName) return;
+    setRenameCardNameDraft(String(card.name || ""));
+  }, [card?.id, card?.name, isRenamingCardName]);
 
   // Supabase: when returning to the tab, refresh the card if not mid-edit (reduces stale detail after time away).
   useEffect(() => {
@@ -628,6 +638,39 @@ export default function CardDetail({
           }
         })();
       }
+    }
+  };
+
+  const handleRenameCardName = async () => {
+    const nextName = String(renameCardNameDraft || "").trim();
+    const currentName = String(card?.name || "").trim();
+    if (!nextName) {
+      toastError("Card name cannot be empty.");
+      return;
+    }
+    if (!card?.id || nextName === currentName) {
+      setIsRenamingCardName(false);
+      setRenameCardNameDraft(currentName);
+      return;
+    }
+    const run = async () => {
+      await renameManualCard(card.id, nextName);
+      queryClient.setQueryData(cardDetailQueryKey, (prev) =>
+        prev ? { ...prev, name: nextName } : prev
+      );
+      queryClient.invalidateQueries({ queryKey: ["cards"] });
+      queryClient.invalidateQueries({ queryKey: ["myCards"] });
+      queryClient.invalidateQueries({ queryKey: ["myCardsSetOptions"] });
+      queryClient.invalidateQueries({ queryKey: ["myEditHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+      toastSuccess("Card name updated.");
+      setIsRenamingCardName(false);
+      setRenameCardNameDraft(nextName);
+    };
+    try {
+      await withSupabaseAnnotationSave(run);
+    } catch {
+      // withSupabaseAnnotationSave handles toast + status; keep rename editor open for retry.
     }
   };
 
@@ -1205,17 +1248,70 @@ export default function CardDetail({
               {/* Right: card info */}
               <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 {/* Card name and basic info — always visible above tabs */}
-                {onFilterClick ? (
-                  <button
-                    type="button"
-                    onClick={() => onFilterClick("q", card.name)}
-                    className="w-fit text-left text-2xl font-bold underline decoration-dotted underline-offset-4 hover:text-green-700"
-                    title={`Find cards named ${card.name}`}
-                  >
-                    {card.name}
-                  </button>
-                ) : (
-                  <h2 className="text-2xl font-bold">{card.name}</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  {onFilterClick ? (
+                    <button
+                      type="button"
+                      onClick={() => onFilterClick("q", card.name)}
+                      className="w-fit text-left text-2xl font-bold underline decoration-dotted underline-offset-4 hover:text-green-700"
+                      title={`Find cards named ${card.name}`}
+                    >
+                      {card.name}
+                    </button>
+                  ) : (
+                    <h2 className="text-2xl font-bold">{card.name}</h2>
+                  )}
+                  {useSupabaseBackend() && isEditMode && card?.is_custom === true && !isRenamingCardName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRenameCardNameDraft(String(card?.name || ""));
+                        setIsRenamingCardName(true);
+                      }}
+                      className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                    >
+                      Rename
+                    </button>
+                  )}
+                </div>
+                {useSupabaseBackend() && isEditMode && card?.is_custom === true && isRenamingCardName && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={renameCardNameDraft}
+                      onChange={(e) => setRenameCardNameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleRenameCardName();
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          setIsRenamingCardName(false);
+                          setRenameCardNameDraft(String(card?.name || ""));
+                        }
+                      }}
+                      className="min-w-[14rem] flex-1 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Card name"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleRenameCardName()}
+                      disabled={annSaveUi.phase === "saving"}
+                      className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 font-medium disabled:opacity-50"
+                    >
+                      Save name
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRenamingCardName(false);
+                        setRenameCardNameDraft(String(card?.name || ""));
+                      }}
+                      className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 )}
                 <CardAttributionLine
                   createdById={card.created_by}

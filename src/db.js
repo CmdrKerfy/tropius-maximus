@@ -195,6 +195,13 @@ export async function fetchMyCards(opts) {
   return useSupabaseBackend() ? (await sb()).fetchMyCards(opts) : [];
 }
 
+export async function renameManualCard(cardId, newName) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Card rename requires Supabase (v2).");
+  }
+  return (await sb()).renameManualCard(cardId, newName);
+}
+
 export async function fetchAttributes() {
   return useSupabaseBackend() ? (await sb()).fetchAttributes() : duck.fetchAttributes();
 }

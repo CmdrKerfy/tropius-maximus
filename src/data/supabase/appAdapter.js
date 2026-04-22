@@ -650,6 +650,14 @@ function displayNameFromProfileEmbed(embed) {
 
 function gridRowFromCard(row) {
   const ann = normalizeEmbeddedAnnotation(row.annotations);
+  const annSetName =
+    ann?.extra &&
+    typeof ann.extra === "object" &&
+    !Array.isArray(ann.extra) &&
+    typeof ann.extra.set_name === "string" &&
+    ann.extra.set_name.trim()
+      ? ann.extra.set_name.trim()
+      : null;
   const created_by = row.created_by ?? null;
   const annotation_updated_by = ann?.updated_by ?? null;
   const annotation_updated_at = ann?.updated_at ?? null;
@@ -657,7 +665,7 @@ function gridRowFromCard(row) {
     id: row.id,
     name: row.name,
     set_id: row.set_id ?? null,
-    set_name: row.set_name,
+    set_name: annSetName || row.set_name,
     image_small: row.image_small,
     image_large: row.image_large,
     image_override: ann?.image_override || null,
@@ -751,8 +759,8 @@ export async function fetchCards(params = {}) {
   // Grid only: omit profiles embeds — nested embeds can interact badly with nullable FKs
   // under some PostgREST versions; creator/editor names are optional here (detail view embeds).
   const annSelect = useAnnInner
-    ? `annotations!inner(image_override, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)`
-    : `annotations(image_override, updated_by, updated_at)`;
+    ? `annotations!inner(image_override, extra, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)`
+    : `annotations(image_override, extra, updated_by, updated_at)`;
 
   let query = sb
     .from("cards")
@@ -1974,6 +1982,30 @@ export async function fetchMyCards({ limit = 200, set_id = "", q = "", sort = "r
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+/**
+ * Rename a manual/custom card and write one `edit_history` row (`field_name = card_name`).
+ * Backend guard (RPC) blocks API-sourced cards.
+ * @returns {Promise<{ card_id: string, old_name: string | null, new_name: string }>}
+ */
+export async function renameManualCard(cardId, newName) {
+  const sb = await sbReady();
+  const id = String(cardId || "").trim();
+  const name = String(newName || "").trim();
+  if (!id) throw new Error("Card id is required.");
+  if (!name) throw new Error("Card name cannot be empty.");
+  const { data, error } = await sb.rpc("rename_manual_card_with_history", {
+    p_card_id: id,
+    p_new_name: name,
+  });
+  if (error) throw new Error(error.message || String(error));
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    card_id: row?.card_id || id,
+    old_name: row?.old_name ?? null,
+    new_name: row?.new_name || name,
+  };
 }
 
 /** Thrown when `annotations.version` changed between read and write (concurrent edit). */

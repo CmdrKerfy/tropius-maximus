@@ -12,6 +12,7 @@ import {
 } from "../db.js";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { formatHistoryFieldLabel } from "../lib/historyFieldLabel.js";
 
 function cardThumb(row) {
   return row?.image_small || row?.image_large || "";
@@ -160,7 +161,7 @@ export default function DashboardPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-1">Welcome, {pLoading ? "…" : display}</h2>
           <p className="text-sm text-gray-600">
-            <strong>Recent edits</strong> lists annotation field changes (Workbench, card detail, batch).{" "}
+            <strong>Recent edits</strong> lists annotation updates plus manual card rename actions.{" "}
             <strong>My submitted cards</strong> lists manual/custom cards that were saved to the database with your
             account as creator. Failed saves are not stored here—the custom card form keeps a per-session add list in
             your browser until you clear it.
@@ -170,7 +171,7 @@ export default function DashboardPage() {
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-3">Recent edits</h3>
           <p className="text-xs text-gray-500 mb-3">
-            Field-level annotation updates only (not “add card” creation).
+            Field-level annotation updates and manual card renames (not “add card” creation).
           </p>
           {eLoading ? (
             <p className="text-sm text-gray-500">Loading…</p>
@@ -238,7 +239,7 @@ export default function DashboardPage() {
                     >
                       {row.card_id}
                     </Link>
-                    <span className="text-gray-700">{row.field_name}</span>
+                    <span className="text-gray-700">{formatHistoryFieldLabel(row.field_name)}</span>
                   </li>
                 ))}
               </ul>
@@ -281,7 +282,7 @@ export default function DashboardPage() {
                           >
                             {row.card_id}
                           </Link>
-                          <span className="text-gray-700">{row.field_name}</span>
+                          <span className="text-gray-700">{formatHistoryFieldLabel(row.field_name)}</span>
                         </li>
                       ))}
                     </ul>

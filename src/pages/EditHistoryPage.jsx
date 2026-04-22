@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchEditHistory, fetchBatchRuns, fetchCardThumbnailsByIds } from "../db";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
+import { formatHistoryFieldLabel } from "../lib/historyFieldLabel.js";
 
 const USE_SB =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -114,7 +115,7 @@ export default function EditHistoryPage() {
               />
               <div>
                 <h1 className="text-xl font-bold tracking-tight">Edit history</h1>
-                <p className="text-green-100 text-xs">Annotation field changes (newest first)</p>
+                <p className="text-green-100 text-xs">Annotation changes + manual card renames (newest first)</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -148,7 +149,7 @@ export default function EditHistoryPage() {
         {experimentalNav ? (
           <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">Edit history</h1>
-            <p className="text-gray-600 text-xs mt-0.5">Annotation field changes (newest first)</p>
+            <p className="text-gray-600 text-xs mt-0.5">Annotation changes + manual card renames (newest first)</p>
           </div>
         ) : null}
         {!USE_SB && (
@@ -292,7 +293,7 @@ export default function EditHistoryPage() {
                                     {previewText(r.card_id, 28)}
                                   </Link>
                                 </td>
-                                <td className="px-2 py-1.5 font-mono">{r.field_name}</td>
+                                <td className="px-2 py-1.5 font-mono">{formatHistoryFieldLabel(r.field_name)}</td>
                                 <td className="px-2 py-1.5 text-gray-800 max-w-[160px] break-words">{previewText(r.new_value)}</td>
                               </tr>
                             ))}
@@ -336,7 +337,7 @@ export default function EditHistoryPage() {
                   type="text"
                   value={fieldFilter}
                   onChange={(e) => setQueryParam("field", e.target.value)}
-                  placeholder="Optional — annotation field key"
+                  placeholder="Optional — field key (e.g. pose, card_name)"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
                 />
               </div>
@@ -405,7 +406,7 @@ export default function EditHistoryPage() {
             <p className="text-xs text-gray-500">
               Filters update the URL so you can bookmark or share a view. Values are stored as text (JSON for lists/objects).
               Opens in Explore with the card drawer when you follow a card link. This list is <strong>annotation edits</strong>{" "}
-              only—not custom card creation; new cards you add appear under{" "}
+              plus manual card renames—not custom card creation; new cards you add appear under{" "}
               <Link to="/dashboard" className="text-green-700 font-medium hover:underline">Dashboard</Link> and the add
               form’s session list.
             </p>
@@ -420,8 +421,8 @@ export default function EditHistoryPage() {
 
             {historyTab === "flat" && !isPending && !isError && rows.length === 0 && (
               <p className="text-sm text-gray-600">
-                No rows yet. History is recorded when you save annotations in Workbench, Card Detail, or Batch edit
-                (Supabase mode).
+                No rows yet. History is recorded when you save annotations in Workbench/Card Detail/Batch and when you
+                rename manual cards (Supabase mode).
               </p>
             )}
 
@@ -486,7 +487,7 @@ export default function EditHistoryPage() {
                             {previewText(r.card_id, 36)}
                           </Link>
                         </td>
-                        <td className="px-3 py-2 font-mono text-xs text-gray-800">{r.field_name}</td>
+                        <td className="px-3 py-2 font-mono text-xs text-gray-800">{formatHistoryFieldLabel(r.field_name)}</td>
                         <td className="px-3 py-2 font-mono text-[10px] text-gray-600 max-w-[100px] break-all">
                           {r.batch_run_id ? (
                             <Link
