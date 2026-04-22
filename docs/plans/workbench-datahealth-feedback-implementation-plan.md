@@ -1,6 +1,6 @@
 # Plan: Workbench + Data Health + Search feedback implementation
 
-**Status:** Proposed
+**Status:** In progress (Phases 1-6 implemented on branch; QA/sign-off in progress)
 
 **Branch:** `v2/supabase-migration`
 
@@ -197,6 +197,14 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 - Create multiple lists, rename/delete one, reorder cards, and remove cards.
 - Verify collaborator can edit/add/drop cards on same shared list.
 - Try enqueue over 5,000 matching cards and verify warning/guard UX.
+
+### Implementation snapshot (current branch state)
+
+- Shared list CRUD + list switcher are live in Workbench (`create`, `rename`, `delete`, reorder, remove selected/matching, move selected).
+- Explore enqueue now supports **selected**, **matching**, and **set-based** sends to Workbench lists.
+- Enqueue warnings now have 5,000-cap parity (`full list`, `partial add`, and `already present` cases).
+- Set enqueue now uses a large-set confirm gate (100+ cards) and prevents duplicate dialog spam during pre-check.
+- Card detail + Workbench copy now consistently uses **list** wording (replacing mixed queue/list phrasing).
 
 ---
 

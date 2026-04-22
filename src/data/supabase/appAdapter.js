@@ -2815,18 +2815,7 @@ export async function deleteWorkbenchQueue(queueId) {
  * @param {string} cardId
  */
 export async function appendCardToWorkbenchQueue(queueId, cardId) {
-  const sid = String(cardId || "").trim();
-  if (!sid) throw new Error("Card id is required.");
-  const sb = await sbReady();
-  const { data: q, error } = await sb.from("workbench_queues").select("*").eq("id", queueId).maybeSingle();
-  if (error) throw error;
-  if (!q) throw new Error("Workbench list not found.");
-  const ids = asCardIdArray(q.card_ids).map((x) => String(x)).filter(Boolean);
-  if (!ids.includes(sid)) ids.push(sid);
-  return updateWorkbenchQueue(q.id, {
-    card_ids: ids,
-    current_index: ids.length - 1,
-  });
+  return appendCardsToWorkbenchQueue(queueId, [cardId]);
 }
 
 /**
@@ -2844,21 +2833,28 @@ export async function appendCardsToWorkbenchQueue(queueId, cardIds) {
   const seen = new Set(existing);
   const merged = [...existing];
   let added = 0;
+  let overflow = 0;
+  const remainingSlots = Math.max(0, BATCH_EDIT_MAX_CARDS - merged.length);
   for (const raw of cardIds || []) {
     const id = raw == null ? "" : String(raw).trim();
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    merged.push(id);
-    added++;
+    if (added < remainingSlots) {
+      merged.push(id);
+      added++;
+    } else {
+      overflow++;
+    }
   }
+  const capped = overflow > 0;
   if (added === 0) {
-    return { added: 0, queue: q };
+    return { added: 0, capped, queue: q, max: BATCH_EDIT_MAX_CARDS };
   }
   const data = await updateWorkbenchQueue(q.id, {
     card_ids: merged,
     current_index: merged.length - 1,
   });
-  return { added, queue: data };
+  return { added, capped, queue: data, max: BATCH_EDIT_MAX_CARDS };
 }
 
 /** Append a card id to the user's default queue (deduped). */

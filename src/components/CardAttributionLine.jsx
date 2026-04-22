@@ -11,7 +11,7 @@ function ProfileNameLink({ userId, displayName }) {
   return (
     <Link
       to={`/profile/${encodeURIComponent(userId)}`}
-      className="text-gray-600 underline decoration-gray-300 hover:text-gray-900 hover:decoration-gray-500"
+      className="text-gray-500 hover:text-gray-700 no-underline hover:underline decoration-gray-400"
     >
       {label}
     </Link>
@@ -63,7 +63,5 @@ export default function CardAttributionLine({
     );
   }
 
-  return (
-    <p className="text-xs text-gray-500 mt-1.5 leading-snug">{nodes}</p>
-  );
+  return <p className="text-[11px] text-gray-400 mt-1 leading-snug">{nodes}</p>;
 }

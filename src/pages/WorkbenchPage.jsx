@@ -4,8 +4,10 @@
 
 import { useMemo, useState, useEffect, useCallback, useRef, useTransition } from "react";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ClipboardList,
   Columns2,
   Image as ImageIcon,
@@ -35,6 +37,7 @@ import WorkflowModeHelp from "../components/WorkflowModeHelp.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { normalizeCardDetailPins } from "../lib/cardDetailPinRegistry.js";
+import { BATCH_EDIT_MAX_CARDS } from "../lib/batchLimits.js";
 import { toastError, toastSuccess } from "../lib/toast.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
@@ -84,6 +87,7 @@ export default function WorkbenchPage() {
   const [selectedForRemoval, setSelectedForRemoval] = useState(() => new Set());
   const [manageSearchQuery, setManageSearchQuery] = useState("");
   const [moveTargetQueueId, setMoveTargetQueueId] = useState("");
+  const [showMoveTargetPicker, setShowMoveTargetPicker] = useState(false);
 
   /** Phase 5: persistent save status in Workbench chrome (driven by AnnotationEditor). */
   const [annotationSave, setAnnotationSave] = useState({
@@ -200,6 +204,7 @@ export default function WorkbenchPage() {
     setManageListMode(false);
     setManageSearchQuery("");
     setMoveTargetQueueId("");
+    setShowMoveTargetPicker(false);
   }, [queue?.id]);
 
   const cardIds = useMemo(() => normalizeCardIds(queue?.card_ids), [queue?.card_ids]);
@@ -538,6 +543,30 @@ export default function WorkbenchPage() {
     }
   };
 
+  const moveCardInCurrentQueue = async (cardId, direction) => {
+    if (!queue?.id) return;
+    const from = cardIds.findIndex((id) => String(id) === String(cardId));
+    if (from < 0) return;
+    const to = direction === "up" ? from - 1 : from + 1;
+    if (to < 0 || to >= cardIds.length) return;
+    const nextIds = [...cardIds];
+    const [moved] = nextIds.splice(from, 1);
+    nextIds.splice(to, 0, moved);
+    const currentId = currentCardId ? String(currentCardId) : null;
+    const nextIndex = currentId
+      ? Math.max(0, nextIds.findIndex((id) => String(id) === currentId))
+      : safeIndex;
+    try {
+      await updateWorkbenchQueue(queue.id, {
+        card_ids: nextIds,
+        current_index: nextIndex < 0 ? 0 : nextIndex,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
   const handleCreateQueue = async () => {
     const raw = window.prompt("New Workbench list name:", "Shared list");
     if (raw == null) return;
@@ -597,7 +626,7 @@ export default function WorkbenchPage() {
               />
               <div>
                 <h1 className="text-xl font-bold tracking-tight">Workbench</h1>
-                <p className="text-green-100 text-xs">Annotate cards in a focused queue</p>
+                <p className="text-green-100 text-xs">Annotate cards in a focused list</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -631,12 +660,12 @@ export default function WorkbenchPage() {
         {experimentalNav ? (
           <div className="mb-6 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">Workbench</h1>
-            <p className="text-gray-600 text-xs mt-0.5">Annotate cards in a focused queue</p>
+            <p className="text-gray-600 text-xs mt-0.5">Annotate cards in a focused list</p>
           </div>
         ) : null}
         {!USE_SB && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Workbench queues use Supabase. Set <code className="font-mono">VITE_USE_SUPABASE=true</code> and
+            Workbench lists use Supabase. Set <code className="font-mono">VITE_USE_SUPABASE=true</code> and
             your Supabase env vars, then sign in.
           </div>
         )}
@@ -650,7 +679,7 @@ export default function WorkbenchPage() {
             <ul className="list-disc space-y-1.5 pl-5">
               <li>
                 <strong>Adding cards:</strong> on Explore, open a card, then choose <strong>Send to Workbench</strong>.
-                That appends the card to your selected list (you can remove it from the queue here later).
+                That appends the card to your selected list (you can remove it from the list here later).
               </li>
               <li>
                 <strong>Use Workbench</strong> when you already know <em>which</em> cards need work (backlog, QA
@@ -658,11 +687,11 @@ export default function WorkbenchPage() {
               </li>
               <li>
                 <strong>Use Explore / card detail</strong> for quick fixes while browsing, or when you are still{" "}
-                <strong>discovering</strong> cards. Same data—Workbench is for queue-driven sessions.
+                <strong>discovering</strong> cards. Same data—Workbench is for list-driven sessions.
               </li>
               <li>
                 <strong>Batch</strong> is different: it applies <strong>one field</strong> to <strong>all cards matching
-                your Explore filters</strong>, not a hand-built queue.
+                your Explore filters</strong>, not a hand-built list.
               </li>
             </ul>
             {!USE_SB && (
@@ -673,17 +702,17 @@ export default function WorkbenchPage() {
           </WorkflowModeHelp>
         </div>
 
-        {USE_SB && isPending && <p className="text-sm text-gray-500">Loading queue…</p>}
+        {USE_SB && isPending && <p className="text-sm text-gray-500">Loading list…</p>}
 
         {USE_SB && isError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {error?.message || "Could not load workbench queue."}
+            {error?.message || "Could not load Workbench list."}
           </div>
         )}
 
         {USE_SB && !isPending && !isError && !queue && (
           <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-700 space-y-3">
-            <p>No Workbench lists yet. Create one to start a shared queue.</p>
+            <p>No Workbench lists yet. Create one to start a shared list.</p>
             <div>
               <Button type="button" variant="primary" size="sm" onClick={handleCreateQueue}>
                 Create first list
@@ -718,7 +747,9 @@ export default function WorkbenchPage() {
               </Button>
             </div>
             <p className="text-sm text-gray-600">
-              <span className="tabular-nums">{cardIds.length}</span> card{cardIds.length !== 1 ? "s" : ""}
+              <span className="tabular-nums">{cardIds.length}</span> /{" "}
+              <span className="tabular-nums">{BATCH_EDIT_MAX_CARDS.toLocaleString()}</span> card
+              {cardIds.length !== 1 ? "s" : ""}
               {cardIds.length > 0 && (
                 <>
                   {" · "}
@@ -756,7 +787,7 @@ export default function WorkbenchPage() {
                   className="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-200 bg-white
                     text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Remove from queue
+                  Remove from list
                 </button>
                 <button
                   type="button"
@@ -764,6 +795,7 @@ export default function WorkbenchPage() {
                     setManageListMode((v) => !v);
                     setSelectedForRemoval(new Set());
                     setManageSearchQuery("");
+                    setShowMoveTargetPicker(false);
                   }}
                   disabled={patchQueue.isPending}
                   className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
@@ -816,32 +848,55 @@ export default function WorkbenchPage() {
               </button>
               {moveTargetOptions.length > 0 && (
                 <>
-                  <select
-                    value={moveTargetQueueId}
-                    onChange={(e) => setMoveTargetQueueId(e.target.value)}
-                    className="h-9 min-w-[12rem] rounded-lg border border-gray-300 bg-white px-2.5 text-sm"
-                  >
-                    {moveTargetOptions.map((q) => (
-                      <option key={q.id} value={q.id}>
-                        {q.name || "Untitled list"}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => void handleMoveSelectedToList()}
-                    disabled={selectedForRemoval.size === 0 || !moveTargetQueueId || patchQueue.isPending}
-                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Move selected
-                  </button>
+                  {!showMoveTargetPicker ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowMoveTargetPicker(true)}
+                      disabled={selectedForRemoval.size === 0 || patchQueue.isPending}
+                      className="px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Move selected
+                    </button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5">
+                      <select
+                        value={moveTargetQueueId}
+                        onChange={(e) => setMoveTargetQueueId(e.target.value)}
+                        className="h-9 min-w-[12rem] rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-sm text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      >
+                        {moveTargetOptions.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.name || "Untitled list"}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleMoveSelectedToList()}
+                        disabled={selectedForRemoval.size === 0 || !moveTargetQueueId || patchQueue.isPending}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Confirm move
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMoveTargetPicker(false)}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
             <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-100">
-              <ul className="divide-y divide-gray-100 text-sm">
-                {filteredManageCardIds.map((id) => (
-                  <li key={`bulk-remove-${id}`} className="px-2.5 py-2 flex items-center gap-2">
+              {filteredManageCardIds.length === 0 ? (
+                <p className="px-3 py-4 text-sm text-gray-500">No cards match this filter in the current list.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 text-sm">
+                  {filteredManageCardIds.map((id) => (
+                    <li key={`bulk-remove-${id}`} className="px-2.5 py-2 flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={selectedForRemoval.has(String(id))}
@@ -861,9 +916,33 @@ export default function WorkbenchPage() {
                     )}
                     <span className="font-mono text-xs text-gray-600">{id}</span>
                     <span className="text-gray-800 truncate">{cardNamesById[id] || "Unknown card"}</span>
-                  </li>
-                ))}
-              </ul>
+                    <div className="ml-auto inline-flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void moveCardInCurrentQueue(id, "up")}
+                        className="rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-50 disabled:opacity-35 disabled:cursor-not-allowed"
+                        disabled={cardIds.findIndex((x) => String(x) === String(id)) <= 0 || patchQueue.isPending}
+                        title="Move up in list"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void moveCardInCurrentQueue(id, "down")}
+                        className="rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-50 disabled:opacity-35 disabled:cursor-not-allowed"
+                        disabled={
+                          cardIds.findIndex((x) => String(x) === String(id)) >= cardIds.length - 1 ||
+                          patchQueue.isPending
+                        }
+                        title="Move down in list"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                      </button>
+                    </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <p className="mt-2 text-xs text-gray-500">
               Removes cards from this list only (cards stay in the database). Bulk remove includes Undo in toast.

@@ -192,6 +192,8 @@ export default function CardDetail({
   onRegisterSyncRunner,
   workflowBuildingRef,
   onSendToWorkbench,
+  onSendSetToWorkbench,
+  isSetToWorkbenchBusy = false,
   workbenchQueueOptions = [],
   selectedWorkbenchQueueId = "",
   onWorkbenchQueueChange,
@@ -224,6 +226,8 @@ export default function CardDetail({
   const [isRenamingCardName, setIsRenamingCardName] = useState(false);
   const [renameCardNameDraft, setRenameCardNameDraft] = useState("");
   const [showWorkbenchTargetPicker, setShowWorkbenchTargetPicker] = useState(false);
+  const [showSetWorkbenchTargetPicker, setShowSetWorkbenchTargetPicker] = useState(false);
+  const [showCardActionsMenu, setShowCardActionsMenu] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
@@ -282,6 +286,8 @@ export default function CardDetail({
     setIsRenamingCardName(false);
     setRenameCardNameDraft("");
     setShowWorkbenchTargetPicker(false);
+    setShowSetWorkbenchTargetPicker(false);
+    setShowCardActionsMenu(false);
     setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
     clearTimeout(annSaveClearTimerRef.current);
     setSyncRetryCount(0);
@@ -857,7 +863,7 @@ export default function CardDetail({
                   <button
                     type="button"
                     onClick={() => onFilterClick(target.filterKey, p)}
-                    className="text-left underline decoration-dotted underline-offset-2 hover:text-green-700"
+                    className="text-left no-underline hover:underline decoration-dotted underline-offset-2 hover:text-green-700 focus-visible:underline"
                     title={`Find cards with ${p}`}
                   >
                     {p}
@@ -1015,8 +1021,8 @@ export default function CardDetail({
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden">
         {/* Top bar: navigation arrows + close button */}
-        <div className="flex items-center justify-between p-3 gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-start justify-between p-3 gap-2">
+          <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={onPrev}
@@ -1035,25 +1041,6 @@ export default function CardDetail({
                 <ChevronRight className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
               </button>
             </div>
-            {useSupabaseBackend() && card && !loading && (
-              <button
-                type="button"
-                onClick={async () => {
-                  const url = `${window.location.origin}/share/card/${encodeURIComponent(card.id)}`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    toastSuccess("Share link copied");
-                  } catch {
-                    toastError("Could not copy link");
-                  }
-                }}
-                className="shrink-0 px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 border border-slate-200/80 inline-flex items-center gap-1"
-                title="Copy read-only link for this card"
-              >
-                <Share2 className="w-3.5 h-3.5" aria-hidden />
-                Copy share link
-              </button>
-            )}
             {onSendToWorkbench && card && !loading && (
               <>
                 <button
@@ -1063,6 +1050,7 @@ export default function CardDetail({
                       onSendToWorkbench(card.id, selectedWorkbenchTargetId || undefined);
                       return;
                     }
+                    setShowSetWorkbenchTargetPicker(false);
                     setShowWorkbenchTargetPicker((v) => !v);
                   }}
                   className="shrink-0 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-lg hover:bg-green-200 border border-green-200/80"
@@ -1104,6 +1092,62 @@ export default function CardDetail({
                 )}
               </>
             )}
+            {onSendSetToWorkbench && card?.set_id && !loading && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSetToWorkbenchBusy) return;
+                    if (workbenchQueueOptions.length <= 1) {
+                      onSendSetToWorkbench(card.set_id, selectedWorkbenchTargetId || undefined);
+                      return;
+                    }
+                    setShowWorkbenchTargetPicker(false);
+                    setShowSetWorkbenchTargetPicker((v) => !v);
+                  }}
+                  disabled={isSetToWorkbenchBusy}
+                  className="shrink-0 px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-800 rounded-lg hover:bg-emerald-100 border border-emerald-200/80"
+                  title={`Add cards from set ${card.set_id} to the selected Workbench list`}
+                >
+                  {isSetToWorkbenchBusy ? "Preparing set..." : "Add set to Workbench"}
+                </button>
+                {showSetWorkbenchTargetPicker && workbenchQueueOptions.length > 1 && (
+                  <div className="flex items-center gap-1.5 shrink-0 rounded-lg border border-emerald-200 bg-white px-1.5 py-1">
+                    <select
+                      value={selectedWorkbenchTargetId}
+                      onChange={(e) => onWorkbenchQueueChange?.(e.target.value)}
+                      className="h-7 rounded border border-emerald-300 bg-white px-2 text-[11px] text-emerald-900"
+                      title="Choose target Workbench list"
+                    >
+                      {workbenchQueueOptions.map((q) => (
+                        <option key={q.id} value={q.id}>
+                          {q.name || "Untitled list"}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isSetToWorkbenchBusy) return;
+                        onSendSetToWorkbench(card.set_id, selectedWorkbenchTargetId || undefined);
+                        setShowSetWorkbenchTargetPicker(false);
+                      }}
+                      disabled={isSetToWorkbenchBusy}
+                      className="h-7 rounded bg-emerald-600 px-2 text-[11px] font-medium text-white hover:bg-emerald-700"
+                    >
+                      {isSetToWorkbenchBusy ? "Preparing..." : "Add set"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSetWorkbenchTargetPicker(false)}
+                      className="h-7 rounded border border-gray-300 bg-white px-2 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
             {onAddToBatchList && onRemoveFromBatchList && card && !loading && (
               inBatchList ? (
                 <button
@@ -1126,7 +1170,7 @@ export default function CardDetail({
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="shrink-0 self-start p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
           </button>
@@ -1305,7 +1349,7 @@ export default function CardDetail({
                     <button
                       type="button"
                       onClick={() => onFilterClick("q", card.name)}
-                      className="w-fit text-left text-2xl font-bold underline decoration-dotted underline-offset-4 hover:text-green-700"
+                      className="w-fit text-left text-2xl font-bold no-underline hover:underline focus-visible:underline decoration-dotted underline-offset-4 hover:text-green-700"
                       title={`Find cards named ${card.name}`}
                     >
                       {card.name}
@@ -1326,6 +1370,27 @@ export default function CardDetail({
                     </button>
                   )}
                 </div>
+                {useSupabaseBackend() && card && !loading && (
+                  <div className="mt-1">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const url = `${window.location.origin}/share/card/${encodeURIComponent(card.id)}`;
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          toastSuccess("Share link copied");
+                        } catch {
+                          toastError("Could not copy link");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 no-underline hover:underline focus-visible:underline"
+                      title="Copy read-only link for this card"
+                    >
+                      <Share2 className="w-3 h-3" aria-hidden />
+                      Share link
+                    </button>
+                  </div>
+                )}
                 {useSupabaseBackend() && isEditMode && card?.is_custom === true && isRenamingCardName && (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <input
@@ -1365,21 +1430,14 @@ export default function CardDetail({
                     </button>
                   </div>
                 )}
-                <CardAttributionLine
-                  createdById={card.created_by}
-                  creatorDisplayName={card.creator_display_name}
-                  annotationUpdatedById={ann.updated_by}
-                  annotationUpdatedByName={annotationEditorDisplayName}
-                  annotationUpdatedAt={ann.updated_at}
-                />
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2 py-0.5 bg-gray-100 rounded text-sm text-gray-600">
+                  <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-normal text-gray-600">
                     {card.supertype}
                   </span>
                   {subtypes.map((s) => (
                     <span
                       key={s}
-                      className="px-2 py-0.5 bg-gray-100 rounded text-sm text-gray-600"
+                      className="px-2 py-0.5 bg-gray-100 rounded text-xs font-normal text-gray-600"
                     >
                       {s}
                     </span>
@@ -1389,14 +1447,14 @@ export default function CardDetail({
                       <button
                         key={t}
                         onClick={() => onFilterClick("element", t)}
-                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium cursor-pointer hover:bg-blue-200 transition-colors"
+                        className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 cursor-pointer hover:bg-slate-100 hover:text-slate-800 transition-colors"
                       >
                         {t}
                       </button>
                     ) : (
                       <span
                         key={t}
-                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium"
+                        className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600"
                       >
                         {t}
                       </span>
@@ -1405,7 +1463,7 @@ export default function CardDetail({
                   {(ann.set_name || card.set_name) && !isEditMode && onFilterClick && (
                     <button
                       onClick={() => onFilterClick("set_id", card.set_id)}
-                      className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                      className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                     >
                       {ann.set_name || card.set_name}
                     </button>
@@ -1413,7 +1471,7 @@ export default function CardDetail({
                   {(ann.artist || card.artist) && !isEditMode && onFilterClick && (
                     <button
                       onClick={() => onFilterClick("artist", ann.artist || card.artist)}
-                      className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-sm hover:bg-amber-200 transition-colors"
+                      className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                     >
                       {ann.artist || card.artist}
                     </button>
@@ -1496,6 +1554,7 @@ export default function CardDetail({
                     )}
                     <button
                       onClick={() => {
+                        setShowCardActionsMenu(false);
                         if (!isEditMode) {
                           setIsEditMode(true);
                           setActiveTab("attributes");
@@ -1509,14 +1568,41 @@ export default function CardDetail({
                       {isEditMode ? "Done" : "Edit"}
                     </button>
                     {!isEditMode && card?.is_custom === true && (
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 font-medium"
-                      >
-                        Delete Card
-                      </button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowCardActionsMenu((v) => !v)}
+                          className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium"
+                        >
+                          More
+                        </button>
+                        {showCardActionsMenu && (
+                          <div className="absolute right-0 top-full mt-1 z-20 min-w-[11rem] rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCardActionsMenu(false);
+                                setShowDeleteConfirm(true);
+                              }}
+                              className="w-full text-left rounded-md px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                            >
+                              Delete Card
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-2">
+                  <CardAttributionLine
+                    createdById={card.created_by}
+                    creatorDisplayName={card.creator_display_name}
+                    annotationUpdatedById={ann.updated_by}
+                    annotationUpdatedByName={annotationEditorDisplayName}
+                    annotationUpdatedAt={ann.updated_at}
+                  />
                 </div>
 
                 {/* Supabase: inline save failed — toast also shown; dismiss clears sticky error text */}

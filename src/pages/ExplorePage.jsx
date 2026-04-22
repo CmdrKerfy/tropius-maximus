@@ -16,6 +16,7 @@ import {
   appendCardsToDefaultQueue,
   appendCardToWorkbenchQueue,
   appendCardsToWorkbenchQueue,
+  fetchFirstNMatchingCardIds,
   fetchWorkbenchQueues,
   useSupabaseBackend,
 } from "../db";
@@ -57,6 +58,7 @@ const USE_SUPABASE_APP =
   Boolean(import.meta.env.VITE_SUPABASE_URL) &&
   Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
 const WORKBENCH_QUEUE_STORAGE_KEY = "tm_workbench_queue_id";
+const SET_TO_WORKBENCH_CONFIRM_THRESHOLD = 100;
 
 function sortCards(arr, sort_by, sort_dir) {
   const dir = sort_dir === "desc" ? -1 : 1;
@@ -194,6 +196,10 @@ export default function ExplorePage() {
   const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [workbenchListAppendBusy, setWorkbenchListAppendBusy] = useState(false);
   const [showBatchWorkbenchTargetPicker, setShowBatchWorkbenchTargetPicker] = useState(false);
+  const [workbenchMatchingAppendBusy, setWorkbenchMatchingAppendBusy] = useState(false);
+  const [showMatchingWorkbenchTargetPicker, setShowMatchingWorkbenchTargetPicker] = useState(false);
+  const [workbenchSelectedAppendBusy, setWorkbenchSelectedAppendBusy] = useState(false);
+  const [showSelectedWorkbenchTargetPicker, setShowSelectedWorkbenchTargetPicker] = useState(false);
   const [workbenchQueueId, setWorkbenchQueueId] = useState(() => {
     try {
       return typeof localStorage !== "undefined"
@@ -225,6 +231,7 @@ export default function ExplorePage() {
   // ── UI state ────────────────────────────────────────────────────────
   const [selectedCardId, setSelectedCardId] = useState(() => readUrlState().selectedCardId);
   const prevSelectedCardIdRef = useRef(selectedCardId);
+  const setToWorkbenchInFlightRef = useRef(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSqlConsole, setShowSqlConsole] = useState(false);
   const [showCustomCardForm, setShowCustomCardForm] = useState(false);
@@ -324,7 +331,11 @@ export default function ExplorePage() {
     setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
   }, [selectedWorkbenchQueue?.id]);
   useEffect(() => {
-    if (workbenchQueues.length <= 1) setShowBatchWorkbenchTargetPicker(false);
+    if (workbenchQueues.length <= 1) {
+      setShowBatchWorkbenchTargetPicker(false);
+      setShowMatchingWorkbenchTargetPicker(false);
+      setShowSelectedWorkbenchTargetPicker(false);
+    }
   }, [workbenchQueues.length]);
   useEffect(() => {
     try {
@@ -616,13 +627,21 @@ export default function ExplorePage() {
           : null) || selectedWorkbenchQueue || null;
       const queueId = targetQueue?.id;
       const queueName = targetQueue?.name || "Workbench";
-      const { added } = queueId
+      const { added, capped, max } = queueId
         ? await appendCardsToWorkbenchQueue(queueId, batchSelection.ids)
         : await appendCardsToDefaultQueue(batchSelection.ids);
       queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
       if (queueId != null) setWorkbenchQueueId(String(queueId));
-      if (added === 0) {
+      if (added === 0 && capped) {
+        toastWarning(
+          `"${queueName}" is full (${Number(max || 5000).toLocaleString()} cards). Remove some cards before adding more.`
+        );
+      } else if (added === 0) {
         toastWarning(`Every card in your batch list was already in "${queueName}".`);
+      } else if (capped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}". The list is capped at ${Number(max || 5000).toLocaleString()} cards; some were skipped.`
+        );
       } else {
         toastSuccess(
           `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}".`,
@@ -644,6 +663,177 @@ export default function ExplorePage() {
     workbenchQueues,
     workbenchToastAction,
   ]);
+
+  const handleMatchingToWorkbench = useCallback(async (queueIdOverride = null) => {
+    setWorkbenchMatchingAppendBusy(true);
+    try {
+      const { ids, totalMatch, capped: matchingCapped } = await fetchFirstNMatchingCardIds(
+        { q: searchQuery, ...filters },
+        BATCH_EDIT_MAX_CARDS
+      );
+      if (ids.length === 0) {
+        toastWarning("No cards match your current search and filters.");
+        return;
+      }
+      const targetQueue =
+        (queueIdOverride != null
+          ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+          : null) || selectedWorkbenchQueue || null;
+      const queueId = targetQueue?.id;
+      const queueName = targetQueue?.name || "Workbench";
+      const { added, capped: queueCapped, max } = queueId
+        ? await appendCardsToWorkbenchQueue(queueId, ids)
+        : await appendCardsToDefaultQueue(ids);
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (queueId != null) setWorkbenchQueueId(String(queueId));
+      if (added === 0 && queueCapped) {
+        toastWarning(
+          `"${queueName}" is full (${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards). Remove some cards before adding more.`
+        );
+      } else if (added === 0) {
+        toastWarning(`Every matching card is already in "${queueName}".`);
+      } else if (queueCapped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} matching card${added === 1 ? "" : "s"} to "${queueName}". The list is capped at ${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards; some were skipped.`
+        );
+      } else if (matchingCapped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}". Your filters match ${totalMatch.toLocaleString()} cards; only the first ${BATCH_EDIT_MAX_CARDS.toLocaleString()} were queued.`
+        );
+      } else {
+        toastSuccess(
+          `Added ${added.toLocaleString()} matching card${added === 1 ? "" : "s"} to "${queueName}".`,
+          workbenchToastAction()
+        );
+      }
+      setShowMatchingWorkbenchTargetPicker(false);
+    } catch (err) {
+      console.error(err);
+      toastError(err);
+    } finally {
+      setWorkbenchMatchingAppendBusy(false);
+    }
+  }, [
+    filters,
+    queryClient,
+    searchQuery,
+    selectedWorkbenchQueue,
+    workbenchQueues,
+    workbenchToastAction,
+  ]);
+
+  const handleSelectedToWorkbench = useCallback(async (queueIdOverride = null) => {
+    const selectedIds = Array.from(selectedCardIds);
+    if (selectedIds.length === 0) return;
+    setWorkbenchSelectedAppendBusy(true);
+    try {
+      const targetQueue =
+        (queueIdOverride != null
+          ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+          : null) || selectedWorkbenchQueue || null;
+      const queueId = targetQueue?.id;
+      const queueName = targetQueue?.name || "Workbench";
+      const { added, capped, max } = queueId
+        ? await appendCardsToWorkbenchQueue(queueId, selectedIds)
+        : await appendCardsToDefaultQueue(selectedIds);
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (queueId != null) setWorkbenchQueueId(String(queueId));
+      if (added === 0 && capped) {
+        toastWarning(
+          `"${queueName}" is full (${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards). Remove some cards before adding more.`
+        );
+      } else if (added === 0) {
+        toastWarning(`Every selected card is already in "${queueName}".`);
+      } else if (capped) {
+        toastWarning(
+          `Added ${added.toLocaleString()} selected card${added === 1 ? "" : "s"} to "${queueName}". The list is capped at ${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards; some were skipped.`
+        );
+      } else {
+        toastSuccess(
+          `Added ${added.toLocaleString()} selected card${added === 1 ? "" : "s"} to "${queueName}".`,
+          workbenchToastAction()
+        );
+      }
+      setShowSelectedWorkbenchTargetPicker(false);
+    } catch (err) {
+      console.error(err);
+      toastError(err);
+    } finally {
+      setWorkbenchSelectedAppendBusy(false);
+    }
+  }, [queryClient, selectedCardIds, selectedWorkbenchQueue, workbenchQueues, workbenchToastAction]);
+
+  const handleSetToWorkbench = useCallback(
+    async (setId, queueIdOverride = null) => {
+      if (setToWorkbenchInFlightRef.current) return;
+      const normalizedSetId = String(setId || "").trim();
+      if (!normalizedSetId) {
+        toastWarning("This card is missing a set id.");
+        return;
+      }
+      setToWorkbenchInFlightRef.current = true;
+      setWorkbenchMatchingAppendBusy(true);
+      try {
+        const { ids, totalMatch, capped: matchingCapped } = await fetchFirstNMatchingCardIds(
+          { set_id: normalizedSetId },
+          BATCH_EDIT_MAX_CARDS
+        );
+        if (ids.length === 0) {
+          toastWarning("No cards found for that set.");
+          return;
+        }
+        const targetQueue =
+          (queueIdOverride != null
+            ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+            : null) || selectedWorkbenchQueue || null;
+        const queueId = targetQueue?.id;
+        const queueName = targetQueue?.name || "Workbench";
+        if (totalMatch >= SET_TO_WORKBENCH_CONFIRM_THRESHOLD) {
+          const queuedCount = Math.min(totalMatch, BATCH_EDIT_MAX_CARDS);
+          const details =
+            totalMatch > BATCH_EDIT_MAX_CARDS
+              ? `This set has ${totalMatch.toLocaleString()} cards. Up to the first ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards can be added at once.`
+              : `This set has ${totalMatch.toLocaleString()} cards.`;
+          const ok = window.confirm(
+            `Add ${queuedCount.toLocaleString()} cards from set "${normalizedSetId}" to "${queueName}"?\n\n${details}`
+          );
+          if (!ok) return;
+        }
+        const { added, capped: queueCapped, max } = queueId
+          ? await appendCardsToWorkbenchQueue(queueId, ids)
+          : await appendCardsToDefaultQueue(ids);
+        await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+        if (queueId != null) setWorkbenchQueueId(String(queueId));
+        if (added === 0 && queueCapped) {
+          toastWarning(
+            `"${queueName}" is full (${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards). Remove some cards before adding more.`
+          );
+        } else if (added === 0) {
+          toastWarning(`Every card from set "${normalizedSetId}" is already in "${queueName}".`);
+        } else if (queueCapped) {
+          toastWarning(
+            `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} from set "${normalizedSetId}" to "${queueName}". The list is capped at ${Number(max || BATCH_EDIT_MAX_CARDS).toLocaleString()} cards; some were skipped.`
+          );
+        } else if (matchingCapped) {
+          toastWarning(
+            `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} from set "${normalizedSetId}" to "${queueName}". Set size is ${totalMatch.toLocaleString()}, so only the first ${BATCH_EDIT_MAX_CARDS.toLocaleString()} were queued.`
+          );
+        } else {
+          toastSuccess(
+            `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} from set "${normalizedSetId}" to "${queueName}".`,
+            workbenchToastAction()
+          );
+        }
+      } catch (err) {
+        console.error(err);
+        toastError(err);
+      } finally {
+        setToWorkbenchInFlightRef.current = false;
+        setWorkbenchMatchingAppendBusy(false);
+      }
+    },
+    [queryClient, selectedWorkbenchQueue, workbenchQueues, workbenchToastAction]
+  );
 
   const handleDeleteSelected = async () => {
     setDeleteInProgress(true);
@@ -794,11 +984,20 @@ export default function ExplorePage() {
         const queueId = targetQueue?.id;
         const queueName = targetQueue?.name || "Workbench";
         if (queueId != null) setWorkbenchQueueId(String(queueId));
-        if (queueId) await appendCardToWorkbenchQueue(queueId, cardId);
-        else await appendCardToDefaultQueue(cardId);
+        const { added, capped, max } = queueId
+          ? await appendCardToWorkbenchQueue(queueId, cardId)
+          : await appendCardToDefaultQueue(cardId);
         queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
-        setSelectedCardId(null);
-        toastSuccess(`Card added to "${queueName}".`, workbenchToastAction());
+        if (added > 0) {
+          setSelectedCardId(null);
+          toastSuccess(`Card added to "${queueName}".`, workbenchToastAction());
+        } else if (capped) {
+          toastWarning(
+            `"${queueName}" is full (${Number(max || 5000).toLocaleString()} cards). Remove some cards before adding more.`
+          );
+        } else {
+          toastWarning(`Card is already in "${queueName}".`);
+        }
       } catch (err) {
         console.error(err);
         toastError(err);
@@ -1158,6 +1357,54 @@ export default function ExplorePage() {
                       if (
                         USE_SUPABASE_APP &&
                         workbenchQueues.length > 1 &&
+                        !showMatchingWorkbenchTargetPicker
+                      ) {
+                        setShowMatchingWorkbenchTargetPicker(true);
+                        return;
+                      }
+                      void handleMatchingToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
+                    }}
+                    disabled={workbenchMatchingAppendBusy}
+                    title="Append the first matching cards to your selected Workbench list (deduped; up to 5,000)"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+                  >
+                    {workbenchMatchingAppendBusy ? "Adding…" : "Add matching to Workbench"}
+                  </button>
+                  {showMatchingWorkbenchTargetPicker && USE_SUPABASE_APP && workbenchQueues.length > 1 && (
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-1.5 py-1">
+                      <select
+                        value={selectedWorkbenchQueue?.id ?? ""}
+                        onChange={(e) => setWorkbenchQueueId(String(e.target.value))}
+                        className="h-8 rounded border border-sky-300 bg-white px-2 text-xs text-sky-950"
+                      >
+                        {workbenchQueues.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.name || "Untitled list"}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleMatchingToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
+                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMatchingWorkbenchTargetPicker(false)}
+                        className="h-8 rounded border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        USE_SUPABASE_APP &&
+                        workbenchQueues.length > 1 &&
                         !showBatchWorkbenchTargetPicker
                       ) {
                         setShowBatchWorkbenchTargetPicker(true);
@@ -1166,7 +1413,7 @@ export default function ExplorePage() {
                       void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
                     }}
                     disabled={batchSelection.count === 0 || workbenchListAppendBusy}
-                    title="Append this list to your Workbench queue (deduped; does not replace the queue)"
+                    title="Append this list to your selected Workbench list (deduped; does not replace the list)"
                     className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
@@ -1280,6 +1527,49 @@ export default function ExplorePage() {
             >
               Clear Selection
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (USE_SUPABASE_APP && workbenchQueues.length > 1 && !showSelectedWorkbenchTargetPicker) {
+                  setShowSelectedWorkbenchTargetPicker(true);
+                  return;
+                }
+                void handleSelectedToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
+              }}
+              disabled={selectedCardIds.size === 0 || workbenchSelectedAppendBusy}
+              className="text-sm font-medium px-3 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {workbenchSelectedAppendBusy ? "Adding…" : "Add selected to Workbench"}
+            </button>
+            {showSelectedWorkbenchTargetPicker && USE_SUPABASE_APP && workbenchQueues.length > 1 && (
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-1.5 py-1">
+                <select
+                  value={selectedWorkbenchQueue?.id ?? ""}
+                  onChange={(e) => setWorkbenchQueueId(String(e.target.value))}
+                  className="h-8 rounded border border-sky-300 bg-white px-2 text-xs text-sky-950"
+                >
+                  {workbenchQueues.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.name || "Untitled list"}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleSelectedToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
+                  className="h-8 rounded bg-sky-600 px-2.5 text-xs font-semibold text-white hover:bg-sky-700"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSelectedWorkbenchTargetPicker(false)}
+                  className="h-8 rounded border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             <button
               onClick={() => setShowDeleteConfirm(true)}
               disabled={selectedCardIds.size === 0}
@@ -1528,6 +1818,8 @@ export default function ExplorePage() {
               workflowBuildingRef={workflowBuildingRef}
               onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
               onSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
+              onSendSetToWorkbench={USE_SUPABASE_APP ? handleSetToWorkbench : undefined}
+              isSetToWorkbenchBusy={USE_SUPABASE_APP ? workbenchMatchingAppendBusy : false}
               workbenchQueueOptions={USE_SUPABASE_APP ? workbenchQueues : []}
               selectedWorkbenchQueueId={selectedWorkbenchQueue?.id ?? ""}
               onWorkbenchQueueChange={USE_SUPABASE_APP ? (id) => setWorkbenchQueueId(String(id)) : undefined}
