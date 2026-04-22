@@ -240,6 +240,14 @@ export default function WorkbenchPage() {
     () => queues.filter((q) => String(q.id) !== String(queue?.id || "")),
     [queues, queue?.id]
   );
+  const ownedQueues = useMemo(
+    () => queues.filter((q) => q?.is_owner !== false),
+    [queues]
+  );
+  const sharedQueues = useMemo(
+    () => queues.filter((q) => q?.is_owner === false),
+    [queues]
+  );
   useEffect(() => {
     if (!moveTargetOptions.length) {
       setMoveTargetQueueId("");
@@ -730,11 +738,24 @@ export default function WorkbenchPage() {
                 onChange={(e) => setActiveQueueId(String(e.target.value))}
                 className="h-9 min-w-[14rem] max-w-[20rem] px-2.5 border border-gray-300 rounded-lg bg-white text-sm"
               >
-                {queues.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.name || "Untitled list"}
-                  </option>
-                ))}
+                {ownedQueues.length > 0 && (
+                  <optgroup label="My lists">
+                    {ownedQueues.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.name || "Untitled list"}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {sharedQueues.length > 0 && (
+                  <optgroup label="Shared with me">
+                    {sharedQueues.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.name || "Untitled list"}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
               {queue?.is_shared ? (
                 <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
