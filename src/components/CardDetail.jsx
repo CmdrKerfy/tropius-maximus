@@ -400,6 +400,14 @@ export default function CardDetail({
       : workbenchQueueOptions[0]?.id != null
         ? String(workbenchQueueOptions[0].id)
         : "";
+  const ownedWorkbenchQueueOptions = useMemo(
+    () => workbenchQueueOptions.filter((q) => q?.is_owner !== false),
+    [workbenchQueueOptions]
+  );
+  const sharedWorkbenchQueueOptions = useMemo(
+    () => workbenchQueueOptions.filter((q) => q?.is_owner === false),
+    [workbenchQueueOptions]
+  );
   const annotationEditorDisplayName = useMemo(() => {
     if (!card) return null;
     const uid = parseAnnotations(card).updated_by;
@@ -1081,11 +1089,24 @@ export default function CardDetail({
                       className="h-7 rounded border border-green-300 bg-white px-2 text-[11px] text-green-900"
                       title="Choose target Workbench list"
                     >
-                      {workbenchQueueOptions.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          {q.name || "Untitled list"}
-                        </option>
-                      ))}
+                      {ownedWorkbenchQueueOptions.length > 0 && (
+                        <optgroup label="My lists">
+                          {ownedWorkbenchQueueOptions.map((q) => (
+                            <option key={q.id} value={q.id}>
+                              {q.name || "Untitled list"}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {sharedWorkbenchQueueOptions.length > 0 && (
+                        <optgroup label="Shared with me">
+                          {sharedWorkbenchQueueOptions.map((q) => (
+                            <option key={q.id} value={q.id}>
+                              {q.name || "Untitled list"}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <button
                       type="button"
@@ -1135,11 +1156,24 @@ export default function CardDetail({
                       className="h-7 rounded border border-emerald-300 bg-white px-2 text-[11px] text-emerald-900"
                       title="Choose target Workbench list"
                     >
-                      {workbenchQueueOptions.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          {q.name || "Untitled list"}
-                        </option>
-                      ))}
+                      {ownedWorkbenchQueueOptions.length > 0 && (
+                        <optgroup label="My lists">
+                          {ownedWorkbenchQueueOptions.map((q) => (
+                            <option key={q.id} value={q.id}>
+                              {q.name || "Untitled list"}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {sharedWorkbenchQueueOptions.length > 0 && (
+                        <optgroup label="Shared with me">
+                          {sharedWorkbenchQueueOptions.map((q) => (
+                            <option key={q.id} value={q.id}>
+                              {q.name || "Untitled list"}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <button
                       type="button"

@@ -123,6 +123,14 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
       : null;
     return found || workbenchQueues[0];
   }, [workbenchQueues, workbenchQueueId]);
+  const ownedWorkbenchQueues = useMemo(
+    () => workbenchQueues.filter((q) => q?.is_owner !== false),
+    [workbenchQueues]
+  );
+  const sharedWorkbenchQueues = useMemo(
+    () => workbenchQueues.filter((q) => q?.is_owner === false),
+    [workbenchQueues]
+  );
 
   useEffect(() => {
     if (!selectedWorkbenchQueue?.id) return;
@@ -462,11 +470,24 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
                 onChange={(e) => setWorkbenchQueueId(String(e.target.value))}
                 className="h-8 rounded border border-sky-300 bg-white px-2 text-xs text-sky-950"
               >
-                {workbenchQueues.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.name || "Untitled list"}
-                  </option>
-                ))}
+                {ownedWorkbenchQueues.length > 0 && (
+                  <optgroup label="My lists">
+                    {ownedWorkbenchQueues.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.name || "Untitled list"}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {sharedWorkbenchQueues.length > 0 && (
+                  <optgroup label="Shared with me">
+                    {sharedWorkbenchQueues.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.name || "Untitled list"}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
               <button
                 type="button"
