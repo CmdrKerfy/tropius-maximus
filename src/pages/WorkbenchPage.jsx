@@ -591,6 +591,10 @@ export default function WorkbenchPage() {
 
   const handleRenameQueue = async () => {
     if (!queue?.id) return;
+    if (queue?.is_owner === false) {
+      toastError("Only the list owner can rename this shared list.");
+      return;
+    }
     const raw = window.prompt("Rename Workbench list:", queue.name || "Shared list");
     if (raw == null) return;
     const name = String(raw).trim();
@@ -605,6 +609,10 @@ export default function WorkbenchPage() {
 
   const handleDeleteQueue = async () => {
     if (!queue?.id) return;
+    if (queue?.is_owner === false) {
+      toastError("Only the list owner can delete this shared list.");
+      return;
+    }
     if (queues.length <= 1) {
       toastError("Create another list before deleting this one.");
       return;
@@ -791,10 +799,24 @@ export default function WorkbenchPage() {
               <Button type="button" variant="secondary" size="sm" onClick={handleCreateQueue}>
                 New
               </Button>
-              <Button type="button" variant="secondary" size="sm" onClick={handleRenameQueue}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleRenameQueue}
+                disabled={queue?.is_owner === false}
+                title={queue?.is_owner === false ? "Only the list owner can rename this shared list." : undefined}
+              >
                 Rename
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleDeleteQueue}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteQueue}
+                disabled={queue?.is_owner === false}
+                title={queue?.is_owner === false ? "Only the list owner can delete this shared list." : undefined}
+              >
                 Delete
               </Button>
             </div>
