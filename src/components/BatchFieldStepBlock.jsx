@@ -37,6 +37,14 @@ export default function BatchFieldStepBlock({
   onRemove,
 }) {
   const selectedAttr = sortedAttrs.find((a) => a.key === step.fieldKey) || null;
+  const selectOptions = Array.isArray(selectedAttr?.options) ? selectedAttr.options.map((opt) => String(opt)) : [];
+  const hasSelectOptions =
+    selectedAttr?.value_type === "select" &&
+    Array.isArray(selectedAttr?.options) &&
+    selectedAttr.options.length > 0;
+  const hasExplicitCustomSelectValue =
+    Boolean(step.textValue) && !selectOptions.some((opt) => opt === String(step.textValue));
+  const useCustomSelectValue = Boolean(step.useCustomSelectValue) || hasExplicitCustomSelectValue;
   const showCuratedPromote = Boolean(
     selectedAttr &&
       !selectedAttr.is_builtin &&
@@ -74,6 +82,7 @@ export default function BatchFieldStepBlock({
                 fieldKey: e.target.value,
                 textValue: "",
                 boolValue: false,
+                useCustomSelectValue: false,
               });
             }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
@@ -124,33 +133,52 @@ export default function BatchFieldStepBlock({
             </label>
           )}
 
-          {step.mode === "set" &&
-            selectedAttr.value_type === "select" &&
-            Array.isArray(selectedAttr.options) &&
-            selectedAttr.options.length > 0 && (
+          {step.mode === "set" && hasSelectOptions && (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Value</label>
-                <select
-                  value={step.textValue}
-                  onChange={(e) => onChange({ textValue: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-                >
-                  <option value="">—</option>
-                  {selectedAttr.options.map((opt) => (
-                    <option key={String(opt)} value={String(opt)}>
-                      {String(opt)}
-                    </option>
-                  ))}
-                </select>
+                <label className="mb-2 inline-flex items-center gap-1.5 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    checked={useCustomSelectValue}
+                    onChange={(e) =>
+                      onChange({
+                        useCustomSelectValue: e.target.checked,
+                        textValue: e.target.checked ? step.textValue : "",
+                      })
+                    }
+                  />
+                  Use custom value
+                </label>
+                {!useCustomSelectValue ? (
+                  <select
+                    value={step.textValue}
+                    onChange={(e) => onChange({ textValue: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                  >
+                    <option value="">—</option>
+                    {selectedAttr.options.map((opt) => (
+                      <option key={String(opt)} value={String(opt)}>
+                        {String(opt)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={step.textValue}
+                    onChange={(e) => onChange({ textValue: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    placeholder="Type custom value (e.g. Orange)"
+                  />
+                )}
               </div>
             )}
 
           {step.mode === "set" &&
             selectedAttr.value_type !== "boolean" &&
             !(
-              selectedAttr.value_type === "select" &&
-              Array.isArray(selectedAttr.options) &&
-              selectedAttr.options.length > 0
+              hasSelectOptions
             ) && (
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">

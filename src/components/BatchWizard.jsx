@@ -50,6 +50,7 @@ function newStep() {
     textValue: "",
     boolValue: false,
     promoteCurated: false,
+    useCustomSelectValue: false,
   };
 }
 
@@ -190,10 +191,15 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
 
   const previewKey = useMemo(() => ids.slice(0, PREVIEW_CAP).join(","), [idsKey]);
 
-  const { data: previewData, isPending: previewPending } = useQuery({
+  const {
+    data: previewData,
+    isPending: previewPending,
+    isError: previewError,
+    error: previewErr,
+  } = useQuery({
     queryKey: ["batchWizardPreview", previewFieldKey, previewKey],
     queryFn: () => fetchBatchWizardPreview(ids, previewFieldKey),
-    enabled: phase === "review" && Boolean(previewFieldKey) && total > 0,
+    enabled: phase === "review" && total > 0,
   });
 
   const mergePatch = useMemo(() => {
@@ -598,6 +604,12 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
               <div className="mt-2">
                 {previewPending ? (
                   <p className="text-xs text-gray-400">Loading sample…</p>
+                ) : previewError ? (
+                  <p className="text-xs text-amber-700">
+                    Could not load preview cards: {previewErr?.message || "unknown error"}
+                  </p>
+                ) : !(previewData?.cards || []).length ? (
+                  <p className="text-xs text-gray-500">No preview cards found in this batch list.</p>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {(previewData?.cards || []).map((c) => (
