@@ -27,6 +27,8 @@ import {
   updateWorkbenchQueue,
   createWorkbenchQueue,
   deleteWorkbenchQueue,
+  appendCardsToWorkbenchQueue,
+  moveCardsBetweenWorkbenchQueues,
   fetchProfile,
   fetchUserPreferences,
 } from "../db";
@@ -426,12 +428,23 @@ export default function WorkbenchPage() {
 
   const undoBulkRemove = async (snapshot) => {
     try {
-      await updateWorkbenchQueue(snapshot.queueId, {
-        card_ids: snapshot.cardIds,
-        current_index: snapshot.currentIndex,
-      });
+      const { added, capped } = await appendCardsToWorkbenchQueue(snapshot.queueId, snapshot.removedIds);
       await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
-      toastSuccess(`Restored ${snapshot.removedCount} card${snapshot.removedCount === 1 ? "" : "s"}.`);
+      if (added === 0 && capped) {
+        toastError(`Undo could not restore cards because the list is already at ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards.`);
+        return;
+      }
+      if (added === 0) {
+        toastSuccess("Nothing to restore — cards were already re-added.");
+        return;
+      }
+      if (capped) {
+        toastSuccess(
+          `Restored ${added} of ${snapshot.removedCount} card${snapshot.removedCount === 1 ? "" : "s"} (list cap reached).`
+        );
+        return;
+      }
+      toastSuccess(`Restored ${added} card${added === 1 ? "" : "s"}.`);
     } catch (e) {
       toastError(e);
     }
@@ -454,8 +467,7 @@ export default function WorkbenchPage() {
       setSelectedForRemoval(new Set());
       const snapshot = {
         queueId: queue.id,
-        cardIds: cardIds.map((id) => String(id)),
-        currentIndex,
+        removedIds: cardIds.filter((id) => selected.has(String(id))).map((id) => String(id)),
         removedCount,
       };
       toastSuccess(
@@ -492,8 +504,7 @@ export default function WorkbenchPage() {
       setSelectedForRemoval(new Set());
       const snapshot = {
         queueId: queue.id,
-        cardIds: cardIds.map((id) => String(id)),
-        currentIndex,
+        removedIds: cardIds.filter((id) => selected.has(String(id))).map((id) => String(id)),
         removedCount,
       };
       toastSuccess(
@@ -520,32 +531,37 @@ export default function WorkbenchPage() {
     const selected = new Set([...selectedForRemoval].map((id) => String(id)));
     const movingIds = cardIds.filter((id) => selected.has(String(id)));
     if (movingIds.length === 0) return;
-    const targetIds = normalizeCardIds(target.card_ids).map((id) => String(id));
-    const seenTarget = new Set(targetIds);
-    const mergedTarget = [...targetIds];
-    for (const id of movingIds) {
-      const sid = String(id);
-      if (!seenTarget.has(sid)) {
-        seenTarget.add(sid);
-        mergedTarget.push(sid);
-      }
-    }
-    const sourceNextIds = cardIds.filter((id) => !selected.has(String(id)));
-    const sourceNextIndex = sourceNextIds.length ? Math.min(safeIndex, sourceNextIds.length - 1) : 0;
     try {
-      await updateWorkbenchQueue(target.id, {
-        card_ids: mergedTarget,
-        current_index: Math.max(0, Number(target.current_index) || 0),
-      });
-      await updateWorkbenchQueue(queue.id, {
-        card_ids: sourceNextIds,
-        current_index: sourceNextIndex,
-      });
+      const result = await moveCardsBetweenWorkbenchQueues(queue.id, target.id, movingIds);
       await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
       setSelectedForRemoval(new Set());
-      toastSuccess(
-        `Moved ${movingIds.length} card${movingIds.length === 1 ? "" : "s"} to "${target.name || "list"}".`
-      );
+      const moved = Number(result?.moved_count || 0);
+      const skippedExisting = Number(result?.skipped_existing || 0);
+      const skippedCapacity = Number(result?.skipped_capacity || 0);
+      const movedTotal = moved + skippedExisting;
+      if (movedTotal === 0 && skippedCapacity > 0) {
+        toastError(
+          `"${target.name || "list"}" is full (${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards). No cards were moved.`
+        );
+        return;
+      }
+      if (skippedCapacity > 0) {
+        const dedupeNote =
+          skippedExisting > 0
+            ? ` ${skippedExisting} card${skippedExisting === 1 ? "" : "s"} were already in "${target.name || "list"}" and were removed from the source list.`
+            : "";
+        toastSuccess(
+          `Moved ${moved} new card${moved === 1 ? "" : "s"} to "${target.name || "list"}"; ${skippedCapacity} stayed in the source list because the target hit the ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cap.${dedupeNote}`
+        );
+        return;
+      }
+      if (skippedExisting > 0) {
+        toastSuccess(
+          `Moved ${moved} new card${moved === 1 ? "" : "s"} to "${target.name || "list"}". ${skippedExisting} card${skippedExisting === 1 ? "" : "s"} were already there and were removed from the source list.`
+        );
+        return;
+      }
+      toastSuccess(`Moved ${moved} card${moved === 1 ? "" : "s"} to "${target.name || "list"}".`);
     } catch (e) {
       toastError(e);
     }

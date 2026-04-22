@@ -364,6 +364,13 @@ export async function appendCardsToWorkbenchQueue(queueId, cardIds) {
   return (await sb()).appendCardsToWorkbenchQueue(queueId, cardIds);
 }
 
+export async function moveCardsBetweenWorkbenchQueues(sourceQueueId, targetQueueId, cardIds) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Shared Workbench lists require Supabase (v2).");
+  }
+  return (await sb()).moveCardsBetweenWorkbenchQueues(sourceQueueId, targetQueueId, cardIds);
+}
+
 const LS_CARD_DETAIL_PINS = "tm_card_detail_pins";
 
 /** @returns {Promise<{ card_detail_pins?: string[], quick_fields?: unknown, default_category?: string } | null>} */

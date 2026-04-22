@@ -2886,3 +2886,40 @@ export async function appendCardsToDefaultQueue(cardIds) {
   const q = await ensureDefaultWorkbenchQueue();
   return appendCardsToWorkbenchQueue(q.id, cardIds);
 }
+
+/**
+ * Move selected card ids between two Workbench lists atomically.
+ * Cards already present in target are de-duplicated and removed from source.
+ * Cards that exceed target capacity stay in source.
+ */
+export async function moveCardsBetweenWorkbenchQueues(sourceQueueId, targetQueueId, cardIds) {
+  const sb = await sbReady();
+  await workbenchUserId(sb);
+  const ids = asCardIdArray(cardIds)
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+  if (!ids.length) {
+    return {
+      moved_count: 0,
+      skipped_existing: 0,
+      skipped_capacity: 0,
+      source_count: 0,
+      target_count: 0,
+    };
+  }
+  const { data, error } = await sb.rpc("move_workbench_cards", {
+    p_source_queue_id: Number(sourceQueueId),
+    p_target_queue_id: Number(targetQueueId),
+    p_card_ids: ids,
+    p_max_cards: BATCH_EDIT_MAX_CARDS,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] || null : data || null;
+  return {
+    moved_count: Number(row?.moved_count || 0),
+    skipped_existing: Number(row?.skipped_existing || 0),
+    skipped_capacity: Number(row?.skipped_capacity || 0),
+    source_count: Number(row?.source_count || 0),
+    target_count: Number(row?.target_count || 0),
+  };
+}
