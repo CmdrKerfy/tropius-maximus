@@ -179,10 +179,6 @@ export default function ExplorePage() {
   /** Collapse batch chrome when the list is empty — saves space; opens automatically when count > 0. */
   const [batchExploreExpanded, setBatchExploreExpanded] = useState(false);
 
-  useEffect(() => {
-    if (batchSelection.count > 0) setBatchExploreExpanded(true);
-  }, [batchSelection.count]);
-
   // ── Card list state ─────────────────────────────────────────────────
   const [page, setPage] = useState(() => readUrlState().page);
   const [pageSize] = useState(60);
@@ -238,14 +234,14 @@ export default function ExplorePage() {
   /** Anonymous JWT: RLS 019 allows zero rows with no PostgREST error — explain in CardGrid. */
   const [supabaseSessionIsAnonymous, setSupabaseSessionIsAnonymous] = useState(false);
 
-  /** Grid batch checkboxes only when tools are expanded or the list is non-empty (SQL mode keeps its own selection). */
+  /** Grid batch checkboxes only while Batch tools are expanded (SQL mode keeps its own selection). */
   const batchModeActive = useMemo(
     () =>
       USE_SUPABASE_APP &&
       !sqlCards &&
       !showSqlConsole &&
-      (batchExploreExpanded || batchSelection.count > 0),
-    [sqlCards, showSqlConsole, batchExploreExpanded, batchSelection.count]
+      batchExploreExpanded,
+    [sqlCards, showSqlConsole, batchExploreExpanded]
   );
 
   // ── GitHub PAT state ─────────────────────────────────────────────────
@@ -1303,7 +1299,7 @@ export default function ExplorePage() {
 
         {USE_SUPABASE_APP && !sqlCards && !showSqlConsole && (
           <div className="relative z-20 mb-7 mt-1">
-            {batchSelection.count === 0 && !batchExploreExpanded ? (
+            {!batchExploreExpanded ? (
               <div className="flex justify-start">
                 <button
                   type="button"
@@ -1311,7 +1307,8 @@ export default function ExplorePage() {
                   className="inline-flex items-center gap-1.5 rounded-md border border-tm-leaf/35 bg-tm-cream px-2.5 py-1.5 text-xs font-semibold text-tm-canopy shadow-sm hover:border-tm-leaf/55 hover:bg-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-tm-mist/80 transition-colors"
                   aria-expanded={false}
                 >
-                  Batch tools
+                  Batch list
+                  {batchSelection.count > 0 ? ` (${batchSelection.count})` : ""}
                 </button>
               </div>
             ) : (
@@ -1324,18 +1321,16 @@ export default function ExplorePage() {
                     </span>
                     <span className="text-xs text-gray-500">(this browser)</span>
                   </div>
-                  {batchSelection.count === 0 ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0 -mr-1 -mt-0.5 text-gray-500"
-                      onClick={() => setBatchExploreExpanded(false)}
-                      aria-expanded
-                    >
-                      Hide
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 -mr-1 -mt-0.5 text-gray-500"
+                    onClick={() => setBatchExploreExpanded(false)}
+                    aria-expanded
+                  >
+                    Hide
+                  </Button>
                 </div>
                 <p className="text-[11px] text-gray-600 leading-relaxed">
                   <span className="text-tm-canopy font-medium">Selection:</span> checkboxes on cards while this panel is open
