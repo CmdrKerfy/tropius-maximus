@@ -447,6 +447,11 @@ export default function BatchWizard({ batchSelection, attributes, attrPending })
         <p className="text-xs text-gray-600 leading-relaxed">
           This run uses your saved list only (not the Explore URL). Clear the list from Explore if you need to start over.
         </p>
+        {selectedWorkbenchQueue?.is_owner === false ? (
+          <p className="text-[11px] text-sky-800">
+            Current Workbench target is a shared list. Enqueue adds cards to that shared list.
+          </p>
+        ) : null}
         <div className="pt-1 flex flex-wrap items-center gap-2">
           <button
             type="button"

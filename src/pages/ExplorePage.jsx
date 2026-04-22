@@ -1348,6 +1348,11 @@ export default function ExplorePage() {
                   <strong className="font-medium text-gray-700">Add all matching</strong> uses current search + filters (cap{" "}
                   {BATCH_EDIT_MAX_CARDS.toLocaleString()}).
                 </p>
+                {selectedWorkbenchQueue?.is_owner === false ? (
+                  <p className="text-[11px] text-sky-800">
+                    Target list is shared with you. Enqueue actions add cards to that shared list.
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   <Button
                     type="button"
