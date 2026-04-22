@@ -400,6 +400,11 @@ export default function CardDetail({
       : workbenchQueueOptions[0]?.id != null
         ? String(workbenchQueueOptions[0].id)
         : "";
+  const selectedWorkbenchTarget = useMemo(
+    () =>
+      workbenchQueueOptions.find((q) => String(q.id || "") === String(selectedWorkbenchTargetId || "")) || null,
+    [workbenchQueueOptions, selectedWorkbenchTargetId]
+  );
   const ownedWorkbenchQueueOptions = useMemo(
     () => workbenchQueueOptions.filter((q) => q?.is_owner !== false),
     [workbenchQueueOptions]
@@ -1217,6 +1222,11 @@ export default function CardDetail({
                 </button>
               )
             )}
+            {selectedWorkbenchTarget?.is_owner === false && (onSendToWorkbench || onSendSetToWorkbench) ? (
+              <span className="basis-full text-[11px] text-sky-800">
+                Current target is a shared list.
+              </span>
+            ) : null}
           </div>
           <button
             onClick={handleClose}
