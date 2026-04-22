@@ -2477,7 +2477,10 @@ export async function syncMutableTablesToIndexedDB() {
   return { annotationsSynced: 0, customCardsSynced: 0, customCardsData: { cards: [] } };
 }
 
-export async function deleteCardsById(cardIds) {
+export async function deleteCardsById(cardIds, options = {}) {
+  if (options?.acknowledged !== true) {
+    throw new Error("Card delete blocked: confirmation warning was not acknowledged.");
+  }
   const sb = await sbReady();
   const deleted = [];
   for (const id of cardIds) {
@@ -2714,11 +2717,9 @@ function asCardIdArray(raw) {
 
 export async function fetchWorkbenchQueues() {
   const sb = await sbReady();
-  const uid = await workbenchUserId(sb);
   const { data, error } = await sb
     .from("workbench_queues")
     .select("*")
-    .eq("user_id", uid)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data || [];
@@ -2730,8 +2731,8 @@ export async function ensureDefaultWorkbenchQueue() {
   const { data: existing, error: e1 } = await sb
     .from("workbench_queues")
     .select("*")
-    .eq("user_id", uid)
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .limit(1);
   if (e1) throw e1;
   if (existing?.length) return existing[0];
@@ -2751,32 +2752,77 @@ export async function ensureDefaultWorkbenchQueue() {
   return row;
 }
 
-export async function updateWorkbenchQueue(queueId, patch) {
+function normalizeWorkbenchQueueName(raw) {
+  const name = String(raw || "").trim();
+  return name || "Untitled list";
+}
+
+export async function createWorkbenchQueue({ name = "Untitled list", card_ids = [], fields = [] } = {}) {
   const sb = await sbReady();
   const uid = await workbenchUserId(sb);
-  const allowed = ["name", "card_ids", "fields", "current_index", "filters_used"];
-  const row = {};
-  for (const k of allowed) {
-    if (k in patch) row[k] = patch[k];
-  }
-  if (!Object.keys(row).length) return null;
-  row.updated_at = new Date().toISOString();
+  const listName = normalizeWorkbenchQueueName(name);
+  const ids = asCardIdArray(card_ids).map((x) => String(x).trim()).filter(Boolean);
+  const listFields = Array.isArray(fields) ? fields : [];
   const { data, error } = await sb
     .from("workbench_queues")
-    .update(row)
-    .eq("id", queueId)
-    .eq("user_id", uid)
+    .insert({
+      user_id: uid,
+      name: listName,
+      card_ids: ids,
+      fields: listFields,
+      current_index: 0,
+      filters_used: {},
+      updated_at: new Date().toISOString(),
+    })
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-/** Append a card id to the user's default queue (deduped). */
-export async function appendCardToDefaultQueue(cardId) {
-  const q = await ensureDefaultWorkbenchQueue();
-  const ids = asCardIdArray(q.card_ids);
-  if (!ids.includes(cardId)) ids.push(cardId);
+export async function updateWorkbenchQueue(queueId, patch) {
+  const sb = await sbReady();
+  await workbenchUserId(sb);
+  const allowed = ["name", "card_ids", "fields", "current_index", "filters_used"];
+  const row = {};
+  for (const k of allowed) {
+    if (k in patch) row[k] = patch[k];
+  }
+  if ("name" in row) row.name = normalizeWorkbenchQueueName(row.name);
+  if (!Object.keys(row).length) return null;
+  row.updated_at = new Date().toISOString();
+  const { data, error } = await sb
+    .from("workbench_queues")
+    .update(row)
+    .eq("id", queueId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteWorkbenchQueue(queueId) {
+  const sb = await sbReady();
+  await workbenchUserId(sb);
+  const { error } = await sb.from("workbench_queues").delete().eq("id", queueId);
+  if (error) throw error;
+  return { deleted: true };
+}
+
+/**
+ * Append one card id to a specific Workbench list (deduped).
+ * @param {number|string} queueId
+ * @param {string} cardId
+ */
+export async function appendCardToWorkbenchQueue(queueId, cardId) {
+  const sid = String(cardId || "").trim();
+  if (!sid) throw new Error("Card id is required.");
+  const sb = await sbReady();
+  const { data: q, error } = await sb.from("workbench_queues").select("*").eq("id", queueId).maybeSingle();
+  if (error) throw error;
+  if (!q) throw new Error("Workbench list not found.");
+  const ids = asCardIdArray(q.card_ids).map((x) => String(x)).filter(Boolean);
+  if (!ids.includes(sid)) ids.push(sid);
   return updateWorkbenchQueue(q.id, {
     card_ids: ids,
     current_index: ids.length - 1,
@@ -2784,14 +2830,18 @@ export async function appendCardToDefaultQueue(cardId) {
 }
 
 /**
- * Append many card ids in one update (deduped against existing queue order; new ids appended in given order).
+ * Append many card ids to a specific Workbench list.
+ * @param {number|string} queueId
  * @param {string[]} cardIds
  * @returns {Promise<{ added: number, queue: object }>}
  */
-export async function appendCardsToDefaultQueue(cardIds) {
-  const q = await ensureDefaultWorkbenchQueue();
-  const existing = asCardIdArray(q.card_ids);
-  const seen = new Set(existing.map((id) => String(id)));
+export async function appendCardsToWorkbenchQueue(queueId, cardIds) {
+  const sb = await sbReady();
+  const { data: q, error } = await sb.from("workbench_queues").select("*").eq("id", queueId).maybeSingle();
+  if (error) throw error;
+  if (!q) throw new Error("Workbench list not found.");
+  const existing = asCardIdArray(q.card_ids).map((x) => String(x)).filter(Boolean);
+  const seen = new Set(existing);
   const merged = [...existing];
   let added = 0;
   for (const raw of cardIds || []) {
@@ -2809,4 +2859,20 @@ export async function appendCardsToDefaultQueue(cardIds) {
     current_index: merged.length - 1,
   });
   return { added, queue: data };
+}
+
+/** Append a card id to the user's default queue (deduped). */
+export async function appendCardToDefaultQueue(cardId) {
+  const q = await ensureDefaultWorkbenchQueue();
+  return appendCardToWorkbenchQueue(q.id, cardId);
+}
+
+/**
+ * Append many card ids in one update (deduped against existing queue order; new ids appended in given order).
+ * @param {string[]} cardIds
+ * @returns {Promise<{ added: number, queue: object }>}
+ */
+export async function appendCardsToDefaultQueue(cardIds) {
+  const q = await ensureDefaultWorkbenchQueue();
+  return appendCardsToWorkbenchQueue(q.id, cardIds);
 }

@@ -192,6 +192,9 @@ export default function CardDetail({
   onRegisterSyncRunner,
   workflowBuildingRef,
   onSendToWorkbench,
+  workbenchQueueOptions = [],
+  selectedWorkbenchQueueId = "",
+  onWorkbenchQueueChange,
   inBatchList = false,
   onAddToBatchList,
   onRemoveFromBatchList,
@@ -220,6 +223,7 @@ export default function CardDetail({
   const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [isRenamingCardName, setIsRenamingCardName] = useState(false);
   const [renameCardNameDraft, setRenameCardNameDraft] = useState("");
+  const [showWorkbenchTargetPicker, setShowWorkbenchTargetPicker] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
@@ -277,6 +281,7 @@ export default function CardDetail({
     setSaveMessage("");
     setIsRenamingCardName(false);
     setRenameCardNameDraft("");
+    setShowWorkbenchTargetPicker(false);
     setAnnSaveUi({ phase: "idle", savedAt: null, errorDetail: null });
     clearTimeout(annSaveClearTimerRef.current);
     setSyncRetryCount(0);
@@ -368,6 +373,12 @@ export default function CardDetail({
   const types = card ? parseJson(card.types) : [];
 
   const ann = card ? parseAnnotations(card) : {};
+  const selectedWorkbenchTargetId =
+    selectedWorkbenchQueueId != null && String(selectedWorkbenchQueueId).trim() !== ""
+      ? String(selectedWorkbenchQueueId)
+      : workbenchQueueOptions[0]?.id != null
+        ? String(workbenchQueueOptions[0].id)
+        : "";
   const annotationEditorDisplayName = useMemo(() => {
     if (!card) return null;
     const uid = parseAnnotations(card).updated_by;
@@ -677,7 +688,7 @@ export default function CardDetail({
   const handleDeleteCard = async () => {
     setDeleteInProgress(true);
     try {
-      const deleted = await deleteCardsById([card.id]);
+      const deleted = await deleteCardsById([card.id], { acknowledged: true });
       if (deleted.length === 0) {
         toastError(
           "This card could not be deleted. Only manually added cards can be removed, or you may need permission to delete."
@@ -1044,13 +1055,54 @@ export default function CardDetail({
               </button>
             )}
             {onSendToWorkbench && card && !loading && (
-              <button
-                type="button"
-                onClick={() => onSendToWorkbench(card.id)}
-                className="shrink-0 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-lg hover:bg-green-200 border border-green-200/80"
-              >
-                Send to Workbench
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (workbenchQueueOptions.length <= 1) {
+                      onSendToWorkbench(card.id, selectedWorkbenchTargetId || undefined);
+                      return;
+                    }
+                    setShowWorkbenchTargetPicker((v) => !v);
+                  }}
+                  className="shrink-0 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-lg hover:bg-green-200 border border-green-200/80"
+                >
+                  Send to Workbench
+                </button>
+                {showWorkbenchTargetPicker && workbenchQueueOptions.length > 1 && (
+                  <div className="flex items-center gap-1.5 shrink-0 rounded-lg border border-green-200 bg-white px-1.5 py-1">
+                    <select
+                      value={selectedWorkbenchTargetId}
+                      onChange={(e) => onWorkbenchQueueChange?.(e.target.value)}
+                      className="h-7 rounded border border-green-300 bg-white px-2 text-[11px] text-green-900"
+                      title="Choose target Workbench list"
+                    >
+                      {workbenchQueueOptions.map((q) => (
+                        <option key={q.id} value={q.id}>
+                          {q.name || "Untitled list"}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSendToWorkbench(card.id, selectedWorkbenchTargetId || undefined);
+                        setShowWorkbenchTargetPicker(false);
+                      }}
+                      className="h-7 rounded bg-green-600 px-2 text-[11px] font-medium text-white hover:bg-green-700"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowWorkbenchTargetPicker(false)}
+                      className="h-7 rounded border border-gray-300 bg-white px-2 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
             )}
             {onAddToBatchList && onRemoveFromBatchList && card && !loading && (
               inBatchList ? (

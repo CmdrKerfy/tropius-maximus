@@ -292,10 +292,18 @@ export async function generateManualCardId(setId, number) {
   return buildManualCardId(setId, number);
 }
 
-export async function deleteCardsById(cardIds) {
+function assertCardDeleteAcknowledged(options) {
+  if (options?.acknowledged === true) return;
+  throw new Error(
+    "Card delete requires explicit user acknowledgment. Confirm the warning prompt before deleting."
+  );
+}
+
+export async function deleteCardsById(cardIds, options = {}) {
+  assertCardDeleteAcknowledged(options);
   return useSupabaseBackend()
-    ? (await sb()).deleteCardsById(cardIds)
-    : duck.deleteCardsById(cardIds);
+    ? (await sb()).deleteCardsById(cardIds, options)
+    : duck.deleteCardsById(cardIds, options);
 }
 
 export async function fetchWorkbenchQueues() {
@@ -316,6 +324,20 @@ export async function updateWorkbenchQueue(queueId, patch) {
     : duck.updateWorkbenchQueue(queueId, patch);
 }
 
+export async function createWorkbenchQueue(payload) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Shared Workbench lists require Supabase (v2).");
+  }
+  return (await sb()).createWorkbenchQueue(payload);
+}
+
+export async function deleteWorkbenchQueue(queueId) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Shared Workbench lists require Supabase (v2).");
+  }
+  return (await sb()).deleteWorkbenchQueue(queueId);
+}
+
 export async function appendCardToDefaultQueue(cardId) {
   return useSupabaseBackend()
     ? (await sb()).appendCardToDefaultQueue(cardId)
@@ -326,6 +348,20 @@ export async function appendCardsToDefaultQueue(cardIds) {
   return useSupabaseBackend()
     ? (await sb()).appendCardsToDefaultQueue(cardIds)
     : duck.appendCardsToDefaultQueue(cardIds);
+}
+
+export async function appendCardToWorkbenchQueue(queueId, cardId) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Shared Workbench lists require Supabase (v2).");
+  }
+  return (await sb()).appendCardToWorkbenchQueue(queueId, cardId);
+}
+
+export async function appendCardsToWorkbenchQueue(queueId, cardIds) {
+  if (!useSupabaseBackend()) {
+    throw new Error("Shared Workbench lists require Supabase (v2).");
+  }
+  return (await sb()).appendCardsToWorkbenchQueue(queueId, cardIds);
 }
 
 const LS_CARD_DETAIL_PINS = "tm_card_detail_pins";

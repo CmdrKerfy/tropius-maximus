@@ -15,12 +15,16 @@ import {
 import { NavLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ensureDefaultWorkbenchQueue,
+  fetchWorkbenchQueues,
+  fetchCardNamesByIds,
+  fetchCardThumbnailsByIds,
   fetchCard,
   fetchAttributes,
   fetchFormOptions,
   FORM_OPTIONS_QUERY_KEY,
   updateWorkbenchQueue,
+  createWorkbenchQueue,
+  deleteWorkbenchQueue,
   fetchProfile,
   fetchUserPreferences,
 } from "../db";
@@ -31,7 +35,7 @@ import WorkflowModeHelp from "../components/WorkflowModeHelp.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useExperimentalAppNav } from "../lib/navEnv.js";
 import { normalizeCardDetailPins } from "../lib/cardDetailPinRegistry.js";
-import { toastError } from "../lib/toast.js";
+import { toastError, toastSuccess } from "../lib/toast.js";
 import pocketCardBg from "../../images/pocketcardbackground.png";
 
 const USE_SB =
@@ -44,6 +48,7 @@ const EMPTY_ANNOTATIONS = {};
 
 const WB_SPLIT_STORAGE_KEY = "tm_workbench_split_preset";
 const WB_FORM_DENSITY_STORAGE_KEY = "tm_workbench_form_density";
+const WORKBENCH_QUEUE_STORAGE_KEY = "tm_workbench_queue_id";
 
 /** `lg+` two-column ratio; below `lg` the grid is a single column. */
 const WB_SPLIT_GRID_CLASS = {
@@ -66,6 +71,19 @@ function normalizeCardIds(raw) {
 export default function WorkbenchPage() {
   const queryClient = useQueryClient();
   const experimentalNav = useExperimentalAppNav();
+  const [activeQueueId, setActiveQueueId] = useState(() => {
+    try {
+      return typeof localStorage !== "undefined"
+        ? localStorage.getItem(WORKBENCH_QUEUE_STORAGE_KEY) || ""
+        : "";
+    } catch {
+      return "";
+    }
+  });
+  const [manageListMode, setManageListMode] = useState(false);
+  const [selectedForRemoval, setSelectedForRemoval] = useState(() => new Set());
+  const [manageSearchQuery, setManageSearchQuery] = useState("");
+  const [moveTargetQueueId, setMoveTargetQueueId] = useState("");
 
   /** Phase 5: persistent save status in Workbench chrome (driven by AnnotationEditor). */
   const [annotationSave, setAnnotationSave] = useState({
@@ -146,12 +164,43 @@ export default function WorkbenchPage() {
     []
   );
 
-  const { data: queue, isPending, isError, error } = useQuery({
-    queryKey: ["workbenchQueue", "default"],
-    queryFn: () => ensureDefaultWorkbenchQueue(),
+  const { data: queues = [], isPending, isError, error } = useQuery({
+    queryKey: ["workbenchQueues"],
+    queryFn: () => fetchWorkbenchQueues(),
     enabled: USE_SB,
     staleTime: 15_000,
   });
+
+  const queue = useMemo(() => {
+    if (!queues.length) return null;
+    const picked = activeQueueId
+      ? queues.find((q) => String(q.id) === String(activeQueueId))
+      : null;
+    return picked || queues[0];
+  }, [queues, activeQueueId]);
+
+  useEffect(() => {
+    if (!queue?.id) return;
+    setActiveQueueId(String(queue.id));
+  }, [queue?.id]);
+
+  useEffect(() => {
+    try {
+      if (typeof localStorage !== "undefined") {
+        if (activeQueueId) localStorage.setItem(WORKBENCH_QUEUE_STORAGE_KEY, activeQueueId);
+        else localStorage.removeItem(WORKBENCH_QUEUE_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [activeQueueId]);
+
+  useEffect(() => {
+    setSelectedForRemoval(new Set());
+    setManageListMode(false);
+    setManageSearchQuery("");
+    setMoveTargetQueueId("");
+  }, [queue?.id]);
 
   const cardIds = useMemo(() => normalizeCardIds(queue?.card_ids), [queue?.card_ids]);
 
@@ -160,6 +209,40 @@ export default function WorkbenchPage() {
     ? Math.max(0, Math.min(rawIndex, cardIds.length - 1))
     : 0;
   const currentCardId = cardIds.length ? cardIds[safeIndex] : null;
+
+  const { data: cardNamesById = {} } = useQuery({
+    queryKey: ["workbenchQueueCardNames", queue?.id, cardIds],
+    queryFn: () => fetchCardNamesByIds(cardIds),
+    enabled: USE_SB && Boolean(queue?.id) && cardIds.length > 0,
+    staleTime: 60_000,
+  });
+  const { data: cardThumbsById = {} } = useQuery({
+    queryKey: ["workbenchQueueCardThumbs", queue?.id, cardIds],
+    queryFn: () => fetchCardThumbnailsByIds(cardIds),
+    enabled: USE_SB && manageListMode && Boolean(queue?.id) && cardIds.length > 0,
+    staleTime: 60_000,
+  });
+  const filteredManageCardIds = useMemo(() => {
+    const term = String(manageSearchQuery || "").trim().toLowerCase();
+    if (!term) return cardIds;
+    return cardIds.filter((id) => {
+      const sid = String(id || "");
+      const name = String(cardNamesById[id] || "");
+      return sid.toLowerCase().includes(term) || name.toLowerCase().includes(term);
+    });
+  }, [cardIds, manageSearchQuery, cardNamesById]);
+  const moveTargetOptions = useMemo(
+    () => queues.filter((q) => String(q.id) !== String(queue?.id || "")),
+    [queues, queue?.id]
+  );
+  useEffect(() => {
+    if (!moveTargetOptions.length) {
+      setMoveTargetQueueId("");
+      return;
+    }
+    const stillValid = moveTargetOptions.some((q) => String(q.id) === String(moveTargetQueueId));
+    if (!stillValid) setMoveTargetQueueId(String(moveTargetOptions[0].id));
+  }, [moveTargetOptions, moveTargetQueueId]);
 
   useEffect(() => {
     setAnnotationSave({ phase: "idle", detail: null, savedAt: null, retry: null });
@@ -213,7 +296,7 @@ export default function WorkbenchPage() {
   const patchQueue = useMutation({
     mutationFn: ({ queueId, patch }) => updateWorkbenchQueue(queueId, patch),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
+      queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
     },
     onError: (e) => {
       toastError(e);
@@ -302,6 +385,205 @@ export default function WorkbenchPage() {
     });
   };
 
+  const allRemovalSelected =
+    filteredManageCardIds.length > 0 &&
+    filteredManageCardIds.every((id) => selectedForRemoval.has(String(id)));
+
+  const toggleRemoveSelection = (cardId, checked) => {
+    const id = String(cardId);
+    setSelectedForRemoval((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllForRemoval = (checked) => {
+    if (!checked) {
+      setSelectedForRemoval(new Set());
+      return;
+    }
+    setSelectedForRemoval((prev) => {
+      const next = new Set(prev);
+      for (const id of filteredManageCardIds) next.add(String(id));
+      return next;
+    });
+  };
+
+  const undoBulkRemove = async (snapshot) => {
+    try {
+      await updateWorkbenchQueue(snapshot.queueId, {
+        card_ids: snapshot.cardIds,
+        current_index: snapshot.currentIndex,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      toastSuccess(`Restored ${snapshot.removedCount} card${snapshot.removedCount === 1 ? "" : "s"}.`);
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleBulkRemoveSelected = async () => {
+    if (!queue?.id || selectedForRemoval.size === 0) return;
+    const selected = new Set([...selectedForRemoval].map((id) => String(id)));
+    const nextIds = cardIds.filter((id) => !selected.has(String(id)));
+    const removedCount = cardIds.length - nextIds.length;
+    if (removedCount <= 0) return;
+    const currentIndex = safeIndex;
+    const nextIndex = nextIds.length ? Math.min(currentIndex, nextIds.length - 1) : 0;
+    try {
+      await updateWorkbenchQueue(queue.id, {
+        card_ids: nextIds,
+        current_index: nextIndex,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      setSelectedForRemoval(new Set());
+      const snapshot = {
+        queueId: queue.id,
+        cardIds: cardIds.map((id) => String(id)),
+        currentIndex,
+        removedCount,
+      };
+      toastSuccess(
+        `Removed ${removedCount} card${removedCount === 1 ? "" : "s"} from "${queue.name || "list"}".`,
+        {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void undoBulkRemove(snapshot);
+            },
+          },
+        }
+      );
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleBulkRemoveMatching = async () => {
+    if (!queue?.id || filteredManageCardIds.length === 0) return;
+    const selected = new Set(filteredManageCardIds.map((id) => String(id)));
+    const nextIds = cardIds.filter((id) => !selected.has(String(id)));
+    const removedCount = cardIds.length - nextIds.length;
+    if (removedCount <= 0) return;
+    const currentIndex = safeIndex;
+    const nextIndex = nextIds.length ? Math.min(currentIndex, nextIds.length - 1) : 0;
+    try {
+      await updateWorkbenchQueue(queue.id, {
+        card_ids: nextIds,
+        current_index: nextIndex,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      setSelectedForRemoval(new Set());
+      const snapshot = {
+        queueId: queue.id,
+        cardIds: cardIds.map((id) => String(id)),
+        currentIndex,
+        removedCount,
+      };
+      toastSuccess(
+        `Removed ${removedCount} matching card${removedCount === 1 ? "" : "s"} from "${queue.name || "list"}".`,
+        {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void undoBulkRemove(snapshot);
+            },
+          },
+        }
+      );
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleMoveSelectedToList = async () => {
+    if (!queue?.id || selectedForRemoval.size === 0 || !moveTargetQueueId) return;
+    const target = moveTargetOptions.find((q) => String(q.id) === String(moveTargetQueueId));
+    if (!target) return;
+    const selected = new Set([...selectedForRemoval].map((id) => String(id)));
+    const movingIds = cardIds.filter((id) => selected.has(String(id)));
+    if (movingIds.length === 0) return;
+    const targetIds = normalizeCardIds(target.card_ids).map((id) => String(id));
+    const seenTarget = new Set(targetIds);
+    const mergedTarget = [...targetIds];
+    for (const id of movingIds) {
+      const sid = String(id);
+      if (!seenTarget.has(sid)) {
+        seenTarget.add(sid);
+        mergedTarget.push(sid);
+      }
+    }
+    const sourceNextIds = cardIds.filter((id) => !selected.has(String(id)));
+    const sourceNextIndex = sourceNextIds.length ? Math.min(safeIndex, sourceNextIds.length - 1) : 0;
+    try {
+      await updateWorkbenchQueue(target.id, {
+        card_ids: mergedTarget,
+        current_index: Math.max(0, Number(target.current_index) || 0),
+      });
+      await updateWorkbenchQueue(queue.id, {
+        card_ids: sourceNextIds,
+        current_index: sourceNextIndex,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      setSelectedForRemoval(new Set());
+      toastSuccess(
+        `Moved ${movingIds.length} card${movingIds.length === 1 ? "" : "s"} to "${target.name || "list"}".`
+      );
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleCreateQueue = async () => {
+    const raw = window.prompt("New Workbench list name:", "Shared list");
+    if (raw == null) return;
+    const name = String(raw).trim();
+    if (!name) return;
+    try {
+      const row = await createWorkbenchQueue({ name });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (row?.id != null) setActiveQueueId(String(row.id));
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleRenameQueue = async () => {
+    if (!queue?.id) return;
+    const raw = window.prompt("Rename Workbench list:", queue.name || "Shared list");
+    if (raw == null) return;
+    const name = String(raw).trim();
+    if (!name || name === String(queue.name || "").trim()) return;
+    try {
+      await updateWorkbenchQueue(queue.id, { name });
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
+  const handleDeleteQueue = async () => {
+    if (!queue?.id) return;
+    if (queues.length <= 1) {
+      toastError("Create another list before deleting this one.");
+      return;
+    }
+    const ok = window.confirm(`Delete list "${queue.name || "Untitled list"}"? This removes its queue cards only.`);
+    if (!ok) return;
+    try {
+      const fallback = queues.find((q) => String(q.id) !== String(queue.id));
+      await deleteWorkbenchQueue(queue.id);
+      await queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (fallback?.id != null) setActiveQueueId(String(fallback.id));
+    } catch (e) {
+      toastError(e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {!experimentalNav ? (
@@ -362,13 +644,13 @@ export default function WorkbenchPage() {
         <div className="mb-4">
           <WorkflowModeHelp summary="About Workbench — when to use it">
             <p>
-              Workbench is a <strong>personal queue</strong> of cards you work through in order: large artwork, full
+              Workbench uses <strong>shared lists</strong> of cards you work through in order: large artwork, full
               annotation form, and <strong>Previous / Next</strong> without returning to the grid each time.
             </p>
             <ul className="list-disc space-y-1.5 pl-5">
               <li>
                 <strong>Adding cards:</strong> on Explore, open a card, then choose <strong>Send to Workbench</strong>.
-                That appends the card to your default queue (you can remove it from the queue here later).
+                That appends the card to your selected list (you can remove it from the queue here later).
               </li>
               <li>
                 <strong>Use Workbench</strong> when you already know <em>which</em> cards need work (backlog, QA
@@ -399,11 +681,43 @@ export default function WorkbenchPage() {
           </div>
         )}
 
+        {USE_SB && !isPending && !isError && !queue && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-700 space-y-3">
+            <p>No Workbench lists yet. Create one to start a shared queue.</p>
+            <div>
+              <Button type="button" variant="primary" size="sm" onClick={handleCreateQueue}>
+                Create first list
+              </Button>
+            </div>
+          </div>
+        )}
+
         {USE_SB && queue && (
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2 min-w-[18rem]">
+              <label className="text-xs font-medium text-gray-500">List</label>
+              <select
+                value={queue?.id ?? ""}
+                onChange={(e) => setActiveQueueId(String(e.target.value))}
+                className="h-9 min-w-[14rem] max-w-[20rem] px-2.5 border border-gray-300 rounded-lg bg-white text-sm"
+              >
+                {queues.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.name || "Untitled list"}
+                  </option>
+                ))}
+              </select>
+              <Button type="button" variant="secondary" size="sm" onClick={handleCreateQueue}>
+                New
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={handleRenameQueue}>
+                Rename
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={handleDeleteQueue}>
+                Delete
+              </Button>
+            </div>
             <p className="text-sm text-gray-600">
-              Queue <span className="font-medium text-gray-800">{queue.name}</span>
-              {" · "}
               <span className="tabular-nums">{cardIds.length}</span> card{cardIds.length !== 1 ? "s" : ""}
               {cardIds.length > 0 && (
                 <>
@@ -444,8 +758,116 @@ export default function WorkbenchPage() {
                 >
                   Remove from queue
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManageListMode((v) => !v);
+                    setSelectedForRemoval(new Set());
+                    setManageSearchQuery("");
+                  }}
+                  disabled={patchQueue.isPending}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
+                    text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {manageListMode ? "Done managing" : "Manage list"}
+                </button>
               </div>
             )}
+          </div>
+        )}
+
+        {USE_SB && queue && cardIds.length > 0 && manageListMode && (
+          <div className="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <input
+                type="text"
+                value={manageSearchQuery}
+                onChange={(e) => setManageSearchQuery(e.target.value)}
+                placeholder="Filter by card name or id"
+                className="h-9 min-w-[16rem] flex-1 max-w-md rounded-lg border border-gray-300 px-3 text-sm"
+              />
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={allRemovalSelected}
+                  onChange={(e) => toggleSelectAllForRemoval(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-600"
+                />
+                Select all visible ({filteredManageCardIds.length})
+              </label>
+            </div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleBulkRemoveSelected()}
+                disabled={selectedForRemoval.size === 0 || patchQueue.isPending}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Remove selected ({selectedForRemoval.size})
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBulkRemoveMatching()}
+                disabled={filteredManageCardIds.length === 0 || patchQueue.isPending}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-200 bg-white text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Remove all currently visible (filtered) cards from this list"
+              >
+                Remove all matching ({filteredManageCardIds.length})
+              </button>
+              {moveTargetOptions.length > 0 && (
+                <>
+                  <select
+                    value={moveTargetQueueId}
+                    onChange={(e) => setMoveTargetQueueId(e.target.value)}
+                    className="h-9 min-w-[12rem] rounded-lg border border-gray-300 bg-white px-2.5 text-sm"
+                  >
+                    {moveTargetOptions.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.name || "Untitled list"}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void handleMoveSelectedToList()}
+                    disabled={selectedForRemoval.size === 0 || !moveTargetQueueId || patchQueue.isPending}
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Move selected
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-100">
+              <ul className="divide-y divide-gray-100 text-sm">
+                {filteredManageCardIds.map((id) => (
+                  <li key={`bulk-remove-${id}`} className="px-2.5 py-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedForRemoval.has(String(id))}
+                      onChange={(e) => toggleRemoveSelection(id, e.target.checked)}
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-600"
+                    />
+                    {cardThumbsById[id]?.image_small || cardThumbsById[id]?.image_large ? (
+                      <img
+                        src={cardThumbsById[id]?.image_small || cardThumbsById[id]?.image_large}
+                        alt={cardNamesById[id] || id}
+                        className="w-6 h-8 rounded border border-gray-200 object-cover bg-white shrink-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-6 h-8 rounded border border-gray-200 bg-gray-100 shrink-0" />
+                    )}
+                    <span className="font-mono text-xs text-gray-600">{id}</span>
+                    <span className="text-gray-800 truncate">{cardNamesById[id] || "Unknown card"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Removes cards from this list only (cards stay in the database). Bulk remove includes Undo in toast.
+            </p>
           </div>
         )}
 
@@ -453,7 +875,7 @@ export default function WorkbenchPage() {
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500 text-sm space-y-2">
             <Inbox className="h-10 w-10 mx-auto mb-3 text-gray-300" strokeWidth={1.5} aria-hidden />
             <p>
-              Queue is empty. Go to <NavLink to="/" className="text-green-700 font-semibold underline">Explore</NavLink>
+              List is empty. Go to <NavLink to="/" className="text-green-700 font-semibold underline">Explore</NavLink>
               , open a card, then choose <strong>Send to Workbench</strong>.
             </p>
             <p className="text-xs text-gray-400 max-w-md mx-auto">

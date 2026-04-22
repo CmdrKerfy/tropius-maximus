@@ -14,6 +14,9 @@ import {
   syncMutableTablesToIndexedDB,
   appendCardToDefaultQueue,
   appendCardsToDefaultQueue,
+  appendCardToWorkbenchQueue,
+  appendCardsToWorkbenchQueue,
+  fetchWorkbenchQueues,
   useSupabaseBackend,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
@@ -53,6 +56,7 @@ const USE_SUPABASE_APP =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
   Boolean(import.meta.env.VITE_SUPABASE_URL) &&
   Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const WORKBENCH_QUEUE_STORAGE_KEY = "tm_workbench_queue_id";
 
 function sortCards(arr, sort_by, sort_dir) {
   const dir = sort_dir === "desc" ? -1 : 1;
@@ -189,6 +193,16 @@ export default function ExplorePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [workbenchListAppendBusy, setWorkbenchListAppendBusy] = useState(false);
+  const [showBatchWorkbenchTargetPicker, setShowBatchWorkbenchTargetPicker] = useState(false);
+  const [workbenchQueueId, setWorkbenchQueueId] = useState(() => {
+    try {
+      return typeof localStorage !== "undefined"
+        ? localStorage.getItem(WORKBENCH_QUEUE_STORAGE_KEY) || ""
+        : "";
+    } catch {
+      return "";
+    }
+  });
 
   // ── Search and filter state ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -254,6 +268,19 @@ export default function ExplorePage() {
     staleTime: FILTER_OPTIONS_STALE_MS,
     placeholderData: keepPreviousData,
   });
+  const { data: workbenchQueues = [] } = useQuery({
+    queryKey: ["workbenchQueues"],
+    queryFn: fetchWorkbenchQueues,
+    enabled: USE_SUPABASE_APP,
+    staleTime: 15_000,
+  });
+  const selectedWorkbenchQueue = useMemo(() => {
+    if (!workbenchQueues.length) return null;
+    const found = workbenchQueueId
+      ? workbenchQueues.find((q) => String(q.id) === String(workbenchQueueId))
+      : null;
+    return found || workbenchQueues[0];
+  }, [workbenchQueues, workbenchQueueId]);
 
   const exploreDataBackend = USE_SUPABASE_APP ? "supabase" : "duckdb";
   const exploreFilterAvail = useMemo(
@@ -291,6 +318,24 @@ export default function ExplorePage() {
 
   const cards = cardsResult?.cards ?? [];
   const total = cardsResult?.total ?? 0;
+
+  useEffect(() => {
+    if (!selectedWorkbenchQueue?.id) return;
+    setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
+  }, [selectedWorkbenchQueue?.id]);
+  useEffect(() => {
+    if (workbenchQueues.length <= 1) setShowBatchWorkbenchTargetPicker(false);
+  }, [workbenchQueues.length]);
+  useEffect(() => {
+    try {
+      if (typeof localStorage !== "undefined") {
+        if (workbenchQueueId) localStorage.setItem(WORKBENCH_QUEUE_STORAGE_KEY, workbenchQueueId);
+        else localStorage.removeItem(WORKBENCH_QUEUE_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [workbenchQueueId]);
 
   // Stale ?page= in the URL (or history) can point past the last page: PostgREST returns [] with a
   // non-zero Content-Range total → "N cards found" but an empty grid.
@@ -415,6 +460,13 @@ export default function ExplorePage() {
       }
     } else {
       const normalized = { ...newFilters };
+      if (
+        normalized.sort_by === "recent" &&
+        !Object.prototype.hasOwnProperty.call(normalized, "sort_dir")
+      ) {
+        // Recent sort is most useful as newest-first by default.
+        normalized.sort_dir = "desc";
+      }
       for (const key of ARRAY_FILTER_KEYS) {
         if (key in normalized && Array.isArray(normalized[key])) {
           normalized[key] = [...new Set(normalized[key])];
@@ -554,31 +606,49 @@ export default function ExplorePage() {
     [navigate]
   );
 
-  const handleBatchListToWorkbench = useCallback(async () => {
+  const handleBatchListToWorkbench = useCallback(async (queueIdOverride = null) => {
     if (batchSelection.count === 0) return;
     setWorkbenchListAppendBusy(true);
     try {
-      const { added } = await appendCardsToDefaultQueue(batchSelection.ids);
-      queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
+      const targetQueue =
+        (queueIdOverride != null
+          ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+          : null) || selectedWorkbenchQueue || null;
+      const queueId = targetQueue?.id;
+      const queueName = targetQueue?.name || "Workbench";
+      const { added } = queueId
+        ? await appendCardsToWorkbenchQueue(queueId, batchSelection.ids)
+        : await appendCardsToDefaultQueue(batchSelection.ids);
+      queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
+      if (queueId != null) setWorkbenchQueueId(String(queueId));
       if (added === 0) {
-        toastWarning("Every card in your batch list was already in your Workbench queue.");
+        toastWarning(`Every card in your batch list was already in "${queueName}".`);
       } else {
         toastSuccess(
-          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to your Workbench queue.`,
+          `Added ${added.toLocaleString()} card${added === 1 ? "" : "s"} to "${queueName}".`,
           workbenchToastAction()
         );
       }
+      setShowBatchWorkbenchTargetPicker(false);
     } catch (e) {
       toastError(e);
     } finally {
       setWorkbenchListAppendBusy(false);
     }
-  }, [batchSelection.count, batchSelection.ids, queryClient, workbenchToastAction]);
+  }, [
+    batchSelection.count,
+    batchSelection.ids,
+    queryClient,
+    selectedWorkbenchQueue?.id,
+    selectedWorkbenchQueue?.name,
+    workbenchQueues,
+    workbenchToastAction,
+  ]);
 
   const handleDeleteSelected = async () => {
     setDeleteInProgress(true);
     try {
-      const deleted = await deleteCardsById(selectedCardIds);
+      const deleted = await deleteCardsById(selectedCardIds, { acknowledged: true });
       if (deleted.length > 0) {
         const token = getToken();
         if (token && !useSupabaseBackend()) {
@@ -715,18 +785,26 @@ export default function ExplorePage() {
   };
 
   const handleSendToWorkbench = useCallback(
-    async (cardId) => {
+    async (cardId, queueIdOverride = null) => {
       try {
-        await appendCardToDefaultQueue(cardId);
-        queryClient.invalidateQueries({ queryKey: ["workbenchQueue"] });
+        const targetQueue =
+          (queueIdOverride != null
+            ? workbenchQueues.find((q) => String(q.id) === String(queueIdOverride))
+            : null) || selectedWorkbenchQueue || null;
+        const queueId = targetQueue?.id;
+        const queueName = targetQueue?.name || "Workbench";
+        if (queueId != null) setWorkbenchQueueId(String(queueId));
+        if (queueId) await appendCardToWorkbenchQueue(queueId, cardId);
+        else await appendCardToDefaultQueue(cardId);
+        queryClient.invalidateQueries({ queryKey: ["workbenchQueues"] });
         setSelectedCardId(null);
-        toastSuccess("Card added to your Workbench queue.", workbenchToastAction());
+        toastSuccess(`Card added to "${queueName}".`, workbenchToastAction());
       } catch (err) {
         console.error(err);
         toastError(err);
       }
     },
-    [queryClient, workbenchToastAction]
+    [queryClient, selectedWorkbenchQueue, workbenchQueues, workbenchToastAction]
   );
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -1056,7 +1134,8 @@ export default function ExplorePage() {
                   <span className="text-tm-canopy font-medium">Selection:</span> checkboxes on cards while this panel is open
                   or your list is non-empty.{" "}
                   <span className="text-tm-info font-medium">Workbench:</span> separate queue —{" "}
-                  <span className="font-medium text-gray-700">Add list to Workbench</span> appends these IDs (deduped).{" "}
+                  <span className="font-medium text-gray-700">Add list to Workbench</span> appends these IDs to your selected
+                  shared list (deduped).{" "}
                   <span className="text-tm-leaf font-medium">Batch edit:</span> field updates on{" "}
                   <span className="font-medium text-gray-700">Open Batch</span>.{" "}
                   <strong className="font-medium text-gray-700">Add all matching</strong> uses current search + filters (cap{" "}
@@ -1075,13 +1154,52 @@ export default function ExplorePage() {
                   </Button>
                   <button
                     type="button"
-                    onClick={handleBatchListToWorkbench}
+                    onClick={() => {
+                      if (
+                        USE_SUPABASE_APP &&
+                        workbenchQueues.length > 1 &&
+                        !showBatchWorkbenchTargetPicker
+                      ) {
+                        setShowBatchWorkbenchTargetPicker(true);
+                        return;
+                      }
+                      void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined);
+                    }}
                     disabled={batchSelection.count === 0 || workbenchListAppendBusy}
                     title="Append this list to your Workbench queue (deduped; does not replace the queue)"
                     className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm bg-tm-info hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {workbenchListAppendBusy ? "Adding…" : "Add list to Workbench"}
                   </button>
+                  {showBatchWorkbenchTargetPicker && USE_SUPABASE_APP && workbenchQueues.length > 1 && (
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-1.5 py-1">
+                      <select
+                        value={selectedWorkbenchQueue?.id ?? ""}
+                        onChange={(e) => setWorkbenchQueueId(String(e.target.value))}
+                        className="h-8 rounded border border-sky-300 bg-white px-2 text-xs text-sky-950"
+                      >
+                        {workbenchQueues.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.name || "Untitled list"}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleBatchListToWorkbench(selectedWorkbenchQueue?.id ?? undefined)}
+                        className="h-8 rounded bg-tm-info px-2.5 text-xs font-semibold text-white hover:brightness-95"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowBatchWorkbenchTargetPicker(false)}
+                        className="h-8 rounded border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <NavLink
                     to="/batch"
                     className="inline-flex items-center justify-center rounded-lg bg-tm-leaf px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-tm-leaf-muted"
@@ -1410,6 +1528,9 @@ export default function ExplorePage() {
               workflowBuildingRef={workflowBuildingRef}
               onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
               onSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
+              workbenchQueueOptions={USE_SUPABASE_APP ? workbenchQueues : []}
+              selectedWorkbenchQueueId={selectedWorkbenchQueue?.id ?? ""}
+              onWorkbenchQueueChange={USE_SUPABASE_APP ? (id) => setWorkbenchQueueId(String(id)) : undefined}
               inBatchList={USE_SUPABASE_APP ? batchSelection.isInBatch(selectedCardId) : false}
               onAddToBatchList={
                 USE_SUPABASE_APP

@@ -3103,7 +3103,10 @@ export async function addCustomCard(card) {
  * Only removes cards that have is_custom = TRUE; skips API cards.
  * Returns the list of IDs that were actually deleted.
  */
-export async function deleteCardsById(cardIds) {
+export async function deleteCardsById(cardIds, options = {}) {
+  if (options?.acknowledged !== true) {
+    throw new Error("Card delete blocked: confirmation warning was not acknowledged.");
+  }
   const deleted = [];
   for (const id of [...cardIds]) {
     const escapedId = escapeStr(id);
