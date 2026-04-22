@@ -819,6 +819,11 @@ export default function WorkbenchPage() {
               >
                 Delete
               </Button>
+              {queue?.is_owner === false ? (
+                <p className="basis-full text-[11px] text-gray-500">
+                  Owner-only settings are locked on shared lists. You can still add, remove, and reorder cards.
+                </p>
+              ) : null}
             </div>
             <p className="text-sm text-gray-600">
               <span className="tabular-nums">{cardIds.length}</span> /{" "}

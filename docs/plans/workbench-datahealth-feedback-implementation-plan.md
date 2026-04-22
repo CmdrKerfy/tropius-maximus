@@ -205,6 +205,8 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 - Enqueue warnings now have 5,000-cap parity (`full list`, `partial add`, and `already present` cases).
 - Set enqueue now uses a large-set confirm gate (100+ cards) and prevents duplicate dialog spam during pre-check.
 - Card detail + Workbench copy now consistently uses **list** wording (replacing mixed queue/list phrasing).
+- Sharing model now supports **explicit visibility** (`is_shared`) so lists are private by default; cross-user visibility requires owner opt-in.
+- Ownership UX is surfaced in selectors (`My lists` / `Shared with me`) and owner-only list settings are guarded in UI + DB (rename/delete/share controls).
 
 ---
 
