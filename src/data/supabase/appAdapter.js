@@ -622,6 +622,18 @@ function postgrestOrEqValue(s) {
   return `"${String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
+/**
+ * Build one `ilike` pattern resilient to spacing/punctuation variants.
+ * Example: "Mewtwo EX" or "Mewtwo-EX" -> "%Mewtwo%EX%".
+ */
+function buildNameSearchIlikePattern(rawQuery) {
+  const raw = String(rawQuery || "").trim();
+  if (!raw) return "";
+  const tokens = raw.split(/[^\p{L}\p{N}]+/u).map((t) => t.trim()).filter(Boolean);
+  if (!tokens.length) return `%${raw}%`;
+  return `%${tokens.join("%")}%`;
+}
+
 /** JSON value for PostgREST `cs` (jsonb @>) with a one-element string array. */
 function jsonbArrayContainsOneString(s) {
   return JSON.stringify([String(s)]);
@@ -780,7 +792,9 @@ export async function fetchCards(params = {}) {
     query = query.in("origin", ["pokemontcg.io", "manual", "tcgdex"]);
   }
 
-  if (q) query = query.ilike("name", `%${q}%`);
+  if (q) {
+    query = query.ilike("name", buildNameSearchIlikePattern(q));
+  }
   if (card_id) query = query.eq("id", String(card_id));
 
   if (supertype) {

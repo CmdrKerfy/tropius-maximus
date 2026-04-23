@@ -329,6 +329,10 @@ When asking the user for **permission** before doing something (destructive edit
 
 After major feature work, migrations, auth/session changes, or pre-release milestones, agents should prompt for a **cross-functional panel review** and use **`docs/plans/cross-functional-panel-review.md`** as the checklist baseline.
 
+At every clean break (phase completion, pause, handoff, or scope pivot), agents must update the active plan doc in **`docs/plans/`** and append a concise entry to **`docs/plans/agent-handoff-log.md`** with completed work, validation, migration status, risks/assumptions, and one explicit next action.
+
+Before starting the next phase of any plan—or any major edit/refactor/migration slice—agents must explicitly state whether the work is likely completable within remaining token limits for the current session. If not likely, agents must propose a narrower slice and define the clean-break handoff point they will leave.
+
 ## Memory System
 
 **In-repo (preferred for AI agents in Cursor):** phased plans and resume context live under **`docs/plans/`** (e.g. **`user-profiles-and-activity.md`**). **`CLAUDE.md`** is the primary project snapshot; keep it updated when phases complete or backlog changes.

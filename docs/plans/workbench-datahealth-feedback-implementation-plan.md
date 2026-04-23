@@ -1,6 +1,6 @@
 # Plan: Workbench + Data Health + Search feedback implementation
 
-**Status:** Phase 6 implementation complete on branch (manual multi-user QA/sign-off pending)
+**Status:** Phase 8 implementation complete on branch (manual QA/sign-off pending)
 
 **Branch:** `v2/supabase-migration`
 
@@ -270,6 +270,13 @@ Ship in small phases with **hard pause gates** after each slice. Do not start th
 - Compare query pairs (`Mewtwo EX` vs `Mewtwo-EX`, etc.) and verify parity.
 - Check common unrelated queries to ensure no major precision regressions.
 - Spot-check query latency against current behavior.
+
+### Implementation snapshot (current branch state)
+
+- Explore name search now uses a separator-insensitive `ilike` pattern built from tokenized query text.
+- Query variants like `Mewtwo EX`, `Mewtwo-EX`, and `MewtwoEX` now resolve through one normalized search path (single search box unchanged).
+- URL/search-state behavior in Explore remains unchanged (`q` still stores user-entered text).
+- No schema/migration changes were required for this phase.
 
 ---
 
