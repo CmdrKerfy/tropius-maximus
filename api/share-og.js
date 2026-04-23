@@ -89,9 +89,17 @@ export default async function handler(req, res) {
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
   const imgRaw = data.image_override || data.image_large || data.image_small;
-  const fromCard = absoluteUrl(imgRaw, origin);
+  const rawStr = imgRaw == null ? "" : String(imgRaw).trim();
+  // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
+  const canUseForOg =
+    rawStr && !rawStr.toLowerCase().startsWith("data:") && !rawStr.toLowerCase().startsWith("blob:");
+  const fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
   const ogImage = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
   const usePlaceholder = !fromCard;
+  const httpsImage = fromCard && /^https:\/\//i.test(fromCard) ? fromCard : "";
+  const secureTag = httpsImage
+    ? `  <meta property="og:image:secure_url" content="${escapeHtml(httpsImage)}">\n`
+    : "";
   const ogImageDims = usePlaceholder
     ? `  <meta property="og:image:width" content="${OG_PLACEHOLDER_WIDTH}">\n  <meta property="og:image:height" content="${OG_PLACEHOLDER_HEIGHT}">\n`
     : "";
@@ -109,7 +117,7 @@ export default async function handler(req, res) {
   <meta property="og:description" content="${desc}">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta property="og:image" content="${escapeHtml(ogImage)}">
-${ogImageDims}  <meta name="twitter:card" content="summary_large_image">
+${secureTag}${ogImageDims}  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${desc}">
   <meta name="twitter:image" content="${escapeHtml(ogImage)}">

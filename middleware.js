@@ -1,22 +1,50 @@
 /**
- * Vercel Edge: send known crawlers to /api/share-og for Open Graph HTML; humans get the SPA.
- * Expand this list when a messenger/crawler does not match and previews fall back to generic HTML.
- * (iMessage, WhatsApp, Facebook, Slack, Discord, Telegram, LinkedIn, Pinterest, Reddit, search bots, etc.)
+ * Vercel Edge: for `/share/card/*`, serve Open Graph HTML to everyone except
+ * real browser top-level document navigations (Fetch Metadata: Sec-Fetch-*).
+ *
+ * Chat app link preview (WhatsApp, iMessage, etc.) usually does NOT use a
+ * listed bot User-Agent, so UA-only routing misses. Those fetches also omit
+ * `Sec-Fetch-Dest: document` + `Sec-Fetch-Mode: navigate`—they are not
+ * a normal tab navigation—so they must receive the pre-rendered `/api/share-og`
+ * response, not the Vite SPA HTML (no per-card `og:image`).
  */
-const BOT_UA =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Slack-ImgProxy|Slackbot-LinkExpanding|Discordbot|Discordapp|TelegramBot|Pinterest|LinkedInBot|Embedly|vkShare|redditbot|Applebot|Googlebot|Google-Structured-Data-Testing-Tool|bingbot|Yandex|Baiduspider|Bytespider|TikTok|Snapchat|Instagram|SkypeUriPreview|MicrosoftPreview|Teams|Iframely|opengraph\.io|Mastodon|Showyoubot|Outbrain|trendiction|Mail\.RU_Bot|Quora|Slurp|DuckDuckBot|KakaoTalk|KAKAOTALK|Line\/|NAVER\(|Naverbot|Viber|Signal|Kik\//i;
-
 export const config = {
   matcher: "/share/card/:path*",
 };
 
-export default function middleware(request) {
-  const ua = request.headers.get("user-agent") || "";
-  if (!BOT_UA.test(ua)) {
+const VARY = "Sec-Fetch-Dest, Sec-Fetch-Mode";
+
+/**
+ * @param {Promise<Response>} resPromise
+ */
+async function withVary(resPromise) {
+  const res = await resPromise;
+  const headers = new Headers(res.headers);
+  headers.set("Vary", VARY);
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
+
+export default async function middleware(request) {
+  if (request.method !== "GET") {
     return fetch(request);
   }
 
   const url = new URL(request.url);
+  if (!url.pathname.startsWith("/share/card/") || url.pathname.length <= "/share/card/".length) {
+    return fetch(request);
+  }
+
+  const dest = request.headers.get("sec-fetch-dest");
+  const mode = request.headers.get("sec-fetch-mode");
+
+  if (dest === "document" && mode === "navigate") {
+    return withVary(fetch(request));
+  }
+
   const m = url.pathname.match(/^\/share\/card\/(.+)$/);
   if (!m) {
     return fetch(request);
@@ -25,7 +53,10 @@ export default function middleware(request) {
   const cardId = decodeURIComponent(m[1]);
   const og = new URL("/api/share-og", url.origin);
   og.searchParams.set("cardId", cardId);
-  return fetch(og.toString(), {
-    headers: { "user-agent": ua },
-  });
+  const ua = request.headers.get("user-agent") || "";
+  return withVary(
+    fetch(og.toString(), {
+      headers: { "user-agent": ua },
+    })
+  );
 }
