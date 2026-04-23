@@ -4,7 +4,7 @@
  * (iMessage, WhatsApp, Facebook, Slack, Discord, Telegram, LinkedIn, Pinterest, Reddit, search bots, etc.)
  */
 const BOT_UA =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Slack-ImgProxy|Slackbot-LinkExpanding|Discordbot|Discordapp|TelegramBot|Pinterest|LinkedInBot|Embedly|vkShare|redditbot|Applebot|Googlebot|Google-Structured-Data-Testing-Tool|bingbot|Yandex|Baiduspider|Bytespider|TikTok|Snapchat|Instagram|SkypeUriPreview|MicrosoftPreview|Teams|Iframely|opengraph\.io|Mastodon|Showyoubot|Outbrain|trendiction|Mail\.RU_Bot|Quora|Slurp|DuckDuckBot|KakaoTalk|KAKAOTALK|Line\/|NAVER\(|Naverbot|Viber|Signal|Kik\/|GuzzleHttp|okhttp|Faraday|axios\/|curl\/|Wget\//i;
+  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Slack-ImgProxy|Slackbot-LinkExpanding|Discordbot|Discordapp|TelegramBot|Pinterest|LinkedInBot|Embedly|vkShare|redditbot|Applebot|Googlebot|Google-Structured-Data-Testing-Tool|bingbot|Yandex|Baiduspider|Bytespider|TikTok|Snapchat|Instagram|SkypeUriPreview|MicrosoftPreview|Teams|Iframely|opengraph\.io|Mastodon|Showyoubot|Outbrain|trendiction|Mail\.RU_Bot|Quora|Slurp|DuckDuckBot|KakaoTalk|KAKAOTALK|Line\/|NAVER\(|Naverbot|Viber|Signal|Kik\//i;
 
 export const config = {
   matcher: "/share/card/:path*",
