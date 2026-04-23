@@ -98,7 +98,9 @@ export default async function handler(req, res) {
   const title = escapeHtml(data.name || "Pokémon card");
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
-  const imgRaw = data.image_override || data.image_large || data.image_small;
+  // share_preview_image: merged overrides + image columns (see migration 041, matches fetchCard art).
+  const imgRaw =
+    data.share_preview_image || data.image_override || data.image_large || data.image_small;
   const rawStr = imgRaw == null ? "" : String(imgRaw).trim();
   // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
   const canUseForOg =
