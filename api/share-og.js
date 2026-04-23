@@ -3,6 +3,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { absoluteUrl } from "../src/lib/absoluteUrl.js";
+import { resolveShareImageUrl } from "../src/lib/sharePreviewImage.js";
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -98,9 +99,8 @@ export default async function handler(req, res) {
   const title = escapeHtml(data.name || "Pokémon card");
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
-  // share_preview_image: merged overrides + image columns (see migration 041, matches fetchCard art).
-  const imgRaw =
-    data.share_preview_image || data.image_override || data.image_large || data.image_small;
+  // share_preview_image: from get_public_card_for_share (migrations 041+042); + legacy fallbacks.
+  const imgRaw = resolveShareImageUrl(data);
   const rawStr = imgRaw == null ? "" : String(imgRaw).trim();
   // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
   const canUseForOg =

@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPublicCardForShare, useSupabaseBackend } from "../db";
 import { absoluteUrl } from "../lib/absoluteUrl.js";
+import { resolveShareImageUrl } from "../lib/sharePreviewImage.js";
 
 const DEFAULT_TITLE = "Tropius Maximus";
 const OG_PLACEHOLDER_PATH = "/og-card-placeholder.svg";
@@ -86,7 +87,7 @@ export default function PublicShareCardPage() {
     );
   }
 
-  const img = card.share_preview_image || card.image_override || card.image_large || card.image_small;
+  const img = resolveShareImageUrl(card);
   const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const resolved = absoluteUrl(img, baseOrigin);
   const displayImage = resolved || OG_PLACEHOLDER_PATH;
