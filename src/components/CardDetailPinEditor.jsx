@@ -13,7 +13,15 @@ import {
   normalizeCardDetailPins,
 } from "../lib/cardDetailPinRegistry.js";
 
-export default function CardDetailPinEditor({ open, onOpenChange, initialPins, onSave, isSaving }) {
+export default function CardDetailPinEditor({
+  open,
+  onOpenChange,
+  initialPins,
+  onSave,
+  isSaving,
+  mode = "cardDetail",
+}) {
+  const isWorkbench = mode === "workbench";
   const [orderedKeys, setOrderedKeys] = useState([]);
 
   useEffect(() => {
@@ -50,7 +58,9 @@ export default function CardDetailPinEditor({ open, onOpenChange, initialPins, o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fixed left-1/2 top-1/2 max-w-2xl w-[min(100%-1rem,42rem)] max-h-[90vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white p-0 shadow-xl">
         <div className="flex items-start justify-between gap-2 px-5 pt-5 pb-2 shrink-0 border-b border-gray-100">
-          <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">Pinned annotation fields</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-gray-900 pr-8">
+            {isWorkbench ? "Workbench field order" : "Pinned annotation fields"}
+          </DialogTitle>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -62,13 +72,26 @@ export default function CardDetailPinEditor({ open, onOpenChange, initialPins, o
         </div>
 
         <div className="px-5 py-3 text-sm text-gray-600 shrink-0">
-          Select fields below (groups match <strong>More Info</strong> layout), then set the order they appear in the pin
-          strip. Up to <strong>{CARD_DETAIL_PIN_MAX}</strong> fields. The same editors appear in the sections below.
+          {isWorkbench ? (
+            <>
+              Choose which fields appear at the <strong>top</strong> of the Workbench annotation form (same groups as
+              Explore <strong>More Info</strong>), then set their order. Up to <strong>{CARD_DETAIL_PIN_MAX}</strong>{" "}
+              fields. This does <strong>not</strong> change Card detail pins in Explore.
+            </>
+          ) : (
+            <>
+              Select fields below (groups match <strong>More Info</strong> layout), then set the order they appear in the
+              pin strip. Up to <strong>{CARD_DETAIL_PIN_MAX}</strong> fields. The same editors appear in the sections
+              below.
+            </>
+          )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-4 space-y-5">
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Pin order</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+              {isWorkbench ? "Field order (top of form)" : "Pin order"}
+            </h3>
             {orderedKeys.length === 0 ? (
               <p className="text-sm text-gray-500 italic py-2">No fields pinned yet — choose checkboxes in the groups below.</p>
             ) : (

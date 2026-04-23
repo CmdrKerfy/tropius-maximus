@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Inbox,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,8 +32,10 @@ import {
   moveCardsBetweenWorkbenchQueues,
   fetchProfile,
   fetchUserPreferences,
+  upsertUserPreferences,
 } from "../db";
 import AnnotationEditor from "../components/AnnotationEditor";
+import CardDetailPinEditor from "../components/CardDetailPinEditor.jsx";
 import CardAttributionLine from "../components/CardAttributionLine.jsx";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import WorkflowModeHelp from "../components/WorkflowModeHelp.jsx";
@@ -90,6 +93,8 @@ export default function WorkbenchPage() {
   const [manageSearchQuery, setManageSearchQuery] = useState("");
   const [moveTargetQueueId, setMoveTargetQueueId] = useState("");
   const [showMoveTargetPicker, setShowMoveTargetPicker] = useState(false);
+  const [workbenchPinsEditorOpen, setWorkbenchPinsEditorOpen] = useState(false);
+  const [savingWorkbenchPins, setSavingWorkbenchPins] = useState(false);
 
   /** Phase 5: persistent save status in Workbench chrome (driven by AnnotationEditor). */
   const [annotationSave, setAnnotationSave] = useState({
@@ -303,9 +308,27 @@ export default function WorkbenchPage() {
     staleTime: 30_000,
   });
 
-  const workbenchPinnedKeys = useMemo(
-    () => normalizeCardDetailPins(userPrefs?.card_detail_pins),
-    [userPrefs?.card_detail_pins]
+  const workbenchPinnedKeys = useMemo(() => {
+    const wb = userPrefs?.workbench_pins;
+    if (Array.isArray(wb)) return normalizeCardDetailPins(wb);
+    return normalizeCardDetailPins(userPrefs?.card_detail_pins);
+  }, [userPrefs?.workbench_pins, userPrefs?.card_detail_pins]);
+
+  const handleSaveWorkbenchPins = useCallback(
+    async (keys) => {
+      setSavingWorkbenchPins(true);
+      try {
+        await upsertUserPreferences({ workbench_pins: keys });
+        await queryClient.invalidateQueries({ queryKey: ["userPreferences"] });
+        toastSuccess("Workbench field order saved.");
+        setWorkbenchPinsEditorOpen(false);
+      } catch (e) {
+        toastError(e);
+      } finally {
+        setSavingWorkbenchPins(false);
+      }
+    },
+    [queryClient]
   );
 
   const patchQueue = useMutation({
@@ -1222,7 +1245,19 @@ export default function WorkbenchPage() {
               className={`rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col overflow-hidden min-h-[280px] ${workbenchPaneHeightClass}`}
             >
               <div className="px-4 py-2.5 border-b border-gray-100 shrink-0 flex flex-wrap items-center justify-between gap-2 bg-white">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Annotations</span>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Annotations</span>
+                  {card && (
+                    <button
+                      type="button"
+                      onClick={() => setWorkbenchPinsEditorOpen(true)}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-tm-leaf hover:underline"
+                    >
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
+                      Edit pins
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 flex-1">
                   {annotationSave.phase === "idle" && (
                     <span className="text-xs text-gray-400 tabular-nums">Ready to save on change</span>
@@ -1274,6 +1309,16 @@ export default function WorkbenchPage() {
           </>
         )}
       </main>
+      {USE_SB && (
+        <CardDetailPinEditor
+          open={workbenchPinsEditorOpen}
+          onOpenChange={setWorkbenchPinsEditorOpen}
+          initialPins={workbenchPinnedKeys}
+          onSave={handleSaveWorkbenchPins}
+          isSaving={savingWorkbenchPins}
+          mode="workbench"
+        />
+      )}
     </div>
   );
 }

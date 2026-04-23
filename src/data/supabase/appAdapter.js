@@ -1865,17 +1865,17 @@ export async function fetchUserPreferences() {
   if (!uid) return null;
   const { data, error } = await sb
     .from("user_preferences")
-    .select("user_id, quick_fields, default_category, card_detail_pins, updated_at")
+    .select("user_id, quick_fields, default_category, card_detail_pins, workbench_pins, updated_at")
     .eq("user_id", uid)
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { card_detail_pins: [] };
+  if (!data) return { card_detail_pins: [], workbench_pins: null };
   return data;
 }
 
 /**
  * Upsert user_preferences for the signed-in user. Pass only fields to change.
- * @param {{ card_detail_pins?: string[] }} patch
+ * @param {{ card_detail_pins?: string[], workbench_pins?: string[] }} patch
  */
 export async function upsertUserPreferences(patch = {}) {
   const sb = await sbReady();
@@ -1895,17 +1895,31 @@ export async function upsertUserPreferences(patch = {}) {
     pins = pins.slice(0, CARD_DETAIL_PINS_MAX);
   }
 
+  let workbenchPins = patch.workbench_pins;
+  if (workbenchPins !== undefined) {
+    if (!Array.isArray(workbenchPins)) workbenchPins = [];
+    const seenWb = new Set();
+    workbenchPins = workbenchPins.map((k) => String(k || "").trim()).filter((k) => {
+      if (!k || seenWb.has(k)) return false;
+      seenWb.add(k);
+      return true;
+    });
+    workbenchPins = workbenchPins.slice(0, CARD_DETAIL_PINS_MAX);
+  }
+
   const row = {
     user_id: uid,
     updated_at: new Date().toISOString(),
   };
   if (pins !== undefined) row.card_detail_pins = pins;
+  if (workbenchPins !== undefined) row.workbench_pins = workbenchPins;
 
   const { data: existing } = await sb.from("user_preferences").select("user_id").eq("user_id", uid).maybeSingle();
 
   if (existing) {
     const update = { updated_at: row.updated_at };
     if (pins !== undefined) update.card_detail_pins = pins;
+    if (workbenchPins !== undefined) update.workbench_pins = workbenchPins;
     const { data, error } = await sb.from("user_preferences").update(update).eq("user_id", uid).select().single();
     if (error) throw error;
     return data;
@@ -1918,6 +1932,7 @@ export async function upsertUserPreferences(patch = {}) {
     card_detail_pins: pins !== undefined ? pins : [],
     updated_at: row.updated_at,
   };
+  if (workbenchPins !== undefined) insert.workbench_pins = workbenchPins;
   const { data, error } = await sb.from("user_preferences").insert(insert).select().single();
   if (error) throw error;
   return data;

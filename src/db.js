@@ -372,27 +372,39 @@ export async function moveCardsBetweenWorkbenchQueues(sourceQueueId, targetQueue
 }
 
 const LS_CARD_DETAIL_PINS = "tm_card_detail_pins";
+const LS_WORKBENCH_PINS = "tm_workbench_pins";
 
-/** @returns {Promise<{ card_detail_pins?: string[], quick_fields?: unknown, default_category?: string } | null>} */
+/** @returns {Promise<{ card_detail_pins?: string[], workbench_pins?: string[] | null, quick_fields?: unknown, default_category?: string } | null>} */
 export async function fetchUserPreferences() {
   if (useSupabaseBackend()) return (await sb()).fetchUserPreferences();
   try {
-    if (typeof localStorage === "undefined") return { card_detail_pins: [] };
+    if (typeof localStorage === "undefined") return { card_detail_pins: [], workbench_pins: undefined };
     const raw = localStorage.getItem(LS_CARD_DETAIL_PINS);
     const parsed = raw ? JSON.parse(raw) : [];
     const pins = Array.isArray(parsed) ? parsed : [];
-    return { card_detail_pins: pins };
+    let workbenchPins;
+    try {
+      const wbRaw = localStorage.getItem(LS_WORKBENCH_PINS);
+      if (wbRaw != null) {
+        const wb = JSON.parse(wbRaw);
+        workbenchPins = Array.isArray(wb) ? wb : undefined;
+      }
+    } catch {
+      workbenchPins = undefined;
+    }
+    return { card_detail_pins: pins, workbench_pins: workbenchPins };
   } catch {
-    return { card_detail_pins: [] };
+    return { card_detail_pins: [], workbench_pins: undefined };
   }
 }
 
 /**
- * @param {{ card_detail_pins?: string[] }} patch
+ * @param {{ card_detail_pins?: string[], workbench_pins?: string[] }} patch
  * @returns {Promise<object>}
  */
 export async function upsertUserPreferences(patch) {
   if (useSupabaseBackend()) return (await sb()).upsertUserPreferences(patch);
+  const out = {};
   if (patch.card_detail_pins !== undefined) {
     try {
       if (typeof localStorage !== "undefined") {
@@ -401,7 +413,18 @@ export async function upsertUserPreferences(patch) {
     } catch {
       /* ignore */
     }
-    return { card_detail_pins: patch.card_detail_pins };
+    out.card_detail_pins = patch.card_detail_pins;
   }
+  if (patch.workbench_pins !== undefined) {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(LS_WORKBENCH_PINS, JSON.stringify(patch.workbench_pins));
+      }
+    } catch {
+      /* ignore */
+    }
+    out.workbench_pins = patch.workbench_pins;
+  }
+  if (Object.keys(out).length) return out;
   return { card_detail_pins: [] };
 }
