@@ -86,7 +86,7 @@ export default function PublicShareCardPage() {
     );
   }
 
-  const img = card.image_large || card.image_small;
+  const img = card.image_override || card.image_large || card.image_small;
   const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const resolved = absoluteUrl(img, baseOrigin);
   const displayImage = resolved || OG_PLACEHOLDER_PATH;

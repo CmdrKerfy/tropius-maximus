@@ -12,8 +12,11 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-/** Served from `public/`; Vercel/static deploy exposes at site root. */
-const OG_PLACEHOLDER_PATH = "/og-card-placeholder.svg";
+/** Served from `public/`; Vercel/static deploy exposes at site root. Use PNG: many link previews ignore SVG. */
+const OG_PLACEHOLDER_PATH = "/og-card-placeholder.png";
+/** Dimensions of `OG_PLACEHOLDER_PATH` (solid slate); helps some scrapers accept og:image. */
+const OG_PLACEHOLDER_WIDTH = 1200;
+const OG_PLACEHOLDER_HEIGHT = 630;
 
 function cacheHeaders(status) {
   if (status === 200) {
@@ -85,9 +88,13 @@ export default async function handler(req, res) {
   const title = escapeHtml(data.name || "Pokémon card");
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
-  const imgRaw = data.image_large || data.image_small;
+  const imgRaw = data.image_override || data.image_large || data.image_small;
   const fromCard = absoluteUrl(imgRaw, origin);
   const ogImage = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
+  const usePlaceholder = !fromCard;
+  const ogImageDims = usePlaceholder
+    ? `  <meta property="og:image:width" content="${OG_PLACEHOLDER_WIDTH}">\n  <meta property="og:image:height" content="${OG_PLACEHOLDER_HEIGHT}">\n`
+    : "";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -102,7 +109,7 @@ export default async function handler(req, res) {
   <meta property="og:description" content="${desc}">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta property="og:image" content="${escapeHtml(ogImage)}">
-  <meta name="twitter:card" content="summary_large_image">
+${ogImageDims}  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${desc}">
   <meta name="twitter:image" content="${escapeHtml(ogImage)}">
