@@ -14,9 +14,19 @@ function escapeHtml(s) {
 
 /** Served from `public/`; Vercel/static deploy exposes at site root. Use PNG: many link previews ignore SVG. */
 const OG_PLACEHOLDER_PATH = "/og-card-placeholder.png";
-/** Dimensions of `OG_PLACEHOLDER_PATH` (solid slate); helps some scrapers accept og:image. */
+/** Dimensions of `OG_PLACEHOLDER_PATH` (cream + brand strip); helps some scrapers accept og:image. */
 const OG_PLACEHOLDER_WIDTH = 1200;
 const OG_PLACEHOLDER_HEIGHT = 630;
+
+/** iMessage / some scrapers reject `http:` og:image; many CDNs mirror over TLS. */
+function preferHttpsForOgImage(url) {
+  if (!url || typeof url !== "string") return url;
+  const t = url.trim();
+  if (t.startsWith("http://")) {
+    return `https://${t.slice("http://".length)}`;
+  }
+  return t;
+}
 
 function cacheHeaders(status) {
   if (status === 200) {
@@ -94,15 +104,18 @@ export default async function handler(req, res) {
   const canUseForOg =
     rawStr && !rawStr.toLowerCase().startsWith("data:") && !rawStr.toLowerCase().startsWith("blob:");
   const fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
-  const ogImage = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
+  const ogImageRaw = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
+  const ogImage = preferHttpsForOgImage(ogImageRaw);
   const usePlaceholder = !fromCard;
-  const httpsImage = fromCard && /^https:\/\//i.test(fromCard) ? fromCard : "";
+  const httpsImage = /^https:\/\//i.test(ogImage) ? ogImage : "";
   const secureTag = httpsImage
     ? `  <meta property="og:image:secure_url" content="${escapeHtml(httpsImage)}">\n`
     : "";
+  const imgAlt = escapeHtml(data.name || "Pokémon card");
   const ogImageDims = usePlaceholder
     ? `  <meta property="og:image:width" content="${OG_PLACEHOLDER_WIDTH}">\n  <meta property="og:image:height" content="${OG_PLACEHOLDER_HEIGHT}">\n`
     : "";
+  const imageSrcLink = `  <link rel="image_src" href="${escapeHtml(ogImage)}">\n`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -112,11 +125,12 @@ export default async function handler(req, res) {
   <title>${title}</title>
   <meta name="description" content="${desc}">
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
-  <meta property="og:type" content="website">
+${imageSrcLink}  <meta property="og:type" content="website">
   <meta property="og:title" content="${title}">
   <meta property="og:description" content="${desc}">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta property="og:image" content="${escapeHtml(ogImage)}">
+  <meta property="og:image:alt" content="${imgAlt}">
 ${secureTag}${ogImageDims}  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${desc}">

@@ -7,12 +7,16 @@
  * `Sec-Fetch-Dest: document` + `Sec-Fetch-Mode: navigate`—they are not
  * a normal tab navigation—so they must receive the pre-rendered `/api/share-og`
  * response, not the Vite SPA HTML (no per-card `og:image`).
+ *
+ * Apple’s link unfurling can send `document` + `navigate` without
+ * `Sec-Fetch-User: ?1`. Only user-activated top-level navigations include `?1`;
+ * without it, serve `/api/share-og` so iMessage/WhatsApp get `og:image`.
  */
 export const config = {
   matcher: "/share/card/:path*",
 };
 
-const VARY = "Sec-Fetch-Dest, Sec-Fetch-Mode";
+const VARY = "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-User";
 
 /**
  * @param {Promise<Response>} resPromise
@@ -40,8 +44,11 @@ export default async function middleware(request) {
 
   const dest = request.headers.get("sec-fetch-dest");
   const mode = request.headers.get("sec-fetch-mode");
+  const user = request.headers.get("sec-fetch-user");
+  // Only real user-initiated tab loads send `?1` (not link-preview server fetches).
+  const isUserBrowserTab = dest === "document" && mode === "navigate" && user === "?1";
 
-  if (dest === "document" && mode === "navigate") {
+  if (isUserBrowserTab) {
     return withVary(fetch(request));
   }
 
