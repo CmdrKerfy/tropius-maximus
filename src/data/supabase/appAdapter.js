@@ -804,7 +804,9 @@ export async function fetchCards(params = {}) {
   } else if (source === "Pocket") {
     query = query.eq("origin", "tcgdex");
   } else if (source === "Custom") {
-    query = query.eq("origin", "manual").not("origin_detail", "eq", "pokumon");
+    // NULL origin_detail must stay in Custom (legacy manual rows). Plain
+    // `.not('origin_detail','eq','pokumon')` drops NULLs (SQL NOT (col = 'x')).
+    query = query.eq("origin", "manual").or("origin_detail.is.null,origin_detail.neq.pokumon");
   } else if (source === "Promo") {
     query = query.eq("origin", "manual").eq("origin_detail", "pokumon");
   } else {
