@@ -107,6 +107,7 @@ function parseLooseMultiValue(value) {
 
 const MULTI_VALUE_VIEW_LABELS = new Set([
   "Type",
+  "Artist",
   "Card Subcategory",
   "Trainer Card Subgroup",
   "Environment",
@@ -159,6 +160,37 @@ function CollapsibleSection({ title, defaultOpen = true, children }) {
       {isOpen && <div className="mt-3 pt-3 border-t border-gray-200/90">{children}</div>}
     </div>
   );
+}
+
+function formatPokumonListValue(val) {
+  if (val == null) return "";
+  if (Array.isArray(val)) {
+    if (val.length === 0) return "";
+    return val
+      .map((v) =>
+        v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v).trim()
+      )
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof val === "string") return val.trim();
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}
+
+function isPokumonArchiveCard(card) {
+  if (!card) return false;
+  const r = card.raw_data;
+  if (r && typeof r === "object") {
+    if (r.source_site === "pokumon.com" || r.source_type === "promo_archive") return true;
+  }
+  return card.origin === "manual" && card.origin_detail === "pokumon";
+}
+
+/** Element-style filter chips when `card.types` is empty but Pokumon `raw_data.card_type` exists. */
+function pokumonHeaderTypeTokens(raw) {
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.card_type) || raw.card_type.length === 0) return [];
+  return raw.card_type.map((v) => (v == null ? "" : String(v).trim())).filter(Boolean);
 }
 
 function parseAnnotations(card) {
@@ -394,6 +426,23 @@ export default function CardDetail({
   const types = card ? parseJson(card.types) : [];
 
   const ann = card ? parseAnnotations(card) : {};
+  const archiveActiveForHeader = Boolean(card && isPokumonArchiveCard(card) && raw);
+  const headerArtistChip = String(
+    ann.artist ||
+      card?.artist ||
+      (archiveActiveForHeader ? formatPokumonListValue(raw?.artist) : "") ||
+      ""
+  ).trim();
+  const typeChipsForHeader =
+    types.length > 0
+      ? types
+      : archiveActiveForHeader
+        ? (() => {
+            const pok = pokumonHeaderTypeTokens(raw);
+            if (pok.length) return pok;
+            return parseLooseMultiValue(ann?.types);
+          })()
+        : [];
   const selectedWorkbenchTargetId =
     selectedWorkbenchQueueId != null && String(selectedWorkbenchQueueId).trim() !== ""
       ? String(selectedWorkbenchQueueId)
@@ -769,6 +818,8 @@ export default function CardDetail({
           return { filterKey: "element", values: splitVals };
         case "Rarity":
           return { filterKey: "rarity", values: splitVals };
+        case "Artist":
+          return { filterKey: "artist", values: splitVals };
         case "Unique ID":
           return { filterKey: "card_id", values: [val] };
         case "Card Subcategory":
@@ -907,6 +958,56 @@ export default function CardDetail({
       );
     };
 
+    const fieldExternalLink = (label, href) => {
+      const h = String(href ?? "").trim();
+      if (!h || !/^https?:\/\//i.test(h)) return null;
+      const { primary, secondary } = splitUiLabel(label);
+      return (
+        <div key={`link-${label}`} className="flex gap-2 text-sm min-w-0">
+          <span className="text-gray-500 shrink-0 max-w-[min(100%,11rem)] leading-snug">
+            <span className="break-words">{primary}</span>
+            {secondary ? (
+              <span className="block text-xs text-gray-400 font-normal break-words">{secondary}</span>
+            ) : null}
+            :
+          </span>
+          <span className="text-gray-900 min-w-0 break-words">
+            <a
+              href={h}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-left no-underline hover:underline decoration-dotted underline-offset-2 hover:text-green-700 focus-visible:underline break-all"
+            >
+              {h}
+            </a>
+          </span>
+        </div>
+      );
+    };
+
+    const archiveActive = isPokumonArchiveCard(card) && raw;
+    const typeMerged =
+      annValue("types", true) || (archiveActive ? formatPokumonListValue(raw.card_type) : "");
+    const artistMerged =
+      annValue("artist") ||
+      String(card?.artist || "").trim() ||
+      (archiveActive ? formatPokumonListValue(raw.artist) : "");
+
+    const pokPromoSourceFields = archiveActive
+      ? [
+          field("Language", formatPokumonListValue(raw.language)),
+          field("Holo / foil", formatPokumonListValue(raw.holofoil)),
+          field("Release event", formatPokumonListValue(raw.release_event)),
+          field("Release year", formatPokumonListValue(raw.release_year)),
+          field("Release month", formatPokumonListValue(raw.release_month)),
+          field("Release type", formatPokumonListValue(raw.release_type)),
+          field("Prefix", formatPokumonListValue(raw.prefix)),
+          field("Suffix", formatPokumonListValue(raw.suffix)),
+          field("Additional attributes", formatPokumonListValue(raw.additional_attributes)),
+          fieldExternalLink("Source", raw.source_link),
+        ].filter(Boolean)
+      : [];
+
     const sectionHeader = (title) => (
       <div className="col-span-full text-xs font-semibold uppercase tracking-wide text-gray-400 pt-3 border-t first:pt-0 first:border-t-0">
         {title}
@@ -917,10 +1018,13 @@ export default function CardDetail({
       {
         title: "Mon Classification",
         fields: [
-          field("Set Name", annValue("set_name")),
-          field("Rarity", annValue("rarity")),
-          field("Type", annValue("types", true)),
+          field("Set Name", annValue("set_name") || (card?.set_name != null ? String(card.set_name) : "")),
+          field("Rarity", annValue("rarity") || (card?.rarity != null ? String(card.rarity) : "")),
+          ...(archiveActive
+            ? []
+            : [field("Artist", artistMerged), field("Type", typeMerged)]),
           field("Unique ID", annValue("unique_id")),
+          ...(archiveActive ? [field("Name", formatPokumonListValue(raw.cardname))] : []),
           field("Card Subcategory", annValue("card_subcategory", true)),
           field("Evolution Line", annValue("evolution_line")),
           field("Card Border Color", annValue("card_border")),
@@ -1013,6 +1117,9 @@ export default function CardDetail({
           field("Notes", annValue("notes")),
         ],
       },
+      ...(pokPromoSourceFields.length
+        ? [{ title: "Promo source (pokumon.com)", fields: pokPromoSourceFields }]
+        : []),
     ];
 
     const nonEmptySections = sections.filter((s) => s.fields.some(Boolean));
@@ -1491,9 +1598,11 @@ export default function CardDetail({
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-normal text-gray-600">
-                    {card.supertype}
-                  </span>
+                  {(card.supertype || "").trim() ? (
+                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-normal text-gray-600">
+                      {card.supertype}
+                    </span>
+                  ) : null}
                   {subtypes.map((s) => (
                     <span
                       key={s}
@@ -1502,7 +1611,7 @@ export default function CardDetail({
                       {s}
                     </span>
                   ))}
-                  {types.map((t) => (
+                  {typeChipsForHeader.map((t) => (
                     !isEditMode && onFilterClick ? (
                       <button
                         key={t}
@@ -1528,12 +1637,13 @@ export default function CardDetail({
                       {ann.set_name || card.set_name}
                     </button>
                   )}
-                  {(ann.artist || card.artist) && !isEditMode && onFilterClick && (
+                  {headerArtistChip && !isEditMode && onFilterClick && (
                     <button
-                      onClick={() => onFilterClick("artist", ann.artist || card.artist)}
+                      type="button"
+                      onClick={() => onFilterClick("artist", headerArtistChip)}
                       className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                     >
-                      {ann.artist || card.artist}
+                      {headerArtistChip}
                     </button>
                   )}
                 </div>
@@ -1728,7 +1838,7 @@ export default function CardDetail({
                         <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                       )}
                       {card.rarity && ` · ${card.rarity}`}
-                      {(ann.artist || card.artist) && ` · Artist: ${ann.artist || card.artist}`}
+                      {headerArtistChip && ` · Artist: ${headerArtistChip}`}
                     </div>
 
                     {/* Pocket-specific fields */}

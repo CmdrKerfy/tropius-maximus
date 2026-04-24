@@ -665,6 +665,11 @@ function displayNameFromProfileEmbed(embed) {
   return String(n).trim();
 }
 
+function isPromoOriginDetail(originDetail) {
+  const v = String(originDetail || "").toLowerCase();
+  return v.includes("promo") || v.includes("pokumon");
+}
+
 function gridRowFromCard(row) {
   const ann = normalizeEmbeddedAnnotation(row.annotations);
   const annSetName =
@@ -683,13 +688,21 @@ function gridRowFromCard(row) {
     name: row.name,
     set_id: row.set_id ?? null,
     set_name: annSetName || row.set_name,
+    origin_detail: row.origin_detail ?? null,
     image_small: row.image_small,
     image_large: row.image_large,
     image_override: ann?.image_override || null,
     number: row.number,
     hp: row.hp,
     rarity: row.rarity,
-    is_custom: row.origin === "manual",
+    is_custom: row.origin === "manual" && !isPromoOriginDetail(row.origin_detail),
+    is_promo:
+      row.origin === "manual" &&
+      (isPromoOriginDetail(row.origin_detail) ||
+        (row.raw_data &&
+          typeof row.raw_data === "object" &&
+          !Array.isArray(row.raw_data) &&
+          row.raw_data.is_promo === true)),
     created_by,
     creator_display_name: created_by ? displayNameFromProfileEmbed(row.profiles) : null,
     annotation_updated_by,
@@ -782,7 +795,7 @@ export async function fetchCards(params = {}) {
   let query = sb
     .from("cards")
     .select(
-      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, supertype, subtypes, created_by, ${annSelect}`,
+      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, raw_data, supertype, subtypes, created_by, ${annSelect}`,
       { count: exact_count ? "exact" : "planned" }
     );
 
@@ -791,7 +804,9 @@ export async function fetchCards(params = {}) {
   } else if (source === "Pocket") {
     query = query.eq("origin", "tcgdex");
   } else if (source === "Custom") {
-    query = query.eq("origin", "manual");
+    query = query.eq("origin", "manual").not("origin_detail", "eq", "pokumon");
+  } else if (source === "Promo") {
+    query = query.eq("origin", "manual").eq("origin_detail", "pokumon");
   } else {
     // Source "All" (empty string) — every origin
     query = query.in("origin", ["pokemontcg.io", "manual", "tcgdex"]);
@@ -1196,6 +1211,9 @@ export async function fetchCard(id, _source = "TCG") {
   return {
     id: merged.id,
     name: merged.name,
+    origin: merged.origin,
+    origin_detail: merged.origin_detail ?? null,
+    format: merged.format ?? null,
     alt_name: null,
     supertype: normalizeSupertypeDisplay(merged.supertype || ""),
     subtypes: JSON.stringify(merged.subtypes ?? []),
@@ -1222,7 +1240,7 @@ export async function fetchCard(id, _source = "TCG") {
     pokedex_numbers,
     genus: pm?.genus || null,
     source: merged.origin === "manual" ? merged.origin_detail || "TCG" : "TCG",
-    is_custom: merged.origin === "manual",
+    is_custom: merged.origin === "manual" && !isPromoOriginDetail(merged.origin_detail),
     created_by: row.created_by ?? null,
     created_at: row.created_at ?? null,
     creator_display_name,

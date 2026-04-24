@@ -218,7 +218,11 @@ export default function FilterPanel({
     "h-10 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm " +
     "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent";
 
-  const isTCG = filters.source !== "" && filters.source !== "Pocket" && filters.source !== "Custom";
+  const isTCG =
+    filters.source !== "" &&
+    filters.source !== "Pocket" &&
+    filters.source !== "Custom" &&
+    filters.source !== "Promo";
 
   const isActive = (val) => (Array.isArray(val) ? val.length > 0 : !!val);
   const hasActiveFilters =
@@ -407,6 +411,7 @@ export default function FilterPanel({
             <option value="TCG">TCG</option>
             <option value="Pocket">Pocket</option>
             <option value="Custom">Custom Cards</option>
+            <option value="Promo">Promo</option>
           </select>
         </div>
 

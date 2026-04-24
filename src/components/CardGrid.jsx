@@ -21,6 +21,9 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
   const supabase = useSupabaseBackend();
+  const originDetail = String(card.origin_detail || "").toLowerCase();
+  const isPromo =
+    originDetail.includes("promo") || originDetail.includes("pokumon") || card.is_promo === true;
   const attributionTitle =
     supabase &&
     buildCardAttributionPlainText({
@@ -57,13 +60,25 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         <div className="absolute inset-0 bg-green-500/20 rounded-lg pointer-events-none z-[5]" />
       )}
 
-      {card.is_custom && (
-        <div
-          className="pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full border border-white/30 bg-black/35 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md backdrop-blur-md"
-          title="Custom / manual card"
-        >
-          <Sparkles className="h-3 w-3 opacity-95" strokeWidth={2} aria-hidden />
-          <span>Custom</span>
+      {(card.is_custom || isPromo) && (
+        <div className="pointer-events-none absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+          {card.is_custom && (
+            <div
+              className="flex items-center gap-1 rounded-full border border-white/30 bg-black/35 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md backdrop-blur-md"
+              title="Custom / manual card"
+            >
+              <Sparkles className="h-3 w-3 opacity-95" strokeWidth={2} aria-hidden />
+              <span>Custom</span>
+            </div>
+          )}
+          {isPromo && (
+            <div
+              className="flex items-center gap-1 rounded-full border border-amber-200/80 bg-amber-500/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md backdrop-blur-md"
+              title="Promo card"
+            >
+              <span>Promo</span>
+            </div>
+          )}
         </div>
       )}
 
