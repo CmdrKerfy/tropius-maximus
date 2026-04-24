@@ -109,6 +109,15 @@ export default async function handler(req, res) {
   const ogImageRaw = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
   const ogImage = preferHttpsForOgImage(ogImageRaw);
   const usePlaceholder = !fromCard;
+  if (usePlaceholder && data.id) {
+    console.warn("[share-og] placeholder og:image (no usable URL for scrapers)", {
+      cardId: data.id,
+      hasSharePreview: Boolean(data.share_preview_image),
+      hasOverride: Boolean(data.image_override),
+      hasImageLarge: Boolean(data.image_large),
+      hasImageSmall: Boolean(data.image_small),
+    });
+  }
   const httpsImage = /^https:\/\//i.test(ogImage) ? ogImage : "";
   const secureTag = httpsImage
     ? `  <meta property="og:image:secure_url" content="${escapeHtml(httpsImage)}">\n`
