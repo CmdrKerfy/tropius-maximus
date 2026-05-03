@@ -136,6 +136,7 @@ export default function WorkbenchPage() {
   const [, startUiTransition] = useTransition();
   const magnifierLensRef = useRef(null);
   const magnifierFrameRef = useRef(0);
+  const syncIndexRef = useRef({});
   const magnifierPointerRef = useRef({
     clientX: 0,
     clientY: 0,
@@ -173,9 +174,26 @@ export default function WorkbenchPage() {
       if (magnifierFrameRef.current) {
         cancelAnimationFrame(magnifierFrameRef.current);
       }
+      // Flush any pending index sync on unmount
+      for (const [key, timer] of Object.entries(syncIndexRef.current)) {
+        if (timer != null) clearTimeout(timer);
+        delete syncIndexRef.current[key];
+      }
     },
     []
   );
+
+  // Flush pending index sync when switching queues
+  useEffect(() => {
+    const currentKey = String(queue?.id || "");
+    const entries = Object.entries(syncIndexRef.current);
+    for (const [key, timer] of entries) {
+      if (key !== currentKey && timer != null) {
+        clearTimeout(timer);
+        delete syncIndexRef.current[key];
+      }
+    }
+  }, [queue?.id]);
 
   const { data: queues = [], isPending, isError, error } = useQuery({
     queryKey: ["workbenchQueues"],
@@ -407,24 +425,55 @@ export default function WorkbenchPage() {
     }
   }, [isImageMode, hideImageMagnifier]);
 
+  /** Persist the latest current_index to the server (debounced per-queue). */
+  const syncQueueIndex = useCallback(
+    (queueId, index) => {
+      const key = String(queueId);
+      if (syncIndexRef.current[key] != null) clearTimeout(syncIndexRef.current[key]);
+      syncIndexRef.current[key] = setTimeout(() => {
+        delete syncIndexRef.current[key];
+        updateWorkbenchQueue(queueId, { current_index: index }).catch(() => {
+          /* silent — cache is authoritative; next full refetch reconciles */
+        });
+      }, 1500);
+    },
+    []
+  );
+
+  /** Navigate to a card index: update cache instantly, persist in background. */
+  const navigateTo = useCallback(
+    (newIndex) => {
+      if (!queue?.id) return;
+      const clamped = Math.max(0, Math.min(newIndex, cardIds.length - 1));
+      queryClient.setQueryData(["workbenchQueues"], (old) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((q) =>
+          String(q.id) === String(queue.id) ? { ...q, current_index: clamped } : q
+        );
+      });
+      syncQueueIndex(queue.id, clamped);
+    },
+    [queue?.id, cardIds.length, queryClient, syncQueueIndex]
+  );
+
   const goPrev = () => {
-    if (!queue?.id || safeIndex <= 0) return;
-    patchQueue.mutate({ queueId: queue.id, patch: { current_index: safeIndex - 1 } });
+    if (safeIndex <= 0) return;
+    navigateTo(safeIndex - 1);
   };
 
   const goNext = () => {
-    if (!queue?.id || safeIndex >= cardIds.length - 1) return;
-    patchQueue.mutate({ queueId: queue.id, patch: { current_index: safeIndex + 1 } });
+    if (safeIndex >= cardIds.length - 1) return;
+    navigateTo(safeIndex + 1);
   };
 
   const goFirst = () => {
-    if (!queue?.id || safeIndex <= 0) return;
-    patchQueue.mutate({ queueId: queue.id, patch: { current_index: 0 } });
+    if (safeIndex <= 0) return;
+    navigateTo(0);
   };
 
   const goLast = () => {
-    if (!queue?.id || cardIds.length === 0 || safeIndex >= cardIds.length - 1) return;
-    patchQueue.mutate({ queueId: queue.id, patch: { current_index: cardIds.length - 1 } });
+    if (cardIds.length === 0 || safeIndex >= cardIds.length - 1) return;
+    navigateTo(cardIds.length - 1);
   };
 
   const removeCurrentFromQueue = () => {
