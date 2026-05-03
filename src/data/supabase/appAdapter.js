@@ -2090,14 +2090,40 @@ function isAnnotationVersionConflictFromRpc(rpcErr) {
   return /ANNOTATION_VERSION_CONFLICT/i.test(parts.join(" "));
 }
 
+/** Per-card promise queues so rapid saves on the same card are serialized, not raced. */
+const saveQueues = new Map();
+
 /**
  * Merge annotation patch into Supabase via `apply_annotation_with_history` (single transaction with
- * `edit_history`). Insert races retry on `23505`; concurrent edits map RPC errors to {@link ANNOTATION_VERSION_CONFLICT_MESSAGE}.
+ * `edit_history`). Saves for the same cardId are serialized via a per-card promise queue to prevent
+ * self-inflicted version conflicts from rapid field edits.
  * @param {string} cardId
  * @param {Record<string, unknown>} patch
  * @param {{ batchRunId?: string | null }} [options]
+ * @returns {Promise<{ annotations: Record<string, unknown>, saved: boolean }>}
  */
-export async function patchAnnotations(cardId, patch, options = {}) {
+export function patchAnnotations(cardId, patch, options = {}) {
+  const key = String(cardId);
+  if (!saveQueues.has(key)) {
+    saveQueues.set(key, Promise.resolve());
+  }
+  const prev = saveQueues.get(key);
+  const task = prev.then(() => patchAnnotationsImpl(cardId, patch, options));
+  // Keep the chain alive even if one save rejects
+  const cleanupTarget = task;
+  saveQueues.set(key, task.catch(() => {}));
+  // Clean up queue entry 5s after settling (releases memory once user moves on)
+  task.finally(() => {
+    setTimeout(() => {
+      if (saveQueues.get(key) === cleanupTarget) {
+        saveQueues.delete(key);
+      }
+    }, 5000);
+  });
+  return task;
+}
+
+async function patchAnnotationsImpl(cardId, patch, options = {}) {
   const { batchRunId } = options;
   const sb = await sbReady();
   const patchForHistoryBase = { ...patch };
