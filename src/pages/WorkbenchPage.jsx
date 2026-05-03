@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronUp,
   ClipboardList,
   Columns2,
@@ -272,6 +274,8 @@ export default function WorkbenchPage() {
     queryKey: ["workbenchCard", currentCardId],
     queryFn: () => fetchCard(currentCardId, "TCG"),
     enabled: USE_SB && Boolean(currentCardId),
+    staleTime: 120_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: myProfile } = useQuery({
@@ -411,6 +415,16 @@ export default function WorkbenchPage() {
   const goNext = () => {
     if (!queue?.id || safeIndex >= cardIds.length - 1) return;
     patchQueue.mutate({ queueId: queue.id, patch: { current_index: safeIndex + 1 } });
+  };
+
+  const goFirst = () => {
+    if (!queue?.id || safeIndex <= 0) return;
+    patchQueue.mutate({ queueId: queue.id, patch: { current_index: 0 } });
+  };
+
+  const goLast = () => {
+    if (!queue?.id || cardIds.length === 0 || safeIndex >= cardIds.length - 1) return;
+    patchQueue.mutate({ queueId: queue.id, patch: { current_index: cardIds.length - 1 } });
   };
 
   const removeCurrentFromQueue = () => {
@@ -880,6 +894,18 @@ export default function WorkbenchPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={goFirst}
+                  disabled={safeIndex <= 0 || patchQueue.isPending}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
+                    hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="First card in list"
+                  aria-label="First card in list"
+                >
+                  <ChevronsLeft className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                  <span className="hidden sm:inline">First</span>
+                </button>
+                <button
+                  type="button"
                   onClick={goPrev}
                   disabled={safeIndex <= 0 || patchQueue.isPending}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
@@ -897,6 +923,18 @@ export default function WorkbenchPage() {
                 >
                   Next
                   <ChevronRight className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={goLast}
+                  disabled={safeIndex >= cardIds.length - 1 || patchQueue.isPending}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white
+                    hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Last card in list"
+                  aria-label="Last card in list"
+                >
+                  <span className="hidden sm:inline">Last</span>
+                  <ChevronsRight className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                 </button>
                 <button
                   type="button"

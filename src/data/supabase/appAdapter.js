@@ -87,10 +87,14 @@ function parseJsonbStringArray(val) {
 
 function mergeSortedUniqueStrings(existing, additions) {
   const base = Array.isArray(existing) ? existing : [];
-  const set = new Set(
-    [...base, ...additions].filter((x) => x != null && String(x).trim() !== "")
-  );
-  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  const canon = new Map();
+  for (const raw of [...base, ...additions]) {
+    if (raw == null || String(raw).trim() === "") continue;
+    const s = String(raw).trim();
+    const low = s.toLowerCase();
+    if (!canon.has(low)) canon.set(low, s);
+  }
+  return [...canon.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 /** PostgREST/jsonb arrays from `get_explore_filter_options_db` RPC. */

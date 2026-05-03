@@ -93,10 +93,14 @@ function mergedSuggestionOptions(attr, formOptions) {
   if (attr.key === "evolution_line") {
     return normalizeEvolutionLineOptions([...curated, ...fromForm]);
   }
-  const set = new Set(
-    [...curated, ...fromForm].filter((x) => x != null && String(x).trim() !== "")
-  );
-  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  const canon = new Map();
+  for (const raw of [...curated, ...fromForm]) {
+    if (raw == null || String(raw).trim() === "") continue;
+    const s = String(raw).trim();
+    const low = s.toLowerCase();
+    if (!canon.has(low)) canon.set(low, s);
+  }
+  return [...canon.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 function findScrollParent(el) {
@@ -114,6 +118,20 @@ function findScrollParent(el) {
     cur = cur.parentElement;
   }
   return null;
+}
+
+/** Align Workbench + Explore card-detail caches with the server after saves so background refetches do not resurrect stale annotations. */
+function syncReactQueryCardCaches(queryClient, cardId, flatAnnotations) {
+  const cid = String(cardId || "").trim();
+  if (!cid || !flatAnnotations || typeof flatAnnotations !== "object") return;
+  queryClient.setQueryData(["workbenchCard", cid], (old) => {
+    if (!old || old.id !== cid) return old;
+    return { ...old, annotations: { ...flatAnnotations } };
+  });
+  queryClient.setQueriesData(
+    { predicate: (q) => q.queryKey[0] === "cardDetail" && q.queryKey[1] === cid },
+    (old) => (old && old.id === cid ? { ...old, annotations: { ...flatAnnotations } } : old)
+  );
 }
 
 function AnnotationEditor({
@@ -151,6 +169,15 @@ function AnnotationEditor({
   const serverSnapshotRef = useRef({});
   const undoStackRef = useRef([]);
   const sectionRefs = useRef({});
+  const formOptsInvalidateTimerRef = useRef(null);
+
+  const scheduleFormOptionsInvalidate = useCallback(() => {
+    if (formOptsInvalidateTimerRef.current != null) clearTimeout(formOptsInvalidateTimerRef.current);
+    formOptsInvalidateTimerRef.current = setTimeout(() => {
+      formOptsInvalidateTimerRef.current = null;
+      queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+    }, 2800);
+  }, [queryClient]);
 
   const undoShortcut =
     typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -168,7 +195,14 @@ function AnnotationEditor({
     undoStackRef.current = [];
     setUndoHint(null);
     setUndoCount(0);
-  }, [cardId, annotations]);
+  }, [cardId]);
+
+  useEffect(
+    () => () => {
+      if (formOptsInvalidateTimerRef.current != null) clearTimeout(formOptsInvalidateTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -201,9 +235,10 @@ function AnnotationEditor({
         setLastSaved(new Date());
         setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
         setUndoCount(undoStackRef.current.length);
+        syncReactQueryCardCaches(queryClient, cardId, result);
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
         if (shouldRefreshFormOptionsForAnnotationKey(item.key)) {
-          queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+          scheduleFormOptionsInvalidate();
         }
         onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
@@ -223,7 +258,7 @@ function AnnotationEditor({
     };
 
     await runUndoPatch();
-  }, [cardId, onSaveStatusChange, queryClient]);
+  }, [cardId, onSaveStatusChange, queryClient, scheduleFormOptionsInvalidate]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -265,9 +300,10 @@ function AnnotationEditor({
         if (undoStackRef.current.length > 40) undoStackRef.current.shift();
         setUndoCount(undoStackRef.current.length);
         setLastSaved(new Date());
+        syncReactQueryCardCaches(queryClient, cardId, result);
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
         if (shouldRefreshFormOptionsForAnnotationKey(key)) {
-          queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+          scheduleFormOptionsInvalidate();
         }
         onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
@@ -315,7 +351,7 @@ function AnnotationEditor({
         setSaving(false);
       }
     },
-    [cardId, onSaveStatusChange, queryClient]
+    [cardId, onSaveStatusChange, queryClient, scheduleFormOptionsInvalidate]
   );
 
   // Save a single annotation field.
