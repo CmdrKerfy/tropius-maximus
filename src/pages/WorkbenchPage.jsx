@@ -296,6 +296,21 @@ export default function WorkbenchPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Pre-fetch adjacent cards so prev/next feels instant
+  useEffect(() => {
+    if (!currentCardId || cardIds.length <= 1) return;
+    const nextId = cardIds[safeIndex + 1];
+    const prevId = cardIds[safeIndex - 1];
+    const toPrefetch = [nextId, prevId].filter(Boolean);
+    for (const id of toPrefetch) {
+      queryClient.prefetchQuery({
+        queryKey: ["workbenchCard", id],
+        queryFn: () => fetchCard(id, "TCG"),
+        staleTime: 120_000,
+      });
+    }
+  }, [currentCardId, cardIds, safeIndex, queryClient]);
+
   const { data: myProfile } = useQuery({
     queryKey: ["profile", "me"],
     queryFn: fetchProfile,
