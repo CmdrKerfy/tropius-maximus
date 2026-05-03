@@ -228,16 +228,18 @@ function AnnotationEditor({
       setSaving(true);
       setUndoHint(null);
       try {
-        const result = await patchAnnotations(cardId, payload);
-        setValues(result);
-        serverSnapshotRef.current = { ...result };
+        const { annotations, saved } = await patchAnnotations(cardId, payload);
+        if (saved) {
+          setValues(annotations);
+          serverSnapshotRef.current = { ...annotations };
+          syncReactQueryCardCaches(queryClient, cardId, annotations);
+        }
         undoStackRef.current.pop();
         setLastSaved(new Date());
-        setUndoHint(`Restored “${item.key.replace(/_/g, " ")}”`);
+        setUndoHint(`Restored "${item.key.replace(/_/g, " ")}"`);
         setUndoCount(undoStackRef.current.length);
-        syncReactQueryCardCaches(queryClient, cardId, result);
         queryClient.invalidateQueries({ queryKey: ["editHistory"] });
-        if (shouldRefreshFormOptionsForAnnotationKey(item.key)) {
+        if (saved && shouldRefreshFormOptionsForAnnotationKey(item.key)) {
           scheduleFormOptionsInvalidate();
         }
         onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
@@ -293,19 +295,23 @@ function AnnotationEditor({
         const revertTo = Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)
           ? cloneForUndo(serverSnapshotRef.current[key])
           : UNDO_ABSENT;
-        const result = await patchAnnotations(cardId, { [key]: value });
-        setValues(result);
-        serverSnapshotRef.current = { ...result };
-        undoStackRef.current.push({ key, revertTo });
-        if (undoStackRef.current.length > 40) undoStackRef.current.shift();
-        setUndoCount(undoStackRef.current.length);
-        setLastSaved(new Date());
-        syncReactQueryCardCaches(queryClient, cardId, result);
-        queryClient.invalidateQueries({ queryKey: ["editHistory"] });
-        if (shouldRefreshFormOptionsForAnnotationKey(key)) {
-          scheduleFormOptionsInvalidate();
+        const { annotations, saved } = await patchAnnotations(cardId, { [key]: value });
+        if (saved) {
+          setValues(annotations);
+          serverSnapshotRef.current = { ...annotations };
+          undoStackRef.current.push({ key, revertTo });
+          if (undoStackRef.current.length > 40) undoStackRef.current.shift();
+          setUndoCount(undoStackRef.current.length);
+          setLastSaved(new Date());
+          syncReactQueryCardCaches(queryClient, cardId, annotations);
+          queryClient.invalidateQueries({ queryKey: ["editHistory"] });
+          if (shouldRefreshFormOptionsForAnnotationKey(key)) {
+            scheduleFormOptionsInvalidate();
+          }
+          onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
+        } else {
+          onSaveStatusChange?.({ phase: "idle", detail: null, savedAt: null, retry: null });
         }
-        onSaveStatusChange?.({ phase: "saved", detail: null, savedAt: new Date(), retry: null });
       } catch (err) {
         console.error("Failed to save annotation:", err);
         toastError(err);

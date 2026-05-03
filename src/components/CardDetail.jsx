@@ -696,7 +696,7 @@ export default function CardDetail({
         else nextAnn[key] = stored;
         return { ...prev, annotations: nextAnn };
       });
-      const updatedFlat = await patchAnnotations(card.id, { [key]: stored });
+      const { annotations: updatedFlat } = await patchAnnotations(card.id, { [key]: stored });
       queryClient.setQueryData(cardDetailQueryKey, (prev) => {
         if (!prev) return prev;
         return {
@@ -1406,7 +1406,7 @@ export default function CardDetail({
                               if (!newImageUrl.trim()) return;
                               setSavingImage(true);
                               const saveImg = async () => {
-                                const updated = await patchAnnotations(cardId, {
+                                const { annotations: updated } = await patchAnnotations(cardId, {
                                   image_override: newImageUrl.trim(),
                                 });
                                 queryClient.setQueryData(cardDetailQueryKey, (prev) =>

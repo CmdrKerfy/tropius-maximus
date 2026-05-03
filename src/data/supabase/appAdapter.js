@@ -2141,7 +2141,7 @@ export async function patchAnnotations(cardId, patch, options = {}) {
     // Skip writes for no-op interactions (focus/blur, re-selecting same value, etc.).
     // This prevents edit_history noise and avoids bumping annotation version/updated_at.
     if (historyPayload.length === 0) {
-      return prevFlat;
+      return { annotations: prevFlat, saved: false };
     }
     const fullRowForRpc = !cur
       ? { ...ANNOTATION_ROW_INSERT_DEFAULTS, ...row }
@@ -2170,7 +2170,8 @@ export async function patchAnnotations(cardId, patch, options = {}) {
       throw rpcErr;
     }
 
-    return fetchAnnotations(cardId);
+    const fresh = await fetchAnnotations(cardId);
+    return { annotations: fresh, saved: true };
   }
 
   throw new Error("Could not save annotation after retries.");
