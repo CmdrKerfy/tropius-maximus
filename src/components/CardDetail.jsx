@@ -25,7 +25,6 @@ import {
   upsertUserPreferences,
   fetchProfile,
 } from "../db";
-import { gridCardToDetailPlaceholder } from "../data/supabase/appAdapter.js";
 import CardAttributionLine from "./CardAttributionLine.jsx";
 import CardDetailFieldControl from "./CardDetailFieldControl.jsx";
 import CardDetailPinEditor from "./CardDetailPinEditor.jsx";
@@ -252,7 +251,19 @@ export default function CardDetail({
       for (const [, data] of all) {
         if (data?.cards) {
           const found = data.cards.find((c) => c.id === cardId);
-          if (found) return gridCardToDetailPlaceholder(found);
+          if (found) {
+            return {
+              id: found.id, name: found.name, image_large: found.image_large,
+              image_small: found.image_small, image_fallback: found.image_small || found.image_large,
+              set_name: found.set_name, number: found.number,
+              annotations: { image_override: found.image_override || undefined },
+              raw_data: {}, origin_detail: found.origin_detail, supertype: found.supertype,
+              subtypes: found.subtypes, hp: found.hp, rarity: found.rarity,
+              created_by: found.created_by, creator_display_name: found.creator_display_name,
+              annotation_editor_display_name: found.annotation_editor_display_name,
+              is_custom: found.is_custom, pokedex_numbers: [],
+            };
+          }
         }
       }
       return undefined;
@@ -427,6 +438,14 @@ export default function CardDetail({
     return val;
   };
 
+  /** Grid placeholder rows omit `types`; parseJson(undefined) is undefined — never pass non-arrays to `.map` / `.length`. */
+  const parseJsonStringArray = (val) => {
+    const v = val == null ? null : parseJson(val);
+    if (Array.isArray(v)) return v;
+    if (typeof v === "string" && v.trim()) return [v];
+    return [];
+  };
+
   // Extract useful data from the raw API payload (guard empty string — invalid JSON).
   // Phase-2 rawData takes priority; fall back to card.raw_data for DuckDB or cached shapes.
   const effectiveRawData = rawData || card?.raw_data;
@@ -449,8 +468,8 @@ export default function CardDetail({
   const retreatCost = raw?.retreatCost || [];
   const abilities = raw?.abilities || [];
   const rules = raw?.rules || [];
-  const subtypes = card ? parseJson(card.subtypes) : [];
-  const types = card ? parseJson(card.types) : [];
+  const subtypes = card ? parseJsonStringArray(card.subtypes) : [];
+  const types = card ? parseJsonStringArray(card.types) : [];
 
   const ann = card ? parseAnnotations(card) : {};
   const archiveActiveForHeader = Boolean(card && isPokumonArchiveCard(card) && raw);

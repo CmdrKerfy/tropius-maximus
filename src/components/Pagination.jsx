@@ -8,23 +8,20 @@
 import { useRef, useCallback } from "react";
 
 export default function Pagination({ page, pageSize, total, onPageChange }) {
-  const totalPages = Math.ceil(total / pageSize);
   const inputRef = useRef(null);
+  const totalPages = Math.ceil(total / pageSize);
 
-  if (totalPages <= 1) return null;
-
-  const clampPage = (n) => {
-    const val = parseInt(n, 10);
-    if (Number.isNaN(val)) return page;
-    return Math.max(1, Math.min(totalPages, val));
-  };
-
-  const handleJump = () => {
+  const handleJump = useCallback(() => {
+    const clampPage = (n) => {
+      const val = parseInt(n, 10);
+      if (Number.isNaN(val)) return page;
+      return Math.max(1, Math.min(totalPages, val));
+    };
     const val = inputRef.current?.value ?? "";
     const target = clampPage(val);
     onPageChange(target);
     if (inputRef.current) inputRef.current.value = String(target);
-  };
+  }, [page, totalPages, onPageChange]);
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -47,8 +44,10 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
         handleJump();
       }
     },
-    [page, totalPages, onPageChange]
+    [page, totalPages, onPageChange, handleJump]
   );
+
+  if (totalPages <= 1) return null;
 
   const btnBase =
     "px-3 py-1.5 text-sm rounded font-medium transition-colors";
