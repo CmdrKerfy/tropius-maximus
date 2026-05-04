@@ -308,7 +308,8 @@ export default function ExplorePage() {
     queryFn: fetchAttributes,
   });
 
-  const EXPLORE_EXACT_COUNT = false;
+  // Exact count: slower than `planned` but correct after bulk ingest / stats skew (planned can be wildly low).
+  const EXPLORE_EXACT_COUNT = USE_SUPABASE_APP;
 
   const {
     data: cardsResult,
