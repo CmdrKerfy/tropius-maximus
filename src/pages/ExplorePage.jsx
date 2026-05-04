@@ -332,6 +332,26 @@ export default function ExplorePage() {
   const cards = cardsResult?.cards ?? [];
   const total = cardsResult?.total ?? 0;
 
+  // Dedupe so each card appears once (Explore grid):
+  // - Manual: same set + name + artwork URL (legacy duplicate PKs / spaced ids vs canonical).
+  // - All: trimmed `id` collisions; custom wins over API on same raw id.
+  const displayedCards = useMemo(() => {
+    const raw = sqlCards || cards;
+    const byKey = new Map();
+    const order = [];
+    for (const c of raw) {
+      const key = exploreGridRowDedupeKey(c);
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, c);
+        order.push(key);
+        continue;
+      }
+      byKey.set(key, pickExploreGridDuplicateWinner(existing, c));
+    }
+    return order.map((k) => byKey.get(k));
+  }, [sqlCards, cards]);
+
   useEffect(() => {
     if (!selectedWorkbenchQueue?.id) return;
     setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
@@ -585,26 +605,6 @@ export default function ExplorePage() {
   };
 
   const handleShowInGrid = (cards) => setSqlCards(cards);
-
-  // Dedupe so each card appears once (Explore grid):
-  // - Manual: same set + name + artwork URL (legacy duplicate PKs / spaced ids vs canonical).
-  // - All: trimmed `id` collisions; custom wins over API on same raw id.
-  const displayedCards = useMemo(() => {
-    const raw = sqlCards || cards;
-    const byKey = new Map();
-    const order = [];
-    for (const c of raw) {
-      const key = exploreGridRowDedupeKey(c);
-      const existing = byKey.get(key);
-      if (!existing) {
-        byKey.set(key, c);
-        order.push(key);
-        continue;
-      }
-      byKey.set(key, pickExploreGridDuplicateWinner(existing, c));
-    }
-    return order.map((k) => byKey.get(k));
-  }, [sqlCards, cards]);
 
   // ── Card selection handlers ──────────────────────────────────────
   const handleToggleCardSelection = (cardId) => {
