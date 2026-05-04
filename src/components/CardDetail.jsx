@@ -10,9 +10,10 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Image as ImageIcon, Pencil, Plus, Share2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Image as ImageIcon, Pencil, Plus, RefreshCw, Share2, X } from "lucide-react";
 import {
   fetchCard,
+  fetchCardRawData,
   patchAnnotations,
   fetchFormOptions,
   FORM_OPTIONS_QUERY_KEY,
@@ -24,6 +25,7 @@ import {
   upsertUserPreferences,
   fetchProfile,
 } from "../db";
+import { gridCardToDetailPlaceholder } from "../data/supabase/appAdapter.js";
 import CardAttributionLine from "./CardAttributionLine.jsx";
 import CardDetailFieldControl from "./CardDetailFieldControl.jsx";
 import CardDetailPinEditor from "./CardDetailPinEditor.jsx";
@@ -72,7 +74,7 @@ const MULTI_VALUE_ANNOTATION_KEYS = new Set([
   "art_style", "main_character", "background_pokemon", "background_humans",
   "additional_characters", "background_details", "additional_character_theme",
   "card_subcategory", "trainer_card_subgroup", "evolution_items",
-  "berries", "holiday_theme", "multi_card",
+  "berries", "holiday_theme", "multi_card", "camera_angle",
   "video_game", "video_game_location", "video_title", "video_type", "top_10_themes", "wtpc_episode",
   "video_region", "video_location",
   "pose", "emotion", "actions",
@@ -238,15 +240,41 @@ export default function CardDetail({
   const {
     data: card = null,
     isPending: cardPending,
+    isPlaceholderData,
     isError: cardFetchFailed,
     error: cardFetchError,
   } = useQuery({
     queryKey: cardDetailQueryKey,
     queryFn: () => fetchCard(cardId, source),
     enabled: Boolean(cardId),
-    staleTime: 60_000,
+    placeholderData: () => {
+      const all = queryClient.getQueriesData({ queryKey: ["cards"] });
+      for (const [, data] of all) {
+        if (data?.cards) {
+          const found = data.cards.find((c) => c.id === cardId);
+          if (found) return gridCardToDetailPlaceholder(found);
+        }
+      }
+      return undefined;
+    },
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    gcTime: 10 * 60_000,
   });
-  const loading = cardPending;
+
+  // Phase 2: lazy-load raw_data (attacks, abilities, rules, flavorText) after the lite payload arrives.
+  const {
+    data: rawData,
+    isPending: rawPending,
+  } = useQuery({
+    queryKey: ["cardDetailRaw", cardId],
+    queryFn: () => fetchCardRawData(cardId),
+    enabled: !!card && !isPlaceholderData,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const loading = cardPending && !isPlaceholderData;
   const error = cardFetchFailed ? cardFetchError?.message ?? "Failed to load card" : null;
   const [editingImage, setEditingImage] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState("");
@@ -400,19 +428,18 @@ export default function CardDetail({
   };
 
   // Extract useful data from the raw API payload (guard empty string — invalid JSON).
-  // Clone + sanitize so we never mutate TanStack cache; fix mojibake in flavor/rules/attacks/abilities.
+  // Phase-2 rawData takes priority; fall back to card.raw_data for DuckDB or cached shapes.
+  const effectiveRawData = rawData || card?.raw_data;
   let raw = null;
-  if (card) {
-    if (typeof card.raw_data === "string") {
+  if (effectiveRawData) {
+    if (typeof effectiveRawData === "string") {
       try {
-        raw = card.raw_data.trim() ? JSON.parse(card.raw_data) : null;
+        raw = effectiveRawData.trim() ? JSON.parse(effectiveRawData) : null;
       } catch {
         raw = null;
       }
-    } else if (card.raw_data && typeof card.raw_data === "object") {
-      raw = { ...card.raw_data };
-    } else {
-      raw = null;
+    } else if (effectiveRawData && typeof effectiveRawData === "object") {
+      raw = { ...effectiveRawData };
     }
     if (raw) raw = sanitizeCardRawDataForDisplay(raw);
   }
@@ -1335,12 +1362,25 @@ export default function CardDetail({
               </span>
             ) : null}
           </div>
-          <button
-            onClick={handleClose}
-            className="shrink-0 self-start p-1 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
-          </button>
+          <div className="flex items-center gap-1 shrink-0 self-start">
+            <button
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: cardDetailQueryKey });
+                queryClient.invalidateQueries({ queryKey: ["cardDetailRaw", cardId] });
+                queryClient.invalidateQueries({ queryKey: ["userPreferences"] });
+              }}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              title="Refresh card data"
+            >
+              <RefreshCw className="w-5 h-5 text-gray-500" strokeWidth={2} aria-hidden />
+            </button>
+            <button
+              onClick={handleClose}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
         </div>
 
         {/* Loading state */}
@@ -1465,11 +1505,13 @@ export default function CardDetail({
 
                   // Display image or placeholder
                   return displayImage ? (
-                    <div className="relative group">
+                    <div className="relative group w-full md:w-72 aspect-[2.5/3.5] rounded-lg shadow-md overflow-hidden bg-gray-100">
                       <img
                         src={displayImage}
                         alt={card.name}
-                        className="w-full md:w-72 rounded-lg shadow-md cursor-pointer"
+                        className="w-full h-full object-contain cursor-pointer"
+                        decoding="async"
+                        fetchpriority="high"
                         onClick={() => setImageEnlarged(true)}
                         onError={(e) => {
                           if (card.image_fallback && e.target.src !== card.image_fallback) {
@@ -1854,6 +1896,13 @@ export default function CardDetail({
                       </p>
                     )}
 
+                    {rawPending && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                        <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin" />
+                        Loading card text...
+                      </div>
+                    )}
+
                     {/* Annotation attributes */}
                     <div className="pt-2 border-t border-gray-100">
                       {renderAnnotationView()}
@@ -2100,7 +2149,7 @@ export default function CardDetail({
                             </div>
                             <div>
                               <FormFieldLabel>Camera Angle</FormFieldLabel>
-                              <ComboBox value={annValue("camera_angle")} onChange={(v) => saveAnnotation("camera_angle", v)} options={optArr(opts.cameraAngle)} placeholder="Aerial, Upside Down, etc." className={inputClass + " w-full"} />
+                              <MultiComboBox value={annValue("camera_angle", true)} onChange={(v) => saveAnnotation("camera_angle", v)} options={optArr(opts.cameraAngle)} placeholder="Aerial, Upside Down, etc." />
                             </div>
                             <div>
                               <FormFieldLabel>Perspective</FormFieldLabel>

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Pokumon promo pilot importer (dry-run only for now).
+Pokumon promo importer.
 
 Fetches card records from Pokumon's public WordPress API and writes a local
 preview report with normalized fields. This script does NOT write to Supabase.
 
 Usage examples:
   python scripts/import_pokumon_promos.py --limit 100
-  python scripts/import_pokumon_promos.py --limit 100 --per-page 50
-  python scripts/import_pokumon_promos.py --limit 100 --output tmp/pokumon_pilot_preview.json
+  python scripts/import_pokumon_promos.py --all
+  python scripts/import_pokumon_promos.py --all --modified-after "2026-04-01T00:00:00Z"
+  python scripts/import_pokumon_promos.py --all --output tmp/pokumon_full_preview.json
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ import html
 import json
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,7 +36,7 @@ NUMBER_PATTERN = re.compile(r"(?P<number>[A-Za-z0-9\-]+(?:/[A-Za-z0-9\-]+)?)")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build a dry-run preview for Pokumon promo import.")
+    parser = argparse.ArgumentParser(description="Fetch Pokumon promo cards from WordPress API.")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="Max cards to fetch for preview.")
     parser.add_argument(
         "--per-page",
@@ -53,6 +55,29 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=30.0,
         help="HTTP timeout seconds.",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Fetch all cards (ignore --limit).",
+    )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=3,
+        help="Retry failed requests with exponential backoff (mandatory for --all).",
+    )
+    parser.add_argument(
+        "--delay-ms",
+        type=int,
+        default=500,
+        help="Milliseconds to pause between API requests.",
+    )
+    parser.add_argument(
+        "--modified-after",
+        type=str,
+        default=None,
+        help="ISO 8601 timestamp: fetch only cards modified after this time.",
     )
     return parser.parse_args()
 
@@ -199,35 +224,73 @@ def normalize_card(card: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def fetch_cards(limit: int, per_page: int, timeout: float) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _fetch_page(
+    client: httpx.Client,
+    page: int,
+    per_page: int,
+    modified_after: str | None,
+    retries: int,
+) -> tuple[list[dict[str, Any]], httpx.Headers]:
+    params: dict[str, Any] = {"per_page": per_page, "page": page, "_embed": 1}
+    if modified_after:
+        params["modified_after"] = modified_after
+
+    attempt = 0
+    while True:
+        try:
+            response = client.get(f"{POKUMON_API}/card", params=params)
+            response.raise_for_status()
+            batch = response.json()
+            if not isinstance(batch, list):
+                raise ValueError(f"Unexpected response type: {type(batch).__name__}")
+            return batch, response.headers
+        except ValueError:
+            raise  # permanent error — don't retry (bad JSON, unexpected response shape)
+        except Exception as exc:
+            attempt += 1
+            if attempt > retries:
+                raise RuntimeError(f"Failed to fetch page {page} after {retries} retries: {exc}") from exc
+            backoff = 2 ** attempt
+            print(f"Retry {attempt}/{retries} for page {page} in {backoff}s… ({exc})", file=sys.stderr)
+            time.sleep(backoff)
+
+
+def fetch_cards(
+    limit: int | None,
+    per_page: int,
+    timeout: float,
+    modified_after: str | None,
+    retries: int,
+    delay_ms: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     cards: list[dict[str, Any]] = []
     page = 1
     wp_total = None
     wp_total_pages = None
 
     with httpx.Client(timeout=timeout, follow_redirects=True) as client:
-        while len(cards) < limit:
-            response = client.get(
-                f"{POKUMON_API}/card",
-                params={"per_page": per_page, "page": page, "_embed": 1},
-            )
-            response.raise_for_status()
-            batch = response.json()
-            if not isinstance(batch, list) or not batch:
+        while True:
+            batch, headers = _fetch_page(client, page, per_page, modified_after, retries)
+            if not batch:
                 break
 
             if wp_total is None:
-                wp_total = clean_text(response.headers.get("x-wp-total"))
+                wp_total = clean_text(headers.get("x-wp-total"))
             if wp_total_pages is None:
-                wp_total_pages = clean_text(response.headers.get("x-wp-totalpages"))
+                wp_total_pages = clean_text(headers.get("x-wp-totalpages"))
 
             cards.extend(batch)
+            print(f"Fetched page {page} ({len(cards)} cards so far)...")
             if len(batch) < per_page:
                 break
             page += 1
 
-    if len(cards) > limit:
-        cards = cards[:limit]
+            if limit is not None and len(cards) >= limit:
+                cards = cards[:limit]
+                break
+
+            if delay_ms > 0:
+                time.sleep(delay_ms / 1000.0)
 
     meta = {
         "x_wp_total": wp_total,
@@ -235,6 +298,7 @@ def fetch_cards(limit: int, per_page: int, timeout: float) -> tuple[list[dict[st
         "fetched_count": len(cards),
         "requested_limit": limit,
         "per_page": per_page,
+        "modified_after": modified_after,
     }
     return cards, meta
 
@@ -246,7 +310,7 @@ def build_report(raw_cards: list[dict[str, Any]], fetch_meta: dict[str, Any]) ->
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "mode": "dry-run",
+        "mode": "fetch-only",
         "source": "pokumon_wp_api",
         "fetch_meta": fetch_meta,
         "summary": {
@@ -264,12 +328,23 @@ def build_report(raw_cards: list[dict[str, Any]], fetch_meta: dict[str, Any]) ->
 
 def main() -> int:
     args = parse_args()
-    limit = max(1, args.limit)
     per_page = min(MAX_PER_PAGE, max(1, args.per_page))
 
+    if args.all:
+        limit = None
+    else:
+        limit = max(1, args.limit)
+
     try:
-        raw_cards, fetch_meta = fetch_cards(limit=limit, per_page=per_page, timeout=args.timeout)
-    except httpx.HTTPError as exc:
+        raw_cards, fetch_meta = fetch_cards(
+            limit=limit,
+            per_page=per_page,
+            timeout=args.timeout,
+            modified_after=args.modified_after,
+            retries=args.retries,
+            delay_ms=args.delay_ms,
+        )
+    except Exception as exc:
         print(f"Failed to fetch Pokumon cards: {exc}", file=sys.stderr)
         return 1
 

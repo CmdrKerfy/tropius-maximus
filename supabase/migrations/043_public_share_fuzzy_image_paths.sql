@@ -98,6 +98,7 @@ BEGIN
     'image_large', r.image_large,
     'image_override', ovr,
     'share_preview_image', best,
+    'media_meta', COALESCE(r.raw_data->'media_meta', '{}'::jsonb),
     'supertype', r.supertype,
     'card_type', r.card_type,
     'element', r.element,

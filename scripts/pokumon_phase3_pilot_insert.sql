@@ -1,4 +1,4 @@
--- Phase 3: Pilot insert from staging -> cards (Supabase SQL editor)
+-- Phase 3: Insert from staging -> cards (Supabase SQL editor)
 -- Safe scope:
 -- - Inserts only rows currently in public.staging_pokumon_cards
 -- - Uses deterministic card IDs from staging.record_id
@@ -7,19 +7,22 @@
 -- Prereq:
 -- 1) scripts/pokumon_staging_review.sql (table + checks)
 -- 2) tmp/pokumon_staging_load.sql (pilot rows loaded)
+--
+-- EDIT THIS before running:
+-- Change the batch_label value in all vars CTEs (lines 17, 33, 105)
+-- and the rollback comment (line 122).
 
 begin;
 
--- Batch marker for this pilot run (edit label per run if desired)
-with settings as (
-  select 'pokumon-pilot-2026-04-24'::text as batch_id
+with vars as (
+  select 'pokumon-full-2026-05-04'::text as batch_id
 ),
 set_rows as (
   select
     'pokumon-' || lower(regexp_replace(coalesce(nullif(trim(set_name_guess), ''), 'unknown'), '[^a-z0-9]+', '-', 'g')) as set_id,
-    coalesce(nullif(trim(set_name_guess), ''), 'Unknown Promo Set') as set_name
+    min(coalesce(nullif(trim(set_name_guess), ''), 'Unknown Promo Set')) as set_name
   from public.staging_pokumon_cards
-  group by 1, 2
+  group by 1
 )
 insert into public.sets (id, name, origin)
 select sr.set_id, sr.set_name, 'manual'
@@ -27,8 +30,8 @@ from set_rows sr
 on conflict (id) do update
 set name = excluded.name;
 
-with settings as (
-  select 'pokumon-pilot-2026-04-24'::text as batch_id
+with vars as (
+  select 'pokumon-full-2026-05-04'::text as batch_id
 )
 insert into public.cards (
   id,
@@ -42,7 +45,8 @@ insert into public.cards (
   prices,
   origin,
   origin_detail,
-  format
+  format,
+  created_by
 )
 select
   s.record_id as id,
@@ -58,7 +62,7 @@ select
     'source_post_id', s.wp_post_id,
     'source_link', s.source_link,
     'source_slug', s.slug,
-    'pilot_batch_id', st.batch_id,
+    'import_batch_id', st.batch_id,
     'language', coalesce(s.language, '[]'::jsonb),
     'artist', coalesce(s.artist, '[]'::jsonb),
     'holofoil', coalesce(s.holofoil, '[]'::jsonb),
@@ -79,9 +83,10 @@ select
   '{}'::jsonb as prices,
   'manual' as origin,
   'pokumon' as origin_detail,
-  'promotional' as format
+  'promotional' as format,
+  null as created_by
 from public.staging_pokumon_cards s
-cross join settings st
+cross join vars st
 on conflict (id) do update
 set
   name = excluded.name,
@@ -93,15 +98,20 @@ set
   raw_data = excluded.raw_data,
   origin = excluded.origin,
   origin_detail = excluded.origin_detail,
-  format = excluded.format;
+  format = excluded.format,
+  created_by = null;
 
 -- Post-insert check
+with vars as (
+  select 'pokumon-full-2026-05-04'::text as batch_id
+)
 select
   count(*) as inserted_or_updated_cards
 from public.cards
+cross join vars st
 where origin = 'manual'
   and origin_detail = 'pokumon'
-  and coalesce(raw_data->>'pilot_batch_id', '') = 'pokumon-pilot-2026-04-24';
+  and coalesce(raw_data->>'import_batch_id', '') = st.batch_id;
 
 commit;
 
@@ -110,5 +120,5 @@ commit;
 -- delete from public.cards
 -- where origin = 'manual'
 --   and origin_detail = 'pokumon'
---   and coalesce(raw_data->>'pilot_batch_id', '') = 'pokumon-pilot-2026-04-24';
+--   and coalesce(raw_data->>'import_batch_id', '') = 'pokumon-full-2026-05-04';
 -- commit;

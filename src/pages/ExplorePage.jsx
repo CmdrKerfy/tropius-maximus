@@ -181,7 +181,7 @@ export default function ExplorePage() {
 
   // ── Card list state ─────────────────────────────────────────────────
   const [page, setPage] = useState(() => readUrlState().page);
-  const [pageSize] = useState(60);
+  const [pageSize] = useState(120);
 
   // ── SQL grid overlay state ────────────────────────────────────────
   const [sqlCards, setSqlCards] = useState(null);
@@ -308,11 +308,14 @@ export default function ExplorePage() {
     queryFn: fetchAttributes,
   });
 
+  const EXPLORE_EXACT_COUNT = false;
+
   const {
     data: cardsResult,
     isPending: cardsPending,
     isError: cardsQueryFailed,
     error: cardsQueryError,
+    isFetching,
   } = useQuery({
     queryKey: ["cards", searchQuery, filters, page, pageSize],
     queryFn: () =>
@@ -321,8 +324,7 @@ export default function ExplorePage() {
         ...filters,
         page,
         page_size: pageSize,
-        // Exact total matches the filtered set (planned can disagree badly with filters/embeds).
-        ...(USE_SUPABASE_APP ? { exact_count: true } : {}),
+        ...(USE_SUPABASE_APP ? { exact_count: EXPLORE_EXACT_COUNT } : {}),
       }),
     placeholderData: keepPreviousData,
   });
@@ -388,6 +390,57 @@ export default function ExplorePage() {
   useEffect(() => {
     localStorage.setItem(SEARCH_STORAGE_KEY, searchQuery);
   }, [searchQuery]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [page]);
+
+  // Prefetch adjacent pages for snappier Prev/Next navigation
+  useEffect(() => {
+    if (!USE_SUPABASE_APP || !cardsResult || sqlCards) return;
+    const { total: t, page_size } = cardsResult;
+    if (typeof t !== "number" || !page_size) return;
+    const maxPage = Math.max(1, Math.ceil(t / page_size));
+    const base = { q: searchQuery, ...filters, page_size };
+    if (page > 1) {
+      queryClient.prefetchQuery({
+        queryKey: ["cards", searchQuery, filters, page - 1, pageSize],
+        queryFn: () => fetchCards({ ...base, page: page - 1, exact_count: EXPLORE_EXACT_COUNT }),
+      });
+    }
+    if (page < maxPage) {
+      queryClient.prefetchQuery({
+        queryKey: ["cards", searchQuery, filters, page + 1, pageSize],
+        queryFn: () => fetchCards({ ...base, page: page + 1, exact_count: EXPLORE_EXACT_COUNT }),
+      });
+    }
+  }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient]);
+
+  // Prefetch prev/next card detail when the modal is open for instant Prev/Next navigation.
+  useEffect(() => {
+    if (!USE_SUPABASE_APP || !selectedCardId) return;
+    const idx = displayedCards.findIndex((c) => c.id === selectedCardId);
+    if (idx < 0) return;
+    if (idx > 0) {
+      const prev = displayedCards[idx - 1];
+      const src = prev.is_promo ? "Promo" : prev.origin === "tcgdex" ? "Pocket" : "TCG";
+      queryClient.prefetchQuery({
+        queryKey: ["cardDetail", prev.id, src],
+        queryFn: () => fetchCard(prev.id, src),
+        staleTime: 5 * 60_000,
+      });
+    }
+    if (idx < displayedCards.length - 1) {
+      const next = displayedCards[idx + 1];
+      const src = next.is_promo ? "Promo" : next.origin === "tcgdex" ? "Pocket" : "TCG";
+      queryClient.prefetchQuery({
+        queryKey: ["cardDetail", next.id, src],
+        queryFn: () => fetchCard(next.id, src),
+        staleTime: 5 * 60_000,
+      });
+    }
+  }, [selectedCardId, displayedCards, filters.source, queryClient]);
 
   // ── URL sync ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1780,28 +1833,30 @@ export default function ExplorePage() {
 
         {/* Card grid */}
         {(!error || sqlCards) && (
-          <CardGrid
-            cards={displayedCards}
-            loading={sqlCards ? false : listAwaitingFirstData}
-            onCardClick={(id) => setSelectedCardId(id)}
-            selectedCardIds={
-              showSqlConsole
-                ? selectedCardIds
-                : batchModeActive
-                  ? batchSelection.idSet
-                  : EMPTY_SELECTED_CARD_IDS
-            }
-            onToggleSelection={
-              showSqlConsole
-                ? handleToggleCardSelection
-                : batchModeActive
-                  ? handleToggleBatchCard
-                  : null
-            }
-            onResetExplore={resetExploreFilters}
-            showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
-            anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}
-          />
+          <div className={`transition-opacity duration-200 ${isFetching && !listAwaitingFirstData ? "opacity-60" : "opacity-100"}`}>
+            <CardGrid
+              cards={displayedCards}
+              loading={sqlCards ? false : listAwaitingFirstData}
+              onCardClick={(id) => setSelectedCardId(id)}
+              selectedCardIds={
+                showSqlConsole
+                  ? selectedCardIds
+                  : batchModeActive
+                    ? batchSelection.idSet
+                    : EMPTY_SELECTED_CARD_IDS
+              }
+              onToggleSelection={
+                showSqlConsole
+                  ? handleToggleCardSelection
+                  : batchModeActive
+                    ? handleToggleBatchCard
+                    : null
+              }
+              onResetExplore={resetExploreFilters}
+              showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
+              anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}
+            />
+          </div>
         )}
 
         {/* Pagination */}

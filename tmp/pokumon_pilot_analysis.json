@@ -1,0 +1,174 @@
+{
+  "summary": {
+    "preview_rows": 100,
+    "missing_image_count": 0,
+    "missing_number_count": 0,
+    "invalid_row_count": 0,
+    "duplicate_record_id_count": 0,
+    "duplicate_wp_post_id_count": 0,
+    "duplicate_slug_count": 0,
+    "duplicate_number_set_lang_count": 19,
+    "html_entity_name_count": 0
+  },
+  "fetch_meta": {
+    "x_wp_total": "10813",
+    "x_wp_totalpages": "109",
+    "fetched_count": 100,
+    "requested_limit": 100,
+    "per_page": 100
+  },
+  "top_distributions": {
+    "languages": [
+      {
+        "value": "Simplified Chinese",
+        "count": 100
+      }
+    ],
+    "promo_sets": [
+      {
+        "value": "SV-P",
+        "count": 100
+      }
+    ],
+    "holofoil": [
+      {
+        "value": "Reverse",
+        "count": 61
+      },
+      {
+        "value": "Non-holo",
+        "count": 30
+      },
+      {
+        "value": "Mirror",
+        "count": 30
+      },
+      {
+        "value": "Master Ball",
+        "count": 19
+      },
+      {
+        "value": "Pokeball",
+        "count": 19
+      },
+      {
+        "value": "Textured",
+        "count": 2
+      }
+    ],
+    "artists": [
+      {
+        "value": "AYUMI ODASHIMA",
+        "count": 6
+      },
+      {
+        "value": "Minahamu",
+        "count": 6
+      },
+      {
+        "value": "Toyste Beach",
+        "count": 5
+      },
+      {
+        "value": "GIDORA",
+        "count": 5
+      },
+      {
+        "value": "Studio Bora Inc.",
+        "count": 4
+      },
+      {
+        "value": "5ban Graphics",
+        "count": 4
+      },
+      {
+        "value": "Nisota Niso",
+        "count": 4
+      },
+      {
+        "value": "Atsushi Furusawa",
+        "count": 3
+      },
+      {
+        "value": "Taira Akitsu",
+        "count": 3
+      },
+      {
+        "value": "Jerky",
+        "count": 3
+      },
+      {
+        "value": "sowsow",
+        "count": 3
+      },
+      {
+        "value": "osare",
+        "count": 3
+      },
+      {
+        "value": "Uta",
+        "count": 3
+      },
+      {
+        "value": "Asako Ita",
+        "count": 3
+      },
+      {
+        "value": "Lighton",
+        "count": 3
+      },
+      {
+        "value": "mingo",
+        "count": 3
+      },
+      {
+        "value": "Yukiko Baba",
+        "count": 3
+      },
+      {
+        "value": "Katsunori Sato",
+        "count": 3
+      },
+      {
+        "value": "Kedamahadaitai Yawarakai",
+        "count": 3
+      },
+      {
+        "value": "GOSSAN",
+        "count": 2
+      }
+    ]
+  },
+  "duplicates": {
+    "record_ids": [],
+    "wp_post_ids": [],
+    "slugs": [],
+    "number_set_lang": [
+      "200/SV-P::SV-P::Simplified Chinese",
+      "199/SV-P::SV-P::Simplified Chinese",
+      "198/SV-P::SV-P::Simplified Chinese",
+      "197/SV-P::SV-P::Simplified Chinese",
+      "196/SV-P::SV-P::Simplified Chinese",
+      "195/SV-P::SV-P::Simplified Chinese",
+      "194/SV-P::SV-P::Simplified Chinese",
+      "193/SV-P::SV-P::Simplified Chinese",
+      "191/SV-P::SV-P::Simplified Chinese",
+      "190/SV-P::SV-P::Simplified Chinese",
+      "189/SV-P::SV-P::Simplified Chinese",
+      "188/SV-P::SV-P::Simplified Chinese",
+      "187/SV-P::SV-P::Simplified Chinese",
+      "186/SV-P::SV-P::Simplified Chinese",
+      "185/SV-P::SV-P::Simplified Chinese",
+      "184/SV-P::SV-P::Simplified Chinese",
+      "183/SV-P::SV-P::Simplified Chinese",
+      "180/SV-P::SV-P::Simplified Chinese",
+      "179/SV-P::SV-P::Simplified Chinese"
+    ]
+  },
+  "quality_flags": {
+    "rows_with_html_entities_in_name": [],
+    "rows_missing_image": [],
+    "rows_missing_number": [],
+    "invalid_rows": []
+  }
+}

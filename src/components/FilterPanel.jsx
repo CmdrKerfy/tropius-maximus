@@ -222,7 +222,8 @@ export default function FilterPanel({
     filters.source !== "" &&
     filters.source !== "Pocket" &&
     filters.source !== "Custom" &&
-    filters.source !== "Promo";
+    filters.source !== "Promo" &&
+    filters.source !== "TCG (JPN)";
 
   const isActive = (val) => (Array.isArray(val) ? val.length > 0 : !!val);
   const hasActiveFilters =
@@ -409,6 +410,7 @@ export default function FilterPanel({
           >
             <option value="">All</option>
             <option value="TCG">TCG</option>
+            <option value="TCG (JPN)">TCG (JPN)</option>
             <option value="Pocket">Pocket</option>
             <option value="Custom">Custom Cards</option>
             <option value="Promo">Promo</option>

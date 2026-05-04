@@ -186,6 +186,30 @@ function buildPocketFilterOptionsFromRpc(pocket) {
   };
 }
 
+function buildJapaneseFilterOptionsFromRpc(japanese) {
+  const j = japanese && typeof japanese === "object" ? japanese : {};
+  return {
+    supertypes: [],
+    rarities: rpcJsonToStringArray(j.rarities).sort(),
+    sets: rpcJsonToSets(j.sets),
+    regions: [],
+    generations: [],
+    colors: [],
+    artists: rpcJsonToStringArray(j.artists).sort(),
+    evolution_lines: [],
+    trainer_types: [],
+    specialties: [],
+    background_pokemon: [],
+    card_types: rpcJsonToStringArray(j.card_types).sort(),
+    elements: rpcJsonToStringArray(j.elements).sort(),
+    stages: rpcJsonToStringArray(j.stages).sort(),
+    weathers: [],
+    environments: [],
+    actions: [],
+    poses: [],
+  };
+}
+
 function buildCustomFilterOptionsFromRpc(custom) {
   const c = custom && typeof custom === "object" ? custom : {};
   return {
@@ -211,12 +235,13 @@ function buildCustomFilterOptionsFromRpc(custom) {
 }
 
 async function fetchExploreFilterOptionsClientPaged() {
-  const [tcg, pocket, custom] = await Promise.all([
+  const [tcg, pocket, custom, japanese] = await Promise.all([
     fetchFilterOptions("TCG"),
     fetchFilterOptions("Pocket"),
     fetchFilterOptions("Custom"),
+    fetchFilterOptions("TCG (JPN)"),
   ]);
-  return mergeExploreFilterOptions(tcg, pocket, custom);
+  return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
 }
 
 /** DB JSONB array column → camelCase key on fetchFormOptions() result. */
@@ -239,6 +264,7 @@ const ANN_JSONB_ARRAY_TO_FORM = {
   trainer_card_subgroup: "trainerCardSubgroup",
   holiday_theme: "holidayTheme",
   multi_card: "multiCard",
+  camera_angle: "cameraAngle",
   video_type: "videoType",
   video_region: "videoRegion",
   video_location: "videoLocation",
@@ -246,7 +272,6 @@ const ANN_JSONB_ARRAY_TO_FORM = {
 
 /** DB TEXT column → camelCase key on fetchFormOptions() result. */
 const ANN_TEXT_TO_FORM = {
-  camera_angle: "cameraAngle",
   perspective: "perspective",
   weather: "weather",
   environment: "environment",
@@ -416,7 +441,7 @@ function buildFormOptionsFromRpcPayload(data) {
 }
 
 /** Paginated distinct values for a scalar column on `cards` (dev-costly but no RPC required). */
-async function distinctColumn(column, originFilter) {
+async function distinctColumn(column, originFilter, originDetailFilter, originDetailExclude) {
   const sb = await sbReady();
   const values = new Set();
   const pageSize = 1000;
@@ -424,6 +449,8 @@ async function distinctColumn(column, originFilter) {
   for (;;) {
     let q = sb.from("cards").select(column).range(from, from + pageSize - 1);
     if (originFilter) q = q.eq("origin", originFilter);
+    if (originDetailFilter) q = q.eq("origin_detail", originDetailFilter);
+    if (originDetailExclude) q = q.or(`origin_detail.is.null,origin_detail.neq.${originDetailExclude}`);
     const { data, error } = await q;
     if (error) throw error;
     if (!data?.length) break;
@@ -488,6 +515,7 @@ const ANNOTATION_JSONB_COLUMNS = new Set([
   "trainer_card_subgroup",
   "holiday_theme",
   "multi_card",
+  "camera_angle",
   "video_type",
   "video_region",
   "video_location",
@@ -505,7 +533,6 @@ const ANNOTATION_BOOLEAN_COLUMNS = new Set([
 
 /** Single-value TEXT columns on `annotations` (form sometimes sends string[]). */
 const ANNOTATION_TEXT_SCALAR_KEYS = new Set([
-  "camera_angle",
   "perspective",
   "weather",
   "environment",
@@ -699,6 +726,8 @@ function gridRowFromCard(row) {
     number: row.number,
     hp: row.hp,
     rarity: row.rarity,
+    supertype: row.supertype,
+    subtypes: row.subtypes,
     is_custom: row.origin === "manual" && !isPromoOriginDetail(row.origin_detail),
     is_promo:
       row.origin === "manual" &&
@@ -714,6 +743,31 @@ function gridRowFromCard(row) {
     annotation_editor_display_name: annotation_updated_by
       ? displayNameFromProfileEmbed(ann?.profiles)
       : null,
+  };
+}
+
+export function gridCardToDetailPlaceholder(gridRow) {
+  if (!gridRow) return undefined;
+  return {
+    id: gridRow.id,
+    name: gridRow.name,
+    image_large: gridRow.image_large,
+    image_small: gridRow.image_small,
+    image_fallback: gridRow.image_small || gridRow.image_large,
+    set_name: gridRow.set_name,
+    number: gridRow.number,
+    annotations: { image_override: gridRow.image_override || undefined },
+    raw_data: {},
+    origin_detail: gridRow.origin_detail,
+    supertype: gridRow.supertype,
+    subtypes: gridRow.subtypes,
+    hp: gridRow.hp,
+    rarity: gridRow.rarity,
+    created_by: gridRow.created_by,
+    creator_display_name: gridRow.creator_display_name,
+    annotation_editor_display_name: gridRow.annotation_editor_display_name,
+    is_custom: gridRow.is_custom,
+    pokedex_numbers: [],
   };
 }
 
@@ -799,14 +853,16 @@ export async function fetchCards(params = {}) {
   let query = sb
     .from("cards")
     .select(
-      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, raw_data, supertype, subtypes, created_by, ${annSelect}`,
+      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by, ${annSelect}`,
       { count: exact_count ? "exact" : "planned" }
     );
 
   if (source === "TCG") {
     query = query.in("origin", ["pokemontcg.io", "manual"]);
+  } else if (source === "TCG (JPN)") {
+    query = query.eq("origin", "tcgdex").eq("origin_detail", "japanese");
   } else if (source === "Pocket") {
-    query = query.eq("origin", "tcgdex");
+    query = query.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
   } else if (source === "Custom") {
     // NULL origin_detail must stay in Custom (legacy manual rows). Plain
     // `.not('origin_detail','eq','pokumon')` drops NULLs (SQL NOT (col = 'x')).
@@ -1125,13 +1181,14 @@ export async function batchPatchAnnotations(cardIds, patch, options = {}) {
   return { updated, errors };
 }
 
+const CARD_DETAIL_LITE_COLUMNS =
+  "id, name, set_id, set_name, set_series, number, image_small, image_large, supertype, subtypes, hp, types, evolves_from, rarity, artist, element, format, regulation_mark, prices, origin, origin_detail, created_by, created_at, card_type, weakness, stage, packs, retreat_cost, raw_data, profiles!cards_created_by_fkey(display_name), annotations(*, profiles!annotations_updated_by_fkey(display_name))";
+
 export async function fetchCard(id, _source = "TCG") {
   const sb = await sbReady();
   const { data: row, error } = await sb
     .from("cards")
-    .select(
-      "*, profiles!cards_created_by_fkey(display_name), annotations(*, profiles!annotations_updated_by_fkey(display_name))"
-    )
+    .select(CARD_DETAIL_LITE_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
@@ -1146,6 +1203,7 @@ export async function fetchCard(id, _source = "TCG") {
     ? displayNameFromProfileEmbed(annRow.profiles)
     : null;
 
+  // raw_data is loaded lazily via fetchCardRawData; only pokedex_numbers needed here.
   const raw_data =
     row.raw_data && typeof row.raw_data === "object" ? row.raw_data : {};
   const pokedex_numbers = raw_data?.nationalPokedexNumbers || [];
@@ -1254,6 +1312,17 @@ export async function fetchCard(id, _source = "TCG") {
   };
 }
 
+export async function fetchCardRawData(id) {
+  const sb = await sbReady();
+  const { data, error } = await sb
+    .from("cards")
+    .select("id, raw_data")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.raw_data && typeof data.raw_data === "object" ? data.raw_data : {};
+}
+
 /**
  * Single card JSON for public /share/card/:id — no session required (RPC granted to anon).
  * @returns {Promise<object | null>}
@@ -1274,10 +1343,10 @@ export async function fetchFilterOptions(source = "TCG") {
 
   if (source === "Pocket") {
     const [card_types, rarities, elements, stages, setsData] = await Promise.all([
-      distinctColumn("card_type", "tcgdex"),
-      distinctColumn("rarity", "tcgdex"),
-      distinctColumn("element", "tcgdex"),
-      distinctColumn("stage", "tcgdex"),
+      distinctColumn("card_type", "tcgdex", null, "japanese"),
+      distinctColumn("rarity", "tcgdex", null, "japanese"),
+      distinctColumn("element", "tcgdex", null, "japanese"),
+      distinctColumn("stage", "tcgdex", null, "japanese"),
       sb.from("sets").select("id, name, series").eq("origin", "tcgdex"),
     ]);
     const sets = (setsData.data || []).map((r) => ({
@@ -1333,6 +1402,42 @@ export async function fetchFilterOptions(source = "TCG") {
       card_types: [],
       elements: [],
       stages: [],
+      weathers: [],
+      environments: [],
+      actions: [],
+      poses: [],
+    };
+  }
+
+  if (source === "TCG (JPN)") {
+    const [card_types, rarities, elements, stages, setsData, artists] = await Promise.all([
+      distinctColumn("card_type", "tcgdex", "japanese"),
+      distinctColumn("rarity", "tcgdex", "japanese"),
+      distinctColumn("element", "tcgdex", "japanese"),
+      distinctColumn("stage", "tcgdex", "japanese"),
+      sb.from("sets").select("id, name, series").eq("origin", "tcgdex"),
+      distinctColumn("artist", "tcgdex", "japanese"),
+    ]);
+    const sets = (setsData.data || []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      series: r.series,
+    }));
+    return {
+      supertypes: [],
+      rarities: rarities.sort(),
+      sets,
+      regions: [],
+      generations: [],
+      colors: [],
+      artists: artists.sort(),
+      evolution_lines: [],
+      trainer_types: [],
+      specialties: [],
+      background_pokemon: [],
+      card_types: card_types.sort(),
+      elements: elements.sort(),
+      stages: stages.sort(),
       weathers: [],
       environments: [],
       actions: [],
@@ -1452,7 +1557,8 @@ export async function fetchExploreFilterOptions() {
       const tcg = buildTcgFilterOptionsFromRpc(data.tcg);
       const pocket = buildPocketFilterOptionsFromRpc(data.pocket);
       const custom = buildCustomFilterOptionsFromRpc(data.custom);
-      return mergeExploreFilterOptions(tcg, pocket, custom);
+      const japanese = buildJapaneseFilterOptionsFromRpc(data.japanese);
+      return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
     } catch (e) {
       console.warn(
         "get_explore_filter_options_db parse:",

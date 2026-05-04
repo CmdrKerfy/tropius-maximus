@@ -176,7 +176,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
   const [additionalCharacters, setAdditionalCharacters] = useState("");
   const [emotion, setEmotion] = useState("");
   const [pose, setPose] = useState("");
-  const [cameraAngle, setCameraAngle] = useState("");
+  const [cameraAngle, setCameraAngle] = useState([]);
   const [items, setItems] = useState("");
   const [actions, setActions] = useState("");
   const [perspective, setPerspective] = useState("");
@@ -376,7 +376,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       evolution_line: (evolutionLine || "").toLowerCase(),
       emotion: toArray(emotion),
       pose: toArray(pose),
-      camera_angle: cameraAngle || "",
+      camera_angle: cameraAngle.length ? cameraAngle : null,
       items: toArray(items),
       actions: toArray(actions),
       additional_characters: toArray(additionalCharacters),
@@ -1191,7 +1191,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
             </div>
             <div>
               <label className={labelClass}>Camera Angle</label>
-              <ComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Aerial, Upside Down, etc." className={inputClass + " w-full"} />
+              <MultiComboBox value={cameraAngle} onChange={setCameraAngle} options={opts.cameraAngle || []} placeholder="Aerial, Upside Down, etc." />
             </div>
             <div>
               <label className={labelClass}>Perspective</label>

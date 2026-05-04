@@ -1,62 +1,68 @@
 /**
- * Pagination — Page navigation controls.
+ * Pagination — Compact page navigation with jump input.
  *
- * Shows Previous/Next buttons and the current page indicator.
- * Page numbers are 1-based to match the API.
+ * Replaces numbered buttons with Previous/Next, "Page X of Y", and
+ * a small jump-to-page input. Scoped keyboard shortcuts when focused.
  */
+
+import { useRef, useCallback } from "react";
 
 export default function Pagination({ page, pageSize, total, onPageChange }) {
   const totalPages = Math.ceil(total / pageSize);
+  const inputRef = useRef(null);
 
-  // Don't render if there's only one page.
   if (totalPages <= 1) return null;
 
-  // Build a window of page numbers around the current page.
-  // Shows up to 7 page buttons with ellipsis gaps.
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 7;
-
-    if (totalPages <= maxVisible) {
-      // Show all pages if there are few enough.
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      // Always show first page.
-      pages.push(1);
-
-      // Calculate the window around the current page.
-      let start = Math.max(2, page - 2);
-      let end = Math.min(totalPages - 1, page + 2);
-
-      // Adjust window to always show 5 middle pages.
-      if (page <= 3) end = Math.min(6, totalPages - 1);
-      if (page >= totalPages - 2) start = Math.max(totalPages - 5, 2);
-
-      // Add ellipsis before the window if needed.
-      if (start > 2) pages.push("...");
-
-      for (let i = start; i <= end; i++) pages.push(i);
-
-      // Add ellipsis after the window if needed.
-      if (end < totalPages - 1) pages.push("...");
-
-      // Always show last page.
-      pages.push(totalPages);
-    }
-
-    return pages;
+  const clampPage = (n) => {
+    const val = parseInt(n, 10);
+    if (Number.isNaN(val)) return page;
+    return Math.max(1, Math.min(totalPages, val));
   };
+
+  const handleJump = () => {
+    const val = inputRef.current?.value ?? "";
+    const target = clampPage(val);
+    onPageChange(target);
+    if (inputRef.current) inputRef.current.value = String(target);
+  };
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      // Allow arrow keys to move cursor within the jump input
+      if (e.target === inputRef.current && (e.key === "ArrowLeft" || e.key === "ArrowRight")) return;
+      if (e.key === "ArrowLeft" && page > 1) {
+        e.preventDefault();
+        onPageChange(page - 1);
+      } else if (e.key === "ArrowRight" && page < totalPages) {
+        e.preventDefault();
+        onPageChange(page + 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        onPageChange(1);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        onPageChange(totalPages);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleJump();
+      }
+    },
+    [page, totalPages, onPageChange]
+  );
 
   const btnBase =
     "px-3 py-1.5 text-sm rounded font-medium transition-colors";
-  const btnActive = "bg-green-600 text-white";
   const btnInactive =
     "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50";
-  const btnDisabled = "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
+  const btnDisabled =
+    "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
 
   return (
-    <div className="flex items-center justify-center gap-1.5 mt-6 mb-4 flex-wrap">
-      {/* Previous button */}
+    <div
+      className="flex items-center justify-center gap-2 mt-6 mb-4 flex-wrap"
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
+    >
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
@@ -65,24 +71,30 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
         Previous
       </button>
 
-      {/* Page number buttons */}
-      {getPageNumbers().map((p, i) =>
-        p === "..." ? (
-          <span key={`ellipsis-${i}`} className="px-2 text-gray-400">
-            ...
-          </span>
-        ) : (
-          <button
-            key={p}
-            onClick={() => onPageChange(p)}
-            className={`${btnBase} ${p === page ? btnActive : btnInactive}`}
-          >
-            {p}
-          </button>
-        )
-      )}
+      <span className="text-sm text-gray-600 px-1">
+        Page{" "}
+        <span className="font-semibold text-gray-900">{page}</span>
+        {" "}of{" "}
+        <span className="font-semibold text-gray-900">{totalPages}</span>
+      </span>
 
-      {/* Next button */}
+      <input
+        ref={inputRef}
+        type="number"
+        min={1}
+        max={totalPages}
+        defaultValue={page}
+        onBlur={handleJump}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleJump();
+          }
+        }}
+        className="w-14 px-1.5 py-1 text-sm text-center rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+        aria-label="Jump to page"
+      />
+
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}

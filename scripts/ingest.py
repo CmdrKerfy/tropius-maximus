@@ -56,6 +56,8 @@ class IngestFailureSummary:
     pokemon_species_fetch_failures: int = 0
     pocket_set_fetch_failures: int = 0
     pocket_card_fetch_failures: int = 0
+    japanese_set_fetch_failures: int = 0
+    japanese_card_fetch_failures: int = 0
 
     def has_partial_failures(self) -> bool:
         return (
@@ -63,6 +65,8 @@ class IngestFailureSummary:
             + self.pokemon_species_fetch_failures
             + self.pocket_set_fetch_failures
             + self.pocket_card_fetch_failures
+            + self.japanese_set_fetch_failures
+            + self.japanese_card_fetch_failures
         ) > 0
 
 
@@ -85,6 +89,7 @@ POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
 # TCGdex API (used for Pocket card data and images).
 TCGDEX_API_BASE = "https://api.tcgdex.net/v2/en"
+TCGDEX_JA_BASE = "https://api.tcgdex.net/v2/ja"
 POCKET_IMAGE_BASE = "https://assets.tcgdex.net/en/tcgp"
 
 REQUEST_TIMEOUT = 120  # Increased for large sets
@@ -245,6 +250,38 @@ def initialize_database() -> None:
             image_url       VARCHAR,
             image_filename  VARCHAR,
             illustrator     VARCHAR,
+            raw_data        JSON,
+            is_custom       BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_sets (
+            id            VARCHAR PRIMARY KEY,
+            name          VARCHAR,
+            series        VARCHAR,
+            release_date  VARCHAR,
+            card_count    INTEGER,
+            logo_url      VARCHAR
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_cards (
+            id              VARCHAR PRIMARY KEY,
+            name            VARCHAR,
+            set_id          VARCHAR,
+            number          INTEGER,
+            rarity          VARCHAR,
+            card_type       VARCHAR,
+            element         VARCHAR,
+            hp              INTEGER,
+            stage           VARCHAR,
+            retreat_cost    INTEGER,
+            weakness        VARCHAR,
+            evolves_from    VARCHAR,
+            illustrator     VARCHAR,
+            image_url       VARCHAR,
             raw_data        JSON,
             is_custom       BOOLEAN DEFAULT FALSE
         )
@@ -825,12 +862,170 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
     return ingested, pocket_set_fetch_failures, pocket_card_fetch_failures
 
 
+# ── Japanese TCG ingestion ───────────────────────────────────────────────
+
+
+def ingest_japanese_sets() -> None:
+    """Fetch Japanese sets from the TCGdex API and upsert into japanese_sets."""
+    print("Fetching Japanese sets...")
+    resp = httpx.get(f"{TCGDEX_JA_BASE}/sets", timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json()
+
+    sets_list = data if isinstance(data, list) else data.get("sets", [])
+    conn = get_connection()
+    conn.execute("DELETE FROM japanese_sets")
+    count = 0
+    for s in sets_list:
+        card_count_raw = s.get("cardCount", {})
+        if isinstance(card_count_raw, dict):
+            card_count = card_count_raw.get("official", card_count_raw.get("total", 0))
+        else:
+            card_count = int(card_count_raw) if card_count_raw else 0
+
+        conn.execute("""
+            INSERT OR REPLACE INTO japanese_sets
+                (id, name, series, release_date, card_count, logo_url)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, [
+            s["id"],
+            s.get("name", s["id"]),
+            s.get("serie", {}).get("name", "") if isinstance(s.get("serie"), dict) else s.get("serie", ""),
+            s.get("releaseDate", ""),
+            card_count,
+            s.get("logo", ""),
+        ])
+        count += 1
+
+    conn.close()
+    print(f"  Saved {count} Japanese sets.")
+
+
+def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
+    """Fetch Japanese cards from the TCGdex API and upsert into japanese_cards.
+
+    Returns (cards_ingested, japanese_set_fetch_failures, japanese_card_fetch_failures).
+    """
+    conn = get_connection()
+
+    # Resume check
+    if not force:
+        result = conn.execute("SELECT COUNT(*) FROM japanese_cards").fetchone()
+        existing = result[0] if result else 0
+        if existing > 0:
+            print(f"Japanese cards: skipped (already have {existing} cards). Use --force to re-download.")
+            conn.close()
+            return existing, 0, 0
+
+    print("Fetching Japanese cards from TCGdex...")
+
+    resp = httpx.get(f"{TCGDEX_JA_BASE}/sets", timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json()
+    sets_list = data if isinstance(data, list) else data.get("sets", [])
+    print(f"  Found {len(sets_list)} Japanese sets")
+
+    conn.execute("DELETE FROM japanese_cards")
+    ingested = 0
+    japanese_set_fetch_failures = 0
+    japanese_card_fetch_failures = 0
+    for set_idx, set_info in enumerate(sets_list, 1):
+        set_id = set_info["id"]
+        print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
+
+        try:
+            set_resp = httpx.get(f"{TCGDEX_JA_BASE}/sets/{set_id}", timeout=REQUEST_TIMEOUT)
+            set_resp.raise_for_status()
+            set_data = set_resp.json()
+        except Exception as e:
+            japanese_set_fetch_failures += 1
+            print(f"failed ({e})")
+            continue
+
+        cards_brief = set_data.get("cards", [])
+        set_ingested = 0
+
+        for card_brief in cards_brief:
+            card_id = card_brief["id"]
+
+            try:
+                card_resp = httpx.get(f"{TCGDEX_JA_BASE}/cards/{card_id}", timeout=REQUEST_TIMEOUT)
+                card_resp.raise_for_status()
+                card = card_resp.json()
+            except Exception as e:
+                japanese_card_fetch_failures += 1
+                print(f"\n    Warning: Failed to fetch {card_id}: {e}")
+                time.sleep(0.05)
+                continue
+
+            local_id = card.get("localId", "")
+            try:
+                number = int(local_id)
+            except (ValueError, TypeError):
+                number = 0
+
+            category = card.get("category", "")
+            card_type = category.lower() if category else ""
+
+            types = card.get("types") or []
+            element = types[0] if types else ""
+
+            stage_raw = card.get("stage", "")
+            stage = stage_raw.lower() if stage_raw else ""
+
+            weaknesses = card.get("weaknesses") or []
+            weakness = weaknesses[0].get("type", "") if weaknesses else ""
+
+            image_base = card.get("image", "")
+            image_url = f"{image_base}/high.webp" if image_base else ""
+
+            conn.execute("""
+                INSERT OR REPLACE INTO japanese_cards
+                    (id, name, set_id, number, rarity, card_type, element, hp,
+                     stage, retreat_cost, weakness, evolves_from, illustrator,
+                     image_url, raw_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                card_id,
+                card.get("name", ""),
+                set_id,
+                number,
+                card.get("rarity", ""),
+                card_type,
+                element,
+                card.get("hp"),
+                stage,
+                card.get("retreat"),
+                weakness,
+                card.get("evolveFrom", ""),
+                card.get("illustrator", ""),
+                image_url,
+                json.dumps(card),
+            ])
+            set_ingested += 1
+            time.sleep(0.05)
+
+        ingested += set_ingested
+        print(f"{set_ingested} cards")
+
+    conn.close()
+    print(f"  Saved {ingested} Japanese cards.")
+    if japanese_set_fetch_failures or japanese_card_fetch_failures:
+        print(
+            f"  ({japanese_set_fetch_failures} Japanese set fetch error(s), "
+            f"{japanese_card_fetch_failures} Japanese card fetch error(s) this run.)"
+        )
+    return ingested, japanese_set_fetch_failures, japanese_card_fetch_failures
+
+
 def run_ingestion(
     set_id: Optional[str] = None,
     skip_pokemon: bool = False,
     skip_pocket: bool = False,
     skip_tcg: bool = False,
+    skip_japanese: bool = False,
     pocket_only: bool = False,
+    japanese_only: bool = False,
     force: bool = False,
 ) -> IngestFailureSummary:
     """Run the full ingestion pipeline."""
@@ -842,6 +1037,13 @@ def run_ingestion(
         _, se, ce = ingest_pocket_cards(force=force)
         stats.pocket_set_fetch_failures = se
         stats.pocket_card_fetch_failures = ce
+        return stats
+
+    if japanese_only:
+        ingest_japanese_sets()
+        _, se, ce = ingest_japanese_cards(force=force)
+        stats.japanese_set_fetch_failures = se
+        stats.japanese_card_fetch_failures = ce
         return stats
 
     # Ingest Pokemon metadata first (unless skipped)
@@ -861,6 +1063,13 @@ def run_ingestion(
         _, se, ce = ingest_pocket_cards(force=force)
         stats.pocket_set_fetch_failures = se
         stats.pocket_card_fetch_failures = ce
+
+    # Ingest Japanese TCG data (unless skipped)
+    if not skip_japanese:
+        ingest_japanese_sets()
+        _, se, ce = ingest_japanese_cards(force=force)
+        stats.japanese_set_fetch_failures = se
+        stats.japanese_card_fetch_failures = ce
 
     return stats
 
@@ -892,10 +1101,22 @@ def main():
         help="Skip fetching main TCG card data from pokemontcg.io.",
     )
     parser.add_argument(
+        "--skip-japanese",
+        dest="skip_japanese",
+        action="store_true",
+        help="Skip fetching Japanese TCG data from TCGdex.",
+    )
+    parser.add_argument(
         "--pocket",
         dest="pocket_only",
         action="store_true",
         help="Only fetch Pocket data (skip TCG cards and Pokemon metadata).",
+    )
+    parser.add_argument(
+        "--japanese",
+        dest="japanese_only",
+        action="store_true",
+        help="Only fetch Japanese TCG data from TCGdex.",
     )
     parser.add_argument(
         "--force",
@@ -925,7 +1146,7 @@ def main():
         "--fail-on-partial",
         dest="fail_on_partial",
         action="store_true",
-        help="Exit with status 1 if any API step skipped data (TCG sets, PokeAPI species, Pocket). For CI.",
+        help="Exit with status 1 if any API step skipped data (TCG sets, PokeAPI species, Pocket, Japanese). For CI.",
     )
     args = parser.parse_args()
     if args.normalize_only:
@@ -944,7 +1165,9 @@ def main():
         skip_pokemon=args.skip_pokemon,
         skip_pocket=args.skip_pocket,
         skip_tcg=args.skip_tcg,
+        skip_japanese=args.skip_japanese,
         pocket_only=args.pocket_only,
+        japanese_only=args.japanese_only,
         force=args.force,
     )
 
@@ -954,7 +1177,9 @@ def main():
             f"TCG sets: {summary.tcg_set_fetch_failures}, "
             f"PokeAPI species: {summary.pokemon_species_fetch_failures}, "
             f"Pocket sets: {summary.pocket_set_fetch_failures}, "
-            f"Pocket cards: {summary.pocket_card_fetch_failures}. "
+            f"Pocket cards: {summary.pocket_card_fetch_failures}, "
+            f"Japanese sets: {summary.japanese_set_fetch_failures}, "
+            f"Japanese cards: {summary.japanese_card_fetch_failures}. "
             "Exiting with status 1 (--fail-on-partial).",
             file=sys.stderr,
         )

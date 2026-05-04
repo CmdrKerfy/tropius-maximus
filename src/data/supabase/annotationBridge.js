@@ -172,6 +172,7 @@ export const ANNOTATION_ROW_INSERT_DEFAULTS = {
   trainer_card_subgroup: [],
   holiday_theme: [],
   multi_card: [],
+  camera_angle: [],
   video_type: [],
   video_region: [],
   video_location: [],

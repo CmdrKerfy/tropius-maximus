@@ -24,9 +24,9 @@
 ## Proposed approach (when picked up)
 
 1. **Inventory** — Grep for `unique_id` in `src/`, scripts, and JSON samples; list every read path (UI, export, search, pins).
-2. **UI** — Show **`cards.id`** (or one read-only “Card ID”) where “Unique ID” today binds to `unique_id`; avoid duplicate editable fields.
-3. **Writes** — Stop persisting redundant `unique_id` on save when it equals `cards.id`, or stop including it in payloads if the column can be nullable / deprecated later.
-4. **Data (optional)** — One-time SQL or script: set `unique_id` NULL where `unique_id = card_id` join, or leave as-is if column is kept for backward compatibility.
+2. **UI** — Show **`cards.id`** (or one read-only “Card ID”) where “Unique ID” today binds to `unique_id`; avoid duplicate editable fields. Stop displaying `unique_id` and stop trusting it in logic.
+3. **Writes** — Keep writing `unique_id` for backward compatibility until after cutover. Dropping writes while v1/DuckDB still exists creates silent data drift between branches. Defer write-path changes to post-cutover.
+4. **Data (optional)** — One-time SQL or script: set `unique_id` NULL where `unique_id = card_id` join, or leave as-is if column is kept for backward compatibility. Post-cutover only.
 5. **v1 / DuckDB** — If Pages + DuckDB remain in use, mirror the same “single source” rule or document that v1 is read-only for IDs.
 
 ---

@@ -29,6 +29,44 @@ function preferHttpsForOgImage(url) {
   return t;
 }
 
+function timeoutSignal(ms) {
+  if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+    return AbortSignal.timeout(ms);
+  }
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
+
+async function checkImageReachable(url) {
+  try {
+    let res = await fetch(url, { method: "HEAD", signal: timeoutSignal(3000) });
+    if (res.status === 405) {
+      res = await fetch(url, {
+        headers: { Range: "bytes=0-0" },
+        signal: timeoutSignal(3000),
+      });
+    }
+    if (!res.ok) return false;
+    const len = res.headers.get("content-length");
+    if (len && parseInt(len, 10) > 5_000_000) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pickMediaMetaImage(mediaMeta) {
+  if (!mediaMeta || typeof mediaMeta !== "object") return "";
+  const sizes = mediaMeta.sizes;
+  if (!sizes || typeof sizes !== "object") return "";
+  const candidates = [sizes.medium?.source_url, sizes.large?.source_url, sizes.full?.source_url];
+  for (const c of candidates) {
+    if (c && typeof c === "string" && c.trim().startsWith("http")) return c.trim();
+  }
+  return "";
+}
+
 function cacheHeaders(status) {
   if (status === 200) {
     return {
@@ -99,18 +137,25 @@ export default async function handler(req, res) {
   const title = escapeHtml(data.name || "Pokémon card");
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
-  // share_preview_image: from get_public_card_for_share (migrations 041+042); + legacy fallbacks.
-  const imgRaw = resolveShareImageUrl(data);
+  const mediaMetaImage = pickMediaMetaImage(data.media_meta);
+  const imgRaw = mediaMetaImage || resolveShareImageUrl(data);
   const rawStr = imgRaw == null ? "" : String(imgRaw).trim();
   // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
   const canUseForOg =
     rawStr && !rawStr.toLowerCase().startsWith("data:") && !rawStr.toLowerCase().startsWith("blob:");
-  const fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
+  let fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
+  if (fromCard) {
+    const reachable = await checkImageReachable(fromCard);
+    if (!reachable) {
+      console.warn("[share-og] image unreachable, falling back to placeholder", { cardId: data.id, url: fromCard });
+      fromCard = "";
+    }
+  }
   const ogImageRaw = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
   const ogImage = preferHttpsForOgImage(ogImageRaw);
   const usePlaceholder = !fromCard;
   if (usePlaceholder && data.id) {
-    console.warn("[share-og] placeholder og:image (no usable URL for scrapers)", {
+    console.warn("[share-og] placeholder og:image (no usable/reachable URL for scrapers)", {
       cardId: data.id,
       hasSharePreview: Boolean(data.share_preview_image),
       hasOverride: Boolean(data.image_override),
@@ -125,7 +170,7 @@ export default async function handler(req, res) {
   const imgAlt = escapeHtml(data.name || "Pokémon card");
   const ogImageDims = usePlaceholder
     ? `  <meta property="og:image:width" content="${OG_PLACEHOLDER_WIDTH}">\n  <meta property="og:image:height" content="${OG_PLACEHOLDER_HEIGHT}">\n`
-    : "";
+    : `  <meta property="og:image:width" content="734">\n  <meta property="og:image:height" content="1024">\n`;
   const imageSrcLink = `  <link rel="image_src" href="${escapeHtml(ogImage)}">\n`;
 
   const html = `<!DOCTYPE html>

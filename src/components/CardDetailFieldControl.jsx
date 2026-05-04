@@ -501,12 +501,11 @@ export default function CardDetailFieldControl({
       return (
         <div>
           <FormFieldLabel>Camera angle</FormFieldLabel>
-          <ComboBox
-            value={annValue("camera_angle")}
+          <MultiComboBox
+            value={annValue("camera_angle", true)}
             onChange={(v) => saveAnnotation("camera_angle", v)}
             options={optArr(opts.cameraAngle)}
             placeholder="Aerial, Upside Down, etc."
-            className={inputClass + " w-full"}
           />
         </div>
       );

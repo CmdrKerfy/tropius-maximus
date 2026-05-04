@@ -55,6 +55,12 @@ export async function fetchCard(id, source = "TCG") {
     : duck.fetchCard(id, source);
 }
 
+export async function fetchCardRawData(id) {
+  return useSupabaseBackend()
+    ? (await sb()).fetchCardRawData(id)
+    : {};
+}
+
 /** Public share page — one card via RPC; no auth session required. */
 export async function fetchPublicCardForShare(cardId) {
   if (!useSupabaseBackend()) return null;

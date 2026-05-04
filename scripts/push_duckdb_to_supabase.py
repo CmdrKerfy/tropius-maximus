@@ -262,6 +262,61 @@ def push_pocket_cards(conn, sb, now_iso: str) -> int:
     return batch_upsert(sb, "cards", rows_out)
 
 
+def push_japanese_cards(conn, sb, now_iso: str) -> int:
+    sql = """
+        SELECT * FROM japanese_cards
+        WHERE COALESCE(is_custom, FALSE) = FALSE
+    """
+    rows_out = []
+    for c in fetch_dicts(conn, sql):
+        num = c.get("number")
+        num_str = str(int(num)) if num is not None else None
+        ill = c.get("illustrator") or None
+        rows_out.append(
+            {
+                "id": c["id"],
+                "name": c.get("name") or "Unknown",
+                "card_type": c.get("card_type") or None,
+                "rarity": c.get("rarity") or None,
+                "artist": ill,
+                "illustrator": ill,
+                "set_id": c.get("set_id") or None,
+                "number": num_str,
+                "element": c.get("element") or None,
+                "hp": str(c["hp"]) if c.get("hp") is not None else None,
+                "stage": c.get("stage") or None,
+                "retreat_cost": coerce_int(c.get("retreat_cost")),
+                "weakness": c.get("weakness") or None,
+                "evolves_from": c.get("evolves_from") or None,
+                "image_small": c.get("image_url") or None,
+                "image_large": c.get("image_url") or None,
+                "raw_data": parse_json_col(c.get("raw_data"), {}) or {},
+                "origin": "tcgdex",
+                "origin_detail": "japanese",
+                "format": "printed",
+                "last_seen_in_api": now_iso,
+            }
+        )
+    return batch_upsert(sb, "cards", rows_out)
+
+
+def push_japanese_sets(conn, sb) -> int:
+    rows = []
+    for s in fetch_dicts(conn, "SELECT * FROM japanese_sets"):
+        rows.append(
+            {
+                "id": s["id"],
+                "name": s.get("name") or s["id"],
+                "series": s.get("series") or None,
+                "release_date": clean_date(s.get("release_date")),
+                "card_count": coerce_int(s.get("card_count")),
+                "logo_url": s.get("logo_url") or None,
+                "origin": "tcgdex",
+            }
+        )
+    return batch_upsert(sb, "sets", rows)
+
+
 def main() -> None:
     duck_path = DEFAULT_DUCKDB
     if "--duckdb" in sys.argv:
@@ -297,6 +352,9 @@ def main() -> None:
         print(f"  sets (TCG): {n_tcg_sets} rows")
         print(f"  sets (Pocket): {n_pocket_sets} rows")
 
+        n_japanese_sets = push_japanese_sets(conn, sb)
+        print(f"  sets (Japanese): {n_japanese_sets} rows")
+
         n_meta = push_pokemon_metadata(conn, sb)
         print(f"  pokemon_metadata: {n_meta} rows")
 
@@ -304,7 +362,10 @@ def main() -> None:
         print(f"  cards (pokemontcg.io): {n_tcg} rows")
 
         n_pocket = push_pocket_cards(conn, sb, now_iso)
-        print(f"  cards (tcgdex): {n_pocket} rows")
+        print(f"  cards (tcgdex Pocket): {n_pocket} rows")
+
+        n_japanese = push_japanese_cards(conn, sb, now_iso)
+        print(f"  cards (tcgdex Japanese): {n_japanese} rows")
     finally:
         conn.close()
 

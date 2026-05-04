@@ -1,0 +1,468 @@
+{
+  "summary": {
+    "preview_rows": 10813,
+    "missing_image_count": 0,
+    "missing_number_count": 0,
+    "invalid_row_count": 0,
+    "duplicate_record_id_count": 0,
+    "duplicate_wp_post_id_count": 0,
+    "duplicate_slug_count": 0,
+    "duplicate_number_set_lang_count": 965,
+    "html_entity_name_count": 0
+  },
+  "fetch_meta": {
+    "x_wp_total": "10813",
+    "x_wp_totalpages": "109",
+    "fetched_count": 10813,
+    "requested_limit": null,
+    "per_page": 100,
+    "modified_after": null
+  },
+  "top_distributions": {
+    "languages": [
+      {
+        "value": "English",
+        "count": 4034
+      },
+      {
+        "value": "Japanese",
+        "count": 3052
+      },
+      {
+        "value": "Korean",
+        "count": 997
+      },
+      {
+        "value": "Indonesian",
+        "count": 822
+      },
+      {
+        "value": "Simplified Chinese",
+        "count": 711
+      },
+      {
+        "value": "Chinese",
+        "count": 598
+      },
+      {
+        "value": "Thai",
+        "count": 490
+      },
+      {
+        "value": "German",
+        "count": 37
+      },
+      {
+        "value": "French",
+        "count": 31
+      },
+      {
+        "value": "Italian",
+        "count": 28
+      },
+      {
+        "value": "Spanish",
+        "count": 14
+      },
+      {
+        "value": "Portuguese",
+        "count": 10
+      }
+    ],
+    "promo_sets": [
+      {
+        "value": "Special Print",
+        "count": 2019
+      },
+      {
+        "value": "SV-P",
+        "count": 1643
+      },
+      {
+        "value": "S-P",
+        "count": 1568
+      },
+      {
+        "value": "SM-P",
+        "count": 1187
+      },
+      {
+        "value": "XY-P",
+        "count": 695
+      },
+      {
+        "value": "Unnumbered",
+        "count": 463
+      },
+      {
+        "value": "SWSH",
+        "count": 360
+      },
+      {
+        "value": "SM",
+        "count": 336
+      },
+      {
+        "value": "SVP",
+        "count": 311
+      },
+      {
+        "value": "BW-P",
+        "count": 292
+      },
+      {
+        "value": "XY",
+        "count": 254
+      },
+      {
+        "value": "BW",
+        "count": 227
+      }
+    ],
+    "holofoil": [
+      {
+        "value": "Non-holo",
+        "count": 4766
+      },
+      {
+        "value": "Mirror",
+        "count": 2255
+      },
+      {
+        "value": "Cosmos",
+        "count": 1224
+      },
+      {
+        "value": "Reverse",
+        "count": 1082
+      },
+      {
+        "value": "Ripple",
+        "count": 756
+      },
+      {
+        "value": "Textured",
+        "count": 443
+      },
+      {
+        "value": "Line",
+        "count": 311
+      },
+      {
+        "value": "Sparkle",
+        "count": 262
+      },
+      {
+        "value": "Crosshatch",
+        "count": 231
+      },
+      {
+        "value": "Cracked Ice",
+        "count": 191
+      },
+      {
+        "value": "Pokeball",
+        "count": 73
+      },
+      {
+        "value": "Master Ball",
+        "count": 65
+      }
+    ],
+    "artists": [
+      {
+        "value": "5ban Graphics",
+        "count": 1192
+      },
+      {
+        "value": "None",
+        "count": 600
+      },
+      {
+        "value": "Ken Sugimori",
+        "count": 484
+      },
+      {
+        "value": "Kouki Saitou",
+        "count": 358
+      },
+      {
+        "value": "Mitsuhiro Arita",
+        "count": 303
+      },
+      {
+        "value": "Naoki Saito",
+        "count": 300
+      },
+      {
+        "value": "Kagemaru Himeno",
+        "count": 266
+      },
+      {
+        "value": "Masakazu Fukuda",
+        "count": 231
+      },
+      {
+        "value": "Ryo Ueda",
+        "count": 220
+      },
+      {
+        "value": "Toyste Beach",
+        "count": 210
+      },
+      {
+        "value": "Shin Nagasawa",
+        "count": 201
+      },
+      {
+        "value": "Atsuko Nishida",
+        "count": 167
+      },
+      {
+        "value": "Sanosuke Sakuma",
+        "count": 166
+      },
+      {
+        "value": "Akira Komayama",
+        "count": 137
+      },
+      {
+        "value": "Sumiyoshi Kizuki",
+        "count": 130
+      },
+      {
+        "value": "kirisAki",
+        "count": 126
+      },
+      {
+        "value": "PLANETA Mochizuki",
+        "count": 119
+      },
+      {
+        "value": "Studio Bora Inc.",
+        "count": 104
+      },
+      {
+        "value": "Midori Harada",
+        "count": 104
+      },
+      {
+        "value": "Hitoshi Ariga",
+        "count": 100
+      }
+    ]
+  },
+  "duplicates": {
+    "record_ids": [],
+    "wp_post_ids": [],
+    "slugs": [],
+    "number_set_lang": [
+      "200/SV-P::SV-P::Simplified Chinese",
+      "199/SV-P::SV-P::Simplified Chinese",
+      "198/SV-P::SV-P::Simplified Chinese",
+      "197/SV-P::SV-P::Simplified Chinese",
+      "196/SV-P::SV-P::Simplified Chinese",
+      "195/SV-P::SV-P::Simplified Chinese",
+      "194/SV-P::SV-P::Simplified Chinese",
+      "193/SV-P::SV-P::Simplified Chinese",
+      "191/SV-P::SV-P::Simplified Chinese",
+      "190/SV-P::SV-P::Simplified Chinese",
+      "189/SV-P::SV-P::Simplified Chinese",
+      "188/SV-P::SV-P::Simplified Chinese",
+      "187/SV-P::SV-P::Simplified Chinese",
+      "186/SV-P::SV-P::Simplified Chinese",
+      "185/SV-P::SV-P::Simplified Chinese",
+      "184/SV-P::SV-P::Simplified Chinese",
+      "183/SV-P::SV-P::Simplified Chinese",
+      "180/SV-P::SV-P::Simplified Chinese",
+      "179/SV-P::SV-P::Simplified Chinese",
+      "178/SV-P::SV-P::Simplified Chinese",
+      "176/SV-P::SV-P::Simplified Chinese",
+      "175/SV-P::SV-P::Simplified Chinese",
+      "173/SV-P::SV-P::Simplified Chinese",
+      "172/SV-P::SV-P::Simplified Chinese",
+      "171/SV-P::SV-P::Simplified Chinese",
+      "155/SV-P::SV-P::Simplified Chinese",
+      "154/SV-P::SV-P::Simplified Chinese",
+      "153/SV-P::SV-P::Simplified Chinese",
+      "152/SV-P::SV-P::Simplified Chinese",
+      "151/SV-P::SV-P::Simplified Chinese",
+      "150/SV-P::SV-P::Simplified Chinese",
+      "145/SV-P::SV-P::Simplified Chinese",
+      "144/SV-P::SV-P::Simplified Chinese",
+      "143/SV-P::SV-P::Simplified Chinese",
+      "142/SV-P::SV-P::Simplified Chinese",
+      "141/SV-P::SV-P::Simplified Chinese",
+      "140/SV-P::SV-P::Simplified Chinese",
+      "139/SV-P::SV-P::Simplified Chinese",
+      "138/SV-P::SV-P::Simplified Chinese",
+      "137/SV-P::SV-P::Simplified Chinese",
+      "136/SV-P::SV-P::Simplified Chinese",
+      "135/SV-P::SV-P::Simplified Chinese",
+      "134/SV-P::SV-P::Simplified Chinese",
+      "133/SV-P::SV-P::Simplified Chinese",
+      "132/SV-P::SV-P::Simplified Chinese",
+      "131/SV-P::SV-P::Simplified Chinese",
+      "130/SV-P::SV-P::Simplified Chinese",
+      "129/SV-P::SV-P::Simplified Chinese",
+      "127/SV-P::SV-P::Simplified Chinese",
+      "126/SV-P::SV-P::Simplified Chinese",
+      "076/S-P::S-P::Simplified Chinese",
+      "075/S-P::S-P::Simplified Chinese",
+      "074/S-P::S-P::Simplified Chinese",
+      "073/S-P::S-P::Simplified Chinese",
+      "072/S-P::S-P::Simplified Chinese",
+      "071/S-P::S-P::Simplified Chinese",
+      "070/S-P::S-P::Simplified Chinese",
+      "069/S-P::S-P::Simplified Chinese",
+      "068/S-P::S-P::Simplified Chinese",
+      "067/S-P::S-P::Simplified Chinese",
+      "066/S-P::S-P::Simplified Chinese",
+      "038/S-P::S-P::Simplified Chinese",
+      "037/S-P::S-P::Simplified Chinese",
+      "036/S-P::S-P::Simplified Chinese",
+      "035/S-P::S-P::Simplified Chinese",
+      "034/S-P::S-P::Simplified Chinese",
+      "033/S-P::S-P::Simplified Chinese",
+      "032/S-P::S-P::Simplified Chinese",
+      "031/S-P::S-P::Simplified Chinese",
+      "030/S-P::S-P::Simplified Chinese",
+      "029/S-P::S-P::Simplified Chinese",
+      "028/S-P::S-P::Simplified Chinese",
+      "047/SM-P::SM-P::Simplified Chinese",
+      "046/SM-P::SM-P::Simplified Chinese",
+      "045/SM-P::SM-P::Simplified Chinese",
+      "044/SM-P::SM-P::Simplified Chinese",
+      "043/SM-P::SM-P::Simplified Chinese",
+      "042/SM-P::SM-P::Simplified Chinese",
+      "041/SM-P::SM-P::Simplified Chinese",
+      "040/SM-P::SM-P::Simplified Chinese",
+      "039/SM-P::SM-P::Simplified Chinese",
+      "038/SM-P::SM-P::Simplified Chinese",
+      "037/SM-P::SM-P::Simplified Chinese",
+      "220/SV-P::SV-P::Thai",
+      "009/XY-P::XY-P::Korean",
+      "230/SV-P::SV-P::Chinese",
+      "186/SV-P::SV-P::Chinese",
+      "107/SV-P::SV-P::Chinese",
+      "098/SV-P::SV-P::Chinese",
+      "066/SV-P::SV-P::Chinese",
+      "056/SV-P::SV-P::Chinese",
+      "039/SV-P::SV-P::Chinese",
+      "037/SV-P::SV-P::Chinese",
+      "027/SV-P::SV-P::Chinese",
+      "229/S-P::S-P::Chinese",
+      "215/S-P::S-P::Chinese",
+      "214/S-P::S-P::Chinese",
+      "127/S-P::S-P::Chinese",
+      "101/S-P::S-P::Chinese",
+      "100/S-P::S-P::Chinese",
+      "249/SV-P::SV-P::Indonesian",
+      "223/SV-P::SV-P::Indonesian",
+      "125/SV-P::SV-P::Indonesian",
+      "124/SV-P::SV-P::Indonesian",
+      "123/SV-P::SV-P::Indonesian",
+      "122/SV-P::SV-P::Indonesian",
+      "121/SV-P::SV-P::Indonesian",
+      "120/SV-P::SV-P::Indonesian",
+      "119/SV-P::SV-P::Indonesian",
+      "118/SV-P::SV-P::Indonesian",
+      "117/SV-P::SV-P::Indonesian",
+      "116/SV-P::SV-P::Indonesian",
+      "115/SV-P::SV-P::Indonesian",
+      "114/SV-P::SV-P::Indonesian",
+      "9/Best::Best of Game::English",
+      "8/Best::Best of Game::English",
+      "7/Best::Best of Game::English",
+      "6/Best::Best of Game::English",
+      "5/Best::Best of Game::English",
+      "4/Best::Best of Game::English",
+      "2/Best::Best of Game::English",
+      "1/Best::Best of Game::English",
+      "036/Nintendo::Nintendo Black Star::English",
+      "035/Nintendo::Nintendo Black Star::English",
+      "027/Nintendo::Nintendo Black Star::English",
+      "026/Nintendo::Nintendo Black Star::English",
+      "025/Nintendo::Nintendo Black Star::English",
+      "024/Nintendo::Nintendo Black Star::English",
+      "019/Nintendo::Nintendo Black Star::English",
+      "022/Nintendo::Nintendo Black Star::English",
+      "018/Nintendo::Nintendo Black Star::English",
+      "012/Nintendo::Nintendo Black Star::English",
+      "017/Nintendo::Nintendo Black Star::English",
+      "016/Nintendo::Nintendo Black Star::English",
+      "011/Nintendo::Nintendo Black Star::English",
+      "009/Nintendo::Nintendo Black Star::English",
+      "004/Nintendo::Nintendo Black Star::English",
+      "002/Nintendo::Nintendo Black Star::English",
+      "001/Nintendo::Nintendo Black Star::English",
+      "52/Wizards::Wizards Black Star::English",
+      "51/Wizards::Wizards Black Star::English",
+      "24/Wizards::Wizards Black Star::English",
+      "23/Wizards::Wizards Black Star::English",
+      "22/Wizards::Wizards Black Star::English",
+      "21/Wizards::Wizards Black Star::English",
+      "17/Wizards::Wizards Black Star::English",
+      "3/Wizards::Wizards Black Star::English",
+      "5/Wizards::Wizards Black Star::English",
+      "4/Wizards::Wizards Black Star::English",
+      "2/Wizards::Wizards Black Star::English",
+      "1/Wizards::Wizards Black Star::English",
+      "Movie::Movie Commemoration Random Pack::Japanese",
+      "243/S-P::S-P::Japanese",
+      "218/XY-P::XY-P::Japanese",
+      "175/XY-P::XY-P::Japanese",
+      "148/XY-P::XY-P::Japanese",
+      "065/XY-P::XY-P::Japanese",
+      "064/XY-P::XY-P::Japanese",
+      "055/XY-P::XY-P::Japanese",
+      "036/XY-P::XY-P::Japanese",
+      "035/XY-P::XY-P::Japanese",
+      "019/XY-P::XY-P::Japanese",
+      "013/XY-P::XY-P::Japanese",
+      "012/XY-P::XY-P::Japanese",
+      "011/XY-P::XY-P::Japanese",
+      "028/L-P::L-P::Japanese",
+      "Movie::DPt-P::Japanese",
+      "Galactic::DPt-P::Japanese",
+      "Frontier::DPt-P::Japanese",
+      "Gym::DPt-P::Japanese",
+      "130/PCG-P::PCG-P::Japanese",
+      "113/PCG-P::PCG-P::Japanese",
+      "008::Special Print::English",
+      "007::Special Print::English",
+      "006::Special Print::English",
+      "005::Special Print::English",
+      "004::Special Print::English",
+      "003::Special Print::English",
+      "002::Special Print::English",
+      "001::Special Print::English",
+      "192/193::Special Print::English",
+      "191/193::Special Print::English",
+      "190/193::Special Print::English",
+      "189/193::Special Print::English",
+      "188/193::Special Print::English",
+      "185/193::Special Print::English",
+      "173/193::Special Print::English",
+      "172/193::Special Print::English",
+      "171/193::Special Print::English",
+      "096/198::Special Print::English",
+      "153/195::Special Print::English",
+      "196/198::Special Print::English",
+      "194/198::Special Print::English",
+      "191/198::Special Print::English",
+      "190/198::Special Print::English",
+      "189/198::Special Print::English",
+      "181/198::Special Print::English",
+      "175/198::Special Print::English",
+      "170/198::Special Print::English",
+      "167/198::Special Print::English"
+    ]
+  },
+  "quality_flags": {
+    "rows_with_html_entities_in_name": [],
+    "rows_missing_image": [],
+    "rows_missing_number": [],
+    "invalid_rows": []
+  }
+}

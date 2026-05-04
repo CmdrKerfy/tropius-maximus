@@ -49,6 +49,48 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-05-02 — Camera angle multi-select confirmed + Phase 6 added
+
+- Owner confirmed: camera_angle should be multi-select (multiple values per card), not a duplicates issue.
+- Updated plan `docs/plans/workbench-performance-save-reliability.md`:
+  - Replaced "Deferred — camera angle clarification" with full **Phase 6** implementation spec.
+  - Phase 6 covers: migration `044` (TEXT → JSONB[] + backfill + RPC update), 7 app files touched, verification steps, rollback plan.
+  - Updated scope summary, files table, and handoff state.
+- Camera angle changes touch: `appAdapter.js` (4 constant-set edits), `annotationBridge.js` (insert default), `CardDetail.jsx` (MULTI_VALUE_KEYS + MultiComboBox), `CardDetailFieldControl.jsx` (MultiComboBox), `CustomCardForm.jsx` (array state + MultiComboBox), `seed.sql` (field_type), plus the new migration `044`.
+- No code written yet.
+
+---
+
+### 2026-05-02 — Workbench perf + save reliability plan (pre-implementation)
+
+- Preflight sent and accepted:
+  - Model accepted: n/a (planning phase only — no code written yet)
+  - Token-feasibility declared: n/a (planning)
+  - Scope selected: n/a (planning)
+- Branch: `v2/supabase-migration`
+- Plan doc: `docs/plans/workbench-performance-save-reliability.md`
+- Scope in this slice:
+  - Analyzed four pieces of user feedback (slowness, save-reliability, camera-angle duplicates, First/Last nav).
+  - Reviewed uncommitted working-tree changes from a prior agent (91 lines across 3 files).
+  - Wrote 5-phase implementation plan.
+- Completed:
+  - Full codebase exploration (WorkbenchPage, AnnotationEditor, appAdapter, annotationBridge, save RPC, camera_angle handling).
+  - Plan doc written with per-phase file lists, code sketches, and verification steps.
+- Validation run:
+  - `npm run check:quick` (not run; no code changes in this session)
+  - Any manual QA: none
+- Migrations touched:
+  - None in this session.
+- Open risks or assumptions:
+  - Phase 3 (`patchAnnotations` return type change) must update ALL callers in one commit — CardDetail, AnnotationEditor, BatchWizard (if it calls patchAnnotations directly).
+  - Phase 4 per-card save queue uses an unbounded Map; acceptable for 3 users but worth noting.
+  - Camera angle multi-select vs duplicates — deferred pending user clarification.
+- **Uncommitted changes in working tree** (3 files, 91 lines): First/Last buttons, case-insensitive dedup, `syncReactQueryCardCaches`, debounced form-options invalidation, `staleTime` + `refetchOnWindowFocus` on workbenchCard query. These are Phase 0 — commit them first.
+- Next action (single first step):
+  - Run `npm run check:quick` to verify the uncommitted changes pass. Then `git add` the three modified files (`src/pages/WorkbenchPage.jsx`, `src/components/AnnotationEditor.jsx`, `src/data/supabase/appAdapter.js`) and commit them as Phase 0. Then begin Phase 1 (direct cache writes for navigation in `WorkbenchPage.jsx`).
+
+---
+
 ## Latest Entries
 
 ### 2026-04-23 01:50 (local) - Plan closeout confirmation

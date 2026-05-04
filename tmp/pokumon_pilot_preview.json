@@ -1,0 +1,4893 @@
+{
+  "generated_at_utc": "2026-04-24T08:13:13.687068+00:00",
+  "mode": "dry-run",
+  "source": "pokumon_wp_api",
+  "fetch_meta": {
+    "x_wp_total": "10813",
+    "x_wp_totalpages": "109",
+    "fetched_count": 100,
+    "requested_limit": 100,
+    "per_page": 100
+  },
+  "summary": {
+    "total_preview_rows": 100,
+    "missing_image_count": 0,
+    "missing_number_guess_count": 0
+  },
+  "rows": [
+    {
+      "record_id": "pokumon-101216",
+      "wp_post_id": 101216,
+      "name": "Larvitar",
+      "title_raw": "Larvitar (242/SV-P Simplified Chinese Promo)",
+      "detail_raw": "242/SV-P Simplified Chinese Promo",
+      "number_guess": "242/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "KYUPIYAMA"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Larvitar"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101217,
+        "mime_type": "image/png",
+        "width": 550,
+        "height": 766,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_242SV-P.png"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_242SV-P.png",
+      "source_link": "https://pokumon.com/card/larvitar-242-sv-p-simplified-chinese-promo/",
+      "slug": "larvitar-242-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:31"
+    },
+    {
+      "record_id": "pokumon-101215",
+      "wp_post_id": 101215,
+      "name": "Professor Turo\u2019s Scenario",
+      "title_raw": "Professor Turo\u2019s Scenario (240/SV-P Simplified Chinese Promo)",
+      "detail_raw": "240/SV-P Simplified Chinese Promo",
+      "number_guess": "240/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "hncl"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Professor Turo's Scenario"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101556,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_240SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_240SV-P.jpg",
+      "source_link": "https://pokumon.com/card/professor-turos-scenario-240-sv-p-simplified-chinese-promo/",
+      "slug": "professor-turos-scenario-240-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:31"
+    },
+    {
+      "record_id": "pokumon-101214",
+      "wp_post_id": 101214,
+      "name": "Carmine",
+      "title_raw": "Carmine (239/SV-P Simplified Chinese Promo)",
+      "detail_raw": "239/SV-P Simplified Chinese Promo",
+      "number_guess": "239/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "kantaro"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Carmine"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101555,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_239SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_239SV-P.jpg",
+      "source_link": "https://pokumon.com/card/carmine-239-sv-p-simplified-chinese-promo/",
+      "slug": "carmine-239-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:31"
+    },
+    {
+      "record_id": "pokumon-101213",
+      "wp_post_id": 101213,
+      "name": "Professor Sada\u2019s Vitality",
+      "title_raw": "Professor Sada\u2019s Vitality (238/SV-P Simplified Chinese Promo)",
+      "detail_raw": "238/SV-P Simplified Chinese Promo",
+      "number_guess": "238/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Megumi Mizutani"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Ancient",
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Professor Sada's Vitality"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101554,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_238SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_238SV-P.jpg",
+      "source_link": "https://pokumon.com/card/professor-sadas-vitality-238-sv-p-simplified-chinese-promo/",
+      "slug": "professor-sadas-vitality-238-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:31"
+    },
+    {
+      "record_id": "pokumon-101212",
+      "wp_post_id": 101212,
+      "name": "Pok\u00e9mon Catcher",
+      "title_raw": "Pok\u00e9mon Catcher (237/SV-P Simplified Chinese Promo)",
+      "detail_raw": "237/SV-P Simplified Chinese Promo",
+      "number_guess": "237/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Studio Bora Inc."
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Pok\u00e9mon Catcher"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101553,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_237SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_237SV-P.jpg",
+      "source_link": "https://pokumon.com/card/pokemon-catcher-237-sv-p-simplified-chinese-promo/",
+      "slug": "pokemon-catcher-237-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:30"
+    },
+    {
+      "record_id": "pokumon-101211",
+      "wp_post_id": 101211,
+      "name": "Superior Energy Retrieval",
+      "title_raw": "Superior Energy Retrieval (236/SV-P Simplified Chinese Promo)",
+      "detail_raw": "236/SV-P Simplified Chinese Promo",
+      "number_guess": "236/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Studio Bora Inc."
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Superior Energy Retrieval"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101552,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_236SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_236SV-P.jpg",
+      "source_link": "https://pokumon.com/card/superior-energy-retrieval-236-sv-p-simplified-chinese-promo/",
+      "slug": "superior-energy-retrieval-236-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:30"
+    },
+    {
+      "record_id": "pokumon-101210",
+      "wp_post_id": 101210,
+      "name": "Energy Retrieval",
+      "title_raw": "Energy Retrieval (235/SV-P Simplified Chinese Promo)",
+      "detail_raw": "235/SV-P Simplified Chinese Promo",
+      "number_guess": "235/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Studio Bora Inc."
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Energy Retrieval"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101551,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_235SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_235SV-P.jpg",
+      "source_link": "https://pokumon.com/card/energy-retrieval-235-sv-p-simplified-chinese-promo/",
+      "slug": "energy-retrieval-235-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:30"
+    },
+    {
+      "record_id": "pokumon-101209",
+      "wp_post_id": 101209,
+      "name": "Kilowattrel ex",
+      "title_raw": "Kilowattrel ex (234/SV-P Simplified Chinese Promo)",
+      "detail_raw": "234/SV-P Simplified Chinese Promo",
+      "number_guess": "234/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "PLANETA Yamashita"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Lightning"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Kilowattrel"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101550,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_234SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_234SV-P.jpg",
+      "source_link": "https://pokumon.com/card/kilowattrel-ex-234-sv-p-simplified-chinese-promo/",
+      "slug": "kilowattrel-ex-234-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:30"
+    },
+    {
+      "record_id": "pokumon-101208",
+      "wp_post_id": 101208,
+      "name": "Wattrel",
+      "title_raw": "Wattrel (233/SV-P Simplified Chinese Promo)",
+      "detail_raw": "233/SV-P Simplified Chinese Promo",
+      "number_guess": "233/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Teeziro"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Lightning"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Wattrel"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101549,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_233SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_233SV-P.jpg",
+      "source_link": "https://pokumon.com/card/wattrel-233-sv-p-simplified-chinese-promo/",
+      "slug": "wattrel-233-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:30",
+      "raw_modified_gmt": "2026-03-30T03:56:30"
+    },
+    {
+      "record_id": "pokumon-101207",
+      "wp_post_id": 101207,
+      "name": "Iron Bundle",
+      "title_raw": "Iron Bundle (232/SV-P Simplified Chinese Promo)",
+      "detail_raw": "232/SV-P Simplified Chinese Promo",
+      "number_guess": "232/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Oswaldo KATO"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Iron Bundle"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101548,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_232SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_232SV-P.jpg",
+      "source_link": "https://pokumon.com/card/iron-bundle-232-sv-p-simplified-chinese-promo/",
+      "slug": "iron-bundle-232-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:28"
+    },
+    {
+      "record_id": "pokumon-101206",
+      "wp_post_id": 101206,
+      "name": "Rare Candy",
+      "title_raw": "Rare Candy (231/SV-P Simplified Chinese Promo)",
+      "detail_raw": "231/SV-P Simplified Chinese Promo",
+      "number_guess": "231/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Studio Bora Inc."
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Rare Candy"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101547,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_231SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_231SV-P.jpg",
+      "source_link": "https://pokumon.com/card/rare-candy-231-sv-p-simplified-chinese-promo/",
+      "slug": "rare-candy-231-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:28"
+    },
+    {
+      "record_id": "pokumon-101205",
+      "wp_post_id": 101205,
+      "name": "Nest Ball",
+      "title_raw": "Nest Ball (230/SV-P Simplified Chinese Promo)",
+      "detail_raw": "230/SV-P Simplified Chinese Promo",
+      "number_guess": "230/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Toyste Beach"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Nest Ball"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101546,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_230SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_230SV-P.jpg",
+      "source_link": "https://pokumon.com/card/nest-ball-230-sv-p-simplified-chinese-promo/",
+      "slug": "nest-ball-230-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:27"
+    },
+    {
+      "record_id": "pokumon-101204",
+      "wp_post_id": 101204,
+      "name": "Miraidon",
+      "title_raw": "Miraidon (229/SV-P Simplified Chinese Promo)",
+      "detail_raw": "229/SV-P Simplified Chinese Promo",
+      "number_guess": "229/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GOSSAN"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Dragon"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Miraidon"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101545,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_229SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_229SV-P.jpg",
+      "source_link": "https://pokumon.com/card/miraidon-229-sv-p-simplified-chinese-promo/",
+      "slug": "miraidon-229-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:27"
+    },
+    {
+      "record_id": "pokumon-101203",
+      "wp_post_id": 101203,
+      "name": "Excadrill",
+      "title_raw": "Excadrill (228/SV-P Simplified Chinese Promo)",
+      "detail_raw": "228/SV-P Simplified Chinese Promo",
+      "number_guess": "228/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Bun Toujo"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Excadrill"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101544,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_228SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_228SV-P.jpg",
+      "source_link": "https://pokumon.com/card/excadrill-228-sv-p-simplified-chinese-promo/",
+      "slug": "excadrill-228-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:27"
+    },
+    {
+      "record_id": "pokumon-101202",
+      "wp_post_id": 101202,
+      "name": "Drilbur",
+      "title_raw": "Drilbur (227/SV-P Simplified Chinese Promo)",
+      "detail_raw": "227/SV-P Simplified Chinese Promo",
+      "number_guess": "227/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kariya"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Drilbur"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101543,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_227SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_227SV-P.jpg",
+      "source_link": "https://pokumon.com/card/drilbur-227-sv-p-simplified-chinese-promo/",
+      "slug": "drilbur-227-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:27"
+    },
+    {
+      "record_id": "pokumon-101201",
+      "wp_post_id": 101201,
+      "name": "Chimecho",
+      "title_raw": "Chimecho (226/SV-P Simplified Chinese Promo)",
+      "detail_raw": "226/SV-P Simplified Chinese Promo",
+      "number_guess": "226/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Mousho"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Chimecho"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101542,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_226SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_226SV-P.jpg",
+      "source_link": "https://pokumon.com/card/chimecho-226-sv-p-simplified-chinese-promo/",
+      "slug": "chimecho-226-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:27"
+    },
+    {
+      "record_id": "pokumon-101200",
+      "wp_post_id": 101200,
+      "name": "Iron Bundle",
+      "title_raw": "Iron Bundle (225/SV-P Simplified Chinese Promo)",
+      "detail_raw": "225/SV-P Simplified Chinese Promo",
+      "number_guess": "225/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "nagimiso"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Iron Bundle"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101541,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_225SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_225SV-P.jpg",
+      "source_link": "https://pokumon.com/card/iron-bundle-225-sv-p-simplified-chinese-promo/",
+      "slug": "iron-bundle-225-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:26"
+    },
+    {
+      "record_id": "pokumon-101199",
+      "wp_post_id": 101199,
+      "name": "Tsareena ex",
+      "title_raw": "Tsareena ex (224/SV-P Simplified Chinese Promo)",
+      "detail_raw": "224/SV-P Simplified Chinese Promo",
+      "number_guess": "224/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "5ban Graphics"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Tsareena"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101540,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_224SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_224SV-P.jpg",
+      "source_link": "https://pokumon.com/card/tsareena-ex-224-sv-p-simplified-chinese-promo/",
+      "slug": "tsareena-ex-224-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:26"
+    },
+    {
+      "record_id": "pokumon-101198",
+      "wp_post_id": 101198,
+      "name": "Iron Leaves ex",
+      "title_raw": "Iron Leaves ex (223/SV-P Simplified Chinese Promo)",
+      "detail_raw": "223/SV-P Simplified Chinese Promo",
+      "number_guess": "223/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "5ban Graphics"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Grass"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Iron Leaves"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101539,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_223SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_223SV-P.jpg",
+      "source_link": "https://pokumon.com/card/iron-leaves-ex-223-sv-p-simplified-chinese-promo/",
+      "slug": "iron-leaves-ex-223-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:26",
+      "raw_modified_gmt": "2026-03-30T03:56:26"
+    },
+    {
+      "record_id": "pokumon-101197",
+      "wp_post_id": 101197,
+      "name": "Tapu Bulu",
+      "title_raw": "Tapu Bulu (222/SV-P Simplified Chinese Promo)",
+      "detail_raw": "222/SV-P Simplified Chinese Promo",
+      "number_guess": "222/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GOSSAN"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Grass"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Tapu Bulu"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101538,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_222SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_222SV-P.jpg",
+      "source_link": "https://pokumon.com/card/tapu-bulu-222-sv-p-simplified-chinese-promo/",
+      "slug": "tapu-bulu-222-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:24"
+    },
+    {
+      "record_id": "pokumon-101196",
+      "wp_post_id": 101196,
+      "name": "Steenee",
+      "title_raw": "Steenee (221/SV-P Simplified Chinese Promo)",
+      "detail_raw": "221/SV-P Simplified Chinese Promo",
+      "number_guess": "221/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kariya"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Grass"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Steenee"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101537,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_221SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_221SV-P.jpg",
+      "source_link": "https://pokumon.com/card/steenee-221-sv-p-simplified-chinese-promo/",
+      "slug": "steenee-221-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:24"
+    },
+    {
+      "record_id": "pokumon-101195",
+      "wp_post_id": 101195,
+      "name": "Bounsweet",
+      "title_raw": "Bounsweet (220/SV-P Simplified Chinese Promo)",
+      "detail_raw": "220/SV-P Simplified Chinese Promo",
+      "number_guess": "220/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kouki Saitou"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Grass"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bounsweet"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101536,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_220SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_220SV-P.jpg",
+      "source_link": "https://pokumon.com/card/bounsweet-220-sv-p-simplified-chinese-promo/",
+      "slug": "bounsweet-220-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:24"
+    },
+    {
+      "record_id": "pokumon-101194",
+      "wp_post_id": 101194,
+      "name": "Boss\u2019s Orders",
+      "title_raw": "Boss\u2019s Orders (219/SV-P Simplified Chinese Promo)",
+      "detail_raw": "219/SV-P Simplified Chinese Promo",
+      "number_guess": "219/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "NC Empire"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Boss's Orders"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101535,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_219SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_219SV-P.jpg",
+      "source_link": "https://pokumon.com/card/bosss-orders-219-sv-p-simplified-chinese-promo/",
+      "slug": "bosss-orders-219-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:23"
+    },
+    {
+      "record_id": "pokumon-101193",
+      "wp_post_id": 101193,
+      "name": "Arven",
+      "title_raw": "Arven (218/SV-P Simplified Chinese Promo)",
+      "detail_raw": "218/SV-P Simplified Chinese Promo",
+      "number_guess": "218/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GIDORA"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Arven"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101534,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_218SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_218SV-P.jpg",
+      "source_link": "https://pokumon.com/card/arven-218-sv-p-simplified-chinese-promo/",
+      "slug": "arven-218-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:23"
+    },
+    {
+      "record_id": "pokumon-101192",
+      "wp_post_id": 101192,
+      "name": "Ultra Ball",
+      "title_raw": "Ultra Ball (217/SV-P Simplified Chinese Promo)",
+      "detail_raw": "217/SV-P Simplified Chinese Promo",
+      "number_guess": "217/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Ayaka Yoshida"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Ultra Ball"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101533,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_217SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_217SV-P.jpg",
+      "source_link": "https://pokumon.com/card/ultra-ball-217-sv-p-simplified-chinese-promo/",
+      "slug": "ultra-ball-217-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:23"
+    },
+    {
+      "record_id": "pokumon-101191",
+      "wp_post_id": 101191,
+      "name": "Nest Ball",
+      "title_raw": "Nest Ball (216/SV-P Simplified Chinese Promo)",
+      "detail_raw": "216/SV-P Simplified Chinese Promo",
+      "number_guess": "216/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Toyste Beach"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Nest Ball"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101532,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_216SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_216SV-P.jpg",
+      "source_link": "https://pokumon.com/card/nest-ball-216-sv-p-simplified-chinese-promo/",
+      "slug": "nest-ball-216-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:23"
+    },
+    {
+      "record_id": "pokumon-101190",
+      "wp_post_id": 101190,
+      "name": "Jirachi",
+      "title_raw": "Jirachi (215/SV-P Simplified Chinese Promo)",
+      "detail_raw": "215/SV-P Simplified Chinese Promo",
+      "number_guess": "215/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Naoyo Kimura"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Steel"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Jirachi"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101531,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_215SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_215SV-P.jpg",
+      "source_link": "https://pokumon.com/card/jirachi-215-sv-p-simplified-chinese-promo/",
+      "slug": "jirachi-215-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:23"
+    },
+    {
+      "record_id": "pokumon-101189",
+      "wp_post_id": 101189,
+      "name": "Gengar ex",
+      "title_raw": "Gengar ex (214/SV-P Simplified Chinese Promo)",
+      "detail_raw": "214/SV-P Simplified Chinese Promo",
+      "number_guess": "214/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Nisota Niso"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Dark"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Gengar"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101530,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_214SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_214SV-P.jpg",
+      "source_link": "https://pokumon.com/card/gengar-ex-214-sv-p-simplified-chinese-promo/",
+      "slug": "gengar-ex-214-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:22"
+    },
+    {
+      "record_id": "pokumon-101188",
+      "wp_post_id": 101188,
+      "name": "Haunter",
+      "title_raw": "Haunter (213/SV-P Simplified Chinese Promo)",
+      "detail_raw": "213/SV-P Simplified Chinese Promo",
+      "number_guess": "213/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "MAHOU"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Dark"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Haunter"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101529,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_213SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_213SV-P.jpg",
+      "source_link": "https://pokumon.com/card/haunter-213-sv-p-simplified-chinese-promo/",
+      "slug": "haunter-213-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:22",
+      "raw_modified_gmt": "2026-03-30T03:56:22"
+    },
+    {
+      "record_id": "pokumon-101187",
+      "wp_post_id": 101187,
+      "name": "Gastly",
+      "title_raw": "Gastly (212/SV-P Simplified Chinese Promo)",
+      "detail_raw": "212/SV-P Simplified Chinese Promo",
+      "number_guess": "212/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Fujimoto Gold"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Dark"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Gastly"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101528,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_212SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_212SV-P.jpg",
+      "source_link": "https://pokumon.com/card/gastly-212-sv-p-simplified-chinese-promo/",
+      "slug": "gastly-212-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:20"
+    },
+    {
+      "record_id": "pokumon-101186",
+      "wp_post_id": 101186,
+      "name": "Cleffa",
+      "title_raw": "Cleffa (211/SV-P Simplified Chinese Promo)",
+      "detail_raw": "211/SV-P Simplified Chinese Promo",
+      "number_guess": "211/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Mina Nakai"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Cleffa"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101527,
+        "mime_type": "image/jpeg",
+        "width": 867,
+        "height": 1206,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_211SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_211SV-P.jpg",
+      "source_link": "https://pokumon.com/card/cleffa-211-sv-p-simplified-chinese-promo/",
+      "slug": "cleffa-211-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:20"
+    },
+    {
+      "record_id": "pokumon-101185",
+      "wp_post_id": 101185,
+      "name": "Paldean Student",
+      "title_raw": "Paldean Student (210/SV-P Simplified Chinese Promo)",
+      "detail_raw": "210/SV-P Simplified Chinese Promo",
+      "number_guess": "210/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Naoki Saito"
+      ],
+      "holofoil": [
+        "Textured"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Full art"
+      ],
+      "cardname": [
+        "Paldean Student"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101526,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_210SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_210SV-P.jpg",
+      "source_link": "https://pokumon.com/card/paldean-student-210-sv-p-simplified-chinese-promo/",
+      "slug": "paldean-student-210-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:20"
+    },
+    {
+      "record_id": "pokumon-101184",
+      "wp_post_id": 101184,
+      "name": "Paldean Student",
+      "title_raw": "Paldean Student (209/SV-P Simplified Chinese Promo)",
+      "detail_raw": "209/SV-P Simplified Chinese Promo",
+      "number_guess": "209/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Cona Nitanda"
+      ],
+      "holofoil": [
+        "Textured"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Full art"
+      ],
+      "cardname": [
+        "Paldean Student"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101525,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_209SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_209SV-P.jpg",
+      "source_link": "https://pokumon.com/card/paldean-student-209-sv-p-simplified-chinese-promo/",
+      "slug": "paldean-student-209-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:19"
+    },
+    {
+      "record_id": "pokumon-101183",
+      "wp_post_id": 101183,
+      "name": "Penny",
+      "title_raw": "Penny (208/SV-P Simplified Chinese Promo)",
+      "detail_raw": "208/SV-P Simplified Chinese Promo",
+      "number_guess": "208/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "yuu"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Penny"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101524,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_208SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_208SV-P.jpg",
+      "source_link": "https://pokumon.com/card/penny-208-sv-p-simplified-chinese-promo/",
+      "slug": "penny-208-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:19"
+    },
+    {
+      "record_id": "pokumon-101182",
+      "wp_post_id": 101182,
+      "name": "Arven",
+      "title_raw": "Arven (207/SV-P Simplified Chinese Promo)",
+      "detail_raw": "207/SV-P Simplified Chinese Promo",
+      "number_guess": "207/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GIDORA"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Arven"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101523,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_207SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_207SV-P.jpg",
+      "source_link": "https://pokumon.com/card/arven-207-sv-p-simplified-chinese-promo/",
+      "slug": "arven-207-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:19"
+    },
+    {
+      "record_id": "pokumon-101181",
+      "wp_post_id": 101181,
+      "name": "Nemona",
+      "title_raw": "Nemona (206/SV-P Simplified Chinese Promo)",
+      "detail_raw": "206/SV-P Simplified Chinese Promo",
+      "number_guess": "206/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Sanosuke Sakuma"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Nemona"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101522,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_206SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_206SV-P.jpg",
+      "source_link": "https://pokumon.com/card/nemona-206-sv-p-simplified-chinese-promo/",
+      "slug": "nemona-206-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:19"
+    },
+    {
+      "record_id": "pokumon-101180",
+      "wp_post_id": 101180,
+      "name": "Iono",
+      "title_raw": "Iono (205/SV-P Simplified Chinese Promo)",
+      "detail_raw": "205/SV-P Simplified Chinese Promo",
+      "number_guess": "205/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Sanosuke Sakuma"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Iono"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101521,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_205SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_205SV-P.jpg",
+      "source_link": "https://pokumon.com/card/iono-205-sv-p-simplified-chinese-promo/",
+      "slug": "iono-205-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:19"
+    },
+    {
+      "record_id": "pokumon-101179",
+      "wp_post_id": 101179,
+      "name": "Rika",
+      "title_raw": "Rika (204/SV-P Simplified Chinese Promo)",
+      "detail_raw": "204/SV-P Simplified Chinese Promo",
+      "number_guess": "204/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GIDORA"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Rika"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101520,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_204SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_204SV-P.jpg",
+      "source_link": "https://pokumon.com/card/rika-204-sv-p-simplified-chinese-promo/",
+      "slug": "rika-204-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:18"
+    },
+    {
+      "record_id": "pokumon-101178",
+      "wp_post_id": 101178,
+      "name": "Brassius",
+      "title_raw": "Brassius (203/SV-P Simplified Chinese Promo)",
+      "detail_raw": "203/SV-P Simplified Chinese Promo",
+      "number_guess": "203/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GIDORA"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Brassius"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101519,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_203SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_203SV-P.jpg",
+      "source_link": "https://pokumon.com/card/brassius-203-sv-p-simplified-chinese-promo/",
+      "slug": "brassius-203-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:18",
+      "raw_modified_gmt": "2026-03-30T03:56:18"
+    },
+    {
+      "record_id": "pokumon-101177",
+      "wp_post_id": 101177,
+      "name": "Grusha",
+      "title_raw": "Grusha (202/SV-P Simplified Chinese Promo)",
+      "detail_raw": "202/SV-P Simplified Chinese Promo",
+      "number_guess": "202/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "GIDORA"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Grusha"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101518,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_202SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_202SV-P.jpg",
+      "source_link": "https://pokumon.com/card/grusha-202-sv-p-simplified-chinese-promo/",
+      "slug": "grusha-202-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:17"
+    },
+    {
+      "record_id": "pokumon-101176",
+      "wp_post_id": 101176,
+      "name": "Larry",
+      "title_raw": "Larry (201/SV-P Simplified Chinese Promo)",
+      "detail_raw": "201/SV-P Simplified Chinese Promo",
+      "number_guess": "201/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Akira Komayama"
+      ],
+      "holofoil": [
+        "Mirror",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [],
+      "cardname": [
+        "Larry"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101517,
+        "mime_type": "image/jpeg",
+        "width": 625,
+        "height": 863,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_201SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_201SV-P.jpg",
+      "source_link": "https://pokumon.com/card/larry-201-sv-p-simplified-chinese-promo/",
+      "slug": "larry-201-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:16"
+    },
+    {
+      "record_id": "pokumon-101175",
+      "wp_post_id": 101175,
+      "name": "Master Ball Holo Academy at Night",
+      "title_raw": "Master Ball Holo Academy at Night (200/SV-P Simplified Chinese Promo)",
+      "detail_raw": "200/SV-P Simplified Chinese Promo",
+      "number_guess": "200/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Academy at Night"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101514,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-academy-at-night-200-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-academy-at-night-200-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:16"
+    },
+    {
+      "record_id": "pokumon-101174",
+      "wp_post_id": 101174,
+      "name": "Poke Ball Holo Academy at Night",
+      "title_raw": "Poke Ball Holo Academy at Night (200/SV-P Simplified Chinese Promo)",
+      "detail_raw": "200/SV-P Simplified Chinese Promo",
+      "number_guess": "200/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Academy at Night"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101515,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-academy-at-night-200-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-academy-at-night-200-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:16"
+    },
+    {
+      "record_id": "pokumon-101173",
+      "wp_post_id": 101173,
+      "name": "Academy at Night",
+      "title_raw": "Academy at Night (200/SV-P Simplified Chinese Promo)",
+      "detail_raw": "200/SV-P Simplified Chinese Promo",
+      "number_guess": "200/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Academy at Night"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101516,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_200SV-P.jpg",
+      "source_link": "https://pokumon.com/card/academy-at-night-200-sv-p-simplified-chinese-promo/",
+      "slug": "academy-at-night-200-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:16"
+    },
+    {
+      "record_id": "pokumon-101172",
+      "wp_post_id": 101172,
+      "name": "Master Ball Holo Lana\u2019s Aid",
+      "title_raw": "Master Ball Holo Lana\u2019s Aid (199/SV-P Simplified Chinese Promo)",
+      "detail_raw": "199/SV-P Simplified Chinese Promo",
+      "number_guess": "199/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Atsushi Furusawa"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Lana's Aid"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101511,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-lanas-aid-199-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-lanas-aid-199-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:15"
+    },
+    {
+      "record_id": "pokumon-101171",
+      "wp_post_id": 101171,
+      "name": "Poke Ball Holo Lana\u2019s Aid",
+      "title_raw": "Poke Ball Holo Lana\u2019s Aid (199/SV-P Simplified Chinese Promo)",
+      "detail_raw": "199/SV-P Simplified Chinese Promo",
+      "number_guess": "199/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Atsushi Furusawa"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Lana's Aid"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101512,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-lanas-aid-199-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-lanas-aid-199-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:15"
+    },
+    {
+      "record_id": "pokumon-101170",
+      "wp_post_id": 101170,
+      "name": "Lana\u2019s Aid",
+      "title_raw": "Lana\u2019s Aid (199/SV-P Simplified Chinese Promo)",
+      "detail_raw": "199/SV-P Simplified Chinese Promo",
+      "number_guess": "199/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Atsushi Furusawa"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Lana's Aid"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101513,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_199SV-P.jpg",
+      "source_link": "https://pokumon.com/card/lanas-aid-199-sv-p-simplified-chinese-promo/",
+      "slug": "lanas-aid-199-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:15"
+    },
+    {
+      "record_id": "pokumon-101169",
+      "wp_post_id": 101169,
+      "name": "Master Ball Holo Ciphermaniac\u2019s Codebreaking",
+      "title_raw": "Master Ball Holo Ciphermaniac\u2019s Codebreaking (198/SV-P Simplified Chinese Promo)",
+      "detail_raw": "198/SV-P Simplified Chinese Promo",
+      "number_guess": "198/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Taira Akitsu"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Ciphermaniac's Codebreaking"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101508,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:15"
+    },
+    {
+      "record_id": "pokumon-101168",
+      "wp_post_id": 101168,
+      "name": "Poke Ball Holo Ciphermaniac\u2019s Codebreaking",
+      "title_raw": "Poke Ball Holo Ciphermaniac\u2019s Codebreaking (198/SV-P Simplified Chinese Promo)",
+      "detail_raw": "198/SV-P Simplified Chinese Promo",
+      "number_guess": "198/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Taira Akitsu"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Ciphermaniac's Codebreaking"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101509,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:15",
+      "raw_modified_gmt": "2026-03-30T03:56:15"
+    },
+    {
+      "record_id": "pokumon-101167",
+      "wp_post_id": 101167,
+      "name": "Ciphermaniac\u2019s Codebreaking",
+      "title_raw": "Ciphermaniac\u2019s Codebreaking (198/SV-P Simplified Chinese Promo)",
+      "detail_raw": "198/SV-P Simplified Chinese Promo",
+      "number_guess": "198/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Taira Akitsu"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Ciphermaniac's Codebreaking"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101510,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_198SV-P.jpg",
+      "source_link": "https://pokumon.com/card/ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo/",
+      "slug": "ciphermaniacs-codebreaking-198-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:13"
+    },
+    {
+      "record_id": "pokumon-101166",
+      "wp_post_id": 101166,
+      "name": "Master Ball Holo Rescue Board",
+      "title_raw": "Master Ball Holo Rescue Board (197/SV-P Simplified Chinese Promo)",
+      "detail_raw": "197/SV-P Simplified Chinese Promo",
+      "number_guess": "197/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Toyste Beach"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Rescue Board"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101505,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-rescue-board-197-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-rescue-board-197-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:13"
+    },
+    {
+      "record_id": "pokumon-101165",
+      "wp_post_id": 101165,
+      "name": "Poke Ball Holo Rescue Board",
+      "title_raw": "Poke Ball Holo Rescue Board (197/SV-P Simplified Chinese Promo)",
+      "detail_raw": "197/SV-P Simplified Chinese Promo",
+      "number_guess": "197/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Toyste Beach"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Rescue Board"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101506,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-rescue-board-197-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-rescue-board-197-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:12"
+    },
+    {
+      "record_id": "pokumon-101164",
+      "wp_post_id": 101164,
+      "name": "Rescue Board",
+      "title_raw": "Rescue Board (197/SV-P Simplified Chinese Promo)",
+      "detail_raw": "197/SV-P Simplified Chinese Promo",
+      "number_guess": "197/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Toyste Beach"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Rescue Board"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101507,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_197SV-P.jpg",
+      "source_link": "https://pokumon.com/card/rescue-board-197-sv-p-simplified-chinese-promo/",
+      "slug": "rescue-board-197-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:12"
+    },
+    {
+      "record_id": "pokumon-101163",
+      "wp_post_id": 101163,
+      "name": "Master Ball Holo Buddy-Buddy Poffin",
+      "title_raw": "Master Ball Holo Buddy-Buddy Poffin (196/SV-P Simplified Chinese Promo)",
+      "detail_raw": "196/SV-P Simplified Chinese Promo",
+      "number_guess": "196/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Buddy-Buddy Poffin"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101502,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-buddy-buddy-poffin-196-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-buddy-buddy-poffin-196-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:12"
+    },
+    {
+      "record_id": "pokumon-101162",
+      "wp_post_id": 101162,
+      "name": "Poke Ball Holo Buddy-Buddy Poffin",
+      "title_raw": "Poke Ball Holo Buddy-Buddy Poffin (196/SV-P Simplified Chinese Promo)",
+      "detail_raw": "196/SV-P Simplified Chinese Promo",
+      "number_guess": "196/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Buddy-Buddy Poffin"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101503,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-buddy-buddy-poffin-196-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-buddy-buddy-poffin-196-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:12"
+    },
+    {
+      "record_id": "pokumon-101161",
+      "wp_post_id": 101161,
+      "name": "Buddy-Buddy Poffin",
+      "title_raw": "Buddy-Buddy Poffin (196/SV-P Simplified Chinese Promo)",
+      "detail_raw": "196/SV-P Simplified Chinese Promo",
+      "number_guess": "196/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "AYUMI ODASHIMA"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Trainer"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Buddy-Buddy Poffin"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101504,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_196SV-P.jpg",
+      "source_link": "https://pokumon.com/card/buddy-buddy-poffin-196-sv-p-simplified-chinese-promo/",
+      "slug": "buddy-buddy-poffin-196-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:12"
+    },
+    {
+      "record_id": "pokumon-101160",
+      "wp_post_id": 101160,
+      "name": "Master Ball Holo Greedent",
+      "title_raw": "Master Ball Holo Greedent (195/SV-P Simplified Chinese Promo)",
+      "detail_raw": "195/SV-P Simplified Chinese Promo",
+      "number_guess": "195/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Jerky"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Greedent"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101499,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-greedent-195-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-greedent-195-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:11"
+    },
+    {
+      "record_id": "pokumon-101159",
+      "wp_post_id": 101159,
+      "name": "Poke Ball Holo Greedent",
+      "title_raw": "Poke Ball Holo Greedent (195/SV-P Simplified Chinese Promo)",
+      "detail_raw": "195/SV-P Simplified Chinese Promo",
+      "number_guess": "195/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Jerky"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Greedent"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101500,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-greedent-195-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-greedent-195-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:11"
+    },
+    {
+      "record_id": "pokumon-101158",
+      "wp_post_id": 101158,
+      "name": "Greedent",
+      "title_raw": "Greedent (195/SV-P Simplified Chinese Promo)",
+      "detail_raw": "195/SV-P Simplified Chinese Promo",
+      "number_guess": "195/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Jerky"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Greedent"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101501,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_195SV-P.jpg",
+      "source_link": "https://pokumon.com/card/greedent-195-sv-p-simplified-chinese-promo/",
+      "slug": "greedent-195-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:11",
+      "raw_modified_gmt": "2026-03-30T03:56:11"
+    },
+    {
+      "record_id": "pokumon-101157",
+      "wp_post_id": 101157,
+      "name": "Master Ball Holo Skwovet",
+      "title_raw": "Master Ball Holo Skwovet (194/SV-P Simplified Chinese Promo)",
+      "detail_raw": "194/SV-P Simplified Chinese Promo",
+      "number_guess": "194/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "sowsow"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Skwovet"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101496,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-skwovet-194-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-skwovet-194-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:09"
+    },
+    {
+      "record_id": "pokumon-101156",
+      "wp_post_id": 101156,
+      "name": "Poke Ball Holo Skwovet",
+      "title_raw": "Poke Ball Holo Skwovet (194/SV-P Simplified Chinese Promo)",
+      "detail_raw": "194/SV-P Simplified Chinese Promo",
+      "number_guess": "194/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "sowsow"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Skwovet"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101497,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-skwovet-194-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-skwovet-194-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:09"
+    },
+    {
+      "record_id": "pokumon-101155",
+      "wp_post_id": 101155,
+      "name": "Skwovet",
+      "title_raw": "Skwovet (194/SV-P Simplified Chinese Promo)",
+      "detail_raw": "194/SV-P Simplified Chinese Promo",
+      "number_guess": "194/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "sowsow"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Colorless"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Skwovet"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101498,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_194SV-P.jpg",
+      "source_link": "https://pokumon.com/card/skwovet-194-sv-p-simplified-chinese-promo/",
+      "slug": "skwovet-194-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:08"
+    },
+    {
+      "record_id": "pokumon-101154",
+      "wp_post_id": 101154,
+      "name": "Master Ball Holo Forretress",
+      "title_raw": "Master Ball Holo Forretress (193/SV-P Simplified Chinese Promo)",
+      "detail_raw": "193/SV-P Simplified Chinese Promo",
+      "number_guess": "193/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "osare"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Steel"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Forretress"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101493,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-forretress-193-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-forretress-193-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:08"
+    },
+    {
+      "record_id": "pokumon-101153",
+      "wp_post_id": 101153,
+      "name": "Poke Ball Holo Forretress",
+      "title_raw": "Poke Ball Holo Forretress (193/SV-P Simplified Chinese Promo)",
+      "detail_raw": "193/SV-P Simplified Chinese Promo",
+      "number_guess": "193/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "osare"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Steel"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Forretress"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101494,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-forretress-193-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-forretress-193-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:08"
+    },
+    {
+      "record_id": "pokumon-101152",
+      "wp_post_id": 101152,
+      "name": "Forretress",
+      "title_raw": "Forretress (193/SV-P Simplified Chinese Promo)",
+      "detail_raw": "193/SV-P Simplified Chinese Promo",
+      "number_guess": "193/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "osare"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Steel"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Forretress"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101495,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_193SV-P.jpg",
+      "source_link": "https://pokumon.com/card/forretress-193-sv-p-simplified-chinese-promo/",
+      "slug": "forretress-193-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:08"
+    },
+    {
+      "record_id": "pokumon-101151",
+      "wp_post_id": 101151,
+      "name": "Iron Boulder ex",
+      "title_raw": "Iron Boulder ex (192/SV-P Simplified Chinese Promo)",
+      "detail_raw": "192/SV-P Simplified Chinese Promo",
+      "number_guess": "192/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "5ban Graphics"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp",
+        "Future"
+      ],
+      "cardname": [
+        "Iron Boulder"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101492,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_192SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_192SV-P.jpg",
+      "source_link": "https://pokumon.com/card/iron-boulder-ex-192-sv-p-simplified-chinese-promo/",
+      "slug": "iron-boulder-ex-192-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:07"
+    },
+    {
+      "record_id": "pokumon-101150",
+      "wp_post_id": 101150,
+      "name": "Master Ball Holo Hippowdon",
+      "title_raw": "Master Ball Holo Hippowdon (191/SV-P Simplified Chinese Promo)",
+      "detail_raw": "191/SV-P Simplified Chinese Promo",
+      "number_guess": "191/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippowdon"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101489,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-hippowdon-191-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-hippowdon-191-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:07"
+    },
+    {
+      "record_id": "pokumon-101149",
+      "wp_post_id": 101149,
+      "name": "Poke Ball Holo Hippowdon",
+      "title_raw": "Poke Ball Holo Hippowdon (191/SV-P Simplified Chinese Promo)",
+      "detail_raw": "191/SV-P Simplified Chinese Promo",
+      "number_guess": "191/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippowdon"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101490,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-hippowdon-191-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-hippowdon-191-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:06"
+    },
+    {
+      "record_id": "pokumon-101148",
+      "wp_post_id": 101148,
+      "name": "Hippowdon",
+      "title_raw": "Hippowdon (191/SV-P Simplified Chinese Promo)",
+      "detail_raw": "191/SV-P Simplified Chinese Promo",
+      "number_guess": "191/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippowdon"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101491,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_191SV-P.jpg",
+      "source_link": "https://pokumon.com/card/hippowdon-191-sv-p-simplified-chinese-promo/",
+      "slug": "hippowdon-191-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:06",
+      "raw_modified_gmt": "2026-03-30T03:56:06"
+    },
+    {
+      "record_id": "pokumon-101147",
+      "wp_post_id": 101147,
+      "name": "Master Ball Holo Hippopotas",
+      "title_raw": "Master Ball Holo Hippopotas (190/SV-P Simplified Chinese Promo)",
+      "detail_raw": "190/SV-P Simplified Chinese Promo",
+      "number_guess": "190/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippopotas"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101486,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-hippopotas-190-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-hippopotas-190-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:04"
+    },
+    {
+      "record_id": "pokumon-101146",
+      "wp_post_id": 101146,
+      "name": "Poke Ball Holo Hippopotas",
+      "title_raw": "Poke Ball Holo Hippopotas (190/SV-P Simplified Chinese Promo)",
+      "detail_raw": "190/SV-P Simplified Chinese Promo",
+      "number_guess": "190/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippopotas"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101487,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-hippopotas-190-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-hippopotas-190-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:04"
+    },
+    {
+      "record_id": "pokumon-101145",
+      "wp_post_id": 101145,
+      "name": "Hippopotas",
+      "title_raw": "Hippopotas (190/SV-P Simplified Chinese Promo)",
+      "detail_raw": "190/SV-P Simplified Chinese Promo",
+      "number_guess": "190/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Minahamu"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Fighting"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Hippopotas"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101488,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_190SV-P.jpg",
+      "source_link": "https://pokumon.com/card/hippopotas-190-sv-p-simplified-chinese-promo/",
+      "slug": "hippopotas-190-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:04"
+    },
+    {
+      "record_id": "pokumon-101144",
+      "wp_post_id": 101144,
+      "name": "Master Ball Holo Palossand",
+      "title_raw": "Master Ball Holo Palossand (189/SV-P Simplified Chinese Promo)",
+      "detail_raw": "189/SV-P Simplified Chinese Promo",
+      "number_guess": "189/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Uta"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Palossand"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101483,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-palossand-189-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-palossand-189-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:03"
+    },
+    {
+      "record_id": "pokumon-101143",
+      "wp_post_id": 101143,
+      "name": "Poke Ball Holo Palossand",
+      "title_raw": "Poke Ball Holo Palossand (189/SV-P Simplified Chinese Promo)",
+      "detail_raw": "189/SV-P Simplified Chinese Promo",
+      "number_guess": "189/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Uta"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Palossand"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101484,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-palossand-189-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-palossand-189-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:03"
+    },
+    {
+      "record_id": "pokumon-101142",
+      "wp_post_id": 101142,
+      "name": "Palossand",
+      "title_raw": "Palossand (189/SV-P Simplified Chinese Promo)",
+      "detail_raw": "189/SV-P Simplified Chinese Promo",
+      "number_guess": "189/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Uta"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Palossand"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101485,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_189SV-P.jpg",
+      "source_link": "https://pokumon.com/card/palossand-189-sv-p-simplified-chinese-promo/",
+      "slug": "palossand-189-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:03"
+    },
+    {
+      "record_id": "pokumon-101141",
+      "wp_post_id": 101141,
+      "name": "Master Ball Holo Sandygast",
+      "title_raw": "Master Ball Holo Sandygast (188/SV-P Simplified Chinese Promo)",
+      "detail_raw": "188/SV-P Simplified Chinese Promo",
+      "number_guess": "188/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Asako Ita"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Sandygast"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101480,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-sandygast-188-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-sandygast-188-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:03"
+    },
+    {
+      "record_id": "pokumon-101140",
+      "wp_post_id": 101140,
+      "name": "Poke Ball Holo Sandygast",
+      "title_raw": "Poke Ball Holo Sandygast (188/SV-P Simplified Chinese Promo)",
+      "detail_raw": "188/SV-P Simplified Chinese Promo",
+      "number_guess": "188/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Asako Ita"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Sandygast"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101481,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-sandygast-188-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-sandygast-188-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:02"
+    },
+    {
+      "record_id": "pokumon-101139",
+      "wp_post_id": 101139,
+      "name": "Sandygast",
+      "title_raw": "Sandygast (188/SV-P Simplified Chinese Promo)",
+      "detail_raw": "188/SV-P Simplified Chinese Promo",
+      "number_guess": "188/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Asako Ita"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Sandygast"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101482,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_188SV-P.jpg",
+      "source_link": "https://pokumon.com/card/sandygast-188-sv-p-simplified-chinese-promo/",
+      "slug": "sandygast-188-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:02"
+    },
+    {
+      "record_id": "pokumon-101138",
+      "wp_post_id": 101138,
+      "name": "Master Ball Holo Florges",
+      "title_raw": "Master Ball Holo Florges (187/SV-P Simplified Chinese Promo)",
+      "detail_raw": "187/SV-P Simplified Chinese Promo",
+      "number_guess": "187/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Lighton"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Florges"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101477,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-florges-187-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-florges-187-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:56:02",
+      "raw_modified_gmt": "2026-03-30T03:56:02"
+    },
+    {
+      "record_id": "pokumon-101137",
+      "wp_post_id": 101137,
+      "name": "Poke Ball Holo Florges",
+      "title_raw": "Poke Ball Holo Florges (187/SV-P Simplified Chinese Promo)",
+      "detail_raw": "187/SV-P Simplified Chinese Promo",
+      "number_guess": "187/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Lighton"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Florges"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101478,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-florges-187-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-florges-187-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:56:00"
+    },
+    {
+      "record_id": "pokumon-101136",
+      "wp_post_id": 101136,
+      "name": "Florges",
+      "title_raw": "Florges (187/SV-P Simplified Chinese Promo)",
+      "detail_raw": "187/SV-P Simplified Chinese Promo",
+      "number_guess": "187/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Lighton"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Florges"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101479,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_187SV-P.jpg",
+      "source_link": "https://pokumon.com/card/florges-187-sv-p-simplified-chinese-promo/",
+      "slug": "florges-187-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:56:00"
+    },
+    {
+      "record_id": "pokumon-101135",
+      "wp_post_id": 101135,
+      "name": "Master Ball Holo Floette",
+      "title_raw": "Master Ball Holo Floette (186/SV-P Simplified Chinese Promo)",
+      "detail_raw": "186/SV-P Simplified Chinese Promo",
+      "number_guess": "186/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "mingo"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Floette"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101474,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-floette-186-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-floette-186-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:56:00"
+    },
+    {
+      "record_id": "pokumon-101134",
+      "wp_post_id": 101134,
+      "name": "Poke Ball Holo Floette",
+      "title_raw": "Poke Ball Holo Floette (186/SV-P Simplified Chinese Promo)",
+      "detail_raw": "186/SV-P Simplified Chinese Promo",
+      "number_guess": "186/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "mingo"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Floette"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101475,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-floette-186-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-floette-186-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:56:00"
+    },
+    {
+      "record_id": "pokumon-101133",
+      "wp_post_id": 101133,
+      "name": "Floette",
+      "title_raw": "Floette (186/SV-P Simplified Chinese Promo)",
+      "detail_raw": "186/SV-P Simplified Chinese Promo",
+      "number_guess": "186/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "mingo"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Floette"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101476,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_186SV-P.jpg",
+      "source_link": "https://pokumon.com/card/floette-186-sv-p-simplified-chinese-promo/",
+      "slug": "floette-186-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:59"
+    },
+    {
+      "record_id": "pokumon-101132",
+      "wp_post_id": 101132,
+      "name": "Master Ball Holo Flab\u00e9b\u00e9",
+      "title_raw": "Master Ball Holo Flab\u00e9b\u00e9 (185/SV-P Simplified Chinese Promo)",
+      "detail_raw": "185/SV-P Simplified Chinese Promo",
+      "number_guess": "185/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Yukiko Baba"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Flab\u00e9b\u00e9"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101471,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-flabebe-185-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-flabebe-185-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:59"
+    },
+    {
+      "record_id": "pokumon-101131",
+      "wp_post_id": 101131,
+      "name": "Poke Ball Holo Flab\u00e9b\u00e9",
+      "title_raw": "Poke Ball Holo Flab\u00e9b\u00e9 (185/SV-P Simplified Chinese Promo)",
+      "detail_raw": "185/SV-P Simplified Chinese Promo",
+      "number_guess": "185/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Yukiko Baba"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Flab\u00e9b\u00e9"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101472,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-flabebe-185-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-flabebe-185-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:59"
+    },
+    {
+      "record_id": "pokumon-101130",
+      "wp_post_id": 101130,
+      "name": "Flab\u00e9b\u00e9",
+      "title_raw": "Flab\u00e9b\u00e9 (185/SV-P Simplified Chinese Promo)",
+      "detail_raw": "185/SV-P Simplified Chinese Promo",
+      "number_guess": "185/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Yukiko Baba"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Flab\u00e9b\u00e9"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101473,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_185SV-P.jpg",
+      "source_link": "https://pokumon.com/card/flabebe-185-sv-p-simplified-chinese-promo/",
+      "slug": "flabebe-185-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:59"
+    },
+    {
+      "record_id": "pokumon-101129",
+      "wp_post_id": 101129,
+      "name": "Master Ball Holo Bronzong",
+      "title_raw": "Master Ball Holo Bronzong (184/SV-P Simplified Chinese Promo)",
+      "detail_raw": "184/SV-P Simplified Chinese Promo",
+      "number_guess": "184/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Katsunori Sato"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzong"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101468,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-bronzong-184-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-bronzong-184-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:58"
+    },
+    {
+      "record_id": "pokumon-101128",
+      "wp_post_id": 101128,
+      "name": "Poke Ball Holo Bronzong",
+      "title_raw": "Poke Ball Holo Bronzong (184/SV-P Simplified Chinese Promo)",
+      "detail_raw": "184/SV-P Simplified Chinese Promo",
+      "number_guess": "184/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Katsunori Sato"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzong"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101469,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-bronzong-184-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-bronzong-184-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:58",
+      "raw_modified_gmt": "2026-03-30T03:55:58"
+    },
+    {
+      "record_id": "pokumon-101127",
+      "wp_post_id": 101127,
+      "name": "Bronzong",
+      "title_raw": "Bronzong (184/SV-P Simplified Chinese Promo)",
+      "detail_raw": "184/SV-P Simplified Chinese Promo",
+      "number_guess": "184/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Katsunori Sato"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzong"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101470,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_184SV-P.jpg",
+      "source_link": "https://pokumon.com/card/bronzong-184-sv-p-simplified-chinese-promo/",
+      "slug": "bronzong-184-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:57"
+    },
+    {
+      "record_id": "pokumon-101126",
+      "wp_post_id": 101126,
+      "name": "Master Ball Holo Bronzor",
+      "title_raw": "Master Ball Holo Bronzor (183/SV-P Simplified Chinese Promo)",
+      "detail_raw": "183/SV-P Simplified Chinese Promo",
+      "number_guess": "183/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kedamahadaitai Yawarakai"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzor"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101465,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-bronzor-183-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-bronzor-183-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:56"
+    },
+    {
+      "record_id": "pokumon-101125",
+      "wp_post_id": 101125,
+      "name": "Poke Ball Holo Bronzor",
+      "title_raw": "Poke Ball Holo Bronzor (183/SV-P Simplified Chinese Promo)",
+      "detail_raw": "183/SV-P Simplified Chinese Promo",
+      "number_guess": "183/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kedamahadaitai Yawarakai"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzor"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101466,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-bronzor-183-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-bronzor-183-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:56"
+    },
+    {
+      "record_id": "pokumon-101124",
+      "wp_post_id": 101124,
+      "name": "Bronzor",
+      "title_raw": "Bronzor (183/SV-P Simplified Chinese Promo)",
+      "detail_raw": "183/SV-P Simplified Chinese Promo",
+      "number_guess": "183/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Kedamahadaitai Yawarakai"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Psychic"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Bronzor"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101467,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_183SV-P.jpg",
+      "source_link": "https://pokumon.com/card/bronzor-183-sv-p-simplified-chinese-promo/",
+      "slug": "bronzor-183-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:56"
+    },
+    {
+      "record_id": "pokumon-101123",
+      "wp_post_id": 101123,
+      "name": "Miraidon ex",
+      "title_raw": "Miraidon ex (182/SV-P Simplified Chinese Promo)",
+      "detail_raw": "182/SV-P Simplified Chinese Promo",
+      "number_guess": "182/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "5ban Graphics"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Lightning"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Miraidon"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101464,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_182SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_182SV-P.jpg",
+      "source_link": "https://pokumon.com/card/miraidon-ex-182-sv-p-simplified-chinese-promo/",
+      "slug": "miraidon-ex-182-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:56"
+    },
+    {
+      "record_id": "pokumon-101122",
+      "wp_post_id": 101122,
+      "name": "Walking Wake ex",
+      "title_raw": "Walking Wake ex (181/SV-P Simplified Chinese Promo)",
+      "detail_raw": "181/SV-P Simplified Chinese Promo",
+      "number_guess": "181/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "takuyoa"
+      ],
+      "holofoil": [
+        "Mirror"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Ancient",
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Walking Wake"
+      ],
+      "prefix": [],
+      "suffix": [
+        "EX"
+      ],
+      "media_meta": {
+        "media_id": 101463,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_181SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_181SV-P.jpg",
+      "source_link": "https://pokumon.com/card/walking-wake-ex-181-sv-p-simplified-chinese-promo/",
+      "slug": "walking-wake-ex-181-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:56"
+    },
+    {
+      "record_id": "pokumon-101121",
+      "wp_post_id": 101121,
+      "name": "Master Ball Holo Poliwrath",
+      "title_raw": "Master Ball Holo Poliwrath (180/SV-P Simplified Chinese Promo)",
+      "detail_raw": "180/SV-P Simplified Chinese Promo",
+      "number_guess": "180/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Nisota Niso"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Poliwrath"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101460,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-poliwrath-180-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-poliwrath-180-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:55"
+    },
+    {
+      "record_id": "pokumon-101120",
+      "wp_post_id": 101120,
+      "name": "Poke Ball Holo Poliwrath",
+      "title_raw": "Poke Ball Holo Poliwrath (180/SV-P Simplified Chinese Promo)",
+      "detail_raw": "180/SV-P Simplified Chinese Promo",
+      "number_guess": "180/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Nisota Niso"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Poliwrath"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101461,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-poliwrath-180-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-poliwrath-180-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:55"
+    },
+    {
+      "record_id": "pokumon-101119",
+      "wp_post_id": 101119,
+      "name": "Poliwrath",
+      "title_raw": "Poliwrath (180/SV-P Simplified Chinese Promo)",
+      "detail_raw": "180/SV-P Simplified Chinese Promo",
+      "number_guess": "180/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "Nisota Niso"
+      ],
+      "holofoil": [
+        "Non-holo"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Poliwrath"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101462,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180SV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_180SV-P.jpg",
+      "source_link": "https://pokumon.com/card/poliwrath-180-sv-p-simplified-chinese-promo/",
+      "slug": "poliwrath-180-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:55"
+    },
+    {
+      "record_id": "pokumon-101118",
+      "wp_post_id": 101118,
+      "name": "Master Ball Holo Poliwhirl",
+      "title_raw": "Master Ball Holo Poliwhirl (179/SV-P Simplified Chinese Promo)",
+      "detail_raw": "179/SV-P Simplified Chinese Promo",
+      "number_guess": "179/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "OKACHEKE"
+      ],
+      "holofoil": [
+        "Master Ball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Poliwhirl"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101457,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_179Master-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_179Master-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/master-ball-holo-poliwhirl-179-sv-p-simplified-chinese-promo/",
+      "slug": "master-ball-holo-poliwhirl-179-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:55",
+      "raw_modified_gmt": "2026-03-30T03:55:55"
+    },
+    {
+      "record_id": "pokumon-101117",
+      "wp_post_id": 101117,
+      "name": "Poke Ball Holo Poliwhirl",
+      "title_raw": "Poke Ball Holo Poliwhirl (179/SV-P Simplified Chinese Promo)",
+      "detail_raw": "179/SV-P Simplified Chinese Promo",
+      "number_guess": "179/SV-P",
+      "set_name_guess": "SV-P",
+      "language": [
+        "Simplified Chinese"
+      ],
+      "artist": [
+        "OKACHEKE"
+      ],
+      "holofoil": [
+        "Pokeball",
+        "Reverse"
+      ],
+      "release_event": [],
+      "release_year": [],
+      "release_month": [],
+      "release_type": [],
+      "card_type": [
+        "Water"
+      ],
+      "additional_attributes": [
+        "Event Stamp"
+      ],
+      "cardname": [
+        "Poliwhirl"
+      ],
+      "prefix": [],
+      "suffix": [],
+      "media_meta": {
+        "media_id": 101458,
+        "mime_type": "image/jpeg",
+        "width": 622,
+        "height": 858,
+        "source_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_179Poke-Ball-HoloSV-P.jpg"
+      },
+      "image_url": "https://cdn6966.templcdn.com/wp-content/uploads/2026/03/SC_179Poke-Ball-HoloSV-P.jpg",
+      "source_link": "https://pokumon.com/card/poke-ball-holo-poliwhirl-179-sv-p-simplified-chinese-promo/",
+      "slug": "poke-ball-holo-poliwhirl-179-sv-p-simplified-chinese-promo",
+      "origin": "manual",
+      "origin_detail": "pokumon",
+      "is_promo": true,
+      "raw_date_gmt": "2026-03-30T03:55:50",
+      "raw_modified_gmt": "2026-03-30T03:55:53"
+    }
+  ],
+  "warnings": {
+    "missing_image_record_ids": [],
+    "missing_number_guess_record_ids": []
+  }
+}

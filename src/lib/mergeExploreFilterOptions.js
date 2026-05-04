@@ -49,24 +49,27 @@ function uniqSorted(arr) {
  * @param {Record<string, unknown>} tcg - fetchFilterOptions("TCG")
  * @param {Record<string, unknown>} pocket - fetchFilterOptions("Pocket")
  * @param {Record<string, unknown>} custom - fetchFilterOptions("Custom")
+ * @param {Record<string, unknown>} [japanese] - fetchFilterOptions("TCG (JPN)")
  */
-export function mergeExploreFilterOptions(tcg, pocket, custom) {
+export function mergeExploreFilterOptions(tcg, pocket, custom, japanese) {
   const t = tcg || {};
   const p = pocket || {};
   const c = custom || {};
+  const j = japanese || {};
 
   return {
     supertypes: mergeSupertypes([
       ...(t.supertypes || []),
       ...(p.supertypes || []),
       ...(c.supertypes || []),
+      ...(j.supertypes || []),
     ]),
-    rarities: uniqSorted([...(t.rarities || []), ...(p.rarities || []), ...(c.rarities || [])]),
-    sets: mergeSetsById([t.sets, p.sets, c.sets]),
+    rarities: uniqSorted([...(t.rarities || []), ...(p.rarities || []), ...(c.rarities || []), ...(j.rarities || [])]),
+    sets: mergeSetsById([t.sets, p.sets, c.sets, j.sets]),
     regions: t.regions || [],
     generations: t.generations || [],
     colors: t.colors || [],
-    artists: uniqSorted([...(t.artists || []), ...(p.artists || []), ...(c.artists || [])]),
+    artists: uniqSorted([...(t.artists || []), ...(p.artists || []), ...(c.artists || []), ...(j.artists || [])]),
     evolution_lines: t.evolution_lines || [],
     trainer_types: t.trainer_types || [],
     specialties: t.specialties || [],
@@ -74,6 +77,7 @@ export function mergeExploreFilterOptions(tcg, pocket, custom) {
       ...(t.background_pokemon || []),
       ...(p.background_pokemon || []),
       ...(c.background_pokemon || []),
+      ...(j.background_pokemon || []),
     ]),
     card_types: p.card_types || [],
     elements: p.elements || [],

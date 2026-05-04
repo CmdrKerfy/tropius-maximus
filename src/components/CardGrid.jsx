@@ -97,6 +97,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
           src={displayImage || pocketCardBg}
           alt={card.name}
           referrerPolicy="no-referrer"
+          loading="lazy"
           className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImgLoaded(true)}
           onError={(e) => {
