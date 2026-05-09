@@ -49,6 +49,40 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+---
+### 2026-05-09 — Materialized view for Explore filter options (054)
+
+- Preflight sent and accepted: n/a (continued from prior session)
+- Branch: `v2/supabase-migration`
+- Plan doc: `docs/plans/v2-bundle-performance-optimization.md`
+- Scope in this slice:
+  - Materialized view `explore_filter_options` (migration 054) to replace client-paged distinct cascade.
+  - CardGrid visual regression fix (revert @tanstack/react-virtual).
+  - Vercel deploy fix (remove `_comment` from `vercel.json` rewrites).
+  - App adapter 3-tier fallback: materialized view → split-RPC → client-paged.
+- Completed:
+  - `supabase/migrations/054_explore_filter_options_materialized_view.sql` — applied and populated. 4 source rows (tcg/pocket/japanese/custom) as precomputed JSONB.
+  - `src/data/supabase/appAdapter.js` — `fetchExploreFilterOptions()` reads materialized view first (<50ms), falls back to split-RPC (053, opt-in), then client-paged.
+  - `scripts/push_duckdb_to_supabase.py` — calls `refresh_explore_filter_options()` after upserts complete.
+  - `src/components/CardGrid.jsx` — reverted to CSS grid (`grid-cols-2…6`), kept `React.memo(CardItem)`, `loading="lazy"`, `decoding="async"`.
+  - `vercel.json` — removed `_comment` property from rewrites (Vercel rejects unknown keys).
+  - `src/lib/mergeExploreFilterOptions.js` — added japanese source parameter.
+  - Static actions/poses fallback added when materialized view returns empty arrays for those keys.
+- Validation run:
+  - `npm run check:quick` (pass — build 5.05s)
+  - Manual QA: owner confirmed filter options load "much faster" on Vercel preview.
+- Migrations touched:
+  - `supabase/migrations/054_explore_filter_options_materialized_view.sql` (applied)
+  - `supabase/migrations/053_split_explore_filter_options_rpc.sql` (applied, opt-in only)
+- Open risks or assumptions:
+  - Materialized view must be refreshed after ingest or filter options go stale. Currently auto-refreshed in `push_duckdb_to_supabase.py`. If view is empty (never refreshed), app falls back to client-paged path silently.
+  - Grid query (fetchCards) still takes ~8.6s on Supabase free tier — separate issue from filter options, likely needs composite indexes.
+  - `public/data/pokemon.duckdb` is 179MB (exceeds GitHub 100MB limit) — not committed. CI ingest generates this; local copies must be managed separately.
+- Next action (single first step):
+  - Run `ANALYZE cards` in Supabase SQL Editor after next bulk ingest, then profile the 8.6s grid query to identify missing composite indexes.
+
+---
+
 ### 2026-05-02 — TCGdex JP / Pocket image URLs in `ingest.py`
 
 - Preflight sent and accepted: n/a (small ingest fix; no Auto preflight in thread)
