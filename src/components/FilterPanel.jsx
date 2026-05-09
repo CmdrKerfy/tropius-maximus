@@ -186,9 +186,19 @@ export default function FilterPanel({
 
   const isFilterOn = (key) => filterAvailability?.[key] !== false;
 
+  const sourceSets = useMemo(() => {
+    if (!options.setsBySource) return options.sets || [];
+    const source = filters.source;
+    if (source === "Pocket") return options.setsBySource.pocket;
+    if (source === "Custom") return options.setsBySource.custom;
+    if (source === "TCG (JPN)") return options.setsBySource.japanese;
+    if (source && source !== "Promo") return options.setsBySource.tcg;
+    return options.sets || [];
+  }, [options.setsBySource, options.sets, filters.source]);
+
   const setGroups = useMemo(() => {
     const byKey = new Map();
-    for (const setRow of options.sets || []) {
+    for (const setRow of sourceSets) {
       const { key, header, sort } = seriesBucketKey(setRow.series);
       if (!byKey.has(key)) {
         byKey.set(key, { id: key, header, sort, sets: [] });
@@ -204,7 +214,7 @@ export default function FilterPanel({
       if (a.sort !== b.sort) return a.sort - b.sort;
       return a.header.localeCompare(b.header, undefined, { sensitivity: "base" });
     });
-  }, [options.sets]);
+  }, [sourceSets]);
 
   const evoOptions = (options.evolution_lines || []).map((evo) => {
     try {

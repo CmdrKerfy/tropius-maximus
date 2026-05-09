@@ -309,8 +309,10 @@ async function mergeAnnotationUsageIntoOptions(out) {
   for (const c of allCols) setsByCol[c] = new Set();
 
   const pageSize = 1000;
+  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
+    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     const { data, error } = await sb
       .from("annotations")
       .select(selectList)
@@ -440,15 +442,19 @@ function buildFormOptionsFromRpcPayload(data) {
   return out;
 }
 
-/** Paginated distinct values for a scalar column on `cards` (dev-costly but no RPC required). */
+/** Paginated distinct values for a scalar column on `cards` (dev-costly but no RPC required).
+ *  originFilter: string → eq, array → in */
 async function distinctColumn(column, originFilter, originDetailFilter, originDetailExclude) {
   const sb = await sbReady();
   const values = new Set();
   const pageSize = 1000;
+  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
+    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     let q = sb.from("cards").select(column).range(from, from + pageSize - 1);
-    if (originFilter) q = q.eq("origin", originFilter);
+    if (Array.isArray(originFilter)) q = q.in("origin", originFilter);
+    else if (originFilter) q = q.eq("origin", originFilter);
     if (originDetailFilter) q = q.eq("origin_detail", originDetailFilter);
     if (originDetailExclude) q = q.or(`origin_detail.is.null,origin_detail.neq.${originDetailExclude}`);
     const { data, error } = await q;
@@ -469,8 +475,10 @@ async function distinctAnnotationColumn(column) {
   const sb = await sbReady();
   const values = new Set();
   const pageSize = 1000;
+  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
+    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     const { data, error } = await sb
       .from("annotations")
       .select(column)
@@ -858,9 +866,13 @@ export async function fetchCards(params = {}) {
     );
 
   if (source === "TCG") {
-    query = query.in("origin", ["pokemontcg.io", "manual"]);
+    query = query.in("origin", ["pokemontcg.io", "manual"]).or("origin_detail.is.null,origin_detail.neq.japanese");
   } else if (source === "TCG (JPN)") {
-    query = query.eq("origin", "tcgdex").eq("origin_detail", "japanese");
+    query = query.or(
+      "and(origin.eq.tcgdex,origin_detail.eq.japanese)," +
+      "and(origin.eq.ptcgdb,origin_detail.eq.japanese)"
+    );
+    query = query.neq("set_id", "neo1").neq("set_id", "neo2").neq("set_id", "neo3").neq("set_id", "neo4");
   } else if (source === "Pocket") {
     query = query.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
   } else if (source === "Custom") {
@@ -871,7 +883,7 @@ export async function fetchCards(params = {}) {
     query = query.eq("origin", "manual").eq("origin_detail", "pokumon");
   } else {
     // Source "All" (empty string) — every origin
-    query = query.in("origin", ["pokemontcg.io", "manual", "tcgdex"]);
+    query = query.in("origin", ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"]);
   }
 
   const qTrim = String(q ?? "").trim();
@@ -898,7 +910,8 @@ export async function fetchCards(params = {}) {
   if (Array.isArray(element) && element.length) {
     if (source === "Pocket") {
       query = query.in("element", element);
-    } else if (source === "") {
+    } else if (source === "" || source === "TCG (JPN)") {
+      // Both origins: types (ptcgdb, JSONB array) or element (tcgdex, TEXT)
       const clauses = [];
       for (const e of element) {
         clauses.push(`types.cs.${jsonbArrayContainsOneString(e)}`);
@@ -1010,7 +1023,42 @@ export async function fetchCards(params = {}) {
   const { data, error, count } = await query;
   if (error) throw error;
 
-  const cards = (data || []).map((row) => gridRowFromCard(row));
+  let rows = data || [];
+
+  // Deduplicate TCG (JPN) by jpn_card_key when both origins are present.
+  // PTCG-database wins for images; TCGdex wins for text fields.
+  if (source === "TCG (JPN)") {
+    const { buildJpnCardKey } = await import("../../lib/jpnCardKey.js");
+    const byKey = new Map();
+    for (const row of rows) {
+      const key = buildJpnCardKey(row.set_id, row.number);
+      if (!key) {
+        byKey.set(row.id, row);
+        continue;
+      }
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, row);
+        continue;
+      }
+      // Merge: ptcgdb images, TCGdex text
+      if (row.origin === "ptcgdb") {
+        existing.image_small = row.image_small || existing.image_small;
+        existing.image_large = row.image_large || existing.image_large;
+      } else {
+        // tcgdex row — keep its text fields, take images from ptcgdb if already seen
+        const ptcgdbRow = existing.origin === "ptcgdb" ? existing : null;
+        if (ptcgdbRow) {
+          row.image_small = ptcgdbRow.image_small || row.image_small;
+          row.image_large = ptcgdbRow.image_large || row.image_large;
+        }
+        byKey.set(key, row);
+      }
+    }
+    rows = [...byKey.values()];
+  }
+
+  const cards = rows.map((row) => gridRowFromCard(row));
   return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
 }
 
@@ -1195,7 +1243,7 @@ export async function fetchCard(id, _source = "TCG") {
   if (error) throw error;
   if (!row) throw new Error("Card not found");
 
-  const isPocket = row.origin === "tcgdex";
+  const isPocket = row.origin === "tcgdex" || row.origin === "ptcgdb";
 
   const annRow = normalizeEmbeddedAnnotation(row.annotations);
   const creator_display_name = row.created_by ? displayNameFromProfileEmbed(row.profiles) : null;
@@ -1342,13 +1390,16 @@ export async function fetchFilterOptions(source = "TCG") {
   const sb = await sbReady();
 
   if (source === "Pocket") {
-    const [card_types, rarities, elements, stages, setsData] = await Promise.all([
+    const [card_types, rarities, elements, stages, setIds] = await Promise.all([
       distinctColumn("card_type", "tcgdex", null, "japanese"),
       distinctColumn("rarity", "tcgdex", null, "japanese"),
       distinctColumn("element", "tcgdex", null, "japanese"),
       distinctColumn("stage", "tcgdex", null, "japanese"),
-      sb.from("sets").select("id, name, series").eq("origin", "tcgdex"),
+      distinctColumn("set_id", "tcgdex", null, "japanese"),
     ]);
+    const setsData = setIds.length > 0
+      ? await sb.from("sets").select("id, name, series").in("id", setIds)
+      : { data: [] };
     const sets = (setsData.data || []).map((r) => ({
       id: r.id,
       name: r.name,
@@ -1410,19 +1461,25 @@ export async function fetchFilterOptions(source = "TCG") {
   }
 
   if (source === "TCG (JPN)") {
-    const [card_types, rarities, elements, stages, setsData, artists] = await Promise.all([
-      distinctColumn("card_type", "tcgdex", "japanese"),
-      distinctColumn("rarity", "tcgdex", "japanese"),
-      distinctColumn("element", "tcgdex", "japanese"),
-      distinctColumn("stage", "tcgdex", "japanese"),
-      sb.from("sets").select("id, name, series").eq("origin", "tcgdex"),
-      distinctColumn("artist", "tcgdex", "japanese"),
+    // Single origin=in(tcgdex,ptcgdb) call per column replaces the old per-origin pairs.
+    const [
+      cardTypes, rarities, elements, stages, artists, setsResult,
+    ] = await Promise.all([
+      distinctColumn("card_type", ["tcgdex", "ptcgdb"], "japanese"),
+      distinctColumn("rarity", ["tcgdex", "ptcgdb"], "japanese"),
+      distinctColumn("element", ["tcgdex", "ptcgdb"], "japanese"),
+      distinctColumn("stage", ["tcgdex", "ptcgdb"], "japanese"),
+      distinctColumn("artist", ["tcgdex", "ptcgdb"], "japanese"),
+      sb.from("sets").select("id, name, series").in("origin", ["tcgdex", "ptcgdb"]),
     ]);
-    const sets = (setsData.data || []).map((r) => ({
-      id: r.id,
-      name: r.name,
-      series: r.series,
-    }));
+    const excludedJpnSetIds = new Set(["neo1", "neo2", "neo3", "neo4"]);
+    const sets = ((setsResult.data) || [])
+      .filter((r) => !excludedJpnSetIds.has(r.id))
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        series: r.series,
+      }));
     return {
       supertypes: [],
       rarities: rarities.sort(),
@@ -1435,7 +1492,7 @@ export async function fetchFilterOptions(source = "TCG") {
       trainer_types: [],
       specialties: [],
       background_pokemon: [],
-      card_types: card_types.sort(),
+      card_types: cardTypes.sort(),
       elements: elements.sort(),
       stages: stages.sort(),
       weathers: [],
@@ -1445,57 +1502,37 @@ export async function fetchFilterOptions(source = "TCG") {
     };
   }
 
-  // TCG + custom (all non-Pocket)
-  const originList = ["pokemontcg.io", "manual"];
-  const [st, rar, setsData, artists, pmRegions, pmGens, pmColors, pmEvo] =
+  // TCG + custom (all non-Pocket). Exclude origin_detail='japanese' from
+  // pokemontcg.io origin so Japanese cards don't leak into English TCG facets.
+  // Manual origin cards don't have origin_detail='japanese', so a single
+  // origin=in(pokemontcg.io,manual) call per column replaces the old serial IIFEs.
+  const [st, rar, setIds, artists, pmAll] =
     await Promise.all([
-      (async () => {
-        const acc = new Set();
-        for (const o of originList) {
-          for (const v of await distinctColumn("supertype", o)) acc.add(v);
-        }
-        return [...acc];
-      })(),
-      (async () => {
-        const acc = new Set();
-        for (const o of originList) {
-          for (const v of await distinctColumn("rarity", o)) acc.add(v);
-        }
-        return [...acc];
-      })(),
-      sb
-        .from("sets")
-        .select("id, name, series")
-        .in("origin", ["pokemontcg.io", "tcgdex", "manual"]),
-      (async () => {
-        const acc = new Set();
-        for (const o of originList) {
-          for (const v of await distinctColumn("artist", o)) acc.add(v);
-        }
-        return [...acc];
-      })(),
-      sb.from("pokemon_metadata").select("region"),
-      sb.from("pokemon_metadata").select("generation"),
-      sb.from("pokemon_metadata").select("color"),
-      sb.from("pokemon_metadata").select("evolution_chain"),
+      distinctColumn("supertype", ["pokemontcg.io", "manual"], null, "japanese"),
+      distinctColumn("rarity", ["pokemontcg.io", "manual"], null, "japanese"),
+      distinctColumn("set_id", ["pokemontcg.io", "manual"], null, "japanese"),
+      distinctColumn("artist", ["pokemontcg.io", "manual"], null, "japanese"),
+      sb.from("pokemon_metadata").select("region,generation,color,evolution_chain"),
     ]);
 
+  const pmData = pmAll.data || [];
+
   const dbRegions = [
-    ...new Set((pmRegions.data || []).map((r) => r.region).filter(Boolean)),
+    ...new Set(pmData.map((r) => r.region).filter(Boolean)),
   ].sort();
   const regions = [...new Set([...annOpts.PKMN_REGION_OPTIONS, ...dbRegions])].sort();
   const generations = [
     ...new Set(
-      (pmGens.data || [])
+      pmData
         .map((r) => r.generation)
         .filter((g) => g != null)
     ),
   ].sort((a, b) => a - b);
   const colors = [
-    ...new Set((pmColors.data || []).map((r) => r.color).filter(Boolean)),
+    ...new Set(pmData.map((r) => r.color).filter(Boolean)),
   ].sort();
 
-  const evoRaw = (pmEvo.data || [])
+  const evoRaw = pmData
     .map((r) => {
       const c = r.evolution_chain;
       if (c == null) return null;
@@ -1504,6 +1541,9 @@ export async function fetchFilterOptions(source = "TCG") {
     .filter(Boolean);
   const evolution_lines = mergeEvolutionLines(evoRaw);
 
+  const setsData = setIds.length > 0
+    ? await sb.from("sets").select("id, name, series").in("id", setIds)
+    : { data: [] };
   const sets = (setsData.data || []).map((r) => ({
     id: r.id,
     name: r.name,
@@ -1547,32 +1587,80 @@ export async function fetchFilterOptions(source = "TCG") {
 /** Explore: one merged option list so changing Source does not hide/show filter dropdowns. */
 export async function fetchExploreFilterOptions() {
   const sb = await sbReady();
-  // Phase 6 rollback: set VITE_USE_FILTER_OPTIONS_RPC=false to skip RPC (many paged reads) without redeploying SQL.
-  if (import.meta.env.VITE_USE_FILTER_OPTIONS_RPC === "false") {
-    return fetchExploreFilterOptionsClientPaged();
-  }
-  const { data, error } = await sb.rpc("get_explore_filter_options_db");
-  if (!error && data != null && typeof data === "object") {
-    try {
-      const tcg = buildTcgFilterOptionsFromRpc(data.tcg);
-      const pocket = buildPocketFilterOptionsFromRpc(data.pocket);
-      const custom = buildCustomFilterOptionsFromRpc(data.custom);
-      const japanese = buildJapaneseFilterOptionsFromRpc(data.japanese);
-      return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
-    } catch (e) {
-      console.warn(
-        "get_explore_filter_options_db parse:",
-        e?.message || e,
-        "— using client-paged filter options"
+
+  // 1. Materialized view (migration 054) — fast path, <50ms.
+  //    Refreshed after ingest; empty until first refresh.
+  try {
+    const { data: mvRows, error: mvError } = await sb
+      .from("explore_filter_options")
+      .select("source, options");
+    if (mvError) throw mvError;
+    if (mvRows && mvRows.length > 0) {
+      const bySource = {};
+      for (const row of mvRows) bySource[row.source] = row.options || {};
+      const merged = mergeExploreFilterOptions(
+        bySource.tcg || {},
+        bySource.pocket || {},
+        bySource.custom || {},
+        bySource.japanese || {}
       );
+      // mergeExploreFilterOptions does not return actions/poses from the non-TCG
+      // sources; add them back from the static annotation options if missing.
+      if ((!merged.actions || merged.actions.length === 0) && annOpts.ACTIONS_OPTIONS) {
+        merged.actions = [...annOpts.ACTIONS_OPTIONS];
+      }
+      if ((!merged.poses || merged.poses.length === 0) && annOpts.POSE_OPTIONS) {
+        merged.poses = [...annOpts.POSE_OPTIONS];
+      }
+      return merged;
     }
-  } else if (error) {
+  } catch (e) {
     console.warn(
-      "get_explore_filter_options_db:",
-      error.message || error,
+      "explore_filter_options materialized view read failed:",
+      e?.message || e,
       "— using client-paged filter options"
     );
   }
+
+  // 2. Split-RPC path (053) — opt-in: VITE_USE_FILTER_OPTIONS_RPC=true.
+  if (import.meta.env.VITE_USE_FILTER_OPTIONS_RPC === "true") {
+    const [tcgR, pocketR, customR, japaneseR] = await Promise.all([
+      sb.rpc("get_tcg_filter_options_db"),
+      sb.rpc("get_pocket_filter_options_db"),
+      sb.rpc("get_custom_filter_options_db"),
+      sb.rpc("get_japanese_filter_options_db"),
+    ]);
+    const results = [
+      { name: "tcg", res: tcgR, build: buildTcgFilterOptionsFromRpc },
+      { name: "pocket", res: pocketR, build: buildPocketFilterOptionsFromRpc },
+      { name: "custom", res: customR, build: buildCustomFilterOptionsFromRpc },
+      { name: "japanese", res: japaneseR, build: buildJapaneseFilterOptionsFromRpc },
+    ];
+    const failures = results.filter((r) => r.res.error);
+    if (failures.length === 0) {
+      try {
+        const tcg = buildTcgFilterOptionsFromRpc(tcgR.data);
+        const pocket = buildPocketFilterOptionsFromRpc(pocketR.data);
+        const custom = buildCustomFilterOptionsFromRpc(customR.data);
+        const japanese = buildJapaneseFilterOptionsFromRpc(japaneseR.data);
+        return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
+      } catch (e) {
+        console.warn(
+          "split filter-options RPC parse:",
+          e?.message || e,
+          "— using client-paged filter options"
+        );
+      }
+    } else {
+      console.warn(
+        "split filter-options RPC failures:",
+        failures.map((r) => `${r.name}: ${r.res.error.message || r.res.error}`).join(", "),
+        "— using client-paged filter options"
+      );
+    }
+  }
+
+  // 3. Client-paged fallback — last resort.
   return fetchExploreFilterOptionsClientPaged();
 }
 
@@ -1580,13 +1668,13 @@ async function fetchFormOptionsClientPaged() {
   const sb = await sbReady();
   const [rarity, artist, regions, series, setIds, setNames, names] =
     await Promise.all([
-      distinctColumn("rarity", "pokemontcg.io"),
-      distinctColumn("artist", "pokemontcg.io"),
+      distinctColumn("rarity", "pokemontcg.io", null, "japanese"),
+      distinctColumn("artist", "pokemontcg.io", null, "japanese"),
       sb.from("pokemon_metadata").select("region"),
       sb.from("sets").select("series").not("series", "is", null),
       sb.from("sets").select("id"),
       sb.from("sets").select("name"),
-      distinctColumn("name", "pokemontcg.io"),
+      distinctColumn("name", "pokemontcg.io", null, "japanese"),
     ]);
 
   const merge = (a, b) => [...new Set([...a, ...b])];

@@ -1,9 +1,10 @@
 -- ============================================================
--- 045: Explore filter options — add Japanese TCG support
+-- 047: Explore filter options — add pokemontcg.io Japanese source
 -- ============================================================
--- Updates get_explore_filter_options_db() to return a 'japanese'
--- key so the Explore filter bar includes TCG (JPN) distincts.
--- Japanese cards have origin='tcgdex' + origin_detail='japanese'.
+-- Updates get_explore_filter_options_db() Japanese bucket to query
+-- BOTH origins (tcgdex + pokemontcg.io) for card-backed distincts.
+-- Japanese cards have origin_detail='japanese' with origin in
+-- ('tcgdex', 'pokemontcg.io').
 -- SECURITY INVOKER: respects RLS (authenticated, non-anonymous per 019).
 --
 -- Grant: authenticated + service_role only.
@@ -268,7 +269,7 @@ AS $$
          FROM (
            SELECT DISTINCT card_type AS x
            FROM cards
-           WHERE origin = 'tcgdex'
+           WHERE origin IN ('tcgdex', 'pokemontcg.io')
              AND origin_detail = 'japanese'
              AND card_type IS NOT NULL
              AND btrim(card_type::text) <> ''
@@ -281,7 +282,7 @@ AS $$
          FROM (
            SELECT DISTINCT rarity AS x
            FROM cards
-           WHERE origin = 'tcgdex'
+           WHERE origin IN ('tcgdex', 'pokemontcg.io')
              AND origin_detail = 'japanese'
              AND rarity IS NOT NULL
              AND btrim(rarity) <> ''
@@ -294,7 +295,7 @@ AS $$
          FROM (
            SELECT DISTINCT element AS x
            FROM cards
-           WHERE origin = 'tcgdex'
+           WHERE origin IN ('tcgdex', 'pokemontcg.io')
              AND origin_detail = 'japanese'
              AND element IS NOT NULL
              AND btrim(element::text) <> ''
@@ -307,7 +308,7 @@ AS $$
          FROM (
            SELECT DISTINCT stage AS x
            FROM cards
-           WHERE origin = 'tcgdex'
+           WHERE origin IN ('tcgdex', 'pokemontcg.io')
              AND origin_detail = 'japanese'
              AND stage IS NOT NULL
              AND btrim(stage::text) <> ''
@@ -321,12 +322,14 @@ AS $$
            ORDER BY series NULLS LAST, name
          )
          FROM sets
-         WHERE origin = 'tcgdex'
+         WHERE origin IN ('tcgdex', 'pokemontcg.io')
            AND id NOT IN ('neo1', 'neo2', 'neo3', 'neo4')
            AND id IN (
              SELECT DISTINCT set_id FROM cards
-             WHERE origin = 'tcgdex'
+             WHERE origin IN ('tcgdex', 'pokemontcg.io')
                AND origin_detail = 'japanese'
+               AND set_id IS NOT NULL
+               AND btrim(set_id) <> ''
            )),
         '[]'::jsonb
       ),
@@ -336,7 +339,7 @@ AS $$
          FROM (
            SELECT DISTINCT artist AS x
            FROM cards
-           WHERE origin = 'tcgdex'
+           WHERE origin IN ('tcgdex', 'pokemontcg.io')
              AND origin_detail = 'japanese'
              AND artist IS NOT NULL
              AND btrim(artist) <> ''
@@ -348,7 +351,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.get_explore_filter_options_db() IS
-  'Distinct filter values for Explore in one round-trip; client merges static option lists. Includes Japanese TCG data.';
+  'Distinct filter values for Explore in one round-trip; client merges static option lists. Includes Japanese TCG data from both tcgdex and pokemontcg.io.';
 
 GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO service_role;

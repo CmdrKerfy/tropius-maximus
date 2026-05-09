@@ -34,10 +34,12 @@ When polishing Explore/Workbench, **batch UI issues** for the owner: note what s
 
 ### Post–Phase 7 (current focus)
 
+- [x] **PTCG-database Japanese card ingest** — TCGdex's Japanese API had critical gaps (104/161 sets empty). Integrated **type-null/PTCG-database** (MIT licensed, scrapes pokemon-card.com) as a second Japanese source under `origin='ptcgdb'`. Migrations **049** (origin CHECK constraint), **050** (Explore filter options RPC dual-origin), **051** (break-glass rollback), **052** (`jpn_card_key` generated column + index). Ingest script `--japanese-ptcgdb-all` uses Git Tree API for zero-token directory discovery, then fetches individual JSON from raw.githubusercontent.com. SM12a POC: 210 cards. Full ingest: 150+ sets, thousands of new Japanese cards. Plan: **`docs/plans/mighty-sauteeing-papert.md`**.
+- [x] **Bundle performance optimization** — Main chunk reduced from 993KB (268KB gzipped) to 350KB (101KB gzipped). Implemented: route-level code splitting (`React.lazy` in App.jsx), DuckDB-WASM dynamic import (v2/Supabase users no longer download 34MB+39MB WASM), `EXPLORE_EXACT_COUNT=false` (planned counts instead of exact), `React.memo(CardItem)` + `decoding="async"`, fallback scan caps (5,000 rows), function-based Vite `manualChunks` (vendor-react was 0 bytes, now 193KB), chunk-load error boundary, and card-detail prefetch queryKey alignment. Plan: **`docs/plans/v2-bundle-performance-optimization.md`**.
 - [ ] E2E testing on **Vercel** (preview + production) against Supabase — manual smoke checklist: **`docs/plans/e2e-vercel-smoke-checklist.md`**.
 - [ ] **Production checklist** — Anonymous auth / RLS / Vercel env (**`docs/plans/production-hardening-anon-auth.md`**).
 - [ ] **Final production-readiness pass** — operator checklist + rollout order (**`docs/plans/production-readiness-final-pass.md`**). Includes staging/prod migration parity through **`028`**, Data Health RPC verification, and release gate checks.
-- [ ] **Tackle-now implementation queue** — auth endpoint abuse hardening, Data Health cleanup audit trail, full manual smoke sign-off, and DuckDB/Supabase bundle-boundary optimization (Phase 4 in **`docs/plans/production-readiness-final-pass.md`**).
+- [ ] **Tackle-now implementation queue** — auth endpoint abuse hardening, Data Health cleanup audit trail, full manual smoke sign-off.
 - [ ] **Cross-functional panel cadence** — run specialist review regularly and after major changes (**`docs/plans/cross-functional-panel-review.md`**).
 - [ ] **Phase 6 shared-list QA sign-off** — run multi-user checks (private-list visibility, shared-list collaborator content edits, owner-only rename/delete/share controls).
 - [ ] **Cutover when ready** — **`main` merge only with owner explicit go-ahead**; otherwise set Vercel production branch / env only; align GitHub Pages vs Vercel-only strategy. **Runbook:** `docs/plans/p1-cutover-and-operations.md`.
@@ -68,7 +70,7 @@ Performance work is tracked in **`docs/plans/explore-supabase-performance.md`**.
 - [x] **Explore filter options (RPC)** — **`020_explore_filter_options_rpc.sql`**: `get_explore_filter_options_db()` returns distincts in one round-trip; `fetchExploreFilterOptions` in `src/data/supabase/appAdapter.js` calls `supabase.rpc`, merges static lists from `annotationOptions.js`, then `mergeExploreFilterOptions`. Falls back to legacy client paging if the RPC errors. **`SECURITY INVOKER`** + `GRANT` to `authenticated` / `service_role` (no anon; aligns with **019**).
 - [x] **Form options (RPC) + shared TanStack cache** — **`021_form_options_rpc.sql`**: `get_form_options_db()` returns cards / sets / `pokemon_metadata` / per-column annotation distincts in one RPC; `fetchFormOptions` builds the same shape as before via `buildFormOptionsFromRpcPayload` + `mergeAnnotationUsageIntoOptionsFromRpc`, with **`fetchFormOptionsClientPaged`** fallback. **`FORM_OPTIONS_QUERY_KEY`** in `src/db.js`; Workbench, **CardDetail**, and **CustomCardForm** use `useQuery` so options share cache (5‑min `staleTime`). Batch edit invalidates the same key after runs.
 - [x] **Explore grid counts + indexes (Phase 2)** — **`022_grid_search_indexes.sql`**: `pg_trgm` GIN on `cards.name`, composite `(origin, set_id)`. `fetchCards` uses **`count: "planned"`** by default; pass **`exact_count: true`** when an exact total is required (Explore page clamp, `fetchMatchingCardIds`, etc.). See **`docs/plans/explore-supabase-performance.md`**.
-- [x] **Grid + detail profile embed (Phase 3)** — **`023_cards_annotations_profiles_fk.sql`** (**must be applied** on each Supabase env or embeds fail): `created_by` / `updated_by` FK → **`profiles`**. **`fetchCard`** embeds **`profiles!…_fkey(display_name)`** (card detail attribution). **`fetchCards`** (Explore grid) omits profile embeds to avoid PostgREST edge cases; tile-level creator/editor names deferred. **`annotationRowToFlat`** drops embed **`profiles`**. Explore uses **`exact_count: true`** + page clamp vs URL `?page=` (see `ExplorePage.jsx`).
+- [x] **Grid + detail profile embed (Phase 3)** — **`023_cards_annotations_profiles_fk.sql`** (**must be applied** on each Supabase env or embeds fail): `created_by` / `updated_by` FK → **`profiles`**. **`fetchCard`** embeds **`profiles!…_fkey(display_name)`** (card detail attribution). **`fetchCards`** (Explore grid) omits profile embeds to avoid PostgREST edge cases; tile-level creator/editor names deferred. **`annotationRowToFlat`** drops embed **`profiles`**. Explore uses **`count: "planned"`** (fast estimates); page clamp works with PostgREST `Content-Range` header. Run `ANALYZE cards` after bulk ingest to keep estimates accurate.
 - [x] **Card detail path (Phase 4)** — **`fetchCard`**: skip **`pokemon_metadata`** for Pocket (`tcgdex`). **`CardDetail.jsx`**: card load via **`useQuery`** `['cardDetail', cardId, source]` + **`setQueryData`** / **`invalidateQueries`** for saves and tab visibility (see **`docs/plans/explore-supabase-performance.md`**).
 - [x] **Startup prefetch (Phase 5)** — **`main.jsx`**: after **`setReady(true)`**, Explore **`fetchExploreFilterOptions`** prefetch runs via **`requestIdleCallback`** (fallback double **`requestAnimationFrame`**), same **`queryKey`** as **`ExplorePage`** for dedupe.
 - [x] **Verification & rollback (Phase 6)** — Runbook + checklist in **`docs/plans/explore-supabase-performance.md`**; optional **`VITE_USE_FILTER_OPTIONS_RPC=false`** forces legacy client-paged Explore filter options (**`appAdapter.js`**); cross-link in **`docs/plans/e2e-vercel-smoke-checklist.md`**. Owner items: RLS smoke + v1/v2 sign-off remain manual.
@@ -222,6 +224,19 @@ supabase/
     036_workbench_list_explicit_sharing.sql -- explicit list visibility toggle (private by default)
     037_workbench_list_owner_controls.sql -- owner-only share/rename/delete guardrails
     038_workbench_move_cards_rpc.sql -- atomic source→target move with cap enforcement for Workbench lists
+    039_workbench_pins_preferences.sql -- workbench pin preferences
+    040_public_share_image_override.sql -- share RPC image override support
+    041_public_share_overrides_image.sql -- share RPC overrides image
+    042_public_share_extra_rawdata_image.sql -- share RPC extra/raw_data image
+    043_public_share_fuzzy_image_paths.sql -- fuzzy image path fallback for share OG
+    044_camera_angle_multi_select.sql -- camera_angle → multi_select
+    045_update_explore_filter_options_for_japanese.sql -- TCG (JPN) filter options bucket
+    046_japanese_sets_filter_index.sql -- Japanese sets filter index
+    047_japanese_pokemontcg_source.sql -- dead pokemontcg.io experiment (0 cards)
+    048_revert_047_break_glass.sql -- break-glass revert for 047
+    049_origin_ptcgdb.sql -- add 'ptcgdb' to cards.origin + sets.origin CHECK constraints
+    050_explore_filter_options_ptcgdb.sql -- RPC: TCG (JPN) dual-origin (tcgdex + ptcgdb)
+    051_revert_050_break_glass.sql -- break-glass revert for 050
   config.toml                    -- Edge Functions: verify_jwt = false for request-magic-link
   functions/                     -- request-magic-link (invite + allowlist → signInWithOtp)
   seed.sql                       -- field_definitions + normalization_rules

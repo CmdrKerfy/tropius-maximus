@@ -1,12 +1,14 @@
 -- ============================================================
--- 045: Explore filter options — add Japanese TCG support
+-- 048: BREAK-GLASS ONLY — Revert 047 RPC to pre-pokemontcg.io state
 -- ============================================================
--- Updates get_explore_filter_options_db() to return a 'japanese'
--- key so the Explore filter bar includes TCG (JPN) distincts.
--- Japanese cards have origin='tcgdex' + origin_detail='japanese'.
--- SECURITY INVOKER: respects RLS (authenticated, non-anonymous per 019).
+-- DO NOT APPLY in normal deploys. This migration exists only for
+-- emergency rollback: restores get_explore_filter_options_db() to
+-- the exact function body from migration 045 (single-origin Japanese:
+-- tcgdex only, no pokemontcg.io support).
 --
--- Grant: authenticated + service_role only.
+-- Apply manually via Supabase SQL Editor if 047 breaks Explore filters
+-- and a quick revert is faster than a fix-forward.
+-- ============================================================
 
 CREATE OR REPLACE FUNCTION public.get_explore_filter_options_db()
 RETURNS jsonb
@@ -349,6 +351,3 @@ $$;
 
 COMMENT ON FUNCTION public.get_explore_filter_options_db() IS
   'Distinct filter values for Explore in one round-trip; client merges static option lists. Includes Japanese TCG data.';
-
-GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO service_role;

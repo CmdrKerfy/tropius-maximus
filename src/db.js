@@ -3,9 +3,14 @@
  *
  * Set VITE_USE_SUPABASE=true and VITE_SUPABASE_* in .env.local for Postgres-backed mode.
  */
-import * as duck from "./db.duckdb.js";
 import { SOURCE_OPTIONS } from "./lib/annotationOptions.js";
 import { buildManualCardId, normalizeCardNumberForStorage } from "./lib/manualCardId.js";
+
+let _duck = null;
+async function _getDuck() {
+  if (!_duck) _duck = await import("./db.duckdb.js");
+  return _duck;
+}
 
 export { buildManualCardId, normalizeCardNumberForStorage };
 
@@ -24,9 +29,9 @@ async function sb() {
   return _sbAdapter;
 }
 
-export function getCustomSourceNames() {
+export async function getCustomSourceNames() {
   if (useSupabaseBackend()) return [...SOURCE_OPTIONS];
-  return duck.getCustomSourceNames();
+  return (await _getDuck()).getCustomSourceNames();
 }
 
 export async function initDB() {
@@ -42,17 +47,17 @@ export async function initDB() {
     await ensureSupabaseSession();
     return;
   }
-  return duck.initDB();
+  return (await _getDuck()).initDB();
 }
 
 export async function fetchCards(params) {
-  return useSupabaseBackend() ? (await sb()).fetchCards(params) : duck.fetchCards(params);
+  return useSupabaseBackend() ? (await sb()).fetchCards(params) : (await _getDuck()).fetchCards(params);
 }
 
 export async function fetchCard(id, source = "TCG") {
   return useSupabaseBackend()
     ? (await sb()).fetchCard(id, source)
-    : duck.fetchCard(id, source);
+    : (await _getDuck()).fetchCard(id, source);
 }
 
 export async function fetchCardRawData(id) {
@@ -70,18 +75,18 @@ export async function fetchPublicCardForShare(cardId) {
 export async function fetchFilterOptions(source = "TCG") {
   return useSupabaseBackend()
     ? (await sb()).fetchFilterOptions(source)
-    : duck.fetchFilterOptions(source);
+    : (await _getDuck()).fetchFilterOptions(source);
 }
 
 /** Explore grid: merged filter dropdown values (stable when Source changes). */
 export async function fetchExploreFilterOptions() {
   return useSupabaseBackend()
     ? (await sb()).fetchExploreFilterOptions()
-    : duck.fetchExploreFilterOptions();
+    : (await _getDuck()).fetchExploreFilterOptions();
 }
 
 export async function fetchFormOptions() {
-  return useSupabaseBackend() ? (await sb()).fetchFormOptions() : duck.fetchFormOptions();
+  return useSupabaseBackend() ? (await sb()).fetchFormOptions() : (await _getDuck()).fetchFormOptions();
 }
 
 /** TanStack Query key for `fetchFormOptions` (Workbench, CardDetail, CustomCardForm). */
@@ -90,26 +95,26 @@ export const FORM_OPTIONS_QUERY_KEY = ["formOptions"];
 export async function fetchAnnotations(cardId) {
   return useSupabaseBackend()
     ? (await sb()).fetchAnnotations(cardId)
-    : duck.fetchAnnotations(cardId);
+    : (await _getDuck()).fetchAnnotations(cardId);
 }
 
 export async function patchAnnotations(cardId, annotations, options) {
   return useSupabaseBackend()
     ? (await sb()).patchAnnotations(cardId, annotations, options)
-    : duck.patchAnnotations(cardId, annotations, options);
+    : (await _getDuck()).patchAnnotations(cardId, annotations, options);
 }
 
 export async function fetchMatchingCardIds(params) {
   return useSupabaseBackend()
     ? (await sb()).fetchMatchingCardIds(params)
-    : duck.fetchMatchingCardIds(params);
+    : (await _getDuck()).fetchMatchingCardIds(params);
 }
 
 /** First N matching card IDs (same filters as Explore); Supabase only. */
 export async function fetchFirstNMatchingCardIds(params, limit) {
   return useSupabaseBackend()
     ? (await sb()).fetchFirstNMatchingCardIds(params, limit)
-    : duck.fetchFirstNMatchingCardIds(params, limit);
+    : (await _getDuck()).fetchFirstNMatchingCardIds(params, limit);
 }
 
 export { BATCH_EDIT_MAX_CARDS } from "./lib/batchLimits.js";
@@ -117,19 +122,19 @@ export { BATCH_EDIT_MAX_CARDS } from "./lib/batchLimits.js";
 export async function batchPatchAnnotations(cardIds, patch, options) {
   return useSupabaseBackend()
     ? (await sb()).batchPatchAnnotations(cardIds, patch, options)
-    : duck.batchPatchAnnotations(cardIds, patch, options);
+    : (await _getDuck()).batchPatchAnnotations(cardIds, patch, options);
 }
 
 export async function fetchBatchWizardPreview(cardIds, fieldKey) {
   return useSupabaseBackend()
     ? (await sb()).fetchBatchWizardPreview(cardIds, fieldKey)
-    : duck.fetchBatchWizardPreview(cardIds, fieldKey);
+    : (await _getDuck()).fetchBatchWizardPreview(cardIds, fieldKey);
 }
 
 export async function fetchCardNamesByIds(cardIds) {
   return useSupabaseBackend()
     ? (await sb()).fetchCardNamesByIds(cardIds)
-    : duck.fetchCardNamesByIds(cardIds);
+    : (await _getDuck()).fetchCardNamesByIds(cardIds);
 }
 
 export async function fetchCardThumbnailsByIds(cardIds) {
@@ -141,33 +146,33 @@ export async function fetchCardThumbnailsByIds(cardIds) {
 export async function appendCuratedOptionsForCustomField(fieldName, newStrings) {
   return useSupabaseBackend()
     ? (await sb()).appendCuratedOptionsForCustomField(fieldName, newStrings)
-    : duck.appendCuratedOptionsForCustomField(fieldName, newStrings);
+    : (await _getDuck()).appendCuratedOptionsForCustomField(fieldName, newStrings);
 }
 
 export async function fetchEditHistory(params) {
   return useSupabaseBackend()
     ? (await sb()).fetchEditHistory(params)
-    : duck.fetchEditHistory(params);
+    : (await _getDuck()).fetchEditHistory(params);
 }
 
 /** Server-backed Batch list (Supabase); null when unsigned-in or anonymous. */
 export async function fetchBatchSelection() {
-  return useSupabaseBackend() ? (await sb()).fetchBatchSelection() : duck.fetchBatchSelection();
+  return useSupabaseBackend() ? (await sb()).fetchBatchSelection() : (await _getDuck()).fetchBatchSelection();
 }
 
 /** Persist Batch list to Supabase (no-op in v1 / anonymous). */
 export async function upsertBatchSelection(cardIds) {
   return useSupabaseBackend()
     ? (await sb()).upsertBatchSelection(cardIds)
-    : duck.upsertBatchSelection(cardIds);
+    : (await _getDuck()).upsertBatchSelection(cardIds);
 }
 
 export async function createBatchRun(meta) {
-  return useSupabaseBackend() ? (await sb()).createBatchRun(meta) : duck.createBatchRun(meta);
+  return useSupabaseBackend() ? (await sb()).createBatchRun(meta) : (await _getDuck()).createBatchRun(meta);
 }
 
 export async function fetchBatchRuns(opts) {
-  return useSupabaseBackend() ? (await sb()).fetchBatchRuns(opts) : duck.fetchBatchRuns(opts);
+  return useSupabaseBackend() ? (await sb()).fetchBatchRuns(opts) : (await _getDuck()).fetchBatchRuns(opts);
 }
 
 export async function fetchProfile() {
@@ -209,35 +214,35 @@ export async function renameManualCard(cardId, newName) {
 }
 
 export async function fetchAttributes() {
-  return useSupabaseBackend() ? (await sb()).fetchAttributes() : duck.fetchAttributes();
+  return useSupabaseBackend() ? (await sb()).fetchAttributes() : (await _getDuck()).fetchAttributes();
 }
 
 export async function createAttribute(attr) {
   return useSupabaseBackend()
     ? (await sb()).createAttribute(attr)
-    : duck.createAttribute(attr);
+    : (await _getDuck()).createAttribute(attr);
 }
 
 export async function deleteAttribute(key) {
   return useSupabaseBackend()
     ? (await sb()).deleteAttribute(key)
-    : duck.deleteAttribute(key);
+    : (await _getDuck()).deleteAttribute(key);
 }
 
 export async function executeSql(query) {
-  return useSupabaseBackend() ? (await sb()).executeSql(query) : duck.executeSql(query);
+  return useSupabaseBackend() ? (await sb()).executeSql(query) : (await _getDuck()).executeSql(query);
 }
 
 export async function exportAllAnnotations() {
   return useSupabaseBackend()
     ? (await sb()).exportAllAnnotations()
-    : duck.exportAllAnnotations();
+    : (await _getDuck()).exportAllAnnotations();
 }
 
 export async function fetchDataHealthSummary() {
   return useSupabaseBackend()
     ? (await sb()).fetchDataHealthSummary()
-    : duck.fetchDataHealthSummary();
+    : (await _getDuck()).fetchDataHealthSummary();
 }
 
 export async function fetchAnnotationValueIssues(opts) {
@@ -260,31 +265,31 @@ export async function applyAnnotationValueCleanup(opts) {
 export async function syncMutableTablesToIndexedDB() {
   return useSupabaseBackend()
     ? (await sb()).syncMutableTablesToIndexedDB()
-    : duck.syncMutableTablesToIndexedDB();
+    : (await _getDuck()).syncMutableTablesToIndexedDB();
 }
 
 export async function triggerIngest() {
-  return useSupabaseBackend() ? (await sb()).triggerIngest() : duck.triggerIngest();
+  return useSupabaseBackend() ? (await sb()).triggerIngest() : (await _getDuck()).triggerIngest();
 }
 
 export async function addCustomSet(set) {
-  return useSupabaseBackend() ? (await sb()).addCustomSet(set) : duck.addCustomSet(set);
+  return useSupabaseBackend() ? (await sb()).addCustomSet(set) : (await _getDuck()).addCustomSet(set);
 }
 
 export async function addTcgCard(card) {
-  return useSupabaseBackend() ? (await sb()).addTcgCard(card) : duck.addTcgCard(card);
+  return useSupabaseBackend() ? (await sb()).addTcgCard(card) : (await _getDuck()).addTcgCard(card);
 }
 
 export async function addPocketCard(card) {
   return useSupabaseBackend()
     ? (await sb()).addPocketCard(card)
-    : duck.addPocketCard(card);
+    : (await _getDuck()).addPocketCard(card);
 }
 
 export async function addCustomCard(card) {
   return useSupabaseBackend()
     ? (await sb()).addCustomCard(card)
-    : duck.addCustomCard(card);
+    : (await _getDuck()).addCustomCard(card);
 }
 
 /** Resolves manual card id: Supabase RPC `generate_card_id`, else local `buildManualCardId`. */
@@ -309,25 +314,25 @@ export async function deleteCardsById(cardIds, options = {}) {
   assertCardDeleteAcknowledged(options);
   return useSupabaseBackend()
     ? (await sb()).deleteCardsById(cardIds, options)
-    : duck.deleteCardsById(cardIds, options);
+    : (await _getDuck()).deleteCardsById(cardIds, options);
 }
 
 export async function fetchWorkbenchQueues() {
   return useSupabaseBackend()
     ? (await sb()).fetchWorkbenchQueues()
-    : duck.fetchWorkbenchQueues();
+    : (await _getDuck()).fetchWorkbenchQueues();
 }
 
 export async function ensureDefaultWorkbenchQueue() {
   return useSupabaseBackend()
     ? (await sb()).ensureDefaultWorkbenchQueue()
-    : duck.ensureDefaultWorkbenchQueue();
+    : (await _getDuck()).ensureDefaultWorkbenchQueue();
 }
 
 export async function updateWorkbenchQueue(queueId, patch) {
   return useSupabaseBackend()
     ? (await sb()).updateWorkbenchQueue(queueId, patch)
-    : duck.updateWorkbenchQueue(queueId, patch);
+    : (await _getDuck()).updateWorkbenchQueue(queueId, patch);
 }
 
 export async function createWorkbenchQueue(payload) {
@@ -347,13 +352,13 @@ export async function deleteWorkbenchQueue(queueId) {
 export async function appendCardToDefaultQueue(cardId) {
   return useSupabaseBackend()
     ? (await sb()).appendCardToDefaultQueue(cardId)
-    : duck.appendCardToDefaultQueue(cardId);
+    : (await _getDuck()).appendCardToDefaultQueue(cardId);
 }
 
 export async function appendCardsToDefaultQueue(cardIds) {
   return useSupabaseBackend()
     ? (await sb()).appendCardsToDefaultQueue(cardIds)
-    : duck.appendCardsToDefaultQueue(cardIds);
+    : (await _getDuck()).appendCardsToDefaultQueue(cardIds);
 }
 
 export async function appendCardToWorkbenchQueue(queueId, cardId) {

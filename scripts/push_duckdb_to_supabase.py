@@ -43,6 +43,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_DUCKDB = SCRIPT_DIR.parent / "public" / "data" / "pokemon.duckdb"
 BATCH_SIZE = 500
 DRY_RUN = "--dry-run" in sys.argv
+import time
 
 
 def exit_if_jwt_is_anon_key(key: str) -> None:
@@ -116,13 +117,32 @@ def batch_upsert(sb, table: str, rows: list) -> int:
     if not rows:
         return 0
     total = 0
-    for i in range(0, len(rows), BATCH_SIZE):
-        batch = rows[i : i + BATCH_SIZE]
+    i = 0
+    while i < len(rows):
+        size = min(BATCH_SIZE, len(rows) - i)
+        batch = rows[i : i + size]
         if DRY_RUN:
-            total += len(batch)
+            total += size
+            i += size
             continue
-        sb.table(table).upsert(batch).execute()
-        total += len(batch)
+        attempt = 0
+        pushed = 0
+        retry_size = size
+        retry_batch = batch
+        while pushed < size:
+            try:
+                sb.table(table).upsert(retry_batch).execute()
+                pushed += retry_size
+                total += retry_size
+            except Exception:
+                attempt += 1
+                if attempt >= 3 or retry_size <= 50:
+                    raise
+                retry_size = max(50, retry_size // 2)
+                retry_batch = batch[pushed : pushed + retry_size]
+                print(f"  (retry {attempt}: {retry_size} rows)", flush=True)
+                time.sleep(1)
+        i += size
     return total
 
 
@@ -267,11 +287,18 @@ def push_japanese_cards(conn, sb, now_iso: str) -> int:
         SELECT * FROM japanese_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
     """
+    # Build a set_id -> set_name lookup from japanese_sets
+    set_names = {}
+    for s in fetch_dicts(conn, "SELECT id, name FROM japanese_sets"):
+        if s.get("id"):
+            set_names[s["id"]] = s.get("name") or s["id"]
+
     rows_out = []
     for c in fetch_dicts(conn, sql):
         num = c.get("number")
         num_str = str(int(num)) if num is not None else None
         ill = c.get("illustrator") or None
+        sid = c.get("set_id") or None
         rows_out.append(
             {
                 "id": c["id"],
@@ -280,7 +307,8 @@ def push_japanese_cards(conn, sb, now_iso: str) -> int:
                 "rarity": c.get("rarity") or None,
                 "artist": ill,
                 "illustrator": ill,
-                "set_id": c.get("set_id") or None,
+                "set_id": sid,
+                "set_name": set_names.get(sid) if sid else None,
                 "number": num_str,
                 "element": c.get("element") or None,
                 "hp": str(c["hp"]) if c.get("hp") is not None else None,
@@ -292,6 +320,67 @@ def push_japanese_cards(conn, sb, now_iso: str) -> int:
                 "image_large": c.get("image_url") or None,
                 "raw_data": parse_json_col(c.get("raw_data"), {}) or {},
                 "origin": "tcgdex",
+                "origin_detail": "japanese",
+                "format": "printed",
+                "last_seen_in_api": now_iso,
+            }
+        )
+    return batch_upsert(sb, "cards", rows_out)
+
+
+def push_ptcgdb_sets(conn, sb) -> int:
+    """Upsert sets referenced by PTCG-database Japanese cards."""
+    sql = "SELECT DISTINCT set_id FROM japanese_cards_ptcgdb WHERE is_custom IS NOT TRUE"
+    rows = []
+    for r in fetch_dicts(conn, sql):
+        sid = r.get("set_id")
+        if not sid:
+            continue
+        rows.append(
+            {
+                "id": sid,
+                "name": sid.upper(),
+                "origin": "ptcgdb",
+            }
+        )
+    if rows:
+        return batch_upsert(sb, "sets", rows)
+    return 0
+
+
+def push_japanese_cards_ptcgdb(conn, sb, now_iso: str) -> int:
+    """Push PTCG-database Japanese cards (ptcgdb- prefix IDs) to Supabase."""
+    sql = """
+        SELECT * FROM japanese_cards_ptcgdb
+        WHERE COALESCE(is_custom, FALSE) = FALSE
+    """
+    rows_out = []
+    for c in fetch_dicts(conn, sql):
+        hp_val = c.get("hp")
+        types_val = parse_json_col(c.get("types"), []) or []
+        subtypes_val = parse_json_col(c.get("subtypes"), []) or []
+        rows_out.append(
+            {
+                "id": c["id"],
+                "name": c.get("name") or "Unknown",
+                "card_type": c.get("card_type") or None,
+                "rarity": c.get("rarity") or None,
+                "artist": c.get("illustrator") or None,
+                "illustrator": c.get("illustrator") or None,
+                "set_id": c.get("set_id") or None,
+                "number": str(c.get("number") or ""),
+                "element": c.get("element") or None,
+                "types": types_val if types_val else [],
+                "subtypes": subtypes_val if subtypes_val else [],
+                "hp": str(hp_val) if hp_val not in (None, "", "None") else None,
+                "stage": c.get("stage") or None,
+                "retreat_cost": coerce_int(c.get("retreat_cost")),
+                "weakness": c.get("weakness") or None,
+                "evolves_from": c.get("evolves_from") or None,
+                "image_small": c.get("image_small") or None,
+                "image_large": c.get("image_large") or None,
+                "raw_data": parse_json_col(c.get("raw_data"), {}) or {},
+                "origin": "ptcgdb",
                 "origin_detail": "japanese",
                 "format": "printed",
                 "last_seen_in_api": now_iso,
@@ -366,8 +455,25 @@ def main() -> None:
 
         n_japanese = push_japanese_cards(conn, sb, now_iso)
         print(f"  cards (tcgdex Japanese): {n_japanese} rows")
+
+        # PTCG-database Japanese cards (optional table — skip if not present)
+        tables = {row[0] for row in conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='main'").fetchall()}
+        if "japanese_cards_ptcgdb" in tables:
+            n_jp_ptcgdb_sets = push_ptcgdb_sets(conn, sb)
+            if n_jp_ptcgdb_sets:
+                print(f"  sets (PTCG-db): {n_jp_ptcgdb_sets} rows")
+            n_jp_ptcgdb = push_japanese_cards_ptcgdb(conn, sb, now_iso)
+            print(f"  cards (PTCG-db Japanese): {n_jp_ptcgdb} rows")
     finally:
         conn.close()
+
+    # Refresh the Explore filter options materialized view (migration 054).
+    if not DRY_RUN and sb:
+        try:
+            sb.rpc("refresh_explore_filter_options").execute()
+            print("  explore_filter_options: refreshed")
+        except Exception as exc:
+            print(f"  explore_filter_options: refresh failed ({exc}) — view will be stale until next refresh")
 
     print("Done.")
 

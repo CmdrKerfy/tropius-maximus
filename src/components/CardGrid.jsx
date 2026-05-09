@@ -4,12 +4,9 @@
  * Displays cards in a CSS Grid layout that adapts from 2 columns on mobile
  * to 6 columns on large screens. Each card is clickable to open the detail modal.
  * Shows a loading skeleton while cards are being fetched.
- *
- * When SQL console is open, cards can be selected for bulk operations via checkboxes.
- * On Explore (Supabase), batch checkboxes appear only when batch tools are expanded or the batch list is non-empty.
  */
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { NavLink } from "react-router-dom";
 import { Check, Sparkles } from "lucide-react";
 import { isEmailAuthRequired } from "../lib/authInvite.js";
@@ -17,7 +14,7 @@ import pocketCardBg from "../../images/pocketcardbackground.png";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
 
-function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
+const CardItem = memo(function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
   const supabase = useSupabaseBackend();
@@ -98,6 +95,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
           alt={card.name}
           referrerPolicy="no-referrer"
           loading="lazy"
+          decoding="async"
           className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImgLoaded(true)}
           onError={(e) => {
@@ -131,7 +129,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
       </button>
     </div>
   );
-}
+});
 
 export default function CardGrid({
   cards,
@@ -141,7 +139,6 @@ export default function CardGrid({
   onToggleSelection,
   onResetExplore,
   showResetWhenEmpty = false,
-  /** True when Supabase session is anonymous; migration 019 blocks reads — grid is empty with no PostgREST error. */
   anonymousRlsBlocked = false,
 }) {
   // Loading state: show placeholder skeleton cards.
@@ -149,16 +146,13 @@ export default function CardGrid({
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={i}
-            className="aspect-[2.5/3.5] bg-gray-200 rounded-lg animate-pulse"
-          />
+          <div key={i} className="aspect-[2.5/3.5] bg-gray-200 rounded-lg animate-pulse" />
         ))}
       </div>
     );
   }
 
-  // Empty state: no cards match the current search/filters.
+  // Empty state
   if (cards.length === 0) {
     if (anonymousRlsBlocked) {
       return (

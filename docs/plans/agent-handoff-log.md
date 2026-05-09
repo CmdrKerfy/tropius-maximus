@@ -49,6 +49,18 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-05-02 — TCGdex JP / Pocket image URLs in `ingest.py`
+
+- Preflight sent and accepted: n/a (small ingest fix; no Auto preflight in thread)
+- Branch: `v2/supabase-migration`
+- Scope: Japanese + Pocket card rows where TCGdex omits `image` or only a base path breaks on CDN.
+- Completed:
+  - `tcgdx_card_high_webp_url(..., japanese_locale=...)` now resolves `ja/...` vs `en/...` using cached `HEAD` so SM-era JP cards pick working `en/.../high.webp` while SV keeps `ja/...` when that returns 200.
+  - `ingest_japanese_cards` / `ingest_pocket_cards` pass `serie_id` from set payload and use this helper instead of `f\"{image_base}/high.webp\"` only.
+- Validation run: manual `python3 -c` smoke for SM12 vs SV1S synthetic URLs (not full ingest).
+- Next action (single first step):
+  - Re-run Japanese ingest with `--force` (or project’s Japanese-only flag) then `push_duckdb_to_supabase.py` so Supabase `image_*` columns backfill for existing JP rows.
+
 ### 2026-05-02 — Camera angle multi-select confirmed + Phase 6 added
 
 - Owner confirmed: camera_angle should be multi-select (multiple values per card), not a duplicates issue.

@@ -9,11 +9,12 @@ export default defineConfig({
     outDir: "dist",
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom"],
-          "vendor-duckdb": ["@duckdb/duckdb-wasm"],
-          "vendor-query": ["@tanstack/react-query"],
-          "vendor-router": ["react-router-dom"],
+        manualChunks(id) {
+          if (id.includes("node_modules/react-dom")) return "vendor-react";
+          if (id.includes("node_modules/react/")) return "vendor-react";
+          if (id.includes("node_modules/@tanstack")) return "vendor-query";
+          if (id.includes("node_modules/react-router")) return "vendor-router";
+          if (id.includes("node_modules/@duckdb")) return "vendor-duckdb";
         },
       },
     },

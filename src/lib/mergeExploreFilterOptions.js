@@ -97,6 +97,12 @@ export function mergeExploreFilterOptions(tcg, pocket, custom, japanese) {
       ...(c.stages || []),
       ...(j.stages || []),
     ]),
+    setsBySource: {
+      tcg: t.sets || [],
+      pocket: p.sets || [],
+      custom: c.sets || [],
+      japanese: j.sets || [],
+    },
     weathers: t.weathers || [],
     environments: t.environments || [],
     actions: t.actions || [],

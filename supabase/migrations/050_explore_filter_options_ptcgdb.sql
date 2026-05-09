@@ -1,12 +1,18 @@
 -- ============================================================
--- 045: Explore filter options — add Japanese TCG support
+-- 050: Explore filter options — add PTCG-database Japanese source
 -- ============================================================
--- Updates get_explore_filter_options_db() to return a 'japanese'
--- key so the Explore filter bar includes TCG (JPN) distincts.
--- Japanese cards have origin='tcgdex' + origin_detail='japanese'.
--- SECURITY INVOKER: respects RLS (authenticated, non-anonymous per 019).
+-- Updates get_explore_filter_options_db() Japanese bucket to query
+-- BOTH origins (tcgdex + ptcgdb) for card-backed distincts.
+-- Japanese cards have origin_detail='japanese' with origin in
+-- ('tcgdex', 'ptcgdb').
 --
--- Grant: authenticated + service_role only.
+-- Uses a jpn_cards CTE so the filtered card set is scanned once
+-- instead of 6+ times (one per distinct column), avoiding the
+-- Supabase statement timeout that the original per-subquery
+-- approach hit after the 19k-row ptcgdb bulk ingest.
+--
+-- Full CREATE OR REPLACE — safe regardless of whether 047 was applied.
+-- SECURITY INVOKER: respects RLS (authenticated, non-anonymous per 019).
 
 CREATE OR REPLACE FUNCTION public.get_explore_filter_options_db()
 RETURNS jsonb
@@ -15,6 +21,15 @@ STABLE
 SECURITY INVOKER
 SET search_path = public
 AS $$
+  WITH jpn_cards AS MATERIALIZED (
+    SELECT card_type, rarity, element, stage, artist, set_id
+    FROM cards
+    WHERE origin IN ('tcgdex', 'ptcgdb')
+      AND origin_detail = 'japanese'
+      AND set_id IS NOT NULL
+      AND btrim(set_id) <> ''
+      AND set_id NOT IN ('neo1', 'neo2', 'neo3', 'neo4')
+  )
   SELECT jsonb_build_object(
     'tcg',
     jsonb_build_object(
@@ -265,53 +280,25 @@ AS $$
       'card_types',
       COALESCE(
         (SELECT jsonb_agg(x ORDER BY x)
-         FROM (
-           SELECT DISTINCT card_type AS x
-           FROM cards
-           WHERE origin = 'tcgdex'
-             AND origin_detail = 'japanese'
-             AND card_type IS NOT NULL
-             AND btrim(card_type::text) <> ''
-         ) d),
+         FROM (SELECT DISTINCT card_type AS x FROM jpn_cards WHERE card_type IS NOT NULL AND btrim(card_type::text) <> '') d),
         '[]'::jsonb
       ),
       'rarities',
       COALESCE(
         (SELECT jsonb_agg(x ORDER BY x)
-         FROM (
-           SELECT DISTINCT rarity AS x
-           FROM cards
-           WHERE origin = 'tcgdex'
-             AND origin_detail = 'japanese'
-             AND rarity IS NOT NULL
-             AND btrim(rarity) <> ''
-         ) d),
+         FROM (SELECT DISTINCT rarity AS x FROM jpn_cards WHERE rarity IS NOT NULL AND btrim(rarity) <> '') d),
         '[]'::jsonb
       ),
       'elements',
       COALESCE(
         (SELECT jsonb_agg(x ORDER BY x)
-         FROM (
-           SELECT DISTINCT element AS x
-           FROM cards
-           WHERE origin = 'tcgdex'
-             AND origin_detail = 'japanese'
-             AND element IS NOT NULL
-             AND btrim(element::text) <> ''
-         ) d),
+         FROM (SELECT DISTINCT element AS x FROM jpn_cards WHERE element IS NOT NULL AND btrim(element::text) <> '') d),
         '[]'::jsonb
       ),
       'stages',
       COALESCE(
         (SELECT jsonb_agg(x ORDER BY x)
-         FROM (
-           SELECT DISTINCT stage AS x
-           FROM cards
-           WHERE origin = 'tcgdex'
-             AND origin_detail = 'japanese'
-             AND stage IS NOT NULL
-             AND btrim(stage::text) <> ''
-         ) d),
+         FROM (SELECT DISTINCT stage AS x FROM jpn_cards WHERE stage IS NOT NULL AND btrim(stage::text) <> '') d),
         '[]'::jsonb
       ),
       'sets',
@@ -320,27 +307,19 @@ AS $$
            jsonb_build_object('id', id, 'name', name, 'series', series)
            ORDER BY series NULLS LAST, name
          )
-         FROM sets
-         WHERE origin = 'tcgdex'
-           AND id NOT IN ('neo1', 'neo2', 'neo3', 'neo4')
-           AND id IN (
-             SELECT DISTINCT set_id FROM cards
-             WHERE origin = 'tcgdex'
-               AND origin_detail = 'japanese'
-           )),
+         FROM (
+           SELECT DISTINCT c.set_id AS id,
+                  COALESCE(s.name, upper(c.set_id)) AS name,
+                  s.series
+           FROM jpn_cards c
+           LEFT JOIN sets s ON s.id = c.set_id
+         ) combined),
         '[]'::jsonb
       ),
       'artists',
       COALESCE(
         (SELECT jsonb_agg(x ORDER BY x)
-         FROM (
-           SELECT DISTINCT artist AS x
-           FROM cards
-           WHERE origin = 'tcgdex'
-             AND origin_detail = 'japanese'
-             AND artist IS NOT NULL
-             AND btrim(artist) <> ''
-         ) d),
+         FROM (SELECT DISTINCT artist AS x FROM jpn_cards WHERE artist IS NOT NULL AND btrim(artist) <> '') d),
         '[]'::jsonb
       )
     )
@@ -348,7 +327,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.get_explore_filter_options_db() IS
-  'Distinct filter values for Explore in one round-trip; client merges static option lists. Includes Japanese TCG data.';
+  'Distinct filter values for Explore in one round-trip; client merges static option lists. Japanese TCG data from both tcgdex and PTCG-database (ptcgdb). Uses jpn_cards CTE to scan the filtered slice once.';
 
 GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_explore_filter_options_db() TO service_role;

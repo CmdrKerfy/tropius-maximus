@@ -5,9 +5,10 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, Component } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCards,
+  fetchCard,
   fetchExploreFilterOptions,
   fetchAttributes,
   deleteCardsById,
@@ -269,7 +270,7 @@ export default function ExplorePage() {
     queryKey: ["filterOptions", "explore"],
     queryFn: fetchExploreFilterOptions,
     staleTime: FILTER_OPTIONS_STALE_MS,
-    placeholderData: keepPreviousData,
+    placeholderData: (prev) => prev,
   });
   const { data: workbenchQueues = [] } = useQuery({
     queryKey: ["workbenchQueues"],
@@ -306,10 +307,15 @@ export default function ExplorePage() {
   const { data: attributes = [] } = useQuery({
     queryKey: ["attributes"],
     queryFn: fetchAttributes,
+    staleTime: 5 * 60_000,
   });
 
-  // Exact count: slower than `planned` but correct after bulk ingest / stats skew (planned can be wildly low).
-  const EXPLORE_EXACT_COUNT = USE_SUPABASE_APP;
+  // Planned counts are fast and accurate enough for page clamping. If clamp issues
+  // appear after bulk ingest, run ANALYZE or temporarily set this to true.
+  // count: "planned" (Postgres planner estimate) returns wildly inaccurate totals
+  // after bulk ingests (saw 20,022 vs actual 60,065). Exact count on 60k rows is
+  // fast enough with indexes (~10-50ms). Revisit if the table grows to 500k+.
+  const EXPLORE_EXACT_COUNT = true;
 
   const {
     data: cardsResult,
@@ -327,7 +333,7 @@ export default function ExplorePage() {
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: EXPLORE_EXACT_COUNT } : {}),
       }),
-    placeholderData: keepPreviousData,
+    placeholderData: (prev) => prev,
   });
 
   const cards = cardsResult?.cards ?? [];
@@ -439,28 +445,21 @@ export default function ExplorePage() {
   }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient]);
 
   // Prefetch prev/next card detail when the modal is open for instant Prev/Next navigation.
+  // Derive source the same way the modal does so query keys match and prefetch actually hits cache.
   useEffect(() => {
     if (!USE_SUPABASE_APP || !selectedCardId) return;
     const idx = displayedCards.findIndex((c) => c.id === selectedCardId);
     if (idx < 0) return;
-    if (idx > 0) {
-      const prev = displayedCards[idx - 1];
-      const src = prev.is_promo ? "Promo" : prev.origin === "tcgdex" ? "Pocket" : "TCG";
+    const prefetchCard = (card) => {
+      const src = filters.source || (card.is_promo ? "Promo" : (card.origin === "tcgdex" || card.origin === "ptcgdb") ? "Pocket" : "TCG");
       queryClient.prefetchQuery({
-        queryKey: ["cardDetail", prev.id, src],
-        queryFn: () => fetchCard(prev.id, src),
+        queryKey: ["cardDetail", card.id, src],
+        queryFn: () => fetchCard(card.id, src),
         staleTime: 5 * 60_000,
       });
-    }
-    if (idx < displayedCards.length - 1) {
-      const next = displayedCards[idx + 1];
-      const src = next.is_promo ? "Promo" : next.origin === "tcgdex" ? "Pocket" : "TCG";
-      queryClient.prefetchQuery({
-        queryKey: ["cardDetail", next.id, src],
-        queryFn: () => fetchCard(next.id, src),
-        staleTime: 5 * 60_000,
-      });
-    }
+    };
+    if (idx > 0) prefetchCard(displayedCards[idx - 1]);
+    if (idx < displayedCards.length - 1) prefetchCard(displayedCards[idx + 1]);
   }, [selectedCardId, displayedCards, filters.source, queryClient]);
 
   // ── URL sync ─────────────────────────────────────────────────────────

@@ -34,8 +34,10 @@ Environment:
 """
 
 import argparse
+import functools
 import json
 import os
+from urllib.parse import quote
 import re
 import subprocess
 import sys
@@ -58,6 +60,7 @@ class IngestFailureSummary:
     pocket_card_fetch_failures: int = 0
     japanese_set_fetch_failures: int = 0
     japanese_card_fetch_failures: int = 0
+    japanese_ptcgdb_failures: int = 0
 
     def has_partial_failures(self) -> bool:
         return (
@@ -67,6 +70,7 @@ class IngestFailureSummary:
             + self.pocket_card_fetch_failures
             + self.japanese_set_fetch_failures
             + self.japanese_card_fetch_failures
+            + self.japanese_ptcgdb_failures
         ) > 0
 
 
@@ -93,6 +97,126 @@ TCGDEX_JA_BASE = "https://api.tcgdex.net/v2/ja"
 POCKET_IMAGE_BASE = "https://assets.tcgdex.net/en/tcgp"
 
 REQUEST_TIMEOUT = 120  # Increased for large sets
+
+
+def _tcgdx_webp_from_image_field(image: object) -> str:
+    """Turn TCGdex `image` (string base URL or small dict) into a full *.webp URL, or ''."""
+    if isinstance(image, str) and image.strip():
+        b = image.strip().rstrip("/")
+        if b.endswith(".webp"):
+            return b
+        return f"{b}/high.webp"
+    if isinstance(image, dict):
+        for key in ("high", "large", "small", "default"):
+            v = image.get(key)
+            if isinstance(v, str) and v.startswith("http"):
+                b = v.strip().rstrip("/")
+                if b.endswith(".webp"):
+                    return b
+                return f"{b}/high.webp"
+        b = image.get("url") or image.get("base")
+        if isinstance(b, str) and b.strip():
+            b = b.strip().rstrip("/")
+            return f"{b}/high.webp" if not b.endswith(".webp") else b
+    return ""
+
+
+def _tcgdx_en_asset_high_webp(serie_id: str, set_id: str, local_id: str) -> str:
+    """EN assets path: /en/{serie.lower}/{set.lower}/{n}/high.webp (n = int localId when numeric)."""
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    loc = str(local_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    try:
+        nseg = str(int(loc, 10))
+    except ValueError:
+        nseg = loc.lower()
+    return f"https://assets.tcgdex.net/en/{ser.lower()}/{sid.lower()}/{nseg}/high.webp"
+
+
+def _tcgdx_ja_asset_high_webp(serie_id: str, set_id: str, local_id: str) -> str:
+    """JA assets path uses API casing: /ja/{SV}/{SV1S}/001/high.webp."""
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    loc = str(local_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    return f"https://assets.tcgdex.net/ja/{ser}/{sid}/{loc}/high.webp"
+
+
+@functools.lru_cache(maxsize=32768)
+def _tcgdx_asset_head_ok(url: str) -> bool:
+    """True if the CDN returns 200 for this asset (HEAD). Cached across cards in one ingest run."""
+    if not url:
+        return False
+    try:
+        r = httpx.head(url, timeout=15, follow_redirects=True)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def _normalize_jpn_number(number: object) -> str:
+    """Deterministic normalization of a Japanese card number.
+
+    Rules (must match JS src/lib/jpnCardKey.js exactly):
+    1. Convert to string, trim whitespace
+    2. Uppercase all letters
+    3. Strip non-alphanumeric/hyphen characters
+    4. Strip leading zeros from the numeric prefix only; preserve letter prefixes
+    5. If empty after normalization, use "0"
+    """
+    if number is None:
+        return "0"
+    s = str(number).strip()
+    if not s:
+        return "0"
+    s = s.upper()
+    s = re.sub(r"[^A-Z0-9-]", "", s)
+    s = re.sub(r"^(-?)0+(\d)", r"\1\2", s)  # strip leading zeros from numeric prefix
+    return s or "0"
+
+
+def _build_jpn_card_key(set_id: str, number: object) -> Optional[str]:
+    """Canonical dedupe key for a Japanese card: lower(set_id) + ':' + normalizeJpnNumber(number)."""
+    if not set_id:
+        return None
+    return f"{str(set_id).lower().strip()}:{_normalize_jpn_number(number)}"
+
+
+def tcgdx_card_high_webp_url(card: dict, *, serie_id: str, set_id: str, japanese_locale: bool) -> str:
+    """
+    Full card image URL for DuckDB image_url → Supabase image_small / image_large.
+
+    For **Japanese** (`japanese_locale=True`): prefer `ja/...` when it exists on the CDN; many
+    Sun & Moon JP rows 404 on `ja/...` while `en/.../high.webp` still serves the same scan.
+
+    For **Pocket** (`japanese_locale=False`): prefer EN assets; JA path is only a last resort.
+    """
+    u = _tcgdx_webp_from_image_field(card.get("image"))
+    if u:
+        return u
+    loc = str(card.get("localId", "") or "").strip()
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    ja_u = _tcgdx_ja_asset_high_webp(ser, sid, loc)
+    en_u = _tcgdx_en_asset_high_webp(ser, sid, loc)
+    if japanese_locale:
+        if ja_u and _tcgdx_asset_head_ok(ja_u):
+            return ja_u
+        if en_u and _tcgdx_asset_head_ok(en_u):
+            return en_u
+        return ""  # neither CDN path has this scan — app will show fallback
+    if en_u and _tcgdx_asset_head_ok(en_u):
+        return en_u
+    if ja_u and _tcgdx_asset_head_ok(ja_u):
+        return ja_u
+    return ""  # neither CDN path available
+
+
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
@@ -284,6 +408,38 @@ def initialize_database() -> None:
             image_url       VARCHAR,
             raw_data        JSON,
             is_custom       BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_cards_ptcgdb (
+            id              VARCHAR PRIMARY KEY,
+            name            VARCHAR,
+            set_id          VARCHAR,
+            number          VARCHAR,
+            rarity          VARCHAR,
+            card_type       VARCHAR,
+            element         VARCHAR,
+            types           JSON,
+            subtypes        JSON,
+            hp              VARCHAR,
+            stage           VARCHAR,
+            retreat_cost    INTEGER,
+            weakness        VARCHAR,
+            evolves_from    VARCHAR,
+            illustrator     VARCHAR,
+            image_small     VARCHAR,
+            image_large     VARCHAR,
+            raw_data        JSON,
+            is_custom       BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS failed_sets_ptcgdb (
+            set_id   VARCHAR PRIMARY KEY,
+            reason   VARCHAR,
+            failed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -773,6 +929,7 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
             print(f"failed ({e})")
             continue
 
+        serie_id = (set_data.get("serie") or {}).get("id") or ""
         cards_brief = set_data.get("cards", [])
         set_ingested = 0
 
@@ -817,9 +974,9 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
             boosters = card.get("boosters") or []
             packs = [{"id": b.get("id", ""), "name": b.get("name", "")} for b in boosters]
 
-            # Image URL from TCGdex image field
-            image_base = card.get("image", "")
-            image_url = f"{image_base}/high.webp" if image_base else ""
+            image_url = tcgdx_card_high_webp_url(
+                card, serie_id=serie_id, set_id=set_id, japanese_locale=False
+            )
 
             conn.execute("""
                 INSERT INTO pocket_cards
@@ -934,7 +1091,7 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
         print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
 
         try:
-            set_resp = httpx.get(f"{TCGDEX_JA_BASE}/sets/{set_id}", timeout=REQUEST_TIMEOUT)
+            set_resp = httpx.get(f"{TCGDEX_JA_BASE}/sets/{quote(set_id, safe='')}", timeout=REQUEST_TIMEOUT)
             set_resp.raise_for_status()
             set_data = set_resp.json()
         except Exception as e:
@@ -942,6 +1099,7 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
             print(f"failed ({e})")
             continue
 
+        serie_id = (set_data.get("serie") or {}).get("id") or ""
         cards_brief = set_data.get("cards", [])
         set_ingested = 0
 
@@ -949,7 +1107,7 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
             card_id = card_brief["id"]
 
             try:
-                card_resp = httpx.get(f"{TCGDEX_JA_BASE}/cards/{card_id}", timeout=REQUEST_TIMEOUT)
+                card_resp = httpx.get(f"{TCGDEX_JA_BASE}/cards/{quote(card_id, safe='')}", timeout=REQUEST_TIMEOUT)
                 card_resp.raise_for_status()
                 card = card_resp.json()
             except Exception as e:
@@ -976,8 +1134,9 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
             weaknesses = card.get("weaknesses") or []
             weakness = weaknesses[0].get("type", "") if weaknesses else ""
 
-            image_base = card.get("image", "")
-            image_url = f"{image_base}/high.webp" if image_base else ""
+            image_url = tcgdx_card_high_webp_url(
+                card, serie_id=serie_id, set_id=set_id, japanese_locale=True
+            )
 
             conn.execute("""
                 INSERT OR REPLACE INTO japanese_cards
@@ -1018,6 +1177,277 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
     return ingested, japanese_set_fetch_failures, japanese_card_fetch_failures
 
 
+# ── Japanese TCG ingestion from PTCG-database ──────────────────────────────
+
+# PTCG-database card_type values mapped to our canonical English enum.
+# Some entries are in Japanese, some are already English; handle both.
+_CARD_TYPE_MAP: dict[str, str] = {
+    "Pokémon": "Pokémon",
+    "pokémon": "Pokémon",
+    "ポケモン": "Pokémon",
+    "トレーナー": "Trainer",
+    "サポート": "Trainer",
+    "グッズ": "Trainer",
+    "ポケモンのどうぐ": "Trainer",
+    "スタジアム": "Trainer",
+    "エネルギー": "Energy",
+    "基本エネルギー": "Energy",
+    "特殊エネルギー": "Energy",
+}
+
+# PTCG-database stage values mapped from Japanese to English.
+# Normalize whitespace before lookup.
+_STAGE_MAP: dict[str, str] = {
+    "たね": "Basic",
+    "1進化": "Stage 1",
+    "2進化": "Stage 2",
+}
+
+PTCGDB_REPO_API = "https://api.github.com/repos/type-null/PTCG-database"
+PTCGDB_RAW = "https://raw.githubusercontent.com/type-null/PTCG-database/main"
+
+
+def ingest_japanese_set_ptcgdb(set_id: str, json_files: Optional[list[str]] = None) -> int:
+    """Fetch Japanese cards for *set_id* from PTCG-database and store in
+    ``japanese_cards_ptcgdb``.
+
+    If *json_files* is provided (list of filenames), skips the GitHub API
+    directory-listing call entirely.
+
+    IDs are prefixed with ``ptcgdb-`` to avoid overwriting TCGdex rows
+    that share the same ``{set_id}-{number}`` convention.
+
+    Returns number of cards ingested.
+    """
+    conn = get_connection()
+
+    if json_files is None:
+        # Standalone mode — list directory via GitHub Contents API.
+        dir_url = f"{PTCGDB_REPO_API}/contents/data_jp/{set_id}"
+        token = os.environ.get("GITHUB_TOKEN", "")
+        headers: dict[str, str] = {"Accept": "application/vnd.github.v3+json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        resp = httpx.get(dir_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        if resp.status_code == 403:
+            print(f"  GitHub API rate-limited listing {set_id}; set GITHUB_TOKEN env var")
+            conn.close()
+            return 0
+        if resp.status_code == 404:
+            print(f"  PTCG-database has no data_jp/{set_id}/ directory — skipping")
+            conn.close()
+            return 0
+        resp.raise_for_status()
+        entries = resp.json()
+        if not isinstance(entries, list):
+            print(f"  Unexpected GitHub API response for {set_id} — expected list")
+            conn.close()
+            return 0
+        json_files = [e["name"] for e in entries if e["name"].endswith(".json")]
+
+    # 2. Fetch & parse each card file
+    cards_list: list[dict[str, object]] = []
+    skipped = 0
+    for fname in json_files:
+        file_url = f"{PTCGDB_RAW}/data_jp/{set_id}/{fname}"
+        try:
+            fr = httpx.get(file_url, timeout=REQUEST_TIMEOUT)
+            if fr.status_code == 404:
+                skipped += 1
+                continue
+            fr.raise_for_status()
+            raw = fr.json()
+        except Exception as exc:
+            skipped += 1
+            print(f"  Skipping {fname}: {exc}")
+            continue
+
+        jp_id = raw.get("jp_id")
+        number: str = str(raw.get("number") or "")
+        set_name = str(raw.get("set_name", "")).lower().strip()
+
+        # card_id = {set_name}-{normalized_number}
+        normalized_number = _normalize_jpn_number(number)
+        card_id = f"{set_name}-{normalized_number}"
+        prefixed_id = f"ptcgdb-{card_id}"
+
+        # card_type — map to English enum
+        raw_card_type: str = str(raw.get("card_type") or "")
+        card_type = _CARD_TYPE_MAP.get(raw_card_type, raw_card_type) or None
+
+        # rarity — default to "Common" when absent
+        rarity: str = str(raw.get("rarity") or "").strip()
+        if not rarity:
+            rarity = "Common"
+
+        # stage — map Japanese → English
+        raw_stage: str = str(raw.get("stage") or "").strip()
+        raw_stage = re.sub(r"\s+", "", raw_stage)  # normalize whitespace
+        stage = _STAGE_MAP.get(raw_stage, raw_stage) or None
+
+        # types array for JSONB
+        types: list[str] = raw.get("types") or []
+        element: str = types[0] if types else ""
+
+        # tags → subtypes JSONB array
+        tags: list[str] = raw.get("tags") or []
+        subtypes: list[str] = tags if isinstance(tags, list) else []
+
+        # author — array → comma-joined
+        author = raw.get("author") or []
+        illustrator: str = ", ".join(author) if isinstance(author, list) else str(author)
+
+        hp_raw = raw.get("hp")
+        hp: str | None = str(hp_raw) if hp_raw is not None else None
+
+        retreat = raw.get("retreat")
+        retreat_cost: int | None = int(retreat) if retreat is not None else None
+
+        weakness_data = raw.get("weakness") or {}
+        weakness_types: list[str] = weakness_data.get("type") or [] if isinstance(weakness_data, dict) else []
+        weakness: str = weakness_types[0] if weakness_types else ""
+
+        evolve_from: str | None = raw.get("evolve_from") or None
+
+        img_url: str = str(raw.get("img") or "")
+
+        # raw_data for jpn_card_key dedup + full source JSON
+        raw_data: dict[str, object] = dict(raw)
+        raw_data["jpn_card_key"] = _build_jpn_card_key(set_name, number)
+
+        cards_list.append({
+            "id": prefixed_id,
+            "name": str(raw.get("name") or "Unknown"),
+            "set_id": set_name,
+            "number": number,
+            "rarity": rarity,
+            "card_type": card_type,
+            "element": element,
+            "types": json.dumps(types),
+            "subtypes": json.dumps(subtypes),
+            "hp": hp,
+            "stage": stage,
+            "retreat_cost": retreat_cost,
+            "weakness": weakness,
+            "evolves_from": evolve_from,
+            "illustrator": illustrator,
+            "image_small": img_url,
+            "image_large": img_url,
+            "raw_data": json.dumps(raw_data),
+        })
+
+    # 3. Upsert into japanese_cards_ptcgdb
+    for c in cards_list:
+        conn.execute("""
+            INSERT OR REPLACE INTO japanese_cards_ptcgdb
+                (id, name, set_id, number, rarity, card_type, element, types, subtypes, hp,
+                 stage, retreat_cost, weakness, evolves_from, illustrator,
+                 image_small, image_large, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, [
+            c["id"], c["name"], c["set_id"], c["number"], c["rarity"],
+            c["card_type"], c["element"], c["types"], c["subtypes"], c["hp"], c["stage"],
+            c["retreat_cost"], c["weakness"], c["evolves_from"],
+            c["illustrator"], c["image_small"], c["image_large"], c["raw_data"],
+        ])
+
+    conn.close()
+    total = len(cards_list)
+    if skipped:
+        print(f"  PTCG-db {set_id}: {total} cards ingested, {skipped} files skipped")
+    return total
+
+
+def ingest_all_japanese_ptcgdb_sets() -> tuple[int, int]:
+    """Ingest ALL Japanese sets from PTCG-database.
+
+    Uses a single recursive git-tree API call to discover all files under
+    data_jp/ — no GITHUB_TOKEN required (1 API call vs 316).
+
+    Tracks failures in ``failed_sets_ptcgdb`` so they can be retried.
+
+    Returns (total_sets_processed, total_cards_ingested).
+    """
+    tree_url = f"{PTCGDB_REPO_API}/git/trees/main:data_jp?recursive=1"
+    headers: dict[str, str] = {"Accept": "application/vnd.github.v3+json"}
+
+    print("Discovering PTCG-database files (one tree API call)...")
+    tree_resp = httpx.get(tree_url, headers=headers, timeout=REQUEST_TIMEOUT)
+    if tree_resp.status_code == 403:
+        print("GitHub API rate-limited. Wait a few minutes and retry.")
+        return (0, 0)
+    tree_resp.raise_for_status()
+    tree_data = tree_resp.json()
+    tree_entries = tree_data.get("tree", [])
+    if not tree_entries:
+        print("Empty tree response — check repo name / branch.")
+        return (0, 0)
+
+    # Group .json files by their parent directory (set_id)
+    # Tree paths look like: "SM12a/37205.json", "no_set/foo.json"
+    by_set: dict[str, list[str]] = {}
+    skipped_no_set = 0
+    for item in tree_entries:
+        path = item.get("path", "")
+        if not path.endswith(".json"):
+            continue
+        if "/" not in path:
+            continue
+        dirname, filename = path.split("/", 1)
+        if dirname == "no_set":
+            skipped_no_set += 1
+            continue
+        by_set.setdefault(dirname, []).append(filename)
+
+    set_ids = sorted(by_set.keys())
+    total_sets = len(set_ids)
+    total_files = sum(len(v) for v in by_set.values())
+    print(f"Found {total_sets} sets, {total_files} card files ({skipped_no_set} in no_set, skipped)")
+
+    # Clear previous failures so we only track this run
+    conn = get_connection()
+    conn.execute("DELETE FROM failed_sets_ptcgdb")
+    conn.close()
+
+    processed = 0
+    total_cards = 0
+    for i, sid in enumerate(set_ids):
+        pct = (i / total_sets) * 100
+        fnames = by_set[sid]
+        print(f"[{i + 1}/{total_sets}] {sid} ({pct:.0f}%, {len(fnames)} files) ...", end=" ", flush=True)
+        try:
+            n = ingest_japanese_set_ptcgdb(sid, json_files=fnames)
+            if n > 0:
+                print(f"{n} cards")
+                total_cards += n
+                processed += 1
+            else:
+                print("0 cards — skipping")
+        except Exception as exc:
+            reason = str(exc)[:200]
+            print(f"FAILED — {reason}")
+            c = get_connection()
+            c.execute(
+                "INSERT OR REPLACE INTO failed_sets_ptcgdb (set_id, reason) VALUES (?, ?)",
+                [sid, reason],
+            )
+            c.close()
+
+    # Final summary
+    c = get_connection()
+    failures = c.execute("SELECT COUNT(*) FROM failed_sets_ptcgdb").fetchone()[0]
+    c.close()
+
+    print()
+    print(f"PTCG-database batch complete:")
+    print(f"  Sets processed: {processed}/{total_sets}")
+    print(f"  Total cards:    {total_cards}")
+    if failures:
+        print(f"  Failed sets:    {failures} (see failed_sets_ptcgdb)")
+    return (processed, total_cards)
+
+
 def run_ingestion(
     set_id: Optional[str] = None,
     skip_pokemon: bool = False,
@@ -1026,11 +1456,35 @@ def run_ingestion(
     skip_japanese: bool = False,
     pocket_only: bool = False,
     japanese_only: bool = False,
+    japanese_ptcgdb_set: Optional[str] = None,
+    japanese_ptcgdb_all: bool = False,
     force: bool = False,
 ) -> IngestFailureSummary:
     """Run the full ingestion pipeline."""
     stats = IngestFailureSummary()
     initialize_database()
+
+    if japanese_ptcgdb_all:
+        try:
+            processed, total_cards = ingest_all_japanese_ptcgdb_sets()
+            print(f"  Japanese PTCG-db batch: {processed} sets, {total_cards} cards")
+            c = get_connection()
+            failures = c.execute("SELECT COUNT(*) FROM failed_sets_ptcgdb").fetchone()[0]
+            c.close()
+            stats.japanese_ptcgdb_failures = failures
+        except Exception as e:
+            stats.japanese_ptcgdb_failures += 1
+            print(f"  Japanese PTCG-db batch: failed — {e}")
+        return stats
+
+    if japanese_ptcgdb_set:
+        try:
+            n = ingest_japanese_set_ptcgdb(japanese_ptcgdb_set)
+            print(f"  Japanese PTCG-db cards ({japanese_ptcgdb_set}): {n} rows")
+        except Exception as e:
+            stats.japanese_ptcgdb_failures += 1
+            print(f"  Japanese PTCG-db ({japanese_ptcgdb_set}): failed — {e}")
+        return stats
 
     if pocket_only:
         ingest_pocket_sets()
@@ -1119,6 +1573,19 @@ def main():
         help="Only fetch Japanese TCG data from TCGdex.",
     )
     parser.add_argument(
+        "--japanese-ptcgdb",
+        dest="japanese_ptcgdb_set",
+        default=None,
+        metavar="SET_ID",
+        help="Fetch Japanese cards for SET_ID from PTCG-database (e.g. SM12a).",
+    )
+    parser.add_argument(
+        "--japanese-ptcgdb-all",
+        dest="japanese_ptcgdb_all",
+        action="store_true",
+        help="Fetch ALL Japanese sets from PTCG-database (requires GITHUB_TOKEN env var).",
+    )
+    parser.add_argument(
         "--force",
         dest="force",
         action="store_true",
@@ -1168,6 +1635,8 @@ def main():
         skip_japanese=args.skip_japanese,
         pocket_only=args.pocket_only,
         japanese_only=args.japanese_only,
+        japanese_ptcgdb_set=args.japanese_ptcgdb_set,
+        japanese_ptcgdb_all=args.japanese_ptcgdb_all,
         force=args.force,
     )
 
@@ -1179,7 +1648,8 @@ def main():
             f"Pocket sets: {summary.pocket_set_fetch_failures}, "
             f"Pocket cards: {summary.pocket_card_fetch_failures}, "
             f"Japanese sets: {summary.japanese_set_fetch_failures}, "
-            f"Japanese cards: {summary.japanese_card_fetch_failures}. "
+            f"Japanese cards: {summary.japanese_card_fetch_failures}, "
+            f"Japanese PTCG-db: {summary.japanese_ptcgdb_failures}. "
             "Exiting with status 1 (--fail-on-partial).",
             file=sys.stderr,
         )
