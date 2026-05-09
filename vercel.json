@@ -8,7 +8,6 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "_comment": "assets/ MUST be excluded — Vite code-splitting generates lazy route chunks under /assets/",
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
