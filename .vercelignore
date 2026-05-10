@@ -1,3 +1,9 @@
+# Build output — Vercel builds from source
+dist/
+
+# Dependencies — Vercel runs npm ci
+node_modules/
+
 # DuckDB database files — only used by v1 GitHub Pages, not Vercel (which uses Supabase)
 public/data/pokemon.duckdb
 scripts/pokemon.duckdb
