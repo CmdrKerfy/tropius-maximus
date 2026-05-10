@@ -310,9 +310,9 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Planned counts are fast and accurate after ANALYZE (run by ingest pipeline
-  // via migration 055). Exact COUNT(*) on every keystroke causes statement timeouts.
-  const EXPLORE_EXACT_COUNT = false;
+  // Exact count is fast: fetchCards runs a lightweight head-only count query
+  // without the annotations join (separate from the planned-count data query).
+  const EXPLORE_EXACT_COUNT = true;
 
   const {
     data: cardsResult,

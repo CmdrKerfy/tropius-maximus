@@ -876,7 +876,7 @@ export async function fetchCards(params = {}) {
     .from("cards")
     .select(
       `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by, ${annSelect}`,
-      { count: exact_count ? "exact" : "planned" }
+      { count: "planned" }
     );
 
   if (source === "TCG") {
@@ -940,11 +940,13 @@ export async function fetchCards(params = {}) {
     }
   }
 
+  // Artist lookup: annotation-sourced artists. Hoisted so a separate exact-count
+  // query can reuse the result without duplicating the annotation round-trip.
+  let annotationArtistCardIds = [];
   if (Array.isArray(artist) && artist.length) {
     if (source === "Pocket") {
       query = query.in("illustrator", artist);
     } else if (source === "" || source === "TCG" || source === "Custom") {
-      let annotationArtistCardIds = [];
       const annClauses = [];
       for (const a of artist) {
         annClauses.push(`extra->>artist.eq.${postgrestOrEqValue(a)}`);
@@ -1075,7 +1077,86 @@ export async function fetchCards(params = {}) {
   }
 
   const cards = rows.map((row) => gridRowFromCard(row));
-  return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
+
+  // Lightweight exact count (no annotations join) when requested and no annotation
+  // filters are active. PostgREST wraps the full query including embedded joins for
+  // exact counts, which times out on complex filters. A head-only count on cards
+  // alone avoids the join overhead entirely.
+  let finalCount = count;
+  if (exact_count && !useAnnInner) {
+    try {
+      let cq = sb.from("cards").select("id", { count: "exact", head: true });
+      // Replay card-level filters (same as main query, minus annotations join)
+      if (source === "TCG") {
+        cq = cq.in("origin", ["pokemontcg.io", "manual"]).or("origin_detail.is.null,origin_detail.neq.japanese");
+      } else if (source === "TCG (JPN)") {
+        cq = cq.or("and(origin.eq.tcgdex,origin_detail.eq.japanese),and(origin.eq.ptcgdb,origin_detail.eq.japanese)");
+        cq = cq.neq("set_id", "neo1").neq("set_id", "neo2").neq("set_id", "neo3").neq("set_id", "neo4");
+      } else if (source === "Pocket") {
+        cq = cq.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
+      } else if (source === "Custom") {
+        cq = cq.eq("origin", "manual").or("origin_detail.is.null,origin_detail.neq.pokumon");
+      } else if (source === "Promo") {
+        cq = cq.eq("origin", "manual").eq("origin_detail", "pokumon");
+      } else {
+        cq = cq.in("origin", ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"]);
+      }
+      if (qTrim) {
+        const lp = buildNameSearchIlikePattern(qTrim);
+        if (Array.isArray(lp)) cq = cq.or(lp.map((p) => `name.ilike.${p}`).join(","));
+        else if (lp) cq = cq.ilike("name", lp);
+      }
+      if (card_id) cq = cq.eq("id", String(card_id));
+      if (supertype) {
+        const sn = supertype.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+        if (sn === "pokemon") cq = cq.or("supertype.eq.Pokémon,supertype.eq.Pokemon");
+        else cq = cq.eq("supertype", supertype);
+      }
+      if (Array.isArray(rarity) && rarity.length) cq = cq.in("rarity", rarity);
+      if (Array.isArray(set_id) && set_id.length) cq = cq.in("set_id", set_id);
+      if (Array.isArray(element) && element.length) {
+        if (source === "Pocket") {
+          cq = cq.in("element", element);
+        } else if (source === "" || source === "TCG (JPN)") {
+          const ec = [];
+          for (const e of element) {
+            ec.push(`types.cs.${jsonbArrayContainsOneString(e)}`);
+            ec.push(`element.eq.${postgrestOrEqValue(e)}`);
+          }
+          cq = cq.or(ec.join(","));
+        } else {
+          cq = cq.or(element.map((e) => `types.cs.${jsonbArrayContainsOneString(e)}`).join(","));
+        }
+      }
+      if (Array.isArray(artist) && artist.length) {
+        if (source === "Pocket") {
+          cq = cq.in("illustrator", artist);
+        } else if (source === "" || source === "TCG" || source === "Custom") {
+          const ac = [];
+          for (const a of artist) {
+            const e = postgrestOrEqValue(a);
+            ac.push(`artist.eq.${e}`, `illustrator.eq.${e}`);
+          }
+          if (annotationArtistCardIds.length) {
+            ac.push(`id.in.(${annotationArtistCardIds.map((id) => postgrestInTextValue(id)).join(",")})`);
+          }
+          cq = cq.or(ac.join(","));
+        } else {
+          cq = cq.in("artist", artist);
+        }
+      }
+      if (Array.isArray(evolution_line) && evolution_line.length) cq = cq.in("evolution_line", evolution_line);
+      if (Array.isArray(specialty) && specialty.length) {
+        cq = cq.or(specialty.map((s) => `subtypes.cs.${jsonbArrayContainsOneString(s)}`).join(","));
+      }
+      const { count: ec, error: ecErr } = await cq;
+      if (!ecErr && typeof ec === "number") finalCount = ec;
+    } catch (_) {
+      // Fall back to planned count on any error
+    }
+  }
+
+  return { cards, total: finalCount ?? cards.length, page: pageInt, page_size: pageSizeInt };
 }
 
 const BATCH_ID_PAGE_SIZE = 500;
