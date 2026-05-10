@@ -41,11 +41,16 @@ function timeoutSignal(ms) {
 async function checkImageReachable(url) {
   try {
     let res = await fetch(url, { method: "HEAD", signal: timeoutSignal(3000) });
+    // Many CDNs reject HEAD requests — fall back to GET where appropriate.
     if (res.status === 405) {
       res = await fetch(url, {
         headers: { Range: "bytes=0-0" },
         signal: timeoutSignal(3000),
       });
+    } else if (res.status === 403) {
+      // CDNs that block HEAD (Cloudflare, Fastly, etc.) often allow GET.
+      res = await fetch(url, { signal: timeoutSignal(3000) });
+      if (res.ok) return true; // content-length check skipped for full GET
     }
     if (!res.ok) return false;
     const len = res.headers.get("content-length");
