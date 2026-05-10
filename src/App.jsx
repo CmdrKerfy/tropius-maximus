@@ -33,9 +33,10 @@ class ChunkErrorBoundary extends Component {
     this.state = { error: null };
   }
   static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
     // Auto-reload on chunk load failures (stale index.html after deploy).
-    // These happen when the browser has an old HTML file referencing deleted
-    // hashed chunks — a reload fetches the fresh index.html with current hashes.
     const msg = String(error?.message ?? "");
     if (
       msg.includes("dynamically imported") ||
@@ -44,16 +45,22 @@ class ChunkErrorBoundary extends Component {
       msg.includes("Loading chunk")
     ) {
       window.location.reload();
-      return { error: null };
     }
-    return { error };
   }
   render() {
     if (this.state.error) {
+      const msg = String(this.state.error?.message ?? "");
+      const name = String(this.state.error?.name ?? "Error");
       return (
         <div className="flex min-h-screen items-center justify-center p-8">
           <div className="text-center max-w-md">
             <p className="text-lg font-semibold text-gray-800">Failed to load page</p>
+            <details className="mt-2 text-left">
+              <summary className="text-sm text-gray-500 cursor-pointer">Error details</summary>
+              <pre className="mt-2 text-xs text-gray-600 bg-gray-100 rounded p-2 overflow-auto max-h-40 text-left">
+                {name}: {msg}
+              </pre>
+            </details>
             <p className="text-sm text-gray-600 mt-2">
               A new version may have been deployed. Try refreshing the page.
             </p>
