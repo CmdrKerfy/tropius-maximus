@@ -33,6 +33,19 @@ class ChunkErrorBoundary extends Component {
     this.state = { error: null };
   }
   static getDerivedStateFromError(error) {
+    // Auto-reload on chunk load failures (stale index.html after deploy).
+    // These happen when the browser has an old HTML file referencing deleted
+    // hashed chunks — a reload fetches the fresh index.html with current hashes.
+    const msg = String(error?.message ?? "");
+    if (
+      msg.includes("dynamically imported") ||
+      msg.includes("Failed to fetch") ||
+      msg.includes("module script") ||
+      msg.includes("Loading chunk")
+    ) {
+      window.location.reload();
+      return { error: null };
+    }
     return { error };
   }
   render() {
