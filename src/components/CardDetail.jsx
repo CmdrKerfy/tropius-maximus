@@ -34,6 +34,7 @@ import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import FormFieldLabel from "./ui/FormFieldLabel.jsx";
 import { splitUiLabel } from "../lib/splitUiLabel.js";
+import { copyToClipboard } from "../lib/clipboard.js";
 import { toastError, toastSuccess } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
 import { fixDisplayText, sanitizeCardRawDataForDisplay } from "../lib/fixUtf8Mojibake.js";
@@ -1200,7 +1201,7 @@ export default function CardDetail({
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
         {/* Top bar: navigation arrows + close button */}
         <div className="flex items-start justify-between p-3 gap-2">
           <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
@@ -1604,10 +1605,10 @@ export default function CardDetail({
                       type="button"
                       onClick={async () => {
                         const url = `${window.location.origin}/share/card/${encodeURIComponent(card.id)}`;
-                        try {
-                          await navigator.clipboard.writeText(url);
+                        const ok = await copyToClipboard(url);
+                        if (ok) {
                           toastSuccess("Share link copied");
-                        } catch {
+                        } else {
                           toastError("Could not copy link");
                         }
                       }}

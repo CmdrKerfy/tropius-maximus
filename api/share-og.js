@@ -173,6 +173,12 @@ export default async function handler(req, res) {
     : `  <meta property="og:image:width" content="734">\n  <meta property="og:image:height" content="1024">\n`;
   const imageSrcLink = `  <link rel="image_src" href="${escapeHtml(ogImage)}">\n`;
 
+  // Redirect real browsers that land on the OG page (e.g. mobile in-app browsers
+  // that didn't send Sec-Fetch-User: ?1). Bots don't execute JS, so they still
+  // get the og: meta tags for link previews. _og=1 param breaks redirect loops.
+  const redirectScript =
+    `<script>if(!window.location.search.includes("_og=1")){var u=new URL(window.location);u.searchParams.set("_og","1");u.hash=window.location.hash;window.location.replace(u.toString())}</script>`;
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -194,6 +200,7 @@ ${secureTag}${ogImageDims}  <meta name="twitter:card" content="summary_large_ima
 </head>
 <body>
   <p><a href="${escapeHtml(canonicalUrl)}">Open card</a></p>
+  ${redirectScript}
 </body>
 </html>`;
 

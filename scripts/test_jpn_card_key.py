@@ -11,7 +11,7 @@ from pathlib import Path
 # Import from ingest.py
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from ingest import _normalize_jpn_number, _build_jpn_card_key
+from jpn_card_key_utils import _normalize_jpn_number, _build_jpn_card_key
 
 # Parity test vectors — must match src/lib/__tests__/jpnCardKey.test.js exactly.
 # If you change these, update the JS version too.
