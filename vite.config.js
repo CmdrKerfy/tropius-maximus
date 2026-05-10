@@ -7,6 +7,7 @@ export default defineConfig({
   base: process.env.VITE_BASE || "/",
   build: {
     outDir: "dist",
+    modulePreload: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
