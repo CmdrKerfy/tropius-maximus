@@ -669,6 +669,20 @@ function postgrestOrEqValue(s) {
 function buildNameSearchIlikePattern(rawQuery) {
   const raw = String(rawQuery || "").trim();
   if (!raw) return "";
+
+  // OR search: "Eevee + イーブイ" or "Pikachu | Raichu" → array of patterns
+  const orTerms = raw.split(/[+|]+/).map((t) => t.trim()).filter(Boolean);
+  if (orTerms.length > 1) {
+    return orTerms.map((term) => {
+      const normalized = term
+        .replace(/[-–—_/·.,;:\\]+/g, " ")
+        .replace(/[\s\u00A0\u1680\u2000-\u200B\uFEFF]+/g, " ")
+        .trim();
+      return normalized ? `%${normalized}%` : `%${term}%`;
+    });
+  }
+
+  // Single term: AND behavior ("Mewtwo EX" → "%Mewtwo%EX%")
   const normalized = raw
     .replace(/[-–—_/·.,;:|+\\]+/g, " ")
     .replace(/[\s\u00A0\u1680\u2000-\u200B\uFEFF]+/g, " ")
@@ -889,7 +903,9 @@ export async function fetchCards(params = {}) {
   const qTrim = String(q ?? "").trim();
   if (qTrim) {
     const likePattern = buildNameSearchIlikePattern(qTrim);
-    if (likePattern) {
+    if (Array.isArray(likePattern)) {
+      query = query.or(likePattern.map((p) => `name.ilike.${p}`).join(","));
+    } else if (likePattern) {
       query = query.ilike("name", likePattern);
     }
   }

@@ -19,7 +19,7 @@ const sizes = {
   lg: "px-4 py-2.5 text-sm font-semibold rounded-lg",
 };
 
-const Button = forwardRef(function Button(
+function Button(
   { className = "", variant = "primary", size = "md", type = "button", ...props },
   ref
 ) {
@@ -29,6 +29,6 @@ const Button = forwardRef(function Button(
     " " +
     (sizes[size] || sizes.md);
   return <button ref={ref} type={type} className={`${base} ${className}`.trim()} {...props} />;
-});
+}
 
-export default Button;
+export default forwardRef(Button);

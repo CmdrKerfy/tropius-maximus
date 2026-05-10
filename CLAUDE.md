@@ -25,6 +25,9 @@ Phases 0–7 complete: schema, data migration, Supabase adapter, Explore/Workben
 - Bundle performance optimization (993KB → 350KB main chunk)
 - Explore filter options materialized view (054): <50ms instead of 4-8s client-paged cascade
 - CardGrid visual fix (reverted unnecessary virtualization, kept CSS grid + React.memo)
+- TDZ bugfix (`ReferenceError: can't access lexical declaration 'k' before initialization`): Rollup reorders `const` arrow functions within component bodies; `useCallback` dependency arrays referencing later-defined handlers cause TDZ. Fix: convert handlers to `function` declarations (hoisted) + use refs when hook order can't change. Files: ExplorePage.jsx, Button.jsx, CardGrid.jsx, CardDetailFieldControl.jsx, AnnotationEditor.jsx.
+- Search performance: switched `EXPLORE_EXACT_COUNT` from `true` to `false` (ExplorePage.jsx L313). Every search/filter keystroke was running `COUNT(*)` across all matching rows. Planned counts are fast and accurate after `ANALYZE`.
+- Bilingual name search via OR syntax: `buildNameSearchIlikePattern` in appAdapter.js supports `+` or `|` separators for multi-name search (e.g. `Eevee + イーブイ` returns cards matching either name). Single terms still use AND tokenization. SearchBar shows a subtle hint below the input.
 
 **Pending:**
 - [ ] E2E testing on Vercel — manual smoke checklist: `docs/plans/e2e-vercel-smoke-checklist.md`

@@ -27,12 +27,12 @@ import FilterPanel from "../components/FilterPanel";
 import CardGrid from "../components/CardGrid";
 import CardDetail from "../components/CardDetail";
 import Pagination from "../components/Pagination";
-
-const CustomCardForm = lazy(() => import("../components/CustomCardForm"));
-const SqlConsole = lazy(() => import("../components/SqlConsole"));
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
+
+const CustomCardForm = lazy(() => import("../components/CustomCardForm"));
+const SqlConsole = lazy(() => import("../components/SqlConsole"));
 import {
   getExploreFilterAvailability,
   exploreFilterDisabledTitle,
@@ -310,9 +310,7 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Planned counts are fast and accurate enough for page clamping. If clamp issues
-  // appear after bulk ingest, run ANALYZE or temporarily set this to true.
-  // count: "planned" (Postgres planner estimate) returns wildly inaccurate totals
+  // Planned counts (Postgres planner estimate) return wildly inaccurate totals
   // after bulk ingests (saw 20,022 vs actual 60,065). Exact count on 60k rows is
   // fast enough with indexes (~10-50ms). Revisit if the table grows to 500k+.
   const EXPLORE_EXACT_COUNT = true;
@@ -370,12 +368,14 @@ export default function ExplorePage() {
           : EMPTY_SELECTED_CARD_IDS,
     [showSqlConsole, selectedCardIds, batchModeActive, batchSelection.idSet]
   );
+  // useRef avoids TDZ: handleToggleCardSelection/handleToggleBatchCard are defined later
+  const cardGridHandlersRef = useRef({ onToggleCard: null, onToggleBatch: null });
   const cardGridOnToggleSelection = useCallback(
     (id, meta) => {
-      if (showSqlConsole) handleToggleCardSelection(id, meta);
-      else if (batchModeActive) handleToggleBatchCard(id, meta);
+      if (showSqlConsole) cardGridHandlersRef.current.onToggleCard(id, meta);
+      else if (batchModeActive) cardGridHandlersRef.current.onToggleBatch(id, meta);
     },
-    [showSqlConsole, handleToggleCardSelection, batchModeActive, handleToggleBatchCard]
+    [showSqlConsole, batchModeActive]
   );  useEffect(() => {
     if (!selectedWorkbenchQueue?.id) return;
     setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
@@ -624,13 +624,13 @@ export default function ExplorePage() {
   const handleShowInGrid = (cards) => setSqlCards(cards);
 
   // ── Card selection handlers ──────────────────────────────────────
-  const handleToggleCardSelection = (cardId) => {
+  function handleToggleCardSelection(cardId) {
     setSelectedCardIds((prev) => {
       const next = new Set(prev);
       next.has(cardId) ? next.delete(cardId) : next.add(cardId);
       return next;
     });
-  };
+  }
 
   const handleSelectAllVisible = useCallback(() => {
     setSelectedCardIds(new Set(displayedCards.map((c) => c.id)));
@@ -652,6 +652,10 @@ export default function ExplorePage() {
     },
     [batchSelection]
   );
+
+  // Wire refs after both handlers exist (avoids TDZ in cardGridOnToggleSelection hook above)
+  cardGridHandlersRef.current.onToggleCard = handleToggleCardSelection;
+  cardGridHandlersRef.current.onToggleBatch = handleToggleBatchCard;
 
   const handleAddAllMatchingToBatch = useCallback(async () => {
     try {
@@ -1860,7 +1864,7 @@ export default function ExplorePage() {
               loading={sqlCards ? false : listAwaitingFirstData}
               onCardClick={cardGridOnCardClick}
               selectedCardIds={cardGridSelectedCardIds}
-              onToggleSelection={cardGridOnToggleSelection}
+              onToggleSelection={(showSqlConsole || batchModeActive) ? cardGridOnToggleSelection : undefined}
               onResetExplore={resetExploreFilters}
               showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
               anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}

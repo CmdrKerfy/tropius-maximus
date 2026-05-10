@@ -76,6 +76,7 @@ export default function SearchBar({ value, onChange }) {
           <X className="w-5 h-5" strokeWidth={2} aria-hidden />
         </button>
       )}
+      <p className="mt-1 text-xs text-gray-400">Use + or | to search multiple names (e.g. Eevee + イーブイ)</p>
     </div>
   );
 }

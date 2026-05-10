@@ -475,6 +475,14 @@ def main() -> None:
         except Exception as exc:
             print(f"  explore_filter_options: refresh failed ({exc}) — view will be stale until next refresh")
 
+    # Refresh planner statistics so planned counts and query plans are accurate (migration 055).
+    if not DRY_RUN and sb:
+        try:
+            sb.rpc("analyze_cards_and_annotations").execute()
+            print("  analyze: cards + annotations statistics refreshed")
+        except Exception as exc:
+            print(f"  analyze: failed ({exc}) — statistics may be stale until next ANALYZE")
+
     print("Done.")
 
 
