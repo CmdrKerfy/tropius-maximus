@@ -310,10 +310,9 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Planned counts (Postgres planner estimate) return wildly inaccurate totals
-  // after bulk ingests (saw 20,022 vs actual 60,065). Exact count on 60k rows is
-  // fast enough with indexes (~10-50ms). Revisit if the table grows to 500k+.
-  const EXPLORE_EXACT_COUNT = true;
+  // Planned counts are fast and accurate after ANALYZE (run by ingest pipeline
+  // via migration 055). Exact COUNT(*) on every keystroke causes statement timeouts.
+  const EXPLORE_EXACT_COUNT = false;
 
   const {
     data: cardsResult,
