@@ -150,7 +150,7 @@ function isWideField(attr, textAsCombo) {
  * Syncs local state to the server on blur (text inputs) or immediately
  * (checkboxes, selects, multi-selects, combo-boxes).
  */
-const FormField = memo(function FormField({
+function FormField({
   attr,
   serverValue,
   formOptions,
@@ -345,7 +345,8 @@ const FormField = memo(function FormField({
       )}
     </div>
   );
-});
+}
+const FormFieldMemo = memo(FormField);
 
 function AnnotationEditor({
   cardId,
@@ -714,7 +715,7 @@ function AnnotationEditor({
           {sectionIsOpen("pinned-fields") && (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
               {pinnedAttrs.map((attr) => (
-                <FormField
+                <FormFieldMemo
                   key={attr.key}
                   attr={attr}
                   serverValue={serverAnnotations[attr.key]}
@@ -749,7 +750,7 @@ function AnnotationEditor({
           {sectionIsOpen(section.id) && (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
               {section.attrs.map((attr) => (
-                <FormField
+                <FormFieldMemo
                   key={attr.key}
                   attr={attr}
                   serverValue={serverAnnotations[attr.key]}
