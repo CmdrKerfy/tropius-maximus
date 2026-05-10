@@ -3,7 +3,7 @@
  * Data via db.js router (DuckDB or Supabase).
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef, Component } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Component, lazy, Suspense } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,10 +26,10 @@ import SearchBar from "../components/SearchBar";
 import FilterPanel from "../components/FilterPanel";
 import CardGrid from "../components/CardGrid";
 import CardDetail from "../components/CardDetail";
-import AttributeManager from "../components/AttributeManager";
-import CustomCardForm from "../components/CustomCardForm";
 import Pagination from "../components/Pagination";
-import SqlConsole from "../components/SqlConsole";
+
+const CustomCardForm = lazy(() => import("../components/CustomCardForm"));
+const SqlConsole = lazy(() => import("../components/SqlConsole"));
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
@@ -276,7 +276,7 @@ export default function ExplorePage() {
     queryKey: ["workbenchQueues"],
     queryFn: fetchWorkbenchQueues,
     enabled: USE_SUPABASE_APP,
-    staleTime: 15_000,
+    staleTime: 30_000,
   });
   const selectedWorkbenchQueue = useMemo(() => {
     if (!workbenchQueues.length) return null;
@@ -359,7 +359,24 @@ export default function ExplorePage() {
     return order.map((k) => byKey.get(k));
   }, [sqlCards, cards]);
 
-  useEffect(() => {
+  // Stable props for CardGrid (React.memo)
+  const cardGridOnCardClick = useCallback((id) => setSelectedCardId(id), []);
+  const cardGridSelectedCardIds = useMemo(
+    () =>
+      showSqlConsole
+        ? selectedCardIds
+        : batchModeActive
+          ? batchSelection.idSet
+          : EMPTY_SELECTED_CARD_IDS,
+    [showSqlConsole, selectedCardIds, batchModeActive, batchSelection.idSet]
+  );
+  const cardGridOnToggleSelection = useCallback(
+    (id, meta) => {
+      if (showSqlConsole) handleToggleCardSelection(id, meta);
+      else if (batchModeActive) handleToggleBatchCard(id, meta);
+    },
+    [showSqlConsole, handleToggleCardSelection, batchModeActive, handleToggleBatchCard]
+  );  useEffect(() => {
     if (!selectedWorkbenchQueue?.id) return;
     setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
   }, [selectedWorkbenchQueue?.id]);
@@ -1286,30 +1303,34 @@ export default function ExplorePage() {
               </Button>
               {showSqlConsole && (
                 <div className="pt-2 border-t border-amber-200/70">
-                  <SqlConsole
-                    onShowInGrid={handleShowInGrid}
-                    onDataChanged={handleSqlDataChanged}
-                    selectedCardIds={selectedCardIds}
-                  />
+                  <Suspense fallback={<div className="py-4 text-sm text-gray-400">Loading SQL console...</div>}>
+                    <SqlConsole
+                      onShowInGrid={handleShowInGrid}
+                      onDataChanged={handleSqlDataChanged}
+                      selectedCardIds={selectedCardIds}
+                    />
+                  </Suspense>
                 </div>
               )}
             </Card>
 
             {/* Custom Card Form */}
             {showCustomCardForm && (
-              <CustomCardForm
-                onCardAdded={handleCustomCardAdded}
-                onClose={() => setShowCustomCardForm(false)}
-                onOpenPAT={
-                  USE_SUPABASE_APP
-                    ? undefined
-                    : () => {
-                        setShowTokenInput(true);
-                        setTimeout(() => patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
-                      }
-                }
-                onAddAndSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
-              />
+              <Suspense fallback={<div className="py-4 text-sm text-gray-400">Loading form...</div>}>
+                <CustomCardForm
+                  onCardAdded={handleCustomCardAdded}
+                  onClose={() => setShowCustomCardForm(false)}
+                  onOpenPAT={
+                    USE_SUPABASE_APP
+                      ? undefined
+                      : () => {
+                          setShowTokenInput(true);
+                          setTimeout(() => patSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+                        }
+                  }
+                  onAddAndSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
+                />
+              </Suspense>
             )}
 
             {/* AttributeManager hidden for now */}
@@ -1837,21 +1858,9 @@ export default function ExplorePage() {
             <CardGrid
               cards={displayedCards}
               loading={sqlCards ? false : listAwaitingFirstData}
-              onCardClick={(id) => setSelectedCardId(id)}
-              selectedCardIds={
-                showSqlConsole
-                  ? selectedCardIds
-                  : batchModeActive
-                    ? batchSelection.idSet
-                    : EMPTY_SELECTED_CARD_IDS
-              }
-              onToggleSelection={
-                showSqlConsole
-                  ? handleToggleCardSelection
-                  : batchModeActive
-                    ? handleToggleBatchCard
-                    : null
-              }
+              onCardClick={cardGridOnCardClick}
+              selectedCardIds={cardGridSelectedCardIds}
+              onToggleSelection={cardGridOnToggleSelection}
               onResetExplore={resetExploreFilters}
               showResetWhenEmpty={!sqlCards && exploreConstraintsActive}
               anonymousRlsBlocked={USE_SUPABASE_APP && supabaseSessionIsAnonymous}

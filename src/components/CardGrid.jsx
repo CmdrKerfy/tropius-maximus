@@ -10,7 +10,7 @@ import { useState, memo } from "react";
 import { NavLink } from "react-router-dom";
 import { Check, Sparkles } from "lucide-react";
 import { isEmailAuthRequired } from "../lib/authInvite.js";
-import pocketCardBg from "../../images/pocketcardbackground.png";
+import pocketCardBg from "../../images/pocketcardbackground.webp";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
 
@@ -131,7 +131,7 @@ const CardItem = memo(function CardItem({ card, isSelected, onCardClick, onToggl
   );
 });
 
-export default function CardGrid({
+function CardGrid({
   cards,
   loading,
   onCardClick,
@@ -210,3 +210,5 @@ export default function CardGrid({
     </div>
   );
 }
+
+export default memo(CardGrid);

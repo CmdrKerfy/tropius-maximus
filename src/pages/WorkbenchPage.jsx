@@ -199,7 +199,7 @@ export default function WorkbenchPage() {
     queryKey: ["workbenchQueues"],
     queryFn: () => fetchWorkbenchQueues(),
     enabled: USE_SB,
-    staleTime: 15_000,
+    staleTime: 30_000,
   });
 
   const queue = useMemo(() => {
