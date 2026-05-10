@@ -481,6 +481,25 @@ export default function WorkbenchPage() {
     navigateTo(safeIndex + 1);
   };
 
+  // Keyboard navigation: j / ArrowDown = next, k / ArrowUp = previous.
+  // Skip when focus is inside a form control or any modifier key is held.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || document.activeElement?.isContentEditable) return;
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        goPrev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goPrev, goNext]);
+
   const goFirst = () => {
     if (safeIndex <= 0) return;
     navigateTo(0);
@@ -1289,6 +1308,7 @@ export default function WorkbenchPage() {
                         src={displayImage}
                         alt={card.name || "Card"}
                         referrerPolicy="no-referrer"
+                        fetchpriority="high"
                         className={
                           isImageMode
                             ? "mx-auto block w-full h-auto object-contain rounded-lg shadow-md bg-white"
