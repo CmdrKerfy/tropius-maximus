@@ -1,5 +1,6 @@
-# DuckDB database file — only used by v1 GitHub Pages, not Vercel (which uses Supabase)
+# DuckDB database files — only used by v1 GitHub Pages, not Vercel (which uses Supabase)
 public/data/pokemon.duckdb
+scripts/pokemon.duckdb
 
 # DuckDB Parquet data files — v1 only
 public/data/*.parquet
@@ -14,3 +15,8 @@ src/data/duckdb/
 
 # Backup / ingest artifacts
 backup/
+
+# Large dev-only files not needed for build
+docs/Pokemon Background Char Tracker.xlsx
+scripts/.bulbapedia_cache.json
+tmp/
