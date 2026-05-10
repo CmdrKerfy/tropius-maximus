@@ -21,8 +21,7 @@ backup/
 *.duckdb
 *.duckdb.wal
 
-# Exception: allow the distributable database
-!public/data/pokemon.duckdb
+
 .vercel
 docs/Pokemon Background Char Tracker.xlsx
 tmp/
