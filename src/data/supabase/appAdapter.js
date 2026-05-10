@@ -1144,10 +1144,15 @@ export async function fetchCardNamesByIds(cardIds) {
   const sb = await sbReady();
   const chunk = [...new Set(cardIds.filter(Boolean))];
   if (chunk.length === 0) return {};
-  const out = {};
+  const batches = [];
   for (let i = 0; i < chunk.length; i += CARD_NAME_FETCH_CHUNK) {
-    const slice = chunk.slice(i, i + CARD_NAME_FETCH_CHUNK);
-    const { data, error } = await sb.from("cards").select("id, name").in("id", slice);
+    batches.push(chunk.slice(i, i + CARD_NAME_FETCH_CHUNK));
+  }
+  const results = await Promise.all(
+    batches.map((slice) => sb.from("cards").select("id, name").in("id", slice))
+  );
+  const out = {};
+  for (const { data, error } of results) {
     if (error) throw error;
     for (const c of data || []) out[c.id] = c.name || "";
   }
@@ -1162,10 +1167,17 @@ export async function fetchCardThumbnailsByIds(cardIds) {
   const sb = await sbReady();
   const chunk = [...new Set(cardIds.filter(Boolean))];
   if (chunk.length === 0) return {};
-  const out = {};
+  const batches = [];
   for (let i = 0; i < chunk.length; i += CARD_NAME_FETCH_CHUNK) {
-    const slice = chunk.slice(i, i + CARD_NAME_FETCH_CHUNK);
-    const { data, error } = await sb.from("cards").select("id, name, image_small, image_large").in("id", slice);
+    batches.push(chunk.slice(i, i + CARD_NAME_FETCH_CHUNK));
+  }
+  const results = await Promise.all(
+    batches.map((slice) =>
+      sb.from("cards").select("id, name, image_small, image_large").in("id", slice)
+    )
+  );
+  const out = {};
+  for (const { data, error } of results) {
     if (error) throw error;
     for (const c of data || []) {
       out[c.id] = {

@@ -238,7 +238,6 @@ function AnnotationEditor({
         setLastSaved(new Date());
         setUndoHint(`Restored "${item.key.replace(/_/g, " ")}"`);
         setUndoCount(undoStackRef.current.length);
-        queryClient.invalidateQueries({ queryKey: ["editHistory"] });
         if (saved && shouldRefreshFormOptionsForAnnotationKey(item.key)) {
           scheduleFormOptionsInvalidate();
         }
@@ -304,7 +303,6 @@ function AnnotationEditor({
           setUndoCount(undoStackRef.current.length);
           setLastSaved(new Date());
           syncReactQueryCardCaches(queryClient, cardId, annotations);
-          queryClient.invalidateQueries({ queryKey: ["editHistory"] });
           if (shouldRefreshFormOptionsForAnnotationKey(key)) {
             scheduleFormOptionsInvalidate();
           }
