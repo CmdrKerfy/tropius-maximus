@@ -521,17 +521,18 @@ export default function ExplorePage() {
   // When any filter changes, reset to page 1.
   // When source changes, reset all filters and re-fetch filter options.
   // Exception: switching TO "All" preserves the current search and filters.
+  // Debounce non-source filter changes so rapid checkbox clicks batch into one query.
+  const filterDebounceRef = useRef(null);
+  const pendingFilterRef = useRef({});
+
   const handleFilterChange = (newFilters) => {
+    // Source changes apply immediately — they reset everything.
     if ("source" in newFilters && newFilters.source !== filters.source) {
+      clearTimeout(filterDebounceRef.current);
+      pendingFilterRef.current = {};
       const newSource = newFilters.source;
       if (newSource === "") {
-        // "All" mode: keep existing search/filters, just switch source and
-        // normalise sort to "name" (TCG-only sort options aren't available).
-        setFilters((prev) => ({
-          ...prev,
-          source: "",
-          sort_by: "name",
-        }));
+        setFilters((prev) => ({ ...prev, source: "", sort_by: "name" }));
       } else {
         setFilters({
           source: newSource,
@@ -562,13 +563,22 @@ export default function ExplorePage() {
         });
         setSearchQuery("");
       }
-    } else {
-      const normalized = { ...newFilters };
+      setPage(1);
+      setSqlCards(null);
+      return;
+    }
+
+    // Accumulate non-source changes and debounce 300ms.
+    Object.assign(pendingFilterRef.current, newFilters);
+    clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      const changes = pendingFilterRef.current;
+      pendingFilterRef.current = {};
+      const normalized = { ...changes };
       if (
         normalized.sort_by === "recent" &&
         !Object.prototype.hasOwnProperty.call(normalized, "sort_dir")
       ) {
-        // Recent sort is most useful as newest-first by default.
         normalized.sort_dir = "desc";
       }
       for (const key of ARRAY_FILTER_KEYS) {
@@ -577,20 +587,9 @@ export default function ExplorePage() {
         }
       }
       setFilters((prev) => ({ ...prev, ...normalized }));
-
-      // If only sort_by/sort_dir changed and SQL results are displayed,
-      // re-sort them client-side rather than clearing them.
-      const isSortOnly = Object.keys(newFilters).every(
-        (k) => k === "sort_by" || k === "sort_dir"
-      );
-      if (sqlCards && isSortOnly) {
-        const merged = { ...filters, ...newFilters };
-        setSqlCards(sortCards(sqlCards, merged.sort_by, merged.sort_dir));
-        return;
-      }
-    }
-    setPage(1);
-    setSqlCards(null);
+      setPage(1);
+      setSqlCards(null);
+    }, 300);
   };
 
   const resetExploreFilters = useCallback(() => {
