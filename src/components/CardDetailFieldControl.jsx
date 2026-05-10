@@ -51,8 +51,8 @@ const VIDEO_GAME_OPTIONS = [
   "Legends Arceus", "Scarlet/Violet", "Other",
 ];
 
-const optArr = (v) => (Array.isArray(v) ? v : []);
-const normalizeMultiValueString = (v) => {
+function optArr(v) { return Array.isArray(v) ? v : []; }
+function normalizeMultiValueString(v) {
   if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean).join(", ");
   return String(v ?? "")
     .split(",")
