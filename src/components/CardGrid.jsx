@@ -14,7 +14,7 @@ import pocketCardBg from "../../images/pocketcardbackground.webp";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
 
-const CardItem = memo(function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
+function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
   const supabase = useSupabaseBackend();
@@ -129,7 +129,9 @@ const CardItem = memo(function CardItem({ card, isSelected, onCardClick, onToggl
       </button>
     </div>
   );
-});
+}
+
+const CardItemMemo = memo(CardItem);
 
 function CardGrid({
   cards,
@@ -199,7 +201,7 @@ function CardGrid({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {cards.map((card) => (
-        <CardItem
+        <CardItemMemo
           key={card.id}
           card={card}
           isSelected={selectedCardIds.has(card.id)}
