@@ -1,0 +1,16 @@
+# DuckDB database file — only used by v1 GitHub Pages, not Vercel (which uses Supabase)
+public/data/pokemon.duckdb
+
+# DuckDB Parquet data files — v1 only
+public/data/*.parquet
+
+# v1 data JSON (custom cards are already in Supabase)
+public/data/custom_cards.json
+public/data/annotations.json
+public/data/data_meta.json
+
+# V1 DuckDB-WASM bundles (already loaded via CDN in v1)
+src/data/duckdb/
+
+# Backup / ingest artifacts
+backup/
