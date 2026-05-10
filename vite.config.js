@@ -7,15 +7,9 @@ export default defineConfig({
   base: process.env.VITE_BASE || "/",
   build: {
     outDir: "dist",
-    modulePreload: false,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes("node_modules/react-dom")) return "vendor-react";
-          if (id.includes("node_modules/react/")) return "vendor-react";
-          if (id.includes("node_modules/@tanstack")) return "vendor-query";
-          if (id.includes("node_modules/react-router")) return "vendor-router";
-        },
+        // manualChunks temporarily removed to diagnose TDZ (Rollup reordering bug)
       },
     },
   },
