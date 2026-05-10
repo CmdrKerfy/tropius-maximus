@@ -134,6 +134,219 @@ function syncReactQueryCardCaches(queryClient, cardId, flatAnnotations) {
   );
 }
 
+function isWideField(attr, textAsCombo) {
+  if (attr.key === "notes") return true;
+  if (attr.key === "set_name") return true;
+  if (attr.value_type === "multi_select" || attr.value_type === "url") return true;
+  if (attr.value_type === "text" && !textAsCombo) return true;
+  return false;
+}
+
+/**
+ * FormField — Per-field state isolation wrapper.
+ *
+ * Maintains its own local value state so keystrokes in text inputs only
+ * re-render this single field, not the entire AnnotationEditor form.
+ * Syncs local state to the server on blur (text inputs) or immediately
+ * (checkboxes, selects, multi-selects, combo-boxes).
+ */
+const FormField = memo(function FormField({
+  attr,
+  serverValue,
+  formOptions,
+  inputClass,
+  compact,
+  onSave,
+}) {
+  const initialValue = serverValue ?? attr.default_value ?? null;
+  const [localValue, setLocalValue] = useState(initialValue);
+  const localValueRef = useRef(initialValue);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    localValueRef.current = localValue;
+  }, [localValue]);
+
+  // Sync server → local when server value changes (skip while field is focused
+  // to avoid overwriting text the user is currently typing).
+  useEffect(() => {
+    if (!focusedRef.current) {
+      const next = serverValue ?? attr.default_value ?? null;
+      setLocalValue(next);
+      localValueRef.current = next;
+    }
+  }, [serverValue, attr.default_value]);
+
+  const mergedOpts = useMemo(
+    () => mergedSuggestionOptions(attr, formOptions),
+    [attr, formOptions]
+  );
+  const textAsCombo = attr.value_type === "text" && mergedOpts.length > 0;
+  const wide = isWideField(attr, textAsCombo);
+
+  const handleFocus = useCallback(() => {
+    focusedRef.current = true;
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    focusedRef.current = false;
+    onSave(attr.key, localValueRef.current ?? attr.default_value ?? null);
+  }, [attr.key, attr.default_value, onSave]);
+
+  const handleTextChange = useCallback((e) => {
+    setLocalValue(e.target.value);
+  }, []);
+
+  const handleNumberChange = useCallback((e) => {
+    setLocalValue(e.target.value === "" ? null : Number(e.target.value));
+  }, []);
+
+  const handleImmediateChange = useCallback(
+    (newValue) => {
+      setLocalValue(newValue);
+      localValueRef.current = newValue;
+      onSave(attr.key, newValue);
+    },
+    [attr.key, onSave]
+  );
+
+  return (
+    <div className={wide ? "md:col-span-2" : ""}>
+      <FormFieldLabel className="text-gray-700">{attr.label}</FormFieldLabel>
+
+      {/* Text field -> ComboBox when suggestions exist */}
+      {attr.value_type === "text" && textAsCombo && (
+        <ComboBox
+          value={localValue || ""}
+          onChange={(v) => handleImmediateChange(v || null)}
+          options={mergedOpts}
+          placeholder={`Enter ${attr.label.toLowerCase()}...`}
+          className={inputClass + " w-full"}
+        />
+      )}
+
+      {/* Text field -> textarea (keystrokes stay local, save on blur) */}
+      {attr.value_type === "text" && !textAsCombo && (
+        <textarea
+          value={localValue || ""}
+          onChange={handleTextChange}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          rows={2}
+          className={inputClass + " resize-y"}
+          placeholder={`Enter ${attr.label.toLowerCase()}...`}
+        />
+      )}
+
+      {/* Number field */}
+      {attr.value_type === "number" && (
+        <input
+          type="number"
+          value={localValue ?? ""}
+          min={attr.options?.min}
+          max={attr.options?.max}
+          onChange={handleNumberChange}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          className={inputClass + " max-w-[120px]"}
+        />
+      )}
+
+      {/* Boolean field -> checkbox */}
+      {attr.value_type === "boolean" && (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!localValue}
+            onChange={(e) => handleImmediateChange(e.target.checked)}
+            className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+          />
+          {localValue && <span className="text-sm text-green-600 font-medium">Yes</span>}
+        </label>
+      )}
+
+      {/* Select -> ComboBox */}
+      {attr.value_type === "select" && (
+        <ComboBox
+          value={localValue || ""}
+          onChange={(v) => handleImmediateChange(v || null)}
+          options={mergedOpts}
+          placeholder="Not set"
+          className={inputClass + " w-full max-w-[min(100%,420px)]"}
+        />
+      )}
+
+      {/* Multi-select */}
+      {attr.value_type === "multi_select" && (
+        <MultiComboBox
+          value={multiValueToComboString(localValue)}
+          onChange={(commaStr) => {
+            let arr = commaStr
+              ? commaStr.split(",").map((s) => s.trim()).filter(Boolean)
+              : [];
+            if (attr.key === "background_pokemon") {
+              arr = arr.map((s) => s.toLowerCase());
+            }
+            handleImmediateChange(arr);
+          }}
+          options={mergedOpts}
+          placeholder={`Add ${attr.label.toLowerCase()}…`}
+          className="w-full"
+        />
+      )}
+
+      {/* URL */}
+      {attr.value_type === "url" && (
+        <input
+          type="text"
+          inputMode="url"
+          value={localValue || ""}
+          onChange={handleTextChange}
+          onFocus={handleFocus}
+          onBlur={(e) => {
+            focusedRef.current = false;
+            const t = e.target.value.trim();
+            onSave(attr.key, t || null);
+          }}
+          className={inputClass}
+          placeholder="https://…"
+        />
+      )}
+
+      {/* Unknown types */}
+      {!["text", "number", "boolean", "select", "multi_select", "url"].includes(
+        attr.value_type
+      ) && (
+        <textarea
+          value={
+            typeof localValue === "object" && localValue !== null
+              ? JSON.stringify(localValue)
+              : localValue || ""
+          }
+          onChange={(e) => setLocalValue(e.target.value)}
+          onFocus={handleFocus}
+          onBlur={() => {
+            focusedRef.current = false;
+            const raw = localValueRef.current;
+            if (typeof raw === "string" && raw.trim().startsWith("[")) {
+              try {
+                onSave(attr.key, JSON.parse(raw));
+                return;
+              } catch {
+                /* keep as string */
+              }
+            }
+            onSave(attr.key, raw ?? attr.default_value ?? null);
+          }}
+          rows={2}
+          className={inputClass + " resize-y font-mono text-xs"}
+          placeholder={`(${attr.value_type})`}
+        />
+      )}
+    </div>
+  );
+});
+
 function AnnotationEditor({
   cardId,
   annotations,
@@ -146,8 +359,8 @@ function AnnotationEditor({
 }) {
   const compact = density === "compact";
   const queryClient = useQueryClient();
-  // Local copy of annotations for immediate UI updates.
-  const [values, setValues] = useState(annotations || {});
+  // Server-authoritative annotations snapshot (updated after each save completes).
+  const [serverAnnotations, setServerAnnotations] = useState(annotations || {});
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [undoHint, setUndoHint] = useState(null);
@@ -191,7 +404,7 @@ function AnnotationEditor({
   useEffect(() => {
     const snap = { ...(annotations || {}) };
     serverSnapshotRef.current = snap;
-    setValues(snap);
+    setServerAnnotations(snap);
     undoStackRef.current = [];
     setUndoHint(null);
     setUndoCount(0);
@@ -230,7 +443,7 @@ function AnnotationEditor({
       try {
         const { annotations, saved } = await patchAnnotations(cardId, payload);
         if (saved) {
-          setValues(annotations);
+          setServerAnnotations(annotations);
           serverSnapshotRef.current = { ...annotations };
           syncReactQueryCardCaches(queryClient, cardId, annotations);
         }
@@ -296,7 +509,7 @@ function AnnotationEditor({
           : UNDO_ABSENT;
         const { annotations, saved } = await patchAnnotations(cardId, { [key]: value });
         if (saved) {
-          setValues(annotations);
+          setServerAnnotations(annotations);
           serverSnapshotRef.current = { ...annotations };
           undoStackRef.current.push({ key, revertTo });
           if (undoStackRef.current.length > 40) undoStackRef.current.shift();
@@ -318,10 +531,10 @@ function AnnotationEditor({
           void (async () => {
             try {
               const fresh = await fetchAnnotations(cardId);
-              setValues(fresh);
+              setServerAnnotations(fresh);
               serverSnapshotRef.current = { ...fresh };
             } catch {
-              setValues((prev) => {
+              setServerAnnotations((prev) => {
                 const next = { ...prev };
                 if (!Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)) {
                   delete next[key];
@@ -333,7 +546,7 @@ function AnnotationEditor({
             }
           })();
         } else {
-          setValues((prev) => {
+          setServerAnnotations((prev) => {
             const next = { ...prev };
             if (!Object.prototype.hasOwnProperty.call(serverSnapshotRef.current, key)) {
               delete next[key];
@@ -365,21 +578,6 @@ function AnnotationEditor({
     },
     [persistField]
   );
-
-  // Handle changes for each field type.
-  const handleChange = (attr, newValue) => {
-    setValues((prev) => ({ ...prev, [attr.key]: newValue }));
-  };
-
-  const handleBlur = (attr) => {
-    save(attr.key, values[attr.key] ?? attr.default_value ?? null);
-  };
-
-  const handleImmediateChange = (attr, newValue) => {
-    // For checkboxes and selects, save immediately (no blur event needed).
-    setValues((prev) => ({ ...prev, [attr.key]: newValue }));
-    save(attr.key, newValue);
-  };
 
   // Shared input styling.
   const inputClass =
@@ -442,165 +640,6 @@ function AnnotationEditor({
       setActiveSectionId(ids[0]);
     }
   }, [pinnedAttrs.length, sectionDefs, activeSectionId]);
-
-  // Keep jump toolbar responsive: avoid live IntersectionObserver tracking here.
-  // Active section still updates when users click jump buttons.
-
-  const isWideField = (attr, textAsCombo) => {
-    if (attr.key === "notes") return true;
-    if (attr.key === "set_name") return true;
-    if (attr.value_type === "multi_select" || attr.value_type === "url") return true;
-    if (attr.value_type === "text" && !textAsCombo) return true;
-    return false;
-  };
-
-  const renderAttrControl = (attr, keyPrefix = "") => {
-    const value = values[attr.key] ?? attr.default_value ?? null;
-    const mergedOpts = mergedSuggestionOptions(attr, formOptions);
-    const textAsCombo = attr.value_type === "text" && mergedOpts.length > 0;
-    const wide = isWideField(attr, textAsCombo);
-
-    return (
-      <div key={`${keyPrefix}${attr.key}`} className={wide ? "md:col-span-2" : ""}>
-        <FormFieldLabel className="text-gray-700">{attr.label}</FormFieldLabel>
-
-        {/* Text field -> ComboBox when suggestions exist (parity with Card Detail), else textarea */}
-        {attr.value_type === "text" && textAsCombo && (
-          <ComboBox
-            value={value || ""}
-            onChange={(v) => handleImmediateChange(attr, v || null)}
-            options={mergedOpts}
-            placeholder={`Enter ${attr.label.toLowerCase()}...`}
-            className={inputClass + " w-full"}
-          />
-        )}
-
-        {attr.value_type === "text" && !textAsCombo && (
-          <textarea
-            value={value || ""}
-            onChange={(e) => handleChange(attr, e.target.value)}
-            onBlur={() => handleBlur(attr)}
-            rows={2}
-            className={inputClass + " resize-y"}
-            placeholder={`Enter ${attr.label.toLowerCase()}...`}
-          />
-        )}
-
-        {/* Number field -> number input */}
-        {attr.value_type === "number" && (
-          <input
-            type="number"
-            value={value ?? ""}
-            min={attr.options?.min}
-            max={attr.options?.max}
-            onChange={(e) =>
-              handleChange(
-                attr,
-                e.target.value === "" ? null : Number(e.target.value)
-              )
-            }
-            onBlur={() => handleBlur(attr)}
-            className={inputClass + " max-w-[120px]"}
-          />
-        )}
-
-        {/* Boolean field -> checkbox */}
-        {attr.value_type === "boolean" && (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!value}
-              onChange={(e) =>
-                handleImmediateChange(attr, e.target.checked)
-              }
-              className="w-4 h-4 text-green-600 rounded border-gray-300
-                         focus:ring-green-500"
-            />
-            {value && <span className="text-sm text-green-600 font-medium">Yes</span>}
-          </label>
-        )}
-
-        {/* Select -> ComboBox with curated + DB usage (same option source as Card Detail) */}
-        {attr.value_type === "select" && (
-          <ComboBox
-            value={value || ""}
-            onChange={(v) => handleImmediateChange(attr, v || null)}
-            options={mergedOpts}
-            placeholder="Not set"
-            className={inputClass + " w-full max-w-[min(100%,420px)]"}
-          />
-        )}
-
-        {/* Multi-select (field_definitions multi_select) -> MultiComboBox */}
-        {attr.value_type === "multi_select" && (
-          <MultiComboBox
-            value={multiValueToComboString(value)}
-            onChange={(commaStr) => {
-              let arr = commaStr
-                ? commaStr.split(",").map((s) => s.trim()).filter(Boolean)
-                : [];
-              if (attr.key === "background_pokemon") {
-                arr = arr.map((s) => s.toLowerCase());
-              }
-              setValues((prev) => ({ ...prev, [attr.key]: arr }));
-              save(attr.key, arr);
-            }}
-            options={mergedOpts}
-            placeholder={`Add ${attr.label.toLowerCase()}…`}
-            className="w-full"
-          />
-        )}
-
-        {/* URL (image override, video URL, ...) */}
-        {attr.value_type === "url" && (
-          <input
-            type="text"
-            inputMode="url"
-            value={value || ""}
-            onChange={(e) => handleChange(attr, e.target.value)}
-            onBlur={(e) => {
-              const t = e.target.value.trim();
-              save(attr.key, t || null);
-            }}
-            className={inputClass}
-            placeholder="https://…"
-          />
-        )}
-
-        {/* Unknown types: still editable as text (avoids blank rows) */}
-        {!["text", "number", "boolean", "select", "multi_select", "url"].includes(
-          attr.value_type
-        ) && (
-          <textarea
-            value={
-              typeof value === "object" && value !== null
-                ? JSON.stringify(value)
-                : value || ""
-            }
-            onChange={(e) => {
-              const v = e.target.value;
-              handleChange(attr, v);
-            }}
-            onBlur={() => {
-              const raw = values[attr.key];
-              if (typeof raw === "string" && raw.trim().startsWith("[")) {
-                try {
-                  save(attr.key, JSON.parse(raw));
-                  return;
-                } catch {
-                  /* keep as string */
-                }
-              }
-              handleBlur(attr);
-            }}
-            rows={2}
-            className={inputClass + " resize-y font-mono text-xs"}
-            placeholder={`(${attr.value_type})`}
-          />
-        )}
-      </div>
-    );
-  };
 
   const sectionIsOpen = (id) => sectionOpen[id] !== false;
   const toggleSection = (id) => {
@@ -674,7 +713,17 @@ function AnnotationEditor({
           </button>
           {sectionIsOpen("pinned-fields") && (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
-              {pinnedAttrs.map((attr) => renderAttrControl(attr, "pin-"))}
+              {pinnedAttrs.map((attr) => (
+                <FormField
+                  key={attr.key}
+                  attr={attr}
+                  serverValue={serverAnnotations[attr.key]}
+                  formOptions={formOptions}
+                  inputClass={inputClass}
+                  compact={compact}
+                  onSave={save}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -699,7 +748,17 @@ function AnnotationEditor({
           </button>
           {sectionIsOpen(section.id) && (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
-              {section.attrs.map((attr) => renderAttrControl(attr))}
+              {section.attrs.map((attr) => (
+                <FormField
+                  key={attr.key}
+                  attr={attr}
+                  serverValue={serverAnnotations[attr.key]}
+                  formOptions={formOptions}
+                  inputClass={inputClass}
+                  compact={compact}
+                  onSave={save}
+                />
+              ))}
             </div>
           )}
         </div>
