@@ -310,7 +310,7 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  const exploreExactCount = !exploreHasActiveConstraints(filters, searchQuery);
+  const exploreExactCount = true;
   const {
     data: cardsResult,
     isPending: cardsPending,
@@ -450,13 +450,12 @@ export default function ExplorePage() {
     if (typeof t !== "number" || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     const base = { q: searchQuery, ...filters, page_size };
-    const exact = !exploreHasActiveConstraints(filters, searchQuery);
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, exact],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, true],
       queryFn: ({ signal }) => {
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: exact, signal: sig });
+        return fetchCards({ ...base, page: pg, exact_count: true, signal: sig });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
