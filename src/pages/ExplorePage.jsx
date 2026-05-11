@@ -310,8 +310,8 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Exact count is fast: fetchCards runs a lightweight head-only count query
-  // without the annotations join (separate from the planned-count data query).
+  // Exact count comes in the Content-Range header of the same response (not a
+  // separate request). The 055 indexes make COUNT(*) on filtered queries fast.
   const EXPLORE_EXACT_COUNT = true;
 
   const {
