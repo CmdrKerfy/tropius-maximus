@@ -441,25 +441,27 @@ export default function ExplorePage() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [page]);
 
-  // Prefetch adjacent pages for snappier Prev/Next navigation
+  // Prefetch adjacent pages for snappier Prev/Next navigation.
+  // Cancels any in-flight prefetches when the effect re-runs (rapid search/filter changes).
   useEffect(() => {
     if (!USE_SUPABASE_APP || !cardsResult || sqlCards) return;
     const { total: t, page_size } = cardsResult;
     if (typeof t !== "number" || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     const base = { q: searchQuery, ...filters, page_size };
-    if (page > 1) {
-      queryClient.prefetchQuery({
-        queryKey: ["cards", searchQuery, filters, page - 1, pageSize],
-        queryFn: () => fetchCards({ ...base, page: page - 1, exact_count: EXPLORE_EXACT_COUNT }),
-      });
-    }
-    if (page < maxPage) {
-      queryClient.prefetchQuery({
-        queryKey: ["cards", searchQuery, filters, page + 1, pageSize],
-        queryFn: () => fetchCards({ ...base, page: page + 1, exact_count: EXPLORE_EXACT_COUNT }),
-      });
-    }
+    const ac = new AbortController();
+    const opts = (pg) => ({
+      queryKey: ["cards", searchQuery, filters, pg, pageSize],
+      queryFn: ({ signal }) => {
+        // If the outer controller fires before React Query creates its signal,
+        // use the combined signal; otherwise rely on React Query's signal.
+        const sig = signal ?? ac.signal;
+        return fetchCards({ ...base, page: pg, exact_count: EXPLORE_EXACT_COUNT, signal: sig });
+      },
+    });
+    if (page > 1) queryClient.prefetchQuery(opts(page - 1));
+    if (page < maxPage) queryClient.prefetchQuery(opts(page + 1));
+    return () => ac.abort();
   }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient]);
 
   // Prefetch prev/next card detail when the modal is open for instant Prev/Next navigation.
