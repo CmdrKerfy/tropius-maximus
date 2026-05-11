@@ -323,13 +323,14 @@ export default function ExplorePage() {
     isFetching,
   } = useQuery({
     queryKey: ["cards", searchQuery, filters, page, pageSize],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchCards({
         q: searchQuery,
         ...filters,
         page,
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: EXPLORE_EXACT_COUNT } : {}),
+        signal,
       }),
     placeholderData: (prev) => prev,
   });

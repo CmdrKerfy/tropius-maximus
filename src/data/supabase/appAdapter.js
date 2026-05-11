@@ -826,6 +826,7 @@ export async function fetchCards(params = {}) {
     page = 1,
     page_size = 40,
     exact_count = false,
+    signal = undefined,
   } = params;
 
   const pageInt = parseInt(page, 10) || 1;
@@ -1038,6 +1039,7 @@ export async function fetchCards(params = {}) {
   }
   query = query.range(offset, offset + pageSizeInt - 1);
 
+  if (signal) query = query.abortSignal(signal);
   const { data, error, count } = await query;
   if (error) throw error;
 
