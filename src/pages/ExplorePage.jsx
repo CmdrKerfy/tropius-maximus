@@ -20,6 +20,7 @@ import {
   fetchFirstNMatchingCardIds,
   fetchWorkbenchQueues,
   useSupabaseBackend,
+  invalidateCjkNamesCache,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
 import SearchBar from "../components/SearchBar";
@@ -52,6 +53,7 @@ import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShell
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
+import { hasCjkChars } from "../lib/cjkDetect.js";
 import { getSupabase } from "../lib/supabaseClient.js";
 
 const USE_SUPABASE_APP =
@@ -310,10 +312,12 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Planned counts are fast. Exact COUNT(*) over the annotations join times
-  // out on Supabase free tier during interactive search. ANALYZE is run by
-  // the ingest pipeline (migration 055) to keep planned counts accurate.
-  const EXPLORE_EXACT_COUNT = false;
+  // Exact count only when browsing with no active constraints (fast COUNT on
+  // cards with simple WHERE). When search or filters are active, use planned
+  // counts to avoid expensive COUNT(*) over the annotations join that times
+  // out on Supabase free tier. ANALYZE is run by the ingest pipeline
+  // (migration 055) to keep planned counts reasonably accurate.
+  const exploreExactCount = !exploreHasActiveConstraints(filters, searchQuery);
 
   const {
     data: cardsResult,
@@ -322,20 +326,24 @@ export default function ExplorePage() {
     error: cardsQueryError,
     isFetching,
   } = useQuery({
-    queryKey: ["cards", searchQuery, filters, page, pageSize],
+    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount],
     queryFn: ({ signal }) =>
       fetchCards({
         q: searchQuery,
         ...filters,
         page,
         page_size: pageSize,
-        ...(USE_SUPABASE_APP ? { exact_count: EXPLORE_EXACT_COUNT } : {}),
+        ...(USE_SUPABASE_APP ? { exact_count: exploreExactCount } : {}),
         signal,
       }),
-    // Skip queries for 1-2 character search terms — they contain no usable
-    // trigrams and cause full sequential scans of 60K+ rows, taking 3-5s each
-    // and queuing behind later fast queries (pg_trgm GIN index kicks in at 3+ chars).
-    enabled: searchQuery.length === 0 || searchQuery.length >= 3,
+    // Skip queries for 1-2 character ASCII search terms — they contain no usable
+    // trigrams and cause full sequential scans of 60K+ rows. CJK queries (kanji,
+    // kana) are allowed at any length: they route through client-side matching
+    // since pg_trgm can't accelerate them regardless of character count.
+    enabled:
+      searchQuery.length === 0 ||
+      searchQuery.length >= 3 ||
+      (searchQuery.length > 0 && hasCjkChars(searchQuery)),
     placeholderData: (prev) => prev,
   });
 
@@ -453,14 +461,13 @@ export default function ExplorePage() {
     if (typeof t !== "number" || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     const base = { q: searchQuery, ...filters, page_size };
+    const exact = !exploreHasActiveConstraints(filters, searchQuery);
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, exact],
       queryFn: ({ signal }) => {
-        // If the outer controller fires before React Query creates its signal,
-        // use the combined signal; otherwise rely on React Query's signal.
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: EXPLORE_EXACT_COUNT, signal: sig });
+        return fetchCards({ ...base, page: pg, exact_count: exact, signal: sig });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
@@ -939,6 +946,7 @@ export default function ExplorePage() {
       setPage(1);
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
+      invalidateCjkNamesCache();
     } finally {
       setDeleteInProgress(false);
     }
@@ -1056,6 +1064,7 @@ export default function ExplorePage() {
   const handleCustomCardAdded = () => {
     queryClient.invalidateQueries({ queryKey: ["cards"] });
     queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
+    invalidateCjkNamesCache();
   };
 
   const handleSendToWorkbench = useCallback(

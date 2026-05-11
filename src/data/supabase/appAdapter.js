@@ -13,6 +13,7 @@ import {
   ANNOTATION_ROW_INSERT_DEFAULTS,
   normalizeBackgroundDetailsValue,
 } from "./annotationBridge.js";
+import { hasCjkChars } from "../../lib/cjkDetect.js";
 import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
 import { mergeExploreFilterOptions } from "../../lib/mergeExploreFilterOptions.js";
@@ -692,6 +693,79 @@ function buildNameSearchIlikePattern(rawQuery) {
   return `%${tokens.join("%")}%`;
 }
 
+/** Maps a source label to the origin/detail params for the CJK names RPC. */
+function getSourceParams(source) {
+  switch (source) {
+    case "TCG":
+      return { origins: ["pokemontcg.io", "manual"], exclude_origin_detail: "japanese" };
+    case "TCG (JPN)":
+      return { origins: ["tcgdex", "ptcgdb"], require_origin_detail: "japanese" };
+    case "Pocket":
+      return { origins: ["tcgdex"], exclude_origin_detail: "japanese" };
+    case "Custom":
+      return { origins: ["manual"], exclude_origin_detail: "pokumon" };
+    case "Promo":
+      return { origins: ["manual"], require_origin_detail: "pokumon" };
+    default:
+      return { origins: ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"] };
+  }
+}
+
+const _cjkNamesCache = new Map();
+
+/**
+ * Fetch card names for a source (cached 5 min) and return IDs matching the
+ * raw search query via client-side .includes(). Used when pg_trgm can't
+ * accelerate CJK ILIKE queries.
+ */
+async function getCjkMatchedIds(source, rawQuery) {
+  const cacheKey = source;
+  const cached = _cjkNamesCache.get(cacheKey);
+  let names;
+  if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) {
+    names = cached.data;
+  } else {
+    const sb = await getSupabase();
+    const params = getSourceParams(source);
+    const { data, error } = await sb.rpc("get_card_names_by_source", params);
+    if (error) throw error;
+    names = data || [];
+    _cjkNamesCache.set(cacheKey, { data: names, fetchedAt: Date.now() });
+  }
+
+  const orTerms = rawQuery.split(/[+|]+/).map((t) => t.trim()).filter(Boolean);
+  if (!orTerms.length) return [];
+
+  const matchedIds = [];
+  for (const obj of names) {
+    const nameLower = obj.name.normalize("NFC").toLowerCase();
+    const matches = orTerms.some((term) => {
+      // Match buildNameSearchIlikePattern: hyphens → spaces, then AND tokens
+      const normalized = term
+        .replace(/[-–—_/·.,;:\\]+/g, " ")
+        .replace(/[\s   -​﻿]+/g, " ")
+        .trim();
+      const tokens = normalized
+        .split(" ")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (tokens.length === 0) {
+        return nameLower.includes(term.normalize("NFC").toLowerCase());
+      }
+      return tokens.every((token) =>
+        nameLower.includes(token.normalize("NFC").toLowerCase())
+      );
+    });
+    if (matches) matchedIds.push(obj.id);
+  }
+  return matchedIds;
+}
+
+/** Call after manual card add/edit/delete to clear the CJK names cache. */
+export function invalidateCjkNamesCache() {
+  _cjkNamesCache.clear();
+}
+
 /** JSON value for PostgREST `cs` (jsonb @>) with a one-element string array. */
 function jsonbArrayContainsOneString(s) {
   return JSON.stringify([String(s)]);
@@ -903,11 +977,21 @@ export async function fetchCards(params = {}) {
 
   const qTrim = String(q ?? "").trim();
   if (qTrim) {
-    const likePattern = buildNameSearchIlikePattern(qTrim);
-    if (Array.isArray(likePattern)) {
-      query = query.or(likePattern.map((p) => `name.ilike.${p}`).join(","));
-    } else if (likePattern) {
-      query = query.ilike("name", likePattern);
+    if (hasCjkChars(qTrim)) {
+      // pg_trgm byte-level trigrams can't accelerate CJK — match client-side
+      // against cached card names, then filter by matched IDs.
+      const ids = await getCjkMatchedIds(source, qTrim);
+      if (ids.length === 0) {
+        return { cards: [], total: 0, page: pageInt, page_size: pageSizeInt };
+      }
+      query = query.in("id", ids.slice(0, 400));
+    } else {
+      const likePattern = buildNameSearchIlikePattern(qTrim);
+      if (Array.isArray(likePattern)) {
+        query = query.or(likePattern.map((p) => `name.ilike.${p}`).join(","));
+      } else if (likePattern) {
+        query = query.ilike("name", likePattern);
+      }
     }
   }
   if (card_id) query = query.eq("id", String(card_id));

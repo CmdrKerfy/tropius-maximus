@@ -439,3 +439,11 @@ export async function upsertUserPreferences(patch) {
   if (Object.keys(out).length) return out;
   return { card_detail_pins: [] };
 }
+
+/** Clear the CJK card-names cache after manual card add/edit/delete. */
+export async function invalidateCjkNamesCache() {
+  if (useSupabaseBackend()) {
+    const m = await import("./data/supabase/appAdapter.js");
+    m.invalidateCjkNamesCache();
+  }
+}
