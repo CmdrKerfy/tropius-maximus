@@ -53,7 +53,6 @@ import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShell
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
-import { hasCjkChars } from "../lib/cjkDetect.js";
 import { getSupabase } from "../lib/supabaseClient.js";
 
 const USE_SUPABASE_APP =
@@ -330,16 +329,11 @@ export default function ExplorePage() {
     );
   }, [filters]);
 
-  const cjkOnAll = useMemo(
-    () => hasCjkChars(searchQuery) && filters.source === "",
-    [searchQuery, filters.source]
-  );
-
   // Debounce params 500ms before firing the exact count query — avoids
   // hammering the connection pool during rapid typing.
   const [countParams, setCountParams] = useState(null);
   useEffect(() => {
-    if (cjkOnAll || annotationFiltersActive) {
+    if (annotationFiltersActive) {
       setCountParams(null);
       return;
     }
@@ -347,7 +341,7 @@ export default function ExplorePage() {
       setCountParams({ q: searchQuery, ...filters });
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, filters, cjkOnAll, annotationFiltersActive]);
+  }, [searchQuery, filters, annotationFiltersActive]);
 
   const { data: exactTotal, isFetching: countIsLoading } = useQuery({
     queryKey: ["exactCardCount", countParams],
@@ -375,9 +369,8 @@ export default function ExplorePage() {
       }),
     // Skip 1-2 character search terms — they produce no usable trigrams and
     // cause full sequential scans of 60K+ rows on the free-tier instance.
-    // CJK on source "All" is also blocked — those would be full 60K seq scans.
     enabled:
-      (searchQuery.length === 0 || searchQuery.length >= 3) && !cjkOnAll,
+      searchQuery.length === 0 || searchQuery.length >= 3,
     placeholderData: (prev) => prev,
   });
 
@@ -447,13 +440,15 @@ export default function ExplorePage() {
 
   // Stale ?page= in the URL (or history) can point past the last page: PostgREST returns [] with a
   // non-zero Content-Range total → "N cards found" but an empty grid.
+  // Prefer the debounced exact count when available; it's more reliable than planned estimates.
   useEffect(() => {
     if (sqlCards || !cardsResult) return;
-    const { total: t, page_size } = cardsResult;
+    const t = exactTotal ?? cardsResult.total;
+    const { page_size } = cardsResult;
     if (typeof t !== "number" || t <= 0 || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     setPage((p) => (p > maxPage ? maxPage : p));
-  }, [cardsResult, sqlCards]);
+  }, [cardsResult, sqlCards, exactTotal]);
   const error = cardsQueryFailed ? cardsQueryError?.message ?? "Failed to load cards" : null;
   /** Skeleton only when there is no list data yet (keeps previous page visible while paginating). */
   const listAwaitingFirstData = !sqlCards && cardsResult === undefined && cardsPending;
@@ -493,20 +488,22 @@ export default function ExplorePage() {
     if (!USE_SUPABASE_APP || !cardsResult || sqlCards) return;
     const { total: t, page_size } = cardsResult;
     if (typeof t !== "number" || !page_size) return;
-    const maxPage = Math.max(1, Math.ceil(t / page_size));
+    const maxPage = Math.max(1, Math.ceil((exactTotal ?? t) / page_size));
+    // Prefetch uses the same exact_count as the main query so range validation matches.
+    const prefetchExact = exploreExactCount;
     const base = { q: searchQuery, ...filters, page_size };
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, false],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, prefetchExact],
       queryFn: ({ signal }) => {
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: false, signal: sig });
+        return fetchCards({ ...base, page: pg, exact_count: prefetchExact, signal: sig });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
     if (page < maxPage) queryClient.prefetchQuery(opts(page + 1));
     return () => ac.abort();
-  }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient]);
+  }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient, exactTotal, exploreExactCount]);
 
   // Prefetch prev/next card detail when the modal is open for instant Prev/Next navigation.
   // Derive source the same way the modal does so query keys match and prefetch actually hits cache.
@@ -1391,11 +1388,6 @@ export default function ExplorePage() {
         {experimentalNav ? (
           <div className="-mx-4 px-4 sticky top-0 z-[15] bg-tm-cream/95 backdrop-blur-sm border-b border-gray-200/90 py-2 mb-3 shadow-sm">
             <SearchBar value={searchQuery} onChange={handleSearch} />
-            {cjkOnAll && (
-              <div className="mt-1 text-xs text-amber-700">
-                Japanese search requires a source — select TCG (JPN) or another source above.
-              </div>
-            )}
             {!sqlCards && (
               <div className="mt-2 text-sm text-gray-500">
                 {listAwaitingFirstData ? (
@@ -1414,11 +1406,6 @@ export default function ExplorePage() {
         ) : (
           <>
             <SearchBar value={searchQuery} onChange={handleSearch} />
-            {cjkOnAll && (
-              <div className="mt-1 text-xs text-amber-700">
-                Japanese search requires a source — select TCG (JPN) or another source above.
-              </div>
-            )}
           </>
         )}
 
