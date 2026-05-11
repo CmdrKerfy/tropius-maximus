@@ -182,7 +182,7 @@ export default function ExplorePage() {
 
   // ── Card list state ─────────────────────────────────────────────────
   const [page, setPage] = useState(() => readUrlState().page);
-  const [pageSize] = useState(120);
+  const [pageSize] = useState(60);
 
   // ── SQL grid overlay state ────────────────────────────────────────
   const [sqlCards, setSqlCards] = useState(null);
@@ -332,6 +332,10 @@ export default function ExplorePage() {
         ...(USE_SUPABASE_APP ? { exact_count: EXPLORE_EXACT_COUNT } : {}),
         signal,
       }),
+    // Skip queries for 1-2 character search terms — they contain no usable
+    // trigrams and cause full sequential scans of 60K+ rows, taking 3-5s each
+    // and queuing behind later fast queries (pg_trgm GIN index kicks in at 3+ chars).
+    enabled: searchQuery.length === 0 || searchQuery.length >= 3,
     placeholderData: (prev) => prev,
   });
 

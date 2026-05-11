@@ -26,10 +26,13 @@ export default function SearchBar({ value, onChange }) {
     // Clear any pending debounce timer.
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    // Wait 300ms before notifying the parent, so we don't search on every keystroke.
+    // Adaptive debounce: 500ms for <3 chars (these won't fire queries anyway
+    // due to the 3-char minimum in ExplorePage, so no rush), 300ms for 3+
+    // chars (where the pg_trgm GIN index makes queries fast).
+    const delay = newValue.length > 0 && newValue.length < 3 ? 500 : 300;
     timerRef.current = setTimeout(() => {
       onChange(newValue);
-    }, 300);
+    }, delay);
   };
 
   // Clean up timer on unmount.
