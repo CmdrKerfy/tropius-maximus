@@ -310,9 +310,10 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Exact count comes in the Content-Range header of the same response (not a
-  // separate request). The 055 indexes make COUNT(*) on filtered queries fast.
-  const EXPLORE_EXACT_COUNT = true;
+  // Exact count on complex OR searches (+ or |) can still time out even with
+  // 055 indexes. Use planned counts for those, exact for simpler queries.
+  const hasOrSearch = /[+|]/.test(searchQuery.trim());
+  const EXPLORE_EXACT_COUNT = !hasOrSearch;
 
   const {
     data: cardsResult,
