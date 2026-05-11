@@ -311,7 +311,7 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  const exploreExactCount = false;
+  const exploreExactCount = true;
 
   const annotationFiltersActive = useMemo(() => {
     const f = filters;
@@ -449,6 +449,16 @@ export default function ExplorePage() {
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     setPage((p) => (p > maxPage ? maxPage : p));
   }, [cardsResult, sqlCards, exactTotal]);
+  // 416 Range Not Satisfiable: the requested page offset is past the real row count.
+  // This happens on cold loads with ?page=2+ before the debounced exactTotal arrives.
+  // Reset to page 1 so the query can succeed; the clamp effect then sets the correct maxPage.
+  useEffect(() => {
+    if (!cardsQueryError || page <= 1) return;
+    const msg = String(cardsQueryError?.message || cardsQueryError || "");
+    if (msg.includes("416") || /range not satisfiable/i.test(msg)) {
+      setPage(1);
+    }
+  }, [cardsQueryError, page]);
   const error = cardsQueryFailed ? cardsQueryError?.message ?? "Failed to load cards" : null;
   /** Skeleton only when there is no list data yet (keeps previous page visible while paginating). */
   const listAwaitingFirstData = !sqlCards && cardsResult === undefined && cardsPending;

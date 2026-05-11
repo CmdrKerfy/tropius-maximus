@@ -46,7 +46,11 @@ export default async function middleware(request) {
   const mode = request.headers.get("sec-fetch-mode");
   const user = request.headers.get("sec-fetch-user");
   // Only real user-initiated tab loads send `?1` (not link-preview server fetches).
-  const isUserBrowserTab = dest === "document" && mode === "navigate" && user === "?1";
+  // Also pass through if _og=1 is set — the share-og redirect script sets this to
+  // break redirect loops; it means a real browser already hit us once.
+  const isUserBrowserTab =
+    (dest === "document" && mode === "navigate" && user === "?1") ||
+    url.searchParams.get("_og") === "1";
 
   if (isUserBrowserTab) {
     return withVary(fetch(request));

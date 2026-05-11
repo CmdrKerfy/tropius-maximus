@@ -26,8 +26,12 @@ Phases 0–7 complete: schema, data migration, Supabase adapter, Explore/Workben
 - Explore filter options materialized view (054): <50ms instead of 4-8s client-paged cascade
 - CardGrid visual fix (reverted unnecessary virtualization, kept CSS grid + React.memo)
 - TDZ bugfix (`ReferenceError: can't access lexical declaration 'k' before initialization`): Rollup reorders `const` arrow functions within component bodies; `useCallback` dependency arrays referencing later-defined handlers cause TDZ. Fix: convert handlers to `function` declarations (hoisted) + use refs when hook order can't change. Files: ExplorePage.jsx, Button.jsx, CardGrid.jsx, CardDetailFieldControl.jsx, AnnotationEditor.jsx.
-- Search performance: switched `EXPLORE_EXACT_COUNT` from `true` to `false` (ExplorePage.jsx L313). Every search/filter keystroke was running `COUNT(*)` across all matching rows. Planned counts are fast and accurate after `ANALYZE`.
 - Bilingual name search via OR syntax: `buildNameSearchIlikePattern` in appAdapter.js supports `+` or `|` separators for multi-name search (e.g. `Eevee + イーブイ` returns cards matching either name). Single terms still use AND tokenization. SearchBar shows a subtle hint below the input.
+- RLS performance fix (057): `auth_is_non_anonymous_authenticated()` function wrapper in RLS policies forced sequential scans (80ms as superuser → 6.5s as authenticated). Inlined the session check directly into USING clauses on `cards` (SELECT), `sets` (SELECT), `pokemon_metadata` (SELECT), `annotations` (ALL). Write policies left on the wrapper function. pg_trgm GIN index now used for both ASCII and CJK searches.
+- Search performance: removed the CJK-on-All source block — CJK/katakana searches work on all sources via GIN index. Re-enabled `exploreExactCount = true` now that RLS bottleneck is fixed. Debounced exact count (`fetchExactCardCount`, head:true/count_only) provides authoritative total for pagination display.
+- Pagination fix: clamp and prefetch effects use `exactTotal ?? cardsResult.total` for maxPage calculation. Added 416 auto-reset effect: if a query fails with "range not satisfiable" and page > 1, resets to page 1 so the clamp can recalculate.
+- Mobile share fix: middleware.js now passes through to SPA when `_og=1` param is set, breaking the redirect loop that left mobile in-app browsers stuck on "Open card" (the fallback link in api/share-og.js).
+- MultiComboBox crash fix: JSONB annotation fields (camera_angle, art_style, etc.) come back as arrays from the database, but MultiComboBox expected comma-separated strings. Now handles both arrays and strings.
 
 **Pending:**
 - [ ] E2E testing on Vercel — manual smoke checklist: `docs/plans/e2e-vercel-smoke-checklist.md`

@@ -14,8 +14,12 @@ export default function MultiComboBox({
   const inputRef = useRef(null);
 
   const opts = Array.isArray(options) ? options : [];
-  // Parse comma-separated string into array of trimmed non-empty values
-  const tags = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  // Accept comma-separated string or array (JSONB fields come as arrays)
+  const tags = value
+    ? (Array.isArray(value) ? value : String(value).split(","))
+        .map((s) => (typeof s === "string" ? s : String(s ?? "")).trim())
+        .filter(Boolean)
+    : [];
 
   const remaining = opts.filter(
     (opt) => !tags.some((t) => t.toLowerCase() === opt.toLowerCase())
