@@ -829,7 +829,94 @@ export async function fetchCards(params = {}) {
     page_size = 40,
     exact_count = false,
     signal = undefined,
+    count_only = false,
   } = params;
+
+  // ── Count-only fast path: lightweight head request, cards only, no annotations ──
+  if (count_only) {
+    let cq = sb.from("cards").select("id", { count: "exact", head: true });
+
+    if (source === "TCG") {
+      cq = cq.in("origin", ["pokemontcg.io", "manual"]).or("origin_detail.is.null,origin_detail.neq.japanese");
+    } else if (source === "TCG (JPN)") {
+      cq = cq.or("and(origin.eq.tcgdex,origin_detail.eq.japanese),and(origin.eq.ptcgdb,origin_detail.eq.japanese)");
+      cq = cq.neq("set_id", "neo1").neq("set_id", "neo2").neq("set_id", "neo3").neq("set_id", "neo4");
+    } else if (source === "Pocket") {
+      cq = cq.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
+    } else if (source === "Custom") {
+      cq = cq.eq("origin", "manual").or("origin_detail.is.null,origin_detail.neq.pokumon");
+    } else if (source === "Promo") {
+      cq = cq.eq("origin", "manual").eq("origin_detail", "pokumon");
+    } else {
+      cq = cq.in("origin", ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"]);
+    }
+
+    const qTrimCount = String(q ?? "").trim();
+    if (qTrimCount) {
+      const likePattern = buildNameSearchIlikePattern(qTrimCount);
+      if (Array.isArray(likePattern)) {
+        cq = cq.or(likePattern.map((p) => `name.ilike.${p}`).join(","));
+      } else if (likePattern) {
+        cq = cq.ilike("name", likePattern);
+      }
+    }
+
+    if (card_id) cq = cq.eq("id", String(card_id));
+
+    if (supertype) {
+      const norm = supertype.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      if (norm === "pokemon") cq = cq.or("supertype.eq.Pokémon,supertype.eq.Pokemon");
+      else cq = cq.eq("supertype", supertype);
+    }
+
+    if (Array.isArray(rarity) && rarity.length) cq = cq.in("rarity", rarity);
+    if (Array.isArray(set_id) && set_id.length) cq = cq.in("set_id", set_id);
+
+    if (Array.isArray(element) && element.length) {
+      if (source === "Pocket") {
+        cq = cq.in("element", element);
+      } else if (source === "" || source === "TCG (JPN)") {
+        const clauses = [];
+        for (const e of element) {
+          clauses.push(`types.cs.${jsonbArrayContainsOneString(e)}`);
+          clauses.push(`element.eq.${postgrestOrEqValue(e)}`);
+        }
+        cq = cq.or(clauses.join(","));
+      } else {
+        cq = cq.or(element.map((e) => `types.cs.${jsonbArrayContainsOneString(e)}`).join(","));
+      }
+    }
+
+    // Artist: card-level only (no annotation sub-query)
+    if (Array.isArray(artist) && artist.length) {
+      if (source === "Pocket") {
+        cq = cq.in("illustrator", artist);
+      } else if (source === "TCG (JPN)") {
+        cq = cq.in("artist", artist);
+      } else {
+        const clauses = [];
+        for (const a of artist) {
+          const e = postgrestOrEqValue(a);
+          clauses.push(`artist.eq.${e}`);
+          clauses.push(`illustrator.eq.${e}`);
+        }
+        cq = cq.or(clauses.join(","));
+      }
+    }
+
+    if (Array.isArray(evolution_line) && evolution_line.length) cq = cq.in("evolution_line", evolution_line);
+
+    if (Array.isArray(specialty) && specialty.length) {
+      cq = cq.or(specialty.map((s) => `subtypes.cs.${jsonbArrayContainsOneString(s)}`).join(","));
+    }
+
+    if (signal) cq = cq.abortSignal(signal);
+    const { count: exactTotal, error: countErr } = await cq;
+    if (countErr) throw countErr;
+    return { count: exactTotal ?? 0 };
+  }
+
+  // ── Normal data path ──
 
   const pageInt = parseInt(page, 10) || 1;
   const pageSizeInt = parseInt(page_size, 10) || 40;

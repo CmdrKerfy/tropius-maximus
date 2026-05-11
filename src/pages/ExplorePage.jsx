@@ -20,6 +20,7 @@ import {
   fetchFirstNMatchingCardIds,
   fetchWorkbenchQueues,
   useSupabaseBackend,
+  fetchExactCardCount,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
 import SearchBar from "../components/SearchBar";
@@ -52,6 +53,7 @@ import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShell
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
+import { hasCjkChars } from "../lib/cjkDetect.js";
 import { getSupabase } from "../lib/supabaseClient.js";
 
 const USE_SUPABASE_APP =
@@ -310,7 +312,50 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  const exploreExactCount = true;
+  const exploreExactCount = false;
+
+  const annotationFiltersActive = useMemo(() => {
+    const f = filters;
+    return (
+      (Array.isArray(f.weather) && f.weather.length > 0) ||
+      (Array.isArray(f.environment) && f.environment.length > 0) ||
+      (Array.isArray(f.region) && f.region.length > 0) ||
+      (Array.isArray(f.background_pokemon) && f.background_pokemon.length > 0) ||
+      (Array.isArray(f.actions) && f.actions.length > 0) ||
+      (Array.isArray(f.pose) && f.pose.length > 0) ||
+      String(f.jumbo_card || "").trim() !== "" ||
+      String(f.annotation_field_value || "").trim() !== "" ||
+      (Array.isArray(f.artist) && f.artist.length > 0 &&
+        (f.source === "" || f.source === "TCG" || f.source === "Custom"))
+    );
+  }, [filters]);
+
+  const cjkOnAll = useMemo(
+    () => hasCjkChars(searchQuery) && filters.source === "",
+    [searchQuery, filters.source]
+  );
+
+  // Debounce params 500ms before firing the exact count query — avoids
+  // hammering the connection pool during rapid typing.
+  const [countParams, setCountParams] = useState(null);
+  useEffect(() => {
+    if (cjkOnAll || annotationFiltersActive) {
+      setCountParams(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountParams({ q: searchQuery, ...filters });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters, cjkOnAll, annotationFiltersActive]);
+
+  const { data: exactTotal, isFetching: countIsLoading } = useQuery({
+    queryKey: ["exactCardCount", countParams],
+    queryFn: ({ signal }) => fetchExactCardCount({ ...countParams, signal }),
+    enabled: USE_SUPABASE_APP && countParams != null,
+    staleTime: 0,
+  });
+
   const {
     data: cardsResult,
     isPending: cardsPending,
@@ -330,14 +375,14 @@ export default function ExplorePage() {
       }),
     // Skip 1-2 character search terms — they produce no usable trigrams and
     // cause full sequential scans of 60K+ rows on the free-tier instance.
+    // CJK on source "All" is also blocked — those would be full 60K seq scans.
     enabled:
-      searchQuery.length === 0 ||
-      searchQuery.length >= 3,
+      (searchQuery.length === 0 || searchQuery.length >= 3) && !cjkOnAll,
     placeholderData: (prev) => prev,
   });
 
   const cards = cardsResult?.cards ?? [];
-  const total = cardsResult?.total ?? 0;
+  const total = exactTotal ?? cardsResult?.total ?? 0;
 
   // Dedupe so each card appears once (Explore grid):
   // - Manual: same set + name + artwork URL (legacy duplicate PKs / spaced ids vs canonical).
@@ -452,10 +497,10 @@ export default function ExplorePage() {
     const base = { q: searchQuery, ...filters, page_size };
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, true],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, false],
       queryFn: ({ signal }) => {
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: true, signal: sig });
+        return fetchCards({ ...base, page: pg, exact_count: false, signal: sig });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
@@ -1346,6 +1391,11 @@ export default function ExplorePage() {
         {experimentalNav ? (
           <div className="-mx-4 px-4 sticky top-0 z-[15] bg-tm-cream/95 backdrop-blur-sm border-b border-gray-200/90 py-2 mb-3 shadow-sm">
             <SearchBar value={searchQuery} onChange={handleSearch} />
+            {cjkOnAll && (
+              <div className="mt-1 text-xs text-amber-700">
+                Japanese search requires a source — select TCG (JPN) or another source above.
+              </div>
+            )}
             {!sqlCards && (
               <div className="mt-2 text-sm text-gray-500">
                 {listAwaitingFirstData ? (
@@ -1353,6 +1403,8 @@ export default function ExplorePage() {
                     <Skeleton className="h-4 w-40 rounded" />
                     <span className="sr-only">Loading results…</span>
                   </div>
+                ) : countIsLoading ? (
+                  `~${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
                 ) : (
                   `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
                 )}
@@ -1360,7 +1412,14 @@ export default function ExplorePage() {
             )}
           </div>
         ) : (
-          <SearchBar value={searchQuery} onChange={handleSearch} />
+          <>
+            <SearchBar value={searchQuery} onChange={handleSearch} />
+            {cjkOnAll && (
+              <div className="mt-1 text-xs text-amber-700">
+                Japanese search requires a source — select TCG (JPN) or another source above.
+              </div>
+            )}
+          </>
         )}
 
         {/* Filters — shell shows immediately; options fill in when the query resolves */}
@@ -1592,7 +1651,9 @@ export default function ExplorePage() {
           <div className="mt-4 mb-2 text-sm text-gray-500">
             {listAwaitingFirstData
               ? "Loading..."
-              : `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`}
+              : countIsLoading
+                ? `~${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
+                : `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`}
           </div>
         )}
 

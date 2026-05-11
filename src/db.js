@@ -117,6 +117,13 @@ export async function fetchFirstNMatchingCardIds(params, limit) {
     : (await _getDuck()).fetchFirstNMatchingCardIds(params, limit);
 }
 
+/** Lightweight exact count: cards only, no annotations JOIN. */
+export async function fetchExactCardCount(params) {
+  if (!useSupabaseBackend()) return null;
+  const { count } = await (await sb()).fetchCards({ ...params, count_only: true });
+  return count ?? 0;
+}
+
 export { BATCH_EDIT_MAX_CARDS } from "./lib/batchLimits.js";
 
 export async function batchPatchAnnotations(cardIds, patch, options) {
