@@ -875,16 +875,10 @@ export async function fetchCards(params = {}) {
     ? `annotations!inner(image_override, extra, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)`
     : `annotations(image_override, extra, updated_by, updated_at)`;
 
-  // When there are no annotation filters and we need an exact count, skip the
-  // annotations embed in the main query. The COUNT(*) over the annotations
-  // LEFT JOIN is the bottleneck (10s+) — counting cards alone is fast (<300ms).
-  // Annotations are fetched separately for only the displayed page of cards.
-  const fetchAnnotationsSeparately = !useAnnInner && exact_count;
-
   let query = sb
     .from("cards")
     .select(
-      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by${fetchAnnotationsSeparately ? "" : `, ${annSelect}`}`,
+      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by, ${annSelect}`,
       { count: exact_count ? "exact" : "planned" }
     );
 
@@ -1052,21 +1046,6 @@ export async function fetchCards(params = {}) {
   if (error) throw error;
 
   let rows = data || [];
-
-  // Annotations were skipped in the main query to keep COUNT(*) fast.
-  // Fetch them now for only the displayed page of cards (≤60 rows).
-  if (fetchAnnotationsSeparately && rows.length) {
-    const cardIds = rows.map((r) => r.id);
-    const { data: annRows, error: annErr } = await sb
-      .from("annotations")
-      .select("card_id, image_override, extra, updated_by, updated_at")
-      .in("card_id", cardIds);
-    if (annErr) throw annErr;
-    const annByCardId = new Map((annRows || []).map((a) => [a.card_id, a]));
-    for (const row of rows) {
-      row.annotations = annByCardId.get(row.id) || null;
-    }
-  }
 
   // Deduplicate TCG (JPN) by jpn_card_key when both origins are present.
   // PTCG-database wins for images; TCGdex wins for text fields.
