@@ -310,10 +310,10 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // Exact count on complex OR searches (+ or |) can still time out even with
-  // 055 indexes. Use planned counts for those, exact for simpler queries.
-  const hasOrSearch = /[+|]/.test(searchQuery.trim());
-  const EXPLORE_EXACT_COUNT = !hasOrSearch;
+  // Planned counts are fast. Exact COUNT(*) over the annotations join times
+  // out on Supabase free tier during interactive search. ANALYZE is run by
+  // the ingest pipeline (migration 055) to keep planned counts accurate.
+  const EXPLORE_EXACT_COUNT = false;
 
   const {
     data: cardsResult,
