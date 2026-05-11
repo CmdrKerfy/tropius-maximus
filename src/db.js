@@ -440,11 +440,3 @@ export async function upsertUserPreferences(patch) {
   return { card_detail_pins: [] };
 }
 
-/** Fetch all {id, name} rows for a source via the streaming CJK names RPC. */
-export async function fetchCjkNames(source) {
-  if (useSupabaseBackend()) {
-    const m = await import("./data/supabase/appAdapter.js");
-    return m.fetchCjkNames(source);
-  }
-  return [];
-}

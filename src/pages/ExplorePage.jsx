@@ -20,7 +20,6 @@ import {
   fetchFirstNMatchingCardIds,
   fetchWorkbenchQueues,
   useSupabaseBackend,
-  fetchCjkNames,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
 import SearchBar from "../components/SearchBar";
@@ -53,7 +52,6 @@ import { shellPrimaryNavLinkClass as exploreNavLinkClass } from "../lib/appShell
 import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
-import { hasCjkChars } from "../lib/cjkDetect.js";
 import { getSupabase } from "../lib/supabaseClient.js";
 
 const USE_SUPABASE_APP =
@@ -312,23 +310,7 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  // CJK names cache: fetched once per source (streaming TABLE RPC, no jsonb_agg)
-  // and reused for all CJK searches via client-side .includes() matching.
-  const { data: cjkNames = [] } = useQuery({
-    queryKey: ["cjkNames", filters.source],
-    queryFn: () => fetchCjkNames(filters.source),
-    staleTime: 5 * 60 * 1000,
-    enabled: USE_SUPABASE_APP,
-    placeholderData: (prev) => prev,
-  });
-
-  // Exact count only when browsing with no active constraints (fast COUNT on
-  // cards with simple WHERE). When search or filters are active, use planned
-  // counts to avoid expensive COUNT(*) over the annotations join that times
-  // out on Supabase free tier. ANALYZE is run by the ingest pipeline
-  // (migration 055) to keep planned counts reasonably accurate.
-  const exploreExactCount = !exploreHasActiveConstraints(filters, searchQuery);
-
+  const exploreExactCount = true;
   const {
     data: cardsResult,
     isPending: cardsPending,
@@ -336,7 +318,7 @@ export default function ExplorePage() {
     error: cardsQueryError,
     isFetching,
   } = useQuery({
-    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount, cjkNames.length],
+    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount],
     queryFn: ({ signal }) =>
       fetchCards({
         q: searchQuery,
@@ -345,16 +327,12 @@ export default function ExplorePage() {
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: exploreExactCount } : {}),
         signal,
-        cjkNames,
       }),
-    // Skip queries for 1-2 character ASCII search terms — they contain no usable
-    // trigrams and cause full sequential scans of 60K+ rows. CJK queries (kanji,
-    // kana) are allowed at any length: they route through client-side matching
-    // since pg_trgm can't accelerate them regardless of character count.
+    // Skip 1-2 character search terms — they produce no usable trigrams and
+    // cause full sequential scans of 60K+ rows on the free-tier instance.
     enabled:
       searchQuery.length === 0 ||
-      searchQuery.length >= 3 ||
-      (searchQuery.length > 0 && hasCjkChars(searchQuery)),
+      searchQuery.length >= 3,
     placeholderData: (prev) => prev,
   });
 
@@ -472,13 +450,12 @@ export default function ExplorePage() {
     if (typeof t !== "number" || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     const base = { q: searchQuery, ...filters, page_size };
-    const exact = !exploreHasActiveConstraints(filters, searchQuery);
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, exact, cjkNames.length],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, true],
       queryFn: ({ signal }) => {
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: exact, signal: sig, cjkNames });
+        return fetchCards({ ...base, page: pg, exact_count: true, signal: sig });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
