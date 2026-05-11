@@ -693,7 +693,7 @@ function buildNameSearchIlikePattern(rawQuery) {
   return `%${tokens.join("%")}%`;
 }
 
-/** Maps a source label to the origin/detail params for the CJK names RPC. */
+/** Maps a source label to the origin/detail params for the CJK RPC. */
 function getSourceParams(source) {
   switch (source) {
     case "TCG":
@@ -711,28 +711,25 @@ function getSourceParams(source) {
   }
 }
 
-const _cjkNamesCache = new Map();
+/**
+ * Fetch all {id, name} rows for a source via the streaming TABLE RPC.
+ * Uses the covering index for an index-only scan — no heap fetches, no
+ * JSONB aggregation. Called by TanStack Query (5-min staleTime).
+ */
+export async function fetchCjkNames(source) {
+  const sb = await sbReady();
+  const params = getSourceParams(source);
+  const { data, error } = await sb.rpc("get_card_names_by_source", params);
+  if (error) throw error;
+  return data || [];
+}
 
 /**
- * Fetch card names for a source (cached 5 min) and return IDs matching the
- * raw search query via client-side .includes(). Used when pg_trgm can't
- * accelerate CJK ILIKE queries.
+ * Client-side CJK name matching. Splits on +/| for OR, tokenizes within
+ * each term for AND (matches buildNameSearchIlikePattern semantics).
+ * Case-insensitive via toLowerCase(); NFC-normalized for safety.
  */
-async function getCjkMatchedIds(source, rawQuery) {
-  const cacheKey = source;
-  const cached = _cjkNamesCache.get(cacheKey);
-  let names;
-  if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) {
-    names = cached.data;
-  } else {
-    const sb = await getSupabase();
-    const params = getSourceParams(source);
-    const { data, error } = await sb.rpc("get_card_names_by_source", params);
-    if (error) throw error;
-    names = data || [];
-    _cjkNamesCache.set(cacheKey, { data: names, fetchedAt: Date.now() });
-  }
-
+function matchCjkClientSide(names, rawQuery) {
   const orTerms = rawQuery.split(/[+|]+/).map((t) => t.trim()).filter(Boolean);
   if (!orTerms.length) return [];
 
@@ -740,7 +737,6 @@ async function getCjkMatchedIds(source, rawQuery) {
   for (const obj of names) {
     const nameLower = obj.name.normalize("NFC").toLowerCase();
     const matches = orTerms.some((term) => {
-      // Match buildNameSearchIlikePattern: hyphens → spaces, then AND tokens
       const normalized = term
         .replace(/[-–—_/·.,;:\\]+/g, " ")
         .replace(/[\s   -​﻿]+/g, " ")
@@ -759,11 +755,6 @@ async function getCjkMatchedIds(source, rawQuery) {
     if (matches) matchedIds.push(obj.id);
   }
   return matchedIds;
-}
-
-/** Call after manual card add/edit/delete to clear the CJK names cache. */
-export function invalidateCjkNamesCache() {
-  _cjkNamesCache.clear();
 }
 
 /** JSON value for PostgREST `cs` (jsonb @>) with a one-element string array. */
@@ -901,6 +892,7 @@ export async function fetchCards(params = {}) {
     page_size = 40,
     exact_count = false,
     signal = undefined,
+    cjkNames = undefined,
   } = params;
 
   const pageInt = parseInt(page, 10) || 1;
@@ -978,9 +970,14 @@ export async function fetchCards(params = {}) {
   const qTrim = String(q ?? "").trim();
   if (qTrim) {
     if (hasCjkChars(qTrim)) {
-      // pg_trgm byte-level trigrams can't accelerate CJK — match client-side
-      // against cached card names, then filter by matched IDs.
-      const ids = await getCjkMatchedIds(source, qTrim);
+      // pg_trgm can't accelerate CJK — match client-side against the
+      // names cache from TanStack Query. If the cache is cold, return
+      // empty; the prefetch on source switch warms it within ~1s and
+      // React Query refetches when cjkNames populates.
+      if (!cjkNames || !cjkNames.length) {
+        return { cards: [], total: 0, page: pageInt, page_size: pageSizeInt };
+      }
+      const ids = matchCjkClientSide(cjkNames, qTrim);
       if (ids.length === 0) {
         return { cards: [], total: 0, page: pageInt, page_size: pageSizeInt };
       }

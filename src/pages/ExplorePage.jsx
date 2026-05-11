@@ -20,7 +20,7 @@ import {
   fetchFirstNMatchingCardIds,
   fetchWorkbenchQueues,
   useSupabaseBackend,
-  invalidateCjkNamesCache,
+  fetchCjkNames,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
 import SearchBar from "../components/SearchBar";
@@ -312,6 +312,16 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
+  // CJK names cache: fetched once per source (streaming TABLE RPC, no jsonb_agg)
+  // and reused for all CJK searches via client-side .includes() matching.
+  const { data: cjkNames = [] } = useQuery({
+    queryKey: ["cjkNames", filters.source],
+    queryFn: () => fetchCjkNames(filters.source),
+    staleTime: 5 * 60 * 1000,
+    enabled: USE_SUPABASE_APP,
+    placeholderData: (prev) => prev,
+  });
+
   // Exact count only when browsing with no active constraints (fast COUNT on
   // cards with simple WHERE). When search or filters are active, use planned
   // counts to avoid expensive COUNT(*) over the annotations join that times
@@ -326,7 +336,7 @@ export default function ExplorePage() {
     error: cardsQueryError,
     isFetching,
   } = useQuery({
-    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount],
+    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount, cjkNames.length],
     queryFn: ({ signal }) =>
       fetchCards({
         q: searchQuery,
@@ -335,6 +345,7 @@ export default function ExplorePage() {
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: exploreExactCount } : {}),
         signal,
+        cjkNames,
       }),
     // Skip queries for 1-2 character ASCII search terms — they contain no usable
     // trigrams and cause full sequential scans of 60K+ rows. CJK queries (kanji,
@@ -464,10 +475,10 @@ export default function ExplorePage() {
     const exact = !exploreHasActiveConstraints(filters, searchQuery);
     const ac = new AbortController();
     const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, exact],
+      queryKey: ["cards", searchQuery, filters, pg, pageSize, exact, cjkNames.length],
       queryFn: ({ signal }) => {
         const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: exact, signal: sig });
+        return fetchCards({ ...base, page: pg, exact_count: exact, signal: sig, cjkNames });
       },
     });
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
@@ -946,7 +957,6 @@ export default function ExplorePage() {
       setPage(1);
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
-      invalidateCjkNamesCache();
     } finally {
       setDeleteInProgress(false);
     }
@@ -1064,7 +1074,6 @@ export default function ExplorePage() {
   const handleCustomCardAdded = () => {
     queryClient.invalidateQueries({ queryKey: ["cards"] });
     queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
-    invalidateCjkNamesCache();
   };
 
   const handleSendToWorkbench = useCallback(

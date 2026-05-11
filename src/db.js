@@ -440,10 +440,11 @@ export async function upsertUserPreferences(patch) {
   return { card_detail_pins: [] };
 }
 
-/** Clear the CJK card-names cache after manual card add/edit/delete. */
-export async function invalidateCjkNamesCache() {
+/** Fetch all {id, name} rows for a source via the streaming CJK names RPC. */
+export async function fetchCjkNames(source) {
   if (useSupabaseBackend()) {
     const m = await import("./data/supabase/appAdapter.js");
-    m.invalidateCjkNamesCache();
+    return m.fetchCjkNames(source);
   }
+  return [];
 }
