@@ -501,6 +501,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       setSource(snap.source);
       setSetSeries(snap.setSeries);
       setSetIdManual(snap.setIdManual);
+      setSetIdVal(snap.setIdVal);
     } else {
       setSetIdVal(snap.setIdVal);
     }

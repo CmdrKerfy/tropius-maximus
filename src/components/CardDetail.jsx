@@ -2346,7 +2346,7 @@ export default function CardDetail({
                                 <div className="flex items-center justify-between">
                                   <span className="font-medium text-sm">{String(atk.name ?? "")}</span>
                                   {atk.damage && (
-                                    <span className="text-green-600 font-bold text-sm">{atk.damage}</span>
+                                    <span className="text-green-600 font-bold text-sm">{String(atk.damage)}</span>
                                   )}
                                 </div>
                                 {atk.cost && (
@@ -2366,7 +2366,7 @@ export default function CardDetail({
                                 <span className="font-semibold text-gray-700">Weakness: </span>
                                 {weaknesses.map((w, i) => (
                                   <span key={i} className="text-gray-600">
-                                    {w.type} {w.value}{i < weaknesses.length - 1 ? ", " : ""}
+                                    {String(w.type)} {String(w.value)}{i < weaknesses.length - 1 ? ", " : ""}
                                   </span>
                                 ))}
                               </div>
@@ -2376,7 +2376,7 @@ export default function CardDetail({
                                 <span className="font-semibold text-gray-700">Resistance: </span>
                                 {resistances.map((r, i) => (
                                   <span key={i} className="text-gray-600">
-                                    {r.type} {r.value}{i < resistances.length - 1 ? ", " : ""}
+                                    {String(r.type)} {String(r.value)}{i < resistances.length - 1 ? ", " : ""}
                                   </span>
                                 ))}
                               </div>
