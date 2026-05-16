@@ -311,7 +311,7 @@ export default function ExplorePage() {
     staleTime: 5 * 60_000,
   });
 
-  const exploreExactCount = true;
+  const exploreExactCount = false;
 
   const annotationFiltersActive = useMemo(() => {
     const f = filters;
@@ -328,12 +328,13 @@ export default function ExplorePage() {
         (f.source === "" || f.source === "TCG" || f.source === "Custom"))
     );
   }, [filters]);
+  const searchActive = String(searchQuery || "").trim().length > 0;
 
-  // Debounce params 500ms before firing the exact count query — avoids
-  // hammering the connection pool during rapid typing.
+  // Debounce params 500ms before firing the exact count query. Exact counts are skipped
+  // during active search; planned counts keep search/page navigation responsive.
   const [countParams, setCountParams] = useState(null);
   useEffect(() => {
-    if (annotationFiltersActive) {
+    if (annotationFiltersActive || searchActive) {
       setCountParams(null);
       return;
     }
@@ -341,7 +342,7 @@ export default function ExplorePage() {
       setCountParams({ q: searchQuery, ...filters });
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, filters, annotationFiltersActive]);
+  }, [searchQuery, filters, annotationFiltersActive, searchActive]);
 
   const { data: exactTotal, isFetching: countIsLoading } = useQuery({
     queryKey: ["exactCardCount", countParams],
@@ -349,6 +350,19 @@ export default function ExplorePage() {
     enabled: USE_SUPABASE_APP && countParams != null,
     staleTime: 0,
   });
+  const exactTotalMatchesCurrentQuery =
+    countParams != null &&
+    countParams.q === searchQuery &&
+    JSON.stringify(countParams) === JSON.stringify({ q: searchQuery, ...filters });
+  const currentCountIsLoading = countIsLoading && exactTotalMatchesCurrentQuery;
+  const searchCursorKey = useMemo(
+    () => JSON.stringify({ q: searchQuery, filters, pageSize }),
+    [searchQuery, filters, pageSize]
+  );
+  const searchPageCursorsRef = useRef(new Map());
+  const currentSearchCursor = searchActive
+    ? searchPageCursorsRef.current.get(searchCursorKey)?.[page] ?? null
+    : null;
 
   const {
     data: cardsResult,
@@ -356,8 +370,9 @@ export default function ExplorePage() {
     isError: cardsQueryFailed,
     error: cardsQueryError,
     isFetching,
+    isPlaceholderData: cardsPlaceholderData,
   } = useQuery({
-    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount],
+    queryKey: ["cards", searchQuery, filters, page, pageSize, exploreExactCount, currentSearchCursor],
     queryFn: ({ signal }) =>
       fetchCards({
         q: searchQuery,
@@ -365,17 +380,49 @@ export default function ExplorePage() {
         page,
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: exploreExactCount } : {}),
+        lookahead: searchActive,
+        cursor: currentSearchCursor,
         signal,
       }),
     // Skip 1-2 character search terms — they produce no usable trigrams and
     // cause full sequential scans of 60K+ rows on the free-tier instance.
     enabled:
       searchQuery.length === 0 || searchQuery.length >= 3,
-    placeholderData: (prev) => prev,
+    placeholderData: searchActive ? undefined : (prev) => prev,
   });
 
   const cards = cardsResult?.cards ?? [];
-  const total = exactTotal ?? cardsResult?.total ?? 0;
+  const plannedTotal = cardsResult?.total ?? 0;
+  const loadedThroughCurrentPage = cardsResult
+    ? (Math.max(1, cardsResult.page || page) - 1) * (cardsResult.page_size || pageSize) + cards.length
+    : 0;
+  const hasPotentialNextPage = Boolean(cardsResult?.has_more ?? (cardsResult && cards.length > 0));
+  const safeEstimatedTotal = Math.max(
+    plannedTotal,
+    hasPotentialNextPage ? loadedThroughCurrentPage + 1 : loadedThroughCurrentPage
+  );
+  const total = exactTotalMatchesCurrentQuery
+    ? exactTotal ?? safeEstimatedTotal
+    : safeEstimatedTotal;
+  const totalIsEstimated = !exactTotalMatchesCurrentQuery || currentCountIsLoading;
+  const countLabel = searchActive && totalIsEstimated
+    ? `Showing ${loadedThroughCurrentPage.toLocaleString()}${hasPotentialNextPage ? "+" : ""} match${loadedThroughCurrentPage !== 1 || hasPotentialNextPage ? "es" : ""}`
+    : `${totalIsEstimated ? "~" : ""}${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`;
+
+  useEffect(() => {
+    if (!searchActive || !cardsResult || cards.length === 0) return;
+    const last = cards[cards.length - 1];
+    if (!last?.name || !last?.id) return;
+    const cursors = searchPageCursorsRef.current.get(searchCursorKey) || { 1: null };
+    cursors[page + 1] = { name: last.name, id: last.id };
+    searchPageCursorsRef.current.set(searchCursorKey, cursors);
+  }, [cards, cardsResult, page, searchActive, searchCursorKey]);
+
+  useEffect(() => {
+    if (!searchActive || page <= 1) return;
+    const cursors = searchPageCursorsRef.current.get(searchCursorKey);
+    if (!cursors?.[page]) setPage(1);
+  }, [page, searchActive, searchCursorKey]);
 
   // Dedupe so each card appears once (Explore grid):
   // - Manual: same set + name + artwork URL (legacy duplicate PKs / spaced ids vs canonical).
@@ -416,7 +463,8 @@ export default function ExplorePage() {
       else if (batchModeActive) cardGridHandlersRef.current.onToggleBatch(id, meta);
     },
     [showSqlConsole, batchModeActive]
-  );  useEffect(() => {
+  );
+  useEffect(() => {
     if (!selectedWorkbenchQueue?.id) return;
     setWorkbenchQueueId(String(selectedWorkbenchQueue.id));
   }, [selectedWorkbenchQueue?.id]);
@@ -440,25 +488,25 @@ export default function ExplorePage() {
 
   // Stale ?page= in the URL (or history) can point past the last page: PostgREST returns [] with a
   // non-zero Content-Range total → "N cards found" but an empty grid.
-  // Prefer the debounced exact count when available; it's more reliable than planned estimates.
+  // Prefer the debounced exact count only when it matches the current search/filter params.
   useEffect(() => {
-    if (sqlCards || !cardsResult) return;
-    const t = exactTotal ?? cardsResult.total;
+    if (searchActive || sqlCards || !cardsResult || cardsPlaceholderData) return;
+    const t = total;
     const { page_size } = cardsResult;
     if (typeof t !== "number" || t <= 0 || !page_size) return;
     const maxPage = Math.max(1, Math.ceil(t / page_size));
     setPage((p) => (p > maxPage ? maxPage : p));
-  }, [cardsResult, sqlCards, exactTotal]);
+  }, [cardsResult, sqlCards, total, cardsPlaceholderData, searchActive]);
   // 416 Range Not Satisfiable: the requested page offset is past the real row count.
   // This happens on cold loads with ?page=2+ before the debounced exactTotal arrives.
   // Reset to page 1 so the query can succeed; the clamp effect then sets the correct maxPage.
   useEffect(() => {
-    if (!cardsQueryError || page <= 1) return;
+    if (searchActive || !cardsQueryError || page <= 1) return;
     const msg = String(cardsQueryError?.message || cardsQueryError || "");
     if (msg.includes("416") || /range not satisfiable/i.test(msg)) {
       setPage(1);
     }
-  }, [cardsQueryError, page]);
+  }, [cardsQueryError, page, searchActive]);
   const error = cardsQueryFailed ? cardsQueryError?.message ?? "Failed to load cards" : null;
   /** Skeleton only when there is no list data yet (keeps previous page visible while paginating). */
   const listAwaitingFirstData = !sqlCards && cardsResult === undefined && cardsPending;
@@ -495,25 +543,30 @@ export default function ExplorePage() {
   // Prefetch adjacent pages for snappier Prev/Next navigation.
   // Cancels any in-flight prefetches when the effect re-runs (rapid search/filter changes).
   useEffect(() => {
-    if (!USE_SUPABASE_APP || !cardsResult || sqlCards) return;
+    if (!USE_SUPABASE_APP || !cardsResult || sqlCards || searchActive || annotationFiltersActive) return;
     const { total: t, page_size } = cardsResult;
     if (typeof t !== "number" || !page_size) return;
-    const maxPage = Math.max(1, Math.ceil((exactTotal ?? t) / page_size));
-    // Prefetch uses the same exact_count as the main query so range validation matches.
+    const maxPage = Math.max(1, Math.ceil(t / page_size));
+    // Prefetch uses planned counts; exact counts here multiply DB work without improving navigation.
     const prefetchExact = exploreExactCount;
     const base = { q: searchQuery, ...filters, page_size };
-    const ac = new AbortController();
-    const opts = (pg) => ({
-      queryKey: ["cards", searchQuery, filters, pg, pageSize, prefetchExact],
-      queryFn: ({ signal }) => {
-        const sig = signal ?? ac.signal;
-        return fetchCards({ ...base, page: pg, exact_count: prefetchExact, signal: sig });
-      },
-    });
+    const prefetchKeys = [];
+    const opts = (pg) => {
+      const queryKey = ["cards", searchQuery, filters, pg, pageSize, prefetchExact];
+      prefetchKeys.push(queryKey);
+      return {
+        queryKey,
+        queryFn: ({ signal }) => fetchCards({ ...base, page: pg, exact_count: prefetchExact, signal }),
+      };
+    };
     if (page > 1) queryClient.prefetchQuery(opts(page - 1));
     if (page < maxPage) queryClient.prefetchQuery(opts(page + 1));
-    return () => ac.abort();
-  }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient, exactTotal, exploreExactCount]);
+    return () => {
+      for (const queryKey of prefetchKeys) {
+        queryClient.cancelQueries({ queryKey, exact: true });
+      }
+    };
+  }, [page, searchQuery, filters, pageSize, cardsResult, sqlCards, queryClient, exploreExactCount, annotationFiltersActive]);
 
   // Prefetch prev/next card detail when the modal is open for instant Prev/Next navigation.
   // Derive source the same way the modal does so query keys match and prefetch actually hits cache.
@@ -1405,10 +1458,8 @@ export default function ExplorePage() {
                     <Skeleton className="h-4 w-40 rounded" />
                     <span className="sr-only">Loading results…</span>
                   </div>
-                ) : countIsLoading ? (
-                  `~${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
                 ) : (
-                  `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
+                  countLabel
                 )}
               </div>
             )}
@@ -1648,9 +1699,7 @@ export default function ExplorePage() {
           <div className="mt-4 mb-2 text-sm text-gray-500">
             {listAwaitingFirstData
               ? "Loading..."
-              : countIsLoading
-                ? `~${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`
-                : `${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`}
+              : countLabel}
           </div>
         )}
 
@@ -1932,12 +1981,45 @@ export default function ExplorePage() {
         )}
 
         {/* Pagination */}
-        {!sqlCards && total > pageSize && (
+        {!sqlCards && searchActive && searchQuery.length >= 3 && (page > 1 || cardsResult || cardsPending) && (
+          <div className="flex items-center justify-center gap-3 mt-6 mb-4 flex-wrap">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || isFetching}
+              className={`px-3 py-1.5 text-sm rounded font-medium transition-colors ${
+                page === 1 || isFetching
+                  ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Previous
+            </button>
+
+            <span className="text-sm text-gray-600 px-1">
+              Page <span className="font-semibold text-gray-900">{page}</span>
+              {isFetching ? <span className="ml-2 text-gray-500">Loading…</span> : null}
+            </span>
+
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isFetching || cardsQueryFailed || !cardsResult?.has_more}
+              className={`px-3 py-1.5 text-sm rounded font-medium transition-colors ${
+                isFetching || cardsQueryFailed || !cardsResult?.has_more
+                  ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        )}
+        {!sqlCards && !searchActive && total > pageSize && (
           <Pagination
             page={page}
             pageSize={pageSize}
             total={total}
             onPageChange={setPage}
+            estimated={totalIsEstimated}
           />
         )}
 

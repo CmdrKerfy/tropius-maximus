@@ -1600,11 +1600,23 @@ export default function CardDetail({
                   )}
                 </div>
                 {useSupabaseBackend() && card && !loading && (
-                  <div className="mt-1">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={async () => {
                         const url = `${window.location.origin}/share/card/${encodeURIComponent(card.id)}`;
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({
+                              title: card.name || "Tropius Maximus card",
+                              text: card.name ? `View ${card.name}` : "View this card",
+                              url,
+                            });
+                            return;
+                          } catch (e) {
+                            if (e?.name === "AbortError") return;
+                          }
+                        }
                         const ok = await copyToClipboard(url);
                         if (ok) {
                           toastSuccess("Share link copied");
@@ -1618,6 +1630,14 @@ export default function CardDetail({
                       <Share2 className="w-3 h-3" aria-hidden />
                       Share link
                     </button>
+                    <a
+                      href={`/share/card/${encodeURIComponent(card.id)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-gray-500 hover:text-gray-700 no-underline hover:underline focus-visible:underline"
+                    >
+                      Open
+                    </a>
                   </div>
                 )}
                 {useSupabaseBackend() && isEditMode && card?.is_custom === true && isRenamingCardName && (
@@ -1693,7 +1713,10 @@ export default function CardDetail({
                   ))}
                   {(ann.set_name || card.set_name) && !isEditMode && onFilterClick && (
                     <button
-                      onClick={() => onFilterClick("set_id", card.set_id)}
+                      onClick={() => {
+                        const setId = String(card.set_id || "").trim();
+                        if (setId) onFilterClick("set_id", setId);
+                      }}
                       className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                     >
                       {ann.set_name || card.set_name}

@@ -7,9 +7,17 @@
 
 import { useRef, useCallback } from "react";
 
-export default function Pagination({ page, pageSize, total, onPageChange }) {
+export default function Pagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  estimated = false,
+  canGoNext = false,
+}) {
   const inputRef = useRef(null);
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const nextDisabled = !canGoNext && page >= totalPages;
 
   const handleJump = useCallback(() => {
     const clampPage = (n) => {
@@ -30,7 +38,7 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
       if (e.key === "ArrowLeft" && page > 1) {
         e.preventDefault();
         onPageChange(page - 1);
-      } else if (e.key === "ArrowRight" && page < totalPages) {
+      } else if (e.key === "ArrowRight" && !nextDisabled) {
         e.preventDefault();
         onPageChange(page + 1);
       } else if (e.key === "Home") {
@@ -44,10 +52,10 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
         handleJump();
       }
     },
-    [page, totalPages, onPageChange, handleJump]
+    [page, totalPages, onPageChange, handleJump, nextDisabled]
   );
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1 && !canGoNext) return null;
 
   const btnBase =
     "px-3 py-1.5 text-sm rounded font-medium transition-colors";
@@ -75,6 +83,7 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
         <span className="font-semibold text-gray-900">{page}</span>
         {" "}of{" "}
         <span className="font-semibold text-gray-900">{totalPages}</span>
+        {estimated ? <span className="font-semibold text-gray-900">+</span> : null}
       </span>
 
       <input
@@ -96,8 +105,8 @@ export default function Pagination({ page, pageSize, total, onPageChange }) {
 
       <button
         onClick={() => onPageChange(page + 1)}
-        disabled={page === totalPages}
-        className={`${btnBase} ${page === totalPages ? btnDisabled : btnInactive}`}
+        disabled={nextDisabled}
+        className={`${btnBase} ${nextDisabled ? btnDisabled : btnInactive}`}
       >
         Next
       </button>

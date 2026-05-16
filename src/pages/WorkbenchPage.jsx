@@ -183,18 +183,6 @@ export default function WorkbenchPage() {
     []
   );
 
-  // Flush pending index sync when switching queues
-  useEffect(() => {
-    const currentKey = String(queue?.id || "");
-    const entries = Object.entries(syncIndexRef.current);
-    for (const [key, timer] of entries) {
-      if (key !== currentKey && timer != null) {
-        clearTimeout(timer);
-        delete syncIndexRef.current[key];
-      }
-    }
-  }, [queue?.id]);
-
   const { data: queues = [], isPending, isError, error } = useQuery({
     queryKey: ["workbenchQueues"],
     queryFn: () => fetchWorkbenchQueues(),
@@ -209,6 +197,18 @@ export default function WorkbenchPage() {
       : null;
     return picked || queues[0];
   }, [queues, activeQueueId]);
+
+  // Flush pending index sync when switching queues.
+  useEffect(() => {
+    const currentKey = String(queue?.id || "");
+    const entries = Object.entries(syncIndexRef.current);
+    for (const [key, timer] of entries) {
+      if (key !== currentKey && timer != null) {
+        clearTimeout(timer);
+        delete syncIndexRef.current[key];
+      }
+    }
+  }, [queue?.id]);
 
   useEffect(() => {
     if (!queue?.id) return;

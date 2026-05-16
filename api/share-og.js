@@ -20,7 +20,7 @@ const OG_PLACEHOLDER_WIDTH = 1200;
 const OG_PLACEHOLDER_HEIGHT = 630;
 
 /** iMessage / some scrapers reject `http:` og:image; many CDNs mirror over TLS. */
-function preferHttpsForOgImage(url) {
+function httpsMirrorForOgImage(url) {
   if (!url || typeof url !== "string") return url;
   const t = url.trim();
   if (t.startsWith("http://")) {
@@ -150,14 +150,18 @@ export default async function handler(req, res) {
     rawStr && !rawStr.toLowerCase().startsWith("data:") && !rawStr.toLowerCase().startsWith("blob:");
   let fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
   if (fromCard) {
-    const reachable = await checkImageReachable(fromCard);
+    const httpsMirror = httpsMirrorForOgImage(fromCard);
+    const candidate = httpsMirror !== fromCard ? httpsMirror : fromCard;
+    const reachable = await checkImageReachable(candidate);
     if (!reachable) {
-      console.warn("[share-og] image unreachable, falling back to placeholder", { cardId: data.id, url: fromCard });
+      console.warn("[share-og] image unreachable, falling back to placeholder", { cardId: data.id, url: candidate });
       fromCard = "";
+    } else {
+      fromCard = candidate;
     }
   }
   const ogImageRaw = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
-  const ogImage = preferHttpsForOgImage(ogImageRaw);
+  const ogImage = ogImageRaw;
   const usePlaceholder = !fromCard;
   if (usePlaceholder && data.id) {
     console.warn("[share-og] placeholder og:image (no usable/reachable URL for scrapers)", {

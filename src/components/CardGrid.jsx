@@ -19,6 +19,12 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const supabase = useSupabaseBackend();
   const originDetail = String(card.origin_detail || "").toLowerCase();
+  const source = String(card._source || card.source || "").toLowerCase();
+  const isPocket =
+    card.is_pocket === true ||
+    card.origin === "tcgdex" ||
+    card.origin === "ptcgdb" ||
+    source === "pocket";
   const isPromo =
     originDetail.includes("promo") || originDetail.includes("pokumon") || card.is_promo === true;
   const attributionTitle =
@@ -57,7 +63,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
         <div className="absolute inset-0 bg-green-500/20 rounded-lg pointer-events-none z-[5]" />
       )}
 
-      {(card.is_custom || isPromo) && (
+      {(card.is_custom || isPromo || isPocket) && (
         <div className="pointer-events-none absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
           {card.is_custom && (
             <div
@@ -74,6 +80,14 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
               title="Promo card"
             >
               <span>Promo</span>
+            </div>
+          )}
+          {isPocket && (
+            <div
+              className="flex items-center gap-1 rounded-full border border-sky-100/80 bg-cyan-600/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md backdrop-blur-md"
+              title="Pocket card"
+            >
+              <span>Pocket</span>
             </div>
           )}
         </div>

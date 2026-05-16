@@ -21,6 +21,9 @@ import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
 
 export { BATCH_EDIT_MAX_CARDS };
 
+const HIDDEN_JPN_SET_IDS = ["neo1", "neo2", "neo3", "neo4"];
+const HIDDEN_JPN_SET_ID_FILTER = `set_id.not.in.(${HIDDEN_JPN_SET_IDS.join(",")})`;
+
 async function sbReady() {
   await ensureSupabaseSession();
   return getSupabase();
@@ -705,6 +708,20 @@ function postgrestInTextValue(v) {
   return `"${s}"`;
 }
 
+function setIdOrNameClauses(values = []) {
+  return values
+    .map((v) => String(v ?? "").trim())
+    .filter(Boolean)
+    .flatMap((v) => {
+      const safe = postgrestOrEqValue(v);
+      return [`set_id.eq.${safe}`, `set_name.eq.${safe}`];
+    });
+}
+
+function excludeHiddenJapaneseSets(query) {
+  return query.or(`origin_detail.is.null,origin_detail.neq.japanese,${HIDDEN_JPN_SET_ID_FILTER}`);
+}
+
 /** Safe SQL-ish identifier fragment for PostgREST filter strings. */
 function isSafeAnnotationColumnName(v) {
   return /^[a-z_][a-z0-9_]*$/i.test(String(v || ""));
@@ -741,6 +758,7 @@ function gridRowFromCard(row) {
   return {
     id: row.id,
     name: row.name,
+    origin: row.origin ?? null,
     set_id: row.set_id ?? null,
     set_name: annSetName || row.set_name,
     origin_detail: row.origin_detail ?? null,
@@ -752,6 +770,7 @@ function gridRowFromCard(row) {
     rarity: row.rarity,
     supertype: row.supertype,
     subtypes: row.subtypes,
+    is_pocket: row.origin === "tcgdex" || row.origin === "ptcgdb",
     is_custom: row.origin === "manual" && !isPromoOriginDetail(row.origin_detail),
     is_promo:
       row.origin === "manual" &&
@@ -782,6 +801,7 @@ export function gridCardToDetailPlaceholder(gridRow) {
     number: gridRow.number,
     annotations: { image_override: gridRow.image_override || undefined },
     raw_data: {},
+    origin: gridRow.origin ?? null,
     origin_detail: gridRow.origin_detail,
     supertype: gridRow.supertype,
     subtypes: gridRow.subtypes,
@@ -790,6 +810,7 @@ export function gridCardToDetailPlaceholder(gridRow) {
     created_by: gridRow.created_by,
     creator_display_name: gridRow.creator_display_name,
     annotation_editor_display_name: gridRow.annotation_editor_display_name,
+    is_pocket: gridRow.is_pocket,
     is_custom: gridRow.is_custom,
     pokedex_numbers: [],
   };
@@ -800,6 +821,9 @@ export function gridCardToDetailPlaceholder(gridRow) {
  * @param {object} [params]
  * @param {boolean} [params.exact_count] — If true, use `count: exact` (batch confirm, ID lists).
  *   Default false uses planner `count: planned` for faster Explore totals.
+ * @param {boolean} [params.ids_only] — If true, return `{ id }` rows only for bulk ID collection.
+ * @param {boolean} [params.lookahead] — If true, fetch one extra row to know whether a next page exists.
+ * @param {{name:string,id:string}|null} [params.cursor] — Search cursor for keyset pagination.
  */
 export async function fetchCards(params = {}) {
   const sb = await sbReady();
@@ -828,6 +852,9 @@ export async function fetchCards(params = {}) {
     page = 1,
     page_size = 40,
     exact_count = false,
+    ids_only = false,
+    lookahead = false,
+    cursor = null,
     signal = undefined,
     count_only = false,
   } = params;
@@ -840,7 +867,7 @@ export async function fetchCards(params = {}) {
       cq = cq.in("origin", ["pokemontcg.io", "manual"]).or("origin_detail.is.null,origin_detail.neq.japanese");
     } else if (source === "TCG (JPN)") {
       cq = cq.or("and(origin.eq.tcgdex,origin_detail.eq.japanese),and(origin.eq.ptcgdb,origin_detail.eq.japanese)");
-      cq = cq.neq("set_id", "neo1").neq("set_id", "neo2").neq("set_id", "neo3").neq("set_id", "neo4");
+      for (const setId of HIDDEN_JPN_SET_IDS) cq = cq.neq("set_id", setId);
     } else if (source === "Pocket") {
       cq = cq.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
     } else if (source === "Custom") {
@@ -849,6 +876,7 @@ export async function fetchCards(params = {}) {
       cq = cq.eq("origin", "manual").eq("origin_detail", "pokumon");
     } else {
       cq = cq.in("origin", ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"]);
+      cq = excludeHiddenJapaneseSets(cq);
     }
 
     const qTrimCount = String(q ?? "").trim();
@@ -870,7 +898,10 @@ export async function fetchCards(params = {}) {
     }
 
     if (Array.isArray(rarity) && rarity.length) cq = cq.in("rarity", rarity);
-    if (Array.isArray(set_id) && set_id.length) cq = cq.in("set_id", set_id);
+    if (Array.isArray(set_id) && set_id.length) {
+      const clauses = setIdOrNameClauses(set_id);
+      if (clauses.length) cq = cq.or(clauses.join(","));
+    }
 
     if (Array.isArray(element) && element.length) {
       if (source === "Pocket") {
@@ -962,12 +993,15 @@ export async function fetchCards(params = {}) {
     ? `annotations!inner(image_override, extra, weather, environment, pkmn_region, background_pokemon, actions, pose, updated_by, updated_at)`
     : `annotations(image_override, extra, updated_by, updated_at)`;
 
-  let query = sb
-    .from("cards")
-    .select(
-      `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by, ${annSelect}`,
-      { count: exact_count ? "exact" : "planned" }
-    );
+  const selectColumns = ids_only
+    ? (useAnnInner ? `id, set_id, number, origin, ${annSelect}` : "id, set_id, number, origin")
+    : `id, name, set_id, set_name, image_small, image_large, number, hp, rarity, origin, origin_detail, supertype, subtypes, created_by, ${annSelect}`;
+
+  const queryBase = sb.from("cards");
+  let query =
+    lookahead && !exact_count
+      ? queryBase.select(selectColumns)
+      : queryBase.select(selectColumns, { count: exact_count ? "exact" : "planned" });
 
   if (source === "TCG") {
     query = query.in("origin", ["pokemontcg.io", "manual"]).or("origin_detail.is.null,origin_detail.neq.japanese");
@@ -976,7 +1010,7 @@ export async function fetchCards(params = {}) {
       "and(origin.eq.tcgdex,origin_detail.eq.japanese)," +
       "and(origin.eq.ptcgdb,origin_detail.eq.japanese)"
     );
-    query = query.neq("set_id", "neo1").neq("set_id", "neo2").neq("set_id", "neo3").neq("set_id", "neo4");
+    for (const setId of HIDDEN_JPN_SET_IDS) query = query.neq("set_id", setId);
   } else if (source === "Pocket") {
     query = query.eq("origin", "tcgdex").or("origin_detail.is.null,origin_detail.neq.japanese");
   } else if (source === "Custom") {
@@ -988,9 +1022,11 @@ export async function fetchCards(params = {}) {
   } else {
     // Source "All" (empty string) — every origin
     query = query.in("origin", ["pokemontcg.io", "manual", "tcgdex", "ptcgdb"]);
+    query = excludeHiddenJapaneseSets(query);
   }
 
   const qTrim = String(q ?? "").trim();
+  const useSearchCursor = Boolean(qTrim && lookahead);
   if (qTrim) {
     const likePattern = buildNameSearchIlikePattern(qTrim);
     if (Array.isArray(likePattern)) {
@@ -1011,7 +1047,10 @@ export async function fetchCards(params = {}) {
   }
 
   if (Array.isArray(rarity) && rarity.length) query = query.in("rarity", rarity);
-  if (Array.isArray(set_id) && set_id.length) query = query.in("set_id", set_id);
+  if (Array.isArray(set_id) && set_id.length) {
+    const clauses = setIdOrNameClauses(set_id);
+    if (clauses.length) query = query.or(clauses.join(","));
+  }
 
   if (Array.isArray(element) && element.length) {
     if (source === "Pocket") {
@@ -1118,21 +1157,46 @@ export async function fetchCards(params = {}) {
     query = query.or(parts.join(","));
   }
 
-  // number_sort_key (generated) avoids lexicographic sort on TEXT `number`.
-  query = query.order(orderCol, { ascending, nullsFirst: false });
-  if (sort_by === "number") {
+  if (useSearchCursor) {
+    const cursorName = String(cursor?.name || "");
+    const cursorId = String(cursor?.id || "");
+    if (cursorName && cursorId) {
+      query = query.or(
+        [
+          `name.gt.${postgrestOrEqValue(cursorName)}`,
+          `and(name.eq.${postgrestOrEqValue(cursorName)},id.gt.${postgrestOrEqValue(cursorId)})`,
+        ].join(",")
+      );
+    }
+    // Search uses keyset pagination to avoid PostgREST range/count instability on expensive ILIKE queries.
+    query = query.order("name", { ascending: true, nullsFirst: false });
     query = query.order("id", { ascending: true, nullsFirst: false });
-  } else if (sort_by === "recent") {
-    // Keep "recent desc" stable when many rows share near-identical created_at.
-    query = query.order("id", { ascending, nullsFirst: false });
+    query = query.limit(pageSizeInt + 1);
+  } else {
+    // number_sort_key (generated) avoids lexicographic sort on TEXT `number`.
+    query = query.order(orderCol, { ascending, nullsFirst: false });
+    if (sort_by === "number") {
+      query = query.order("id", { ascending: true, nullsFirst: false });
+    } else if (sort_by === "recent") {
+      // Keep "recent desc" stable when many rows share near-identical created_at.
+      query = query.order("id", { ascending, nullsFirst: false });
+    }
+    query = query.range(offset, offset + pageSizeInt - 1 + (lookahead ? 1 : 0));
   }
-  query = query.range(offset, offset + pageSizeInt - 1);
 
   if (signal) query = query.abortSignal(signal);
   const { data, error, count } = await query;
-  if (error) throw error;
+  if (error) {
+    const msg = String(error?.message || error || "");
+    if (!useSearchCursor && (msg.includes("416") || /range not satisfiable/i.test(msg))) {
+      return { cards: [], total: count ?? offset, page: pageInt, page_size: pageSizeInt, has_more: false };
+    }
+    throw error;
+  }
 
   let rows = data || [];
+  const hasMore = lookahead && rows.length > pageSizeInt;
+  if (hasMore) rows = rows.slice(0, pageSizeInt);
 
   // Deduplicate TCG (JPN) by jpn_card_key when both origins are present.
   // PTCG-database wins for images; TCGdex wins for text fields.
@@ -1167,8 +1231,8 @@ export async function fetchCards(params = {}) {
     rows = [...byKey.values()];
   }
 
-  const cards = rows.map((row) => gridRowFromCard(row));
-  return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt };
+  const cards = ids_only ? rows.map((row) => ({ id: row.id })) : rows.map((row) => gridRowFromCard(row));
+  return { cards, total: count ?? cards.length, page: pageInt, page_size: pageSizeInt, has_more: hasMore };
 }
 
 const BATCH_ID_PAGE_SIZE = 500;
@@ -1194,7 +1258,8 @@ export async function fetchFirstNMatchingCardIds(params = {}, limit = BATCH_EDIT
       ...rest,
       page,
       page_size: pageSize,
-      exact_count: true,
+      exact_count: false,
+      ids_only: true,
     });
     for (const c of cards) {
       ids.push(c.id);
@@ -1314,14 +1379,15 @@ export async function fetchMatchingCardIds(params = {}) {
   const ids = [];
   let page = 1;
   for (;;) {
-    const { cards, total } = await fetchCards({
+    const { cards } = await fetchCards({
       ...rest,
       page,
       page_size: BATCH_ID_PAGE_SIZE,
-      exact_count: true,
+      exact_count: false,
+      ids_only: true,
     });
     for (const c of cards) ids.push(c.id);
-    if (ids.length >= total || cards.length === 0) break;
+    if (ids.length >= probe.total || cards.length === 0) break;
     page++;
   }
   return ids;
@@ -1351,7 +1417,7 @@ export async function batchPatchAnnotations(cardIds, patch, options = {}) {
 }
 
 const CARD_DETAIL_LITE_COLUMNS =
-  "id, name, set_id, set_name, set_series, number, image_small, image_large, supertype, subtypes, hp, types, evolves_from, rarity, artist, element, format, regulation_mark, prices, origin, origin_detail, created_by, created_at, card_type, weakness, stage, packs, retreat_cost, raw_data, profiles!cards_created_by_fkey(display_name), annotations(*, profiles!annotations_updated_by_fkey(display_name))";
+  "id, name, set_id, set_name, set_series, number, image_small, image_large, supertype, subtypes, hp, types, evolves_from, rarity, artist, element, format, regulation_mark, prices, origin, origin_detail, created_by, created_at, card_type, weakness, stage, packs, retreat_cost, profiles!cards_created_by_fkey(display_name), annotations(*, profiles!annotations_updated_by_fkey(display_name))";
 
 export async function fetchCard(id, _source = "TCG") {
   const sb = await sbReady();
@@ -1372,30 +1438,23 @@ export async function fetchCard(id, _source = "TCG") {
     ? displayNameFromProfileEmbed(annRow.profiles)
     : null;
 
-  // raw_data is loaded lazily via fetchCardRawData; only pokedex_numbers needed here.
-  const raw_data =
-    row.raw_data && typeof row.raw_data === "object" ? row.raw_data : {};
-  const pokedex_numbers = raw_data?.nationalPokedexNumbers || [];
-
-  // Pocket cards do not use pokemon_metadata in the returned shape; skip the extra round trip.
-  let pm = null;
-  if (!isPocket) {
-    const dex = pokedex_numbers[0];
-    if (dex != null) {
-      const { data: pmd } = await sb
-        .from("pokemon_metadata")
-        .select("*")
-        .eq("pokedex_number", dex)
-        .maybeSingle();
-      pm = pmd;
-    }
-  }
+  // Heavy raw_data is loaded lazily via fetchCardRawData.
+  const raw_data = {};
+  const pokedex_numbers = [];
 
   const overrides = parseOverrides(annRow?.overrides);
   const baseCard = { ...row };
   delete baseCard.annotations;
   delete baseCard.profiles;
-  const merged = { ...baseCard, ...overrides };
+  const merged = {
+    ...baseCard,
+    ...overrides,
+    // Annotation overrides are display/edit conveniences; card identity must stay canonical.
+    id: baseCard.id,
+    set_id: baseCard.set_id,
+    origin: baseCard.origin,
+    origin_detail: baseCard.origin_detail,
+  };
 
   const annotations = annotationRowToFlat(annRow);
   // Legacy v1 annotation field: duplicate of cards.id for "Unique ID" in UI; prefer cards.id for new code.
@@ -1471,7 +1530,7 @@ export async function fetchCard(id, _source = "TCG") {
     annotations,
     prices,
     pokedex_numbers,
-    genus: pm?.genus || null,
+    genus: null,
     source: merged.origin === "manual" ? merged.origin_detail || "TCG" : "TCG",
     is_custom: merged.origin === "manual" && !isPromoOriginDetail(merged.origin_detail),
     created_by: row.created_by ?? null,
@@ -1593,7 +1652,7 @@ export async function fetchFilterOptions(source = "TCG") {
       distinctColumn("artist", ["tcgdex", "ptcgdb"], "japanese"),
       sb.from("sets").select("id, name, series").in("origin", ["tcgdex", "ptcgdb"]),
     ]);
-    const excludedJpnSetIds = new Set(["neo1", "neo2", "neo3", "neo4"]);
+    const excludedJpnSetIds = new Set(HIDDEN_JPN_SET_IDS);
     const sets = ((setsResult.data) || [])
       .filter((r) => !excludedJpnSetIds.has(r.id))
       .map((r) => ({
