@@ -49,6 +49,23 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-05-16 — Workbench annotation jump-chip overflow quick fix
+
+- Branch: `v2/supabase-migration`
+- Scope in this slice:
+  - Quick usability fix for Workbench `AnnotationEditor` sticky section jump chips consuming too much vertical space when they wrap.
+- Completed:
+  - `src/components/AnnotationEditor.jsx` jump toolbar now stays one row and scrolls horizontally.
+- Validation run:
+  - `npm run build` (pass)
+- Migrations touched: none
+- Open risks or assumptions:
+  - This is intentionally a quick unblock, not a final navigation design. Revisit later for a more polished responsive section navigator, likely a dropdown or hybrid chips + More menu for narrow Workbench panes.
+- Next action (single first step):
+  - After current performance work, review Workbench annotation-pane navigation UX and decide whether to replace horizontal scrolling chips with a compact section selector.
+
+---
+
 ### 2026-05-09 — Materialized view for Explore filter options (054)
 
 - Preflight sent and accepted: n/a (continued from prior session)

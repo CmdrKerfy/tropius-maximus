@@ -624,12 +624,12 @@ function AnnotationEditor({
     <div className={compact ? "space-y-2" : "space-y-3"}>
       {(pinnedAttrs.length > 0 || sectionDefs.length > 0) && (
         <div className={`sticky top-0 z-20 rounded-lg border border-gray-200 bg-white ${compact ? "p-1.5" : "p-2"} shadow-sm`}>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto overflow-y-hidden pb-1 -mb-1">
             {pinnedAttrs.length > 0 && (
               <button
                 type="button"
                 onClick={() => jumpToSection("pinned-fields")}
-                className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`shrink-0 px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
                   activeSectionId === "pinned-fields"
                     ? "border-tm-leaf/40 bg-tm-cream text-gray-900"
                     : "border-tm-leaf/30 bg-tm-cream/60 text-gray-700 hover:bg-tm-cream"
@@ -643,7 +643,7 @@ function AnnotationEditor({
                 key={`jump-${s.id}`}
                 type="button"
                 onClick={() => jumpToSection(s.id)}
-                className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`shrink-0 px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
                   activeSectionId === s.id
                     ? "border-green-300 bg-green-50 text-green-800"
                     : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
