@@ -6,6 +6,8 @@ import { Toaster } from "sonner";
 import "./index.css";
 import { initDB, fetchExploreFilterOptions } from "./db";
 import App from "./App.jsx";
+import { getSupabase } from "./lib/supabaseClient.js";
+import { isNonAnonymousSession } from "./lib/authInvite.js";
 
 /** Keep in sync with ExplorePage FILTER_OPTIONS_STALE_MS */
 const FILTER_OPTIONS_STALE_MS = 30 * 60 * 1000;
@@ -60,8 +62,6 @@ function Root() {
       .then(async () => {
         clearTimeout(timeout);
         if (requireEmailAuth) {
-          const { getSupabase } = await import("./lib/supabaseClient.js");
-          const { isNonAnonymousSession } = await import("./lib/authInvite.js");
           const {
             data: { session },
           } = await getSupabase().auth.getSession();

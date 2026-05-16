@@ -26,13 +26,13 @@ import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileC
 import SearchBar from "../components/SearchBar";
 import FilterPanel from "../components/FilterPanel";
 import CardGrid from "../components/CardGrid";
-import CardDetail from "../components/CardDetail";
 import Pagination from "../components/Pagination";
 import AuthUserMenu from "../components/AuthUserMenu.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 
 const CustomCardForm = lazy(() => import("../components/CustomCardForm"));
+const CardDetail = lazy(() => import("../components/CardDetail"));
 const SqlConsole = lazy(() => import("../components/SqlConsole"));
 import {
   getExploreFilterAvailability,
@@ -145,6 +145,17 @@ class CardDetailErrorBoundary extends Component {
     }
     return this.props.children;
   }
+}
+
+function CardDetailLoadingFallback() {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center">
+        <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-green-600 border-t-transparent animate-spin" />
+        <p className="text-sm font-medium text-gray-700">Loading card details…</p>
+      </div>
+    </div>
+  );
 }
 
 /** Shape matches fetchExploreFilterOptions; used so the filter bar renders before options load. */
@@ -2030,83 +2041,85 @@ export default function ExplorePage() {
           const cardSource = filters.source || displayedCards[currentIndex]?._source || "TCG";
           return (
             <CardDetailErrorBoundary onClose={() => setSelectedCardId(null)}>
-            <CardDetail
-              cardId={selectedCardId}
-              attributes={attributes}
-              source={cardSource}
-              onClose={() => setSelectedCardId(null)}
-              onCardDeleted={() => {
-                setSelectedCardId(null);
-                setSqlCards(null);
-                setPage(1);
-                queryClient.invalidateQueries({ queryKey: ["cards"] });
-                queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
-              }}
-              hasPrev={currentIndex > 0}
-              hasNext={currentIndex < cardIds.length - 1}
-              onPrev={() => setSelectedCardId(cardIds[currentIndex - 1])}
-              onNext={() => setSelectedCardId(cardIds[currentIndex + 1])}
-              onFilterClick={(filterKey, filterValue) => {
-                setSelectedCardId(null);
-                setPage(1);
-                if (filterKey === "q") {
-                  setSearchQuery(String(filterValue ?? ""));
-                  setFilters({ ...DEFAULT_FILTERS });
-                  return;
-                }
-                if (String(filterKey).startsWith("annotation:")) {
-                  const fieldKey = String(filterKey).slice("annotation:".length).trim();
-                  if (!fieldKey) return;
-                  setSearchQuery("");
-                  setFilters({
-                    ...DEFAULT_FILTERS,
-                    annotation_field_key: fieldKey,
-                    annotation_field_value: String(filterValue ?? "").trim(),
-                  });
-                  return;
-                }
-                setSearchQuery("");
-                setFilters({
-                  ...DEFAULT_FILTERS,
-                  [filterKey]: ARRAY_FILTER_KEYS.has(filterKey) ? [filterValue] : filterValue,
-                });
-              }}
-              onSyncQueued={handleSyncQueued}
-              onSyncStarted={handleSyncStarted}
-              onSyncCompleted={handleSyncCompleted}
-              onSyncFailed={handleSyncFailed}
-              workflowBuildingRef={workflowBuildingRef}
-              onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
-              onSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
-              onSendSetToWorkbench={USE_SUPABASE_APP ? handleSetToWorkbench : undefined}
-              isSetToWorkbenchBusy={USE_SUPABASE_APP ? workbenchMatchingAppendBusy : false}
-              workbenchQueueOptions={USE_SUPABASE_APP ? workbenchQueues : []}
-              selectedWorkbenchQueueId={selectedWorkbenchQueue?.id ?? ""}
-              onWorkbenchQueueChange={USE_SUPABASE_APP ? (id) => setWorkbenchQueueId(String(id)) : undefined}
-              inBatchList={USE_SUPABASE_APP ? batchSelection.isInBatch(selectedCardId) : false}
-              onAddToBatchList={
-                USE_SUPABASE_APP
-                  ? () => {
-                      const ok = batchSelection.add(selectedCardId);
-                      if (!ok) {
-                        toastWarning(
-                          `Batch list holds at most ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards. Remove some or clear the list.`
-                        );
-                      } else {
-                        toastSuccess("Added to batch list.");
-                      }
+              <Suspense fallback={<CardDetailLoadingFallback />}>
+                <CardDetail
+                  cardId={selectedCardId}
+                  attributes={attributes}
+                  source={cardSource}
+                  onClose={() => setSelectedCardId(null)}
+                  onCardDeleted={() => {
+                    setSelectedCardId(null);
+                    setSqlCards(null);
+                    setPage(1);
+                    queryClient.invalidateQueries({ queryKey: ["cards"] });
+                    queryClient.invalidateQueries({ queryKey: ["filterOptions"] });
+                  }}
+                  hasPrev={currentIndex > 0}
+                  hasNext={currentIndex < cardIds.length - 1}
+                  onPrev={() => setSelectedCardId(cardIds[currentIndex - 1])}
+                  onNext={() => setSelectedCardId(cardIds[currentIndex + 1])}
+                  onFilterClick={(filterKey, filterValue) => {
+                    setSelectedCardId(null);
+                    setPage(1);
+                    if (filterKey === "q") {
+                      setSearchQuery(String(filterValue ?? ""));
+                      setFilters({ ...DEFAULT_FILTERS });
+                      return;
                     }
-                  : undefined
-              }
-              onRemoveFromBatchList={
-                USE_SUPABASE_APP
-                  ? () => {
-                      batchSelection.remove(selectedCardId);
-                      toastSuccess("Removed from batch list.");
+                    if (String(filterKey).startsWith("annotation:")) {
+                      const fieldKey = String(filterKey).slice("annotation:".length).trim();
+                      if (!fieldKey) return;
+                      setSearchQuery("");
+                      setFilters({
+                        ...DEFAULT_FILTERS,
+                        annotation_field_key: fieldKey,
+                        annotation_field_value: String(filterValue ?? "").trim(),
+                      });
+                      return;
                     }
-                  : undefined
-              }
-            />
+                    setSearchQuery("");
+                    setFilters({
+                      ...DEFAULT_FILTERS,
+                      [filterKey]: ARRAY_FILTER_KEYS.has(filterKey) ? [filterValue] : filterValue,
+                    });
+                  }}
+                  onSyncQueued={handleSyncQueued}
+                  onSyncStarted={handleSyncStarted}
+                  onSyncCompleted={handleSyncCompleted}
+                  onSyncFailed={handleSyncFailed}
+                  workflowBuildingRef={workflowBuildingRef}
+                  onRegisterSyncRunner={(fn) => { syncRunnerRef.current = fn; }}
+                  onSendToWorkbench={USE_SUPABASE_APP ? handleSendToWorkbench : undefined}
+                  onSendSetToWorkbench={USE_SUPABASE_APP ? handleSetToWorkbench : undefined}
+                  isSetToWorkbenchBusy={USE_SUPABASE_APP ? workbenchMatchingAppendBusy : false}
+                  workbenchQueueOptions={USE_SUPABASE_APP ? workbenchQueues : []}
+                  selectedWorkbenchQueueId={selectedWorkbenchQueue?.id ?? ""}
+                  onWorkbenchQueueChange={USE_SUPABASE_APP ? (id) => setWorkbenchQueueId(String(id)) : undefined}
+                  inBatchList={USE_SUPABASE_APP ? batchSelection.isInBatch(selectedCardId) : false}
+                  onAddToBatchList={
+                    USE_SUPABASE_APP
+                      ? () => {
+                          const ok = batchSelection.add(selectedCardId);
+                          if (!ok) {
+                            toastWarning(
+                              `Batch list holds at most ${BATCH_EDIT_MAX_CARDS.toLocaleString()} cards. Remove some or clear the list.`
+                            );
+                          } else {
+                            toastSuccess("Added to batch list.");
+                          }
+                        }
+                      : undefined
+                  }
+                  onRemoveFromBatchList={
+                    USE_SUPABASE_APP
+                      ? () => {
+                          batchSelection.remove(selectedCardId);
+                          toastSuccess("Removed from batch list.");
+                        }
+                      : undefined
+                  }
+                />
+              </Suspense>
             </CardDetailErrorBoundary>
           );
         })()}

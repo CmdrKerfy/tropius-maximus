@@ -5,6 +5,7 @@
  */
 import { SOURCE_OPTIONS } from "./lib/annotationOptions.js";
 import { buildManualCardId, normalizeCardNumberForStorage } from "./lib/manualCardId.js";
+import { assertSupabaseConfigured, getSupabase } from "./lib/supabaseClient.js";
 
 let _duck = null;
 async function _getDuck() {
@@ -36,7 +37,6 @@ export async function getCustomSourceNames() {
 
 export async function initDB() {
   if (useSupabaseBackend()) {
-    const { assertSupabaseConfigured, getSupabase } = await import("./lib/supabaseClient.js");
     assertSupabaseConfigured();
     const sb = getSupabase();
     if (import.meta.env.VITE_REQUIRE_EMAIL_AUTH === "true") {
@@ -446,4 +446,3 @@ export async function upsertUserPreferences(patch) {
   if (Object.keys(out).length) return out;
   return { card_detail_pins: [] };
 }
-
