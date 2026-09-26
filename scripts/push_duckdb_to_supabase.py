@@ -35,13 +35,17 @@ import duckdb
 
 try:
     from postgrest import SyncPostgrestClient
+    from postgrest.types import ReturnMethod
 except ImportError:
     print("Install dependencies: pip install -r scripts/requirements-ci.txt", file=sys.stderr)
     sys.exit(1)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_DUCKDB = SCRIPT_DIR.parent / "public" / "data" / "pokemon.duckdb"
-BATCH_SIZE = 500
+# Card rows contain sizeable JSON payloads. A 500-row upsert can exceed the
+# statement timeout on Supabase's nano compute, especially just after resume.
+BATCH_SIZE = 100
+MIN_BATCH_SIZE = 10
 DRY_RUN = "--dry-run" in sys.argv
 import time
 
@@ -114,34 +118,40 @@ def clean_date(val) -> str | None:
 
 
 def batch_upsert(sb, table: str, rows: list) -> int:
+    """Upsert every row, shrinking the remaining batches after a timeout.
+
+    Keep the reduced size for subsequent requests. The previous retry loop
+    repeatedly sent the first slice of a failed batch and could skip its tail.
+    """
     if not rows:
         return 0
     total = 0
     i = 0
+    effective_batch_size = BATCH_SIZE
     while i < len(rows):
-        size = min(BATCH_SIZE, len(rows) - i)
-        batch = rows[i : i + size]
+        size = min(effective_batch_size, len(rows) - i)
         if DRY_RUN:
             total += size
             i += size
             continue
-        attempt = 0
-        pushed = 0
-        retry_size = size
-        retry_batch = batch
-        while pushed < size:
+        while True:
+            batch = rows[i : i + size]
             try:
-                sb.table(table).upsert(retry_batch).execute()
-                pushed += retry_size
-                total += retry_size
-            except Exception:
-                attempt += 1
-                if attempt >= 3 or retry_size <= 50:
+                sb.table(table).upsert(
+                    batch,
+                    returning=ReturnMethod.minimal,
+                ).execute()
+                break
+            except Exception as exc:
+                message = str(exc).lower()
+                is_statement_timeout = "57014" in message or "statement timeout" in message
+                if not is_statement_timeout or size <= MIN_BATCH_SIZE:
                     raise
-                retry_size = max(50, retry_size // 2)
-                retry_batch = batch[pushed : pushed + retry_size]
-                print(f"  (retry {attempt}: {retry_size} rows)", flush=True)
+                size = max(MIN_BATCH_SIZE, size // 2)
+                effective_batch_size = size
+                print(f"  ({table} statement timeout; retrying with {size}-row batches)", flush=True)
                 time.sleep(1)
+        total += size
         i += size
     return total
 

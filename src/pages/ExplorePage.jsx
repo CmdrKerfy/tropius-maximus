@@ -391,7 +391,10 @@ export default function ExplorePage() {
         page,
         page_size: pageSize,
         ...(USE_SUPABASE_APP ? { exact_count: exploreExactCount } : {}),
-        lookahead: searchActive,
+        // Planned PostgREST counts can underestimate selective filters (for
+        // example Custom cards) enough to hide page 2. Always fetch one extra
+        // row so pagination is driven by actual data as well as the count.
+        lookahead: true,
         cursor: currentSearchCursor,
         signal,
       }),
@@ -2024,13 +2027,14 @@ export default function ExplorePage() {
             </button>
           </div>
         )}
-        {!sqlCards && !searchActive && total > pageSize && (
+        {!sqlCards && !searchActive && (total > pageSize || cardsResult?.has_more) && (
           <Pagination
             page={page}
             pageSize={pageSize}
             total={total}
             onPageChange={setPage}
             estimated={totalIsEstimated}
+            canGoNext={Boolean(cardsResult?.has_more)}
           />
         )}
 
