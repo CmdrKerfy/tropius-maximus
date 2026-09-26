@@ -23,7 +23,7 @@ import {
   fetchExactCardCount,
 } from "../db";
 import { getToken, setToken, deleteCardsFromGitHub, getFileContents, updateFileContents, pollWorkflowRun } from "../lib/github";
-import SearchBar from "../components/SearchBar";
+import SearchBar, { MIN_SEARCH_LENGTH } from "../components/SearchBar";
 import FilterPanel from "../components/FilterPanel";
 import CardGrid from "../components/CardGrid";
 import Pagination from "../components/Pagination";
@@ -345,6 +345,9 @@ export default function ExplorePage() {
     );
   }, [filters]);
   const searchActive = String(searchQuery || "").trim().length > 0;
+  // The card query is disabled for these (see `enabled` below); TanStack v5
+  // keeps a disabled query "pending", so without this the grid skeleton spins forever.
+  const searchTooShort = searchQuery.length > 0 && searchQuery.length < MIN_SEARCH_LENGTH;
 
   // Debounce params 500ms before firing the exact count query. Exact counts are skipped
   // during active search; planned counts keep search/page navigation responsive.
@@ -405,8 +408,7 @@ export default function ExplorePage() {
       }),
     // Skip 1-2 character search terms — they produce no usable trigrams and
     // cause full sequential scans of 60K+ rows on the free-tier instance.
-    enabled:
-      searchQuery.length === 0 || searchQuery.length >= 3,
+    enabled: !searchTooShort,
     placeholderData: searchActive ? undefined : (prev) => prev,
   });
 
@@ -424,7 +426,9 @@ export default function ExplorePage() {
     ? exactTotal ?? safeEstimatedTotal
     : safeEstimatedTotal;
   const totalIsEstimated = !exactTotalMatchesCurrentQuery || currentCountIsLoading;
-  const countLabel = searchActive && totalIsEstimated
+  const countLabel = searchTooShort
+    ? `Type at least ${MIN_SEARCH_LENGTH} characters to search.`
+    : searchActive && totalIsEstimated
     ? `Showing ${loadedThroughCurrentPage.toLocaleString()}${hasPotentialNextPage ? "+" : ""} match${loadedThroughCurrentPage !== 1 || hasPotentialNextPage ? "es" : ""}`
     : `${totalIsEstimated ? "~" : ""}${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`;
 
@@ -528,7 +532,7 @@ export default function ExplorePage() {
   }, [cardsQueryError, page, searchActive]);
   const error = cardsQueryFailed ? cardsQueryError?.message ?? "Failed to load cards" : null;
   /** Skeleton only when there is no list data yet (keeps previous page visible while paginating). */
-  const listAwaitingFirstData = !sqlCards && cardsResult === undefined && cardsPending;
+  const listAwaitingFirstData = !sqlCards && !searchTooShort && cardsResult === undefined && cardsPending;
 
   useEffect(() => {
     localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
@@ -2008,7 +2012,11 @@ export default function ExplorePage() {
         })()}
 
         {/* Card grid */}
-        {(!error || sqlCards) && (
+        {!sqlCards && searchTooShort ? (
+          <p className="py-12 text-center text-sm text-gray-500">
+            Type at least {MIN_SEARCH_LENGTH} characters to search card names.
+          </p>
+        ) : (!error || sqlCards) && (
           <div className={`transition-opacity duration-200 ${isFetching && !listAwaitingFirstData ? "opacity-60" : "opacity-100"}`}>
             <CardGrid
               cards={displayedCards}
@@ -2024,7 +2032,7 @@ export default function ExplorePage() {
         )}
 
         {/* Pagination */}
-        {!sqlCards && searchActive && searchQuery.length >= 3 && (page > 1 || cardsResult || cardsPending) && (
+        {!sqlCards && searchActive && !searchTooShort && (page > 1 || cardsResult || cardsPending) && (
           <div className="flex items-center justify-center gap-3 mt-6 mb-4 flex-wrap">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}

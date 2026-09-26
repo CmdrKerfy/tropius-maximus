@@ -40,6 +40,8 @@ import { humanizeError } from "../lib/humanizeError.js";
 import { fixDisplayText, sanitizeCardRawDataForDisplay } from "../lib/fixUtf8Mojibake.js";
 import { formatEvolutionLineLabel, normalizeEvolutionLineOptions } from "../lib/evolutionLineFormat.js";
 import { shouldRefreshFormOptionsForAnnotationKey } from "../lib/formOptionsRefreshKeys.js";
+import { isArrowKeyConsumer } from "../lib/keyboardTargets.js";
+import { trapTabKey, useDialogFocus } from "../lib/dialogFocus.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -301,6 +303,8 @@ export default function CardDetail({
   const [showSetWorkbenchTargetPicker, setShowSetWorkbenchTargetPicker] = useState(false);
   const [showCardActionsMenu, setShowCardActionsMenu] = useState(false);
   const cardActionsMenuRef = useRef(null);
+  const dialogRootRef = useRef(null);
+  useDialogFocus(dialogRootRef);
   const [activeTab, setActiveTab] = useState("info");
   const [pinEditorOpen, setPinEditorOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
@@ -395,7 +399,8 @@ export default function CardDetail({
           handleClose();
         }
       }
-      if (!imageEnlarged && !editingImage) {
+      // Arrows inside a text field, select, or ARIA widget belong to that control.
+      if (!imageEnlarged && !editingImage && !e.defaultPrevented && !isArrowKeyConsumer(e.target)) {
         if (e.key === "ArrowLeft" && hasPrev) {
           onPrev();
         } else if (e.key === "ArrowRight" && hasNext) {
@@ -1196,7 +1201,13 @@ export default function CardDetail({
   return (
     // Backdrop — clicking it closes the modal.
     <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+      ref={dialogRootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={card?.name ? `Card details: ${card.name}` : "Card details"}
+      tabIndex={-1}
+      onKeyDown={trapTabKey}
+      className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto outline-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -1211,6 +1222,7 @@ export default function CardDetail({
                 disabled={!hasPrev}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Previous card"
+                aria-label="Previous card"
               >
                 <ChevronLeft className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
               </button>
@@ -1219,6 +1231,7 @@ export default function CardDetail({
                 disabled={!hasNext}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Next card"
+                aria-label="Next card"
               >
                 <ChevronRight className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
               </button>
@@ -1395,8 +1408,11 @@ export default function CardDetail({
               <RefreshCw className="w-5 h-5 text-gray-500" strokeWidth={2} aria-hidden />
             </button>
             <button
+              type="button"
               onClick={handleClose}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close card details"
+              title="Close"
             >
               <X className="w-6 h-6 text-gray-500" strokeWidth={2} aria-hidden />
             </button>

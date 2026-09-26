@@ -15,6 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/DropdownMenu.jsx";
+import { useSupabaseBackend } from "../db.js";
+import { effectiveSortBy, isSortSupported } from "../lib/exploreSort.js";
 
 const UNCATEGORIZED_HEADER = "Uncategorized";
 
@@ -234,6 +236,10 @@ export default function FilterPanel({
     filters.source !== "Custom" &&
     filters.source !== "Promo" &&
     filters.source !== "TCG (JPN)";
+  const supabaseBackend = useSupabaseBackend();
+  // Show the sort that really runs; hide choices this backend cannot order by.
+  const sortBy = effectiveSortBy(filters.sort_by, { supabase: supabaseBackend });
+  const offerSort = (key) => isTCG && isSortSupported(key, { supabase: supabaseBackend });
 
   const isActive = (val) => (Array.isArray(val) ? val.length > 0 : !!val);
   const hasActiveFilters =
@@ -366,9 +372,9 @@ export default function FilterPanel({
 
   const filtersActive = exploreFiltersAreActive(filters);
   const q = String(searchQuery || "").trim();
-  const sortLabel = SORT_LABELS[filters.sort_by] || filters.sort_by || "Name";
+  const sortLabel = SORT_LABELS[sortBy] || sortBy;
   const orderLabel =
-    filters.sort_by === "recent"
+    sortBy === "recent"
       ? filters.sort_dir === "desc"
         ? "newest first"
         : "oldest first"
@@ -758,19 +764,19 @@ export default function FilterPanel({
                 <div className="flex flex-col min-w-[10rem] flex-1">
                   <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
                   <select
-                    value={filters.sort_by}
+                    value={sortBy}
                     onChange={(e) => onChange({ sort_by: e.target.value })}
                     className={selectClass}
                   >
                     <option value="name">Name</option>
                     <option value="number">Number</option>
-                    {isTCG && <option value="pokedex">Pokedex #</option>}
+                    {offerSort("pokedex") && <option value="pokedex">Pokedex #</option>}
                     <option value="hp">HP</option>
                     <option value="rarity">Rarity</option>
                     <option value="set_name">Set</option>
                     <option value="recent">Recently added</option>
-                    {isTCG && <option value="price">Price</option>}
-                    {isTCG && <option value="region">Featured Region</option>}
+                    {offerSort("price") && <option value="price">Price</option>}
+                    {offerSort("region") && <option value="region">Featured Region</option>}
                   </select>
                 </div>
 
@@ -851,19 +857,19 @@ export default function FilterPanel({
         <div className="flex flex-col">
           <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Sort By</label>
           <select
-            value={filters.sort_by}
+            value={sortBy}
             onChange={(e) => onChange({ sort_by: e.target.value })}
             className={selectClass}
           >
             <option value="name">Name</option>
             <option value="number">Number</option>
-            {isTCG && <option value="pokedex">Pokedex #</option>}
+            {offerSort("pokedex") && <option value="pokedex">Pokedex #</option>}
             <option value="hp">HP</option>
             <option value="rarity">Rarity</option>
             <option value="set_name">Set</option>
             <option value="recent">Recently added</option>
-            {isTCG && <option value="price">Price</option>}
-            {isTCG && <option value="region">Featured Region</option>}
+            {offerSort("price") && <option value="price">Price</option>}
+            {offerSort("region") && <option value="region">Featured Region</option>}
           </select>
         </div>
 

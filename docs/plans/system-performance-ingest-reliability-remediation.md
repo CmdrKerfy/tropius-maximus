@@ -852,11 +852,40 @@ The active set-ID timeout and filter-option completeness defects were promoted t
 
 ### 3D. Correct user-facing behavior
 
-- [ ] Disable or implement unsupported Pokédex, Price, and Featured Region sort choices.
-- [ ] Show an explicit three-character search requirement.
-- [ ] Prevent Card Detail arrow navigation while focus is in an input/select/textarea/content-editable control.
-- [ ] Add proper dialog labelling, focus trap, close-button accessible name, and focus restoration.
-- [ ] Eager-load only the first visible card row and measure LCP.
+- [x] Disable or implement unsupported Pokédex, Price, and Featured Region sort choices. (2026-09-26: hidden on Supabase only.)
+- [x] Show an explicit three-character search requirement. (2026-09-26; also fixes a stuck skeleton.)
+- [x] Prevent Card Detail arrow navigation while focus is in an input/select/textarea/content-editable control. (2026-09-26)
+- [x] Add proper dialog labelling, focus trap, close-button accessible name, and focus restoration. (2026-09-26)
+- [ ] Eager-load only the first visible card row and measure LCP. (Eager-load done 2026-09-26; LCP not measured.)
+
+**3D slice (2026-09-26):**
+- **Sorts:** the Supabase adapter's `sortMap` has no column for `pokedex`, `price` or `region`, so they silently ordered by name. `pokedex` is also the TCG default, so the UI said "Pokédex #" over a name-sorted grid. DuckDB implements all three.
+  - New `src/lib/exploreSort.js` (`effectiveSortBy`, `isSortSupported`); `FilterPanel` hides the three on Supabase and shows the sort that actually runs (a saved or linked value displays as "Name").
+  - Filter state and URLs are unchanged; the query already fell back to name.
+- **Short search:**
+  - `MIN_SEARCH_LENGTH` (3) exported from `SearchBar`, which shows "Type at least 3 characters to search." (`aria-live`) in place of the multi-name hint.
+  - Explore's `searchTooShort` disables the query and replaces the grid with the message. Before, TanStack v5 kept the disabled query `isPending`, so `listAwaitingFirstData` showed skeletons indefinitely.
+- **Card Detail keyboard:** `src/lib/keyboardTargets.js` `isArrowKeyConsumer` (text inputs, select, textarea, content-editable, ARIA arrow widgets); arrow prev/next is skipped for those and for `defaultPrevented` events. Escape is unchanged.
+- **Card Detail dialog:**
+  - The root has `role="dialog"`, `aria-modal`, `aria-label` "Card details: <name>" and `tabIndex=-1`.
+  - `src/lib/dialogFocus.js`: `useDialogFocus` focuses the dialog on open and restores focus to the opener (grid cards are buttons) on close; `trapTabKey` wraps Tab and ignores events from portaled children.
+  - Close/Prev/Next buttons have `aria-label`s.
+  - Not converted to Radix `Dialog`: nested overlays and the layered Escape handling make that a larger refactor.
+- **Grid images:** the first 6 cards (widest row) load eagerly; the first 2 get `fetchPriority="high"`; the rest stay lazy.
+- Tests: `test:explore-sort`, `test:keyboard-targets` (node --test).
+- Validation (2026-09-26):
+  - `npm run check:quick` passes (build, unit, Python).
+  - **The Playwright test runner hangs locally** (even `playwright test --list`, and a `--list` process from the previous day was also stuck). It stalls after browser-type init, before loading config or tests, so it is a local runner/environment issue unrelated to these changes; not yet diagnosed.
+  - Instead, a DuckDB-mode build was served with `vite preview` on :5174 and driven with the Playwright *library*. 15/15 checks passed:
+    - first-row eager/high-priority images;
+    - short-search hint and message with no skeletons;
+    - dialog label, initial focus and close-button name;
+    - Tab/Shift+Tab trapped;
+    - ArrowRight navigates from the dialog but not from a text field;
+    - focus restored to the grid card;
+    - no page errors;
+    - the smoke test's Explore shell and Batch notice.
+  - The Supabase-only sort hiding is covered by unit tests only (the preview runs in DuckDB mode).
 
 Validation:
 
@@ -898,8 +927,14 @@ Phase gate:
 
 ### 4C. Fix caching and release identity
 
-- [ ] Cache hashed `/assets/*` for one year with `immutable`.
-- [ ] Keep HTML revalidating; avoid unnecessary `no-store`.
+- [x] Cache hashed `/assets/*` for one year with `immutable`. (2026-09-26, `vercel.json`)
+- [x] Keep HTML revalidating; avoid unnecessary `no-store`. (2026-09-26: `/` and `/index.html` now `no-cache`)
+
+**4C baseline (2026-09-26, `tropius-maximus.vercel.app`):**
+- Hashed assets (`/assets/index-*.js`) were served `public, max-age=0, must-revalidate`, so every load re-checked every chunk.
+- `/` was `no-cache, no-store, must-revalidate`; SPA routes (e.g. `/explore`) used Vercel's default `public, max-age=0, must-revalidate`, which stays as is.
+- All `dist/assets` names are content-hashed, `public/` has no `assets/` folder, and `middleware.js` only matches `/share/card/*`.
+- Verify after deploy: an asset returns `max-age=31536000, immutable`, and `/` returns `no-cache`.
 - [ ] Use Vercel commit/deployment identifiers instead of timestamp fallback for release identity.
 - [ ] Record application SHA and compatible migration version.
 
@@ -1017,6 +1052,8 @@ Done 2026-09-26 while run `36274892062` ingests (v2 working tree, uncommitted):
 - 2C ACL audit and revoke migration `20260926223550_…` (not applied).
 - 2E partition migration `20260926223742_…` and weekly push check (not applied; push change is v2 only).
 - Tests: push 61 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Both migrations were exercised on a throwaway local Postgres 18.
+- Committed and pushed as v2 `abab818`.
+- Then 4C (`vercel.json` immutable `/assets/*`, `no-cache` HTML) and 3D (sort options, short-search message and stuck skeleton, Card Detail arrows, dialog semantics and focus, eager first grid row). See the 4C and 3D sections. A v2 push deploys to Vercel **Production**; verify the headers and a quick Explore/Card Detail check afterwards.
 
 Next steps, each needing owner approval (plain-English summary with each ask):
 1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline":

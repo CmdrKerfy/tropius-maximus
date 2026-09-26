@@ -15,7 +15,11 @@ import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
 import { isPocketOrigin } from "../lib/cardSource.js";
 
-function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
+/** Widest grid row (xl:grid-cols-6); these images are above the fold and usually the LCP element. */
+const EAGER_IMAGE_COUNT = 6;
+const HIGH_PRIORITY_IMAGE_COUNT = 2;
+
+function CardItem({ card, isSelected, onCardClick, onToggleSelection, index = Infinity }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
   const [imgLoaded, setImgLoaded] = useState(false);
   const supabase = useSupabaseBackend();
@@ -106,7 +110,8 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
           src={displayImage || pocketCardBg}
           alt={card.name}
           referrerPolicy="no-referrer"
-          loading="lazy"
+          loading={index < EAGER_IMAGE_COUNT ? "eager" : "lazy"}
+          fetchPriority={index < HIGH_PRIORITY_IMAGE_COUNT ? "high" : "auto"}
           decoding="async"
           className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImgLoaded(true)}
@@ -212,10 +217,11 @@ function CardGrid({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-      {cards.map((card) => (
+      {cards.map((card, index) => (
         <CardItemMemo
           key={card.id}
           card={card}
+          index={index}
           isSelected={selectedCardIds.has(card.id)}
           onCardClick={onCardClick}
           onToggleSelection={onToggleSelection}

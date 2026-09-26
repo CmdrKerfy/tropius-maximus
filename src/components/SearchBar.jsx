@@ -9,6 +9,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 
+/** Explore skips shorter terms (no usable trigrams; see ExplorePage). */
+export const MIN_SEARCH_LENGTH = 3;
+
 export default function SearchBar({ value, onChange }) {
   // Local input value updates immediately for responsive typing feel.
   const [inputValue, setInputValue] = useState(value);
@@ -38,12 +41,14 @@ export default function SearchBar({ value, onChange }) {
     clearTimer();
 
     // Longer debounce cuts typo-driven searches; Enter/Search button remains immediate.
-    const delay = newValue.length > 0 && newValue.length < 3 ? 900 : 700;
+    const delay = newValue.length > 0 && newValue.length < MIN_SEARCH_LENGTH ? 900 : 700;
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       onChange(newValue);
     }, delay);
   };
+
+  const tooShort = inputValue.length > 0 && inputValue.length < MIN_SEARCH_LENGTH;
 
   // Clean up timer on unmount.
   useEffect(() => {
@@ -76,6 +81,7 @@ export default function SearchBar({ value, onChange }) {
           onChange={handleChange}
           placeholder="Search cards by name..."
           aria-label="Search cards by name"
+          aria-describedby="explore-search-hint"
           className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 placeholder-gray-400
                      focus:border-transparent focus:outline-none focus:ring-2 focus:ring-green-500"
         />
@@ -104,7 +110,11 @@ export default function SearchBar({ value, onChange }) {
           </button>
         )}
       </div>
-      <p className="mt-1 text-xs text-gray-400">Use + or | to search multiple names (e.g. Eevee + イーブイ)</p>
+      <p id="explore-search-hint" aria-live="polite" className={`mt-1 text-xs ${tooShort ? "text-amber-700" : "text-gray-400"}`}>
+        {tooShort
+          ? `Type at least ${MIN_SEARCH_LENGTH} characters to search.`
+          : "Use + or | to search multiple names (e.g. Eevee + イーブイ)"}
+      </p>
     </form>
   );
 }
