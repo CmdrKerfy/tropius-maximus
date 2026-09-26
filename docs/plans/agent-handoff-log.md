@@ -49,6 +49,27 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Neo repair applied and verified
+
+- Scope: step 2 of "Exact next action" in `docs/plans/system-performance-ingest-reliability-remediation.md`.
+- Completed:
+  - Preconditions re-verified read-only:
+    - 323 tcgdex Japanese cards in `neo1`–`neo4`;
+    - 0 references from annotations, edit_history, batch_selections, or workbench_queues;
+    - all 4 set rows are tcgdex-owned;
+    - no workflow running.
+  - The owner ran the guarded 1B "Production repair" DO block in the SQL editor. It succeeded.
+- Validation (read-only):
+  - 0 Japanese cards in `neo1`–`neo4`, and 351 other Neo cards;
+  - 4 Neo set rows are `origin='pokemontcg.io'`, still with Japanese names until the next push;
+  - tcgdex total is 6,487.
+- Migrations touched: none. 2C/2E are still not applied.
+- Open risks:
+  - The Neo set names stay Japanese in the filters until step 3.
+  - The 2026-09-28 07:30 UTC scheduled run uses the new script, so it would also fix the names if step 3 is skipped.
+  - The 2 anonymous `auth.users` rows are still undecided.
+- Next action: ask the owner to approve step 3, a warm `main` ingest dispatch (`ingest-supabase` workflow on `main`), and then verify it against the step 3 checklist.
+
 ### 2026-09-26 (local) - Search RLS fix live; 0C run verified
 
 - Scope:

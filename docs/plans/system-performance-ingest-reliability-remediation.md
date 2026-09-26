@@ -1081,9 +1081,18 @@ Done 2026-09-26 23:35 UTC:
 - Search RLS fix applied by the owner, and the Explore count label fixed. See Phase 5 "Search RLS fix".
 - Committed and pushed to v2 with the plan and handoff updates.
 
+Done 2026-09-26 (after 23:35 UTC): Neo repair.
+- The owner ran the guarded Neo repair (1B "Production repair" SQL) in the SQL editor. Preconditions were re-verified read-only first: 323 Japanese rows, no references from annotations, edit_history, batch_selections, or workbench_queues, and no workflow running.
+- Verified afterwards:
+  - 0 tcgdex Japanese cards in `neo1`–`neo4`;
+  - the 351 other Neo cards are untouched;
+  - all 4 Neo set rows are `origin='pokemontcg.io'`;
+  - tcgdex total is 6,487.
+- The set names are still Japanese (`金、銀、新世界へ...` etc.) until the step 3 push rewrites them. That is expected.
+
 Next steps, each needing owner approval (plain-English summary with each ask):
-1. (Done: 0C verification.) Optional: owner re-tests Raichu search and page 2 on Vercel and confirms the "counting…" label. Decide whether to delete the 2 anonymous `auth.users` rows.
-2. Run the guarded Neo repair (1B "Production repair" SQL), only while no push is running. The auto-mode classifier blocks production SQL writes, so the owner may need to run it in the SQL editor; afterwards verify 0 Japanese cards in `neo1`–`neo4` and the 4 set rows owned by `pokemontcg.io`.
+1. (Done: 0C verification; owner confirmed search "much improved".) Decide whether to delete the 2 anonymous `auth.users` rows.
+2. (Done: Neo repair, see above.)
 3. Dispatch a warm `main` ingest (new script) and verify:
    - no collisions reported;
    - "unchanged" is about 0 (the first fingerprinted run rewrites everything, so expect refresh retries);
@@ -1091,7 +1100,7 @@ Next steps, each needing owner approval (plain-English summary with each ask):
    - English Neo names in the TCG set filter;
    - `ja-neo1`…`ja-neo4` present with 323 cards;
    - `api_hash` filled.
-4. Commit the 2C/2E work to v2. Then, with separate approvals:
+4. (2C/2E are already committed as v2 `abab818`.) With separate approvals:
    - apply the 2C and 2E migrations as SQL (owner in the SQL editor if blocked) and run the check queries in their headers;
    - sync `scripts/push_duckdb_to_supabase.py` + its test to `main` (after step 3, so the warm run is not disturbed).
 
