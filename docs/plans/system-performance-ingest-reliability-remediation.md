@@ -587,7 +587,7 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
   - `last_seen_in_api` is stamped only on rows actually published; nothing reads it (1A's run manifest replaces it).
   - A manual card whose ID matches an API ID is no longer converted to an API card.
   - An in-place edit to an API card column would no longer be reverted by the next push unless upstream changes. Phase 2B restricts card writes.
-  - **Japanese Neo becomes visible:** the `ja-neo*` sets and cards are not covered by `HIDDEN_JPN_SET_IDS` or the view's `neo1`–`neo4` exclusion, so they appear in Japanese/All views and the Japanese set filter. This is an owner decision: keep them visible (recommended; the hiding was a collision workaround, and the dead `neo*` hide list can be removed later) or add `ja-neo1`…`ja-neo4` to both.
+  - **Japanese Neo becomes visible:** the `ja-neo*` sets and cards are not covered by `HIDDEN_JPN_SET_IDS` or the view's `neo1`–`neo4` exclusion, so they appear in Japanese/All views and the Japanese set filter. **Owner decision 2026-09-26: keep them visible; no code change.** The `neo1`–`neo4` hide list only matches Japanese rows (TCG (JPN) queries, and the All view's `origin_detail.is.null,origin_detail.neq.japanese,set_id.not.in.(…)` OR), so it never hides English Neo. After the repair it matches nothing and can be removed with the next filter-view migration.
 - **Validation:**
   - `test_push_duckdb_to_supabase.py` 57 OK (19 new: fingerprint, gate collisions/unchanged/claims/sets, fallback, fatal read errors, dry run, namespacing, twin check on the upstream ID, summary and warning).
   - `test_ingest.py` 14 OK; parity passed; `npm run check:quick` exit 0.
@@ -751,10 +751,22 @@ Create separate migrations for each subsection.
 
 ### 2C. Harden privileged functions
 
-- [ ] Inspect actual function ACLs, including implicit `PUBLIC` execution.
-- [ ] Revoke authenticated/anon execution from maintenance refresh and analyze functions.
+- [x] Inspect actual function ACLs, including implicit `PUBLIC` execution. (2026-09-26, read-only)
+- [ ] Revoke authenticated/anon execution from maintenance refresh and analyze functions. (Migration written and tested locally; not applied.)
 - [ ] Move privileged helpers out of exposed schema when practical.
-- [ ] Retain only intentional anonymous access for public sharing.
+- [x] Retain only intentional anonymous access for public sharing. (`get_public_card_for_share` unchanged.)
+
+**ACL audit (2026-09-26, read-only):**
+- Every `public` function has the Supabase default ACL (`PUBLIC`, `anon`, `authenticated`, `service_role` EXECUTE), and `pg_default_acl` grants the same on every new function.
+- `SECURITY DEFINER` functions (they bypass RLS) that anyone holding the bundled anon key can call:
+  - `refresh_explore_filter_options()`: REFRESH MATERIALIZED VIEW CONCURRENTLY, about 12 s.
+  - `analyze_cards_and_annotations()`: ANALYZE.
+  - `get_card_names_by_source(text[], text, text)`: id and name of every card of the given origins, manual cards included. Unused since `99dcfb5` reverted the client-side CJK search.
+  - Also `get_public_card_for_share` (intentional); `handle_new_user` and `rls_auto_enable` are trigger/event-trigger functions PostgREST cannot call.
+- Callers: only `push_duckdb_to_supabase.py` (service key) calls the two maintenance functions. No other function body references the three; `pg_cron` is not installed; owner is `postgres`.
+- SECURITY INVOKER RPCs remain callable by anon, but RLS rejects anonymous sessions (2B/2D territory).
+
+**Migration `supabase/migrations/20260926223550_revoke_client_execute_privileged_functions.sql` (not applied):** revokes EXECUTE on the three functions from `PUBLIC, anon, authenticated`, grants `service_role`, and notifies PostgREST. The function and index of `get_card_names_by_source` stay; removing them is Phase 5. Tested on a throwaway local Postgres 18: anon/authenticated false, service_role true, and an anon call gets `permission denied`. Safe to apply at any time; it does not affect the push, which uses the service key. The post-apply check query is in the file header. Note for future migrations: because of the default ACL, each new privileged function must revoke explicitly (as 2E does).
 
 ### 2D. Make audit writes server-authoritative
 
@@ -765,10 +777,32 @@ Create separate migrations for each subsection.
 
 ### 2E. Automate edit-history partitions
 
-- [ ] Create partitions beyond 2027-Q2.
-- [ ] Add a scheduled or deployment-time partition creation mechanism.
-- [ ] Add an alert/check when less than two future quarters remain.
+- [ ] Create partitions beyond 2027-Q2. (Migration written and tested locally; not applied.)
+- [ ] Add a scheduled or deployment-time partition creation mechanism. (Weekly push call on v2; needs a `main` sync.)
+- [ ] Add an alert/check when less than two future quarters remain. (Same.)
 - [ ] Add an `edited_at DESC` index only after authenticated EXPLAIN confirms need.
+
+**Baseline (2026-09-26, read-only):** six partitions 2026-Q1…2027-Q2 with UTC bounds and no DEFAULT partition. 518 rows, newest 2026-05-16. Each partition has RLS on with no policies (the policies live on the parent), which blocks direct API access; the `ensure_rls` event trigger enables RLS on new `public` tables but swallows its own errors. Each partition inherits 4 indexes. Without new partitions, every annotation save fails from 2027-07-01, because saves write history in the same transaction.
+
+**Migration `supabase/migrations/20260926223742_edit_history_partition_maintenance.sql` (not applied):**
+- `ensure_edit_history_partitions(p_quarters_ahead int DEFAULT 4) RETURNS jsonb`:
+  - creates any missing `edit_history_<yyyy>_q<n>` from the current UTC quarter through current + N, with UTC bounds, and enables RLS on each explicitly;
+  - returns `{created, horizon, future_quarters}`;
+  - `SECURITY DEFINER` (creating a partition requires owning the parent), `search_path ''`, `lock_timeout 5s`, argument bounded 0–20;
+  - EXECUTE revoked from `PUBLIC, anon, authenticated`, granted to `service_role`.
+- Runs once with 8, creating 2027-Q3…2028-Q3 (horizon 2028-10-01).
+- CREATE takes a brief ACCESS EXCLUSIVE lock on `edit_history`, and only when a partition is missing.
+- Tested on a throwaway local Postgres 18 with a production-shaped fixture:
+  - creates the 5 partitions with UTC bounds, RLS on and 4 indexes each; re-running is a no-op;
+  - a dropped middle partition is reported (`future_quarters` 1) and refilled; rows route correctly;
+  - arguments 21 and NULL are rejected; `authenticated` is denied, `service_role` allowed;
+  - a non-UTC session still gets UTC bounds; an overlapping range raises instead of being skipped.
+
+**Weekly check (`scripts/push_duckdb_to_supabase.py`, v2 only; needs a `main` sync with owner approval):** `ensure_edit_history_partitions(sb, report)` runs before the view refresh.
+- It is nonfatal and makes one call with `p_quarters_ahead` 4 (next week retries).
+- It adds a row to the step-summary maintenance table.
+- It emits `::warning` when the call fails (including "function missing" before the migration is applied) or when fewer than 2 future quarters remain.
+- 4 new tests; push suite 61 OK.
 
 Validation:
 
@@ -978,6 +1012,12 @@ Done 2026-09-26 (owner-approved): steps 2–4 of the gate rollout.
 
 0C run `36274892062` (dispatched on `main` `ab2e3b6`, old script, cold cache) was still in the ingest step at 22:35 UTC, with about 3.5 h expected. It keeps the old script, so it will overwrite the Neo rows again and will not fill `api_hash`.
 
+Done 2026-09-26 while run `36274892062` ingests (v2 working tree, uncommitted):
+- Step 4 decided: keep Japanese Neo visible (1B "Publication gate").
+- 2C ACL audit and revoke migration `20260926223550_…` (not applied).
+- 2E partition migration `20260926223742_…` and weekly push check (not applied; push change is v2 only).
+- Tests: push 61 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Both migrations were exercised on a throwaway local Postgres 18.
+
 Next steps, each needing owner approval (plain-English summary with each ask):
 1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline":
    - Run log: ingest outcome, published counts, twin skips (~8,451), refresh attempts and duration, ANALYZE. If the refresh needed 3+ attempts, pull the Postgres logs for that window.
@@ -991,6 +1031,8 @@ Next steps, each needing owner approval (plain-English summary with each ask):
    - English Neo names in the TCG set filter;
    - `ja-neo1`…`ja-neo4` present with 323 cards;
    - `api_hash` filled.
-4. Owner decision: keep Japanese Neo visible (recommended) or extend the hide list.
+4. Commit the 2C/2E work to v2. Then, with separate approvals:
+   - apply the 2C and 2E migrations as SQL (owner in the SQL editor if blocked) and run the check queries in their headers;
+   - sync `scripts/push_duckdb_to_supabase.py` + its test to `main` (after step 3, so the warm run is not disturbed).
 
 Also watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC, now with the new script, so it should be mostly "unchanged" if step 3 ran first). Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

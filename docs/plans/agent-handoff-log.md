@@ -49,6 +49,19 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Neo visibility decided; 2C + 2E migrations written (0C run still ingesting)
+
+- Preflight: model Claude Opus 5.5; token feasibility ample; scope: owner picked "keep Neo visible, then 2C and 2E" while run `36274892062` ingests. HEAD `47a00c2`, remote `main` `e4bddef`; `cards.api_hash` verified present.
+- Completed (v2 working tree, **uncommitted**):
+  - Owner decision: Japanese Neo stays visible. The `neo1`–`neo4` hide list only matches Japanese rows, so it never hides English Neo.
+  - 2C: read-only ACL audit, then `supabase/migrations/20260926223550_revoke_client_execute_privileged_functions.sql`. It revokes client EXECUTE on `refresh_explore_filter_options`, `analyze_cards_and_annotations` and `get_card_names_by_source` (SECURITY DEFINER; the last one dumps all card names, bypassing RLS, and has been unused since `99dcfb5`).
+  - 2E: `supabase/migrations/20260926223742_edit_history_partition_maintenance.sql` adds `ensure_edit_history_partitions()` (service_role only, RLS on new partitions) and creates 2027-Q3…2028-Q3. Without it, saves break on 2027-07-01.
+  - `push_duckdb_to_supabase.py` calls it weekly (nonfatal) and warns when fewer than 2 quarters remain.
+- Validation: both migrations exercised on a throwaway local Postgres 18 (details in the plan's 2C/2E sections); push 61 OK (+4), ingest 14 OK, parity passed, `npm run check:quick` exit 0.
+- Migrations touched: the two above, **not applied**.
+- Risks: the 2E migration briefly takes an ACCESS EXCLUSIVE lock on `edit_history` (lock_timeout 5s). The push change is not on `main` yet, so nothing calls the function weekly until it is synced.
+- Next action: when run `36274892062` completes, do the 0C verification (plan "Exact next action" step 1).
+
 ### 2026-09-26 (local) - Gate rollout steps 2–4 done; 0C run still ingesting
 
 - Preflight: model Claude Opus 5.5; token feasibility ample; scope full. HEAD `058f802`, remote `main` `ab2e3b6` at start.
