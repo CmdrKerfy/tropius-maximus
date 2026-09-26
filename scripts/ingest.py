@@ -23,6 +23,7 @@ Usage:
     python ingest.py --pocket          # Only fetch Pocket data (skip TCG + Pokemon)
     python ingest.py --force           # Re-download all sets even if already present
     python ingest.py --push-supabase   # After ingest, run push_duckdb_to_supabase.py (needs SUPABASE_* env)
+    python ingest.py --fail-on-partial # Exit 1 if any fetch step skipped data (for CI alerting)
 
 Features:
     - Resume: Automatically skips sets that are already fully ingested
@@ -33,17 +34,108 @@ Environment:
 """
 
 import argparse
+import functools
 import json
 import os
+from urllib.parse import quote
 import re
 import subprocess
 import sys
 import time
 import unicodedata
+from dataclasses import dataclass
 from typing import Optional
 
+from jpn_card_key_utils import _normalize_jpn_number, _build_jpn_card_key
 import httpx
 import duckdb
+
+
+@dataclass
+class IngestFailureSummary:
+    """Counts of API/data steps that logged a warning and continued (CI can fail on these)."""
+
+    tcg_set_fetch_failures: int = 0
+    pokemon_species_fetch_failures: int = 0
+    pocket_set_fetch_failures: int = 0
+    pocket_card_fetch_failures: int = 0
+    japanese_set_fetch_failures: int = 0
+    japanese_card_fetch_failures: int = 0
+    japanese_ptcgdb_failures: int = 0
+
+    def has_partial_failures(self) -> bool:
+        return (
+            self.tcg_set_fetch_failures
+            + self.pokemon_species_fetch_failures
+            + self.pocket_set_fetch_failures
+            + self.pocket_card_fetch_failures
+            + self.japanese_set_fetch_failures
+            + self.japanese_card_fetch_failures
+            + self.japanese_ptcgdb_failures
+        ) > 0
+
+
+# DuckDB tables reported in the CI step summary, in display order.
+SUMMARY_TABLES = (
+    "sets",
+    "tcg_cards",
+    "pokemon_metadata",
+    "pocket_sets",
+    "pocket_cards",
+    "japanese_sets",
+    "japanese_cards",
+    "japanese_cards_ptcgdb",
+)
+
+
+def source_row_counts(conn: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    """Row counts for SUMMARY_TABLES that exist in the database."""
+    existing = {
+        row[0]
+        for row in conn.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+        ).fetchall()
+    }
+    return {
+        table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        for table in SUMMARY_TABLES
+        if table in existing
+    }
+
+
+def format_ingest_summary(
+    stats: IngestFailureSummary, counts: dict[str, int], seconds: float
+) -> str:
+    """Markdown for $GITHUB_STEP_SUMMARY: outcome, duration, row counts, failures."""
+    outcome = "partial API failures" if stats.has_partial_failures() else "complete"
+    lines = [
+        "### Ingest",
+        "",
+        f"- Result: **{outcome}**",
+        f"- Duration: {seconds / 60:.1f} min",
+        "",
+        "| DuckDB table | Rows |",
+        "|---|---:|",
+    ]
+    lines += [f"| `{table}` | {n:,} |" for table, n in counts.items()]
+    failures = {k: v for k, v in vars(stats).items() if v}
+    if failures:
+        lines += ["", "| Failure counter | Count |", "|---|---:|"]
+        lines += [f"| `{k}` | {v} |" for k, v in failures.items()]
+    return "\n".join(lines) + "\n\n"
+
+
+def write_step_summary(markdown: str) -> None:
+    """Append to the GitHub Actions step summary when running in CI; never fatal."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(markdown)
+    except OSError as exc:
+        print(f"  (could not write step summary: {exc})", file=sys.stderr)
+
 
 # ── Configuration ────────────────────────────────────────────────────────
 
@@ -64,9 +156,102 @@ POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
 # TCGdex API (used for Pocket card data and images).
 TCGDEX_API_BASE = "https://api.tcgdex.net/v2/en"
+TCGDEX_JA_BASE = "https://api.tcgdex.net/v2/ja"
 POCKET_IMAGE_BASE = "https://assets.tcgdex.net/en/tcgp"
 
 REQUEST_TIMEOUT = 120  # Increased for large sets
+
+
+def _tcgdx_webp_from_image_field(image: object) -> str:
+    """Turn TCGdex `image` (string base URL or small dict) into a full *.webp URL, or ''."""
+    if isinstance(image, str) and image.strip():
+        b = image.strip().rstrip("/")
+        if b.endswith(".webp"):
+            return b
+        return f"{b}/high.webp"
+    if isinstance(image, dict):
+        for key in ("high", "large", "small", "default"):
+            v = image.get(key)
+            if isinstance(v, str) and v.startswith("http"):
+                b = v.strip().rstrip("/")
+                if b.endswith(".webp"):
+                    return b
+                return f"{b}/high.webp"
+        b = image.get("url") or image.get("base")
+        if isinstance(b, str) and b.strip():
+            b = b.strip().rstrip("/")
+            return f"{b}/high.webp" if not b.endswith(".webp") else b
+    return ""
+
+
+def _tcgdx_en_asset_high_webp(serie_id: str, set_id: str, local_id: str) -> str:
+    """EN assets path: /en/{serie.lower}/{set.lower}/{n}/high.webp (n = int localId when numeric)."""
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    loc = str(local_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    try:
+        nseg = str(int(loc, 10))
+    except ValueError:
+        nseg = loc.lower()
+    return f"https://assets.tcgdex.net/en/{ser.lower()}/{sid.lower()}/{nseg}/high.webp"
+
+
+def _tcgdx_ja_asset_high_webp(serie_id: str, set_id: str, local_id: str) -> str:
+    """JA assets path uses API casing: /ja/{SV}/{SV1S}/001/high.webp."""
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    loc = str(local_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    return f"https://assets.tcgdex.net/ja/{ser}/{sid}/{loc}/high.webp"
+
+
+@functools.lru_cache(maxsize=32768)
+def _tcgdx_asset_head_ok(url: str) -> bool:
+    """True if the CDN returns 200 for this asset (HEAD). Cached across cards in one ingest run."""
+    if not url:
+        return False
+    try:
+        r = httpx.head(url, timeout=15, follow_redirects=True)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def tcgdx_card_high_webp_url(card: dict, *, serie_id: str, set_id: str, japanese_locale: bool) -> str:
+    """
+    Full card image URL for DuckDB image_url → Supabase image_small / image_large.
+
+    For **Japanese** (`japanese_locale=True`): prefer `ja/...` when it exists on the CDN; many
+    Sun & Moon JP rows 404 on `ja/...` while `en/.../high.webp` still serves the same scan.
+
+    For **Pocket** (`japanese_locale=False`): prefer EN assets; JA path is only a last resort.
+    """
+    u = _tcgdx_webp_from_image_field(card.get("image"))
+    if u:
+        return u
+    loc = str(card.get("localId", "") or "").strip()
+    ser = (serie_id or "").strip()
+    sid = (set_id or "").strip()
+    if not (ser and sid and loc):
+        return ""
+    ja_u = _tcgdx_ja_asset_high_webp(ser, sid, loc)
+    en_u = _tcgdx_en_asset_high_webp(ser, sid, loc)
+    if japanese_locale:
+        if ja_u and _tcgdx_asset_head_ok(ja_u):
+            return ja_u
+        if en_u and _tcgdx_asset_head_ok(en_u):
+            return en_u
+        return ""  # neither CDN path has this scan — app will show fallback
+    if en_u and _tcgdx_asset_head_ok(en_u):
+        return en_u
+    if ja_u and _tcgdx_asset_head_ok(ja_u):
+        return ja_u
+    return ""  # neither CDN path available
+
+
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
@@ -94,6 +279,7 @@ def get_region_generation(pokedex_num: int) -> tuple:
 
 def get_connection() -> duckdb.DuckDBPyConnection:
     """Open (or create) the DuckDB database file and return a connection."""
+    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
     return duckdb.connect(DB_PATH)
 
 
@@ -229,6 +415,70 @@ def initialize_database() -> None:
         )
     """)
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_sets (
+            id            VARCHAR PRIMARY KEY,
+            name          VARCHAR,
+            series        VARCHAR,
+            release_date  VARCHAR,
+            card_count    INTEGER,
+            logo_url      VARCHAR
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_cards (
+            id              VARCHAR PRIMARY KEY,
+            name            VARCHAR,
+            set_id          VARCHAR,
+            number          INTEGER,
+            rarity          VARCHAR,
+            card_type       VARCHAR,
+            element         VARCHAR,
+            hp              INTEGER,
+            stage           VARCHAR,
+            retreat_cost    INTEGER,
+            weakness        VARCHAR,
+            evolves_from    VARCHAR,
+            illustrator     VARCHAR,
+            image_url       VARCHAR,
+            raw_data        JSON,
+            is_custom       BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS japanese_cards_ptcgdb (
+            id              VARCHAR PRIMARY KEY,
+            name            VARCHAR,
+            set_id          VARCHAR,
+            number          VARCHAR,
+            rarity          VARCHAR,
+            card_type       VARCHAR,
+            element         VARCHAR,
+            types           JSON,
+            subtypes        JSON,
+            hp              VARCHAR,
+            stage           VARCHAR,
+            retreat_cost    INTEGER,
+            weakness        VARCHAR,
+            evolves_from    VARCHAR,
+            illustrator     VARCHAR,
+            image_small     VARCHAR,
+            image_large     VARCHAR,
+            raw_data        JSON,
+            is_custom       BOOLEAN DEFAULT FALSE
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS failed_sets_ptcgdb (
+            set_id   VARCHAR PRIMARY KEY,
+            reason   VARCHAR,
+            failed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Migrate: add columns if they don't exist (schema upgrades)
     existing_cols = {row[0] for row in conn.execute("DESCRIBE pocket_cards").fetchall()}
     if "illustrator" not in existing_cols:
@@ -237,6 +487,18 @@ def initialize_database() -> None:
         conn.execute("ALTER TABLE pocket_cards ADD COLUMN is_custom BOOLEAN DEFAULT FALSE")
 
     conn.close()
+
+
+def clear_failed_sets() -> int:
+    """Clear the TCG failure skip list, including on a fresh/older database."""
+    initialize_database()
+    conn = get_connection()
+    try:
+        deleted = conn.execute("SELECT COUNT(*) FROM failed_sets").fetchone()[0]
+        conn.execute("DELETE FROM failed_sets")
+        return deleted
+    finally:
+        conn.close()
 
 
 # ── Set ingestion ────────────────────────────────────────────────────────
@@ -338,10 +600,65 @@ def get_existing_card_count(conn, set_id: str) -> int:
     return result[0] if result else 0
 
 
-def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = False) -> int:
+def _is_transient_http_status(status_code: int) -> bool:
+    """Return whether an HTTP response is worth retrying later in the run."""
+    return status_code >= 500 or status_code in {408, 425, 429}
+
+
+def _store_tcg_cards(conn: duckdb.DuckDBPyConnection, sid: str, cards: list[dict], set_info: dict) -> None:
+    """Upsert one fully fetched TCG set into DuckDB."""
+    set_name = set_info.get("name", sid)
+    set_series = set_info.get("series", "")
+
+    for card in cards:
+        images = card.get("images", {})
+        prices = {
+            "tcgplayer": card.get("tcgplayer"),
+            "cardmarket": card.get("cardmarket"),
+        }
+
+        conn.execute("""
+            INSERT OR REPLACE INTO tcg_cards
+                (id, name, supertype, subtypes, hp, types, evolves_from,
+                 rarity, artist, set_id, set_name, set_series, number,
+                 regulation_mark, image_small, image_large, raw_data, prices,
+                 source, is_custom)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TCG', FALSE)
+        """, [
+            card["id"],
+            card.get("name", ""),
+            normalize_supertype(card.get("supertype", "") or ""),
+            json.dumps(card.get("subtypes", [])),
+            card.get("hp", ""),
+            json.dumps(card.get("types", [])),
+            card.get("evolvesFrom", ""),
+            card.get("rarity", ""),
+            card.get("artist", ""),
+            sid,
+            set_name,
+            set_series,
+            card.get("number", ""),
+            card.get("regulationMark", ""),
+            images.get("small", ""),
+            images.get("large", ""),
+            json.dumps(card),
+            json.dumps(prices) if prices["tcgplayer"] or prices["cardmarket"] else None,
+        ])
+
+
+def ingest_cards(
+    set_lookup: dict,
+    set_id: Optional[str] = None,
+    force: bool = False,
+    transient_retry_passes: int = 1,
+) -> tuple[int, int]:
     """Download cards from the pokemontcg.io API and upsert into the cards table.
 
     If force=False (default), skips sets that already have cards in the database.
+
+    Returns (total_ingested_cards, set_fetch_failures) where set_fetch_failures counts
+    sets that still have an API error after the bounded transient retry passes
+    (including rows written to failed_sets for permanent 4xx responses).
     """
     if set_id:
         set_ids = [set_id]
@@ -354,91 +671,75 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
     conn = get_connection()
     total_ingested = 0
     skipped_count = 0
+    permanent_failures = 0
 
     # Load permanently-failed sets so we don't retry them
     failed_sets = {row[0] for row in conn.execute("SELECT set_id FROM failed_sets").fetchall()}
     perm_skipped = 0
 
-    for i, sid in enumerate(set_ids, 1):
-        # Skip sets that have permanently failed (4xx) in a previous run
-        if not force and sid in failed_sets:
-            perm_skipped += 1
-            continue
+    retry_queue = list(enumerate(set_ids, 1))
+    final_transient_failures = []
+    retry_passes = max(0, int(transient_retry_passes))
 
-        # Check if set already has cards (resume logic)
-        if not force:
-            existing = get_existing_card_count(conn, sid)
-            expected = set_lookup.get(sid, {}).get("total", 0)
-            if existing > 0 and (expected == 0 or existing >= expected):
-                print(f"  [{i}/{len(set_ids)}] {sid}... skipped (already have {existing} cards)")
-                skipped_count += 1
+    for pass_number in range(retry_passes + 1):
+        work_items = retry_queue
+        retry_queue = []
+        if pass_number > 0:
+            if not work_items:
+                break
+            print(
+                f"Retrying {len(work_items)} transiently failed set(s) "
+                f"(pass {pass_number}/{retry_passes})..."
+            )
+            time.sleep(RETRY_DELAY * pass_number)
+
+        for work_index, (i, sid) in enumerate(work_items):
+            if pass_number == 0:
+                # Skip sets that have permanently failed (4xx) in a previous run.
+                if not force and sid in failed_sets:
+                    perm_skipped += 1
+                    continue
+
+                # Resume from the cached DuckDB snapshot, downloading only incomplete sets.
+                if not force:
+                    existing = get_existing_card_count(conn, sid)
+                    expected = set_lookup.get(sid, {}).get("total", 0)
+                    if existing > 0 and (expected == 0 or existing >= expected):
+                        print(f"  [{i}/{len(set_ids)}] {sid}... skipped (already have {existing} cards)")
+                        skipped_count += 1
+                        continue
+
+            label = f"retry {pass_number}" if pass_number else f"{i}/{len(set_ids)}"
+            print(f"  [{label}] {sid}...", end=" ", flush=True)
+
+            try:
+                cards = fetch_cards_from_api(sid)
+            except httpx.HTTPStatusError as e:
+                if not _is_transient_http_status(e.response.status_code):
+                    permanent_failures += 1
+                    conn.execute(
+                        "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
+                        [sid, str(e.response.status_code)],
+                    )
+                    print(f"permanently unavailable ({e.response.status_code}) — will skip in future runs")
+                else:
+                    retry_queue.append((i, sid))
+                    print(f"transient failure (HTTP {e.response.status_code})")
+                continue
+            except (httpx.HTTPError, httpx.TimeoutException) as e:
+                retry_queue.append((i, sid))
+                print(f"transient failure ({e})")
                 continue
 
-        print(f"  [{i}/{len(set_ids)}] {sid}...", end=" ", flush=True)
+            _store_tcg_cards(conn, sid, cards, set_lookup.get(sid, {}))
+            total_ingested += len(cards)
+            print(f"{len(cards)} cards")
 
-        try:
-            cards = fetch_cards_from_api(sid)
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code < 500:
-                conn.execute(
-                    "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
-                    [sid, str(e.response.status_code)],
-                )
-                print(f"permanently unavailable ({e.response.status_code}) — will skip in future runs")
-            else:
-                print(f"failed after {MAX_RETRIES} retries (HTTP {e.response.status_code})")
-            continue
-        except (httpx.HTTPError, httpx.TimeoutException) as e:
-            print(f"failed after {MAX_RETRIES} retries ({e})")
-            continue
+            # Rate limit: be gentle with the API.
+            if work_index < len(work_items) - 1:
+                time.sleep(0.5)
 
-        set_info = set_lookup.get(sid, {})
-        set_name = set_info.get("name", sid)
-        set_series = set_info.get("series", "")
-
-        for card in cards:
-            images = card.get("images", {})
-
-            # Extract pricing data
-            prices = {
-                "tcgplayer": card.get("tcgplayer"),
-                "cardmarket": card.get("cardmarket"),
-            }
-
-            conn.execute("""
-                INSERT OR REPLACE INTO tcg_cards
-                    (id, name, supertype, subtypes, hp, types, evolves_from,
-                     rarity, artist, set_id, set_name, set_series, number,
-                     regulation_mark, image_small, image_large, raw_data, prices,
-                     source, is_custom)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TCG', FALSE)
-            """, [
-                card["id"],
-                card.get("name", ""),
-                normalize_supertype(card.get("supertype", "") or ""),
-                json.dumps(card.get("subtypes", [])),
-                card.get("hp", ""),
-                json.dumps(card.get("types", [])),
-                card.get("evolvesFrom", ""),
-                card.get("rarity", ""),
-                card.get("artist", ""),
-                sid,
-                set_name,
-                set_series,
-                card.get("number", ""),
-                card.get("regulationMark", ""),
-                images.get("small", ""),
-                images.get("large", ""),
-                json.dumps(card),
-                json.dumps(prices) if prices["tcgplayer"] or prices["cardmarket"] else None,
-            ])
-
-        total_ingested += len(cards)
-        print(f"{len(cards)} cards")
-
-        # Rate limit: be gentle with the API
-        if i < len(set_ids):
-            time.sleep(0.5)
+        final_transient_failures = retry_queue
 
     # Standardize any remaining Pokémon supertype variants (e.g. mojibake) to 'Pokémon'
     fixed = normalize_supertypes_in_db(conn)
@@ -451,8 +752,16 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
         parts.append(f"{skipped_count} sets already complete.")
     if perm_skipped:
         parts.append(f"{perm_skipped} sets permanently unavailable (skipped).")
+    set_fetch_failures = permanent_failures + len(final_transient_failures)
+    if final_transient_failures:
+        parts.append(
+            f"{len(final_transient_failures)} set(s) still had transient fetch errors "
+            f"after {retry_passes} extra pass(es)."
+        )
+    if permanent_failures:
+        parts.append(f"{permanent_failures} set(s) were permanently unavailable.")
     print("Done! " + " ".join(parts))
-    return total_ingested
+    return total_ingested, set_fetch_failures
 
 
 # ── Pokemon metadata ingestion ──────────────────────────────────────────
@@ -502,8 +811,11 @@ def get_existing_pokemon_count(conn) -> int:
     return result[0] if result else 0
 
 
-def ingest_pokemon_metadata(force: bool = False) -> int:
-    """Fetch all Pokemon species from PokeAPI and store metadata."""
+def ingest_pokemon_metadata(force: bool = False) -> tuple[int, int]:
+    """Fetch all Pokemon species from PokeAPI and store metadata.
+
+    Returns (species_rows_ingested_this_run, species_fetch_failures).
+    """
     print("Fetching Pokemon metadata from PokeAPI...")
 
     conn = get_connection()
@@ -524,7 +836,7 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
         if existing >= total_count:
             print(f"  Skipped (already have {existing} species)")
             conn.close()
-            return existing
+            return existing, 0
 
     # Fetch all species in batches
     all_species = []
@@ -548,6 +860,7 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
     # Cache for evolution chains to avoid re-fetching
     chain_cache = {}
     ingested = 0
+    species_fetch_failures = 0
 
     for i, species_info in enumerate(all_species, 1):
         print(f"  [{i}/{len(all_species)}] {species_info['name']}...", end="\r")
@@ -609,12 +922,15 @@ def ingest_pokemon_metadata(force: bool = False) -> int:
                 time.sleep(0.1)
 
         except Exception as e:
+            species_fetch_failures += 1
             print(f"\n  Warning: Failed to fetch {species_info['name']}: {e}")
             continue
 
     conn.close()
     print(f"\nDone! Ingested {ingested} Pokemon species.")
-    return ingested
+    if species_fetch_failures:
+        print(f"  ({species_fetch_failures} species fetch error(s) this run.)")
+    return ingested, species_fetch_failures
 
 
 # ── Pocket ingestion ────────────────────────────────────────────────────
@@ -657,18 +973,12 @@ def ingest_pocket_sets() -> None:
     print(f"  Saved {count} Pocket sets.")
 
 
-def ingest_pocket_cards(force: bool = False) -> int:
-    """Fetch Pocket cards from the TCGdex API and upsert into pocket_cards."""
-    conn = get_connection()
+def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
+    """Fetch Pocket cards from the TCGdex API and upsert into pocket_cards.
 
-    # Resume check
-    if not force:
-        result = conn.execute("SELECT COUNT(*) FROM pocket_cards").fetchone()
-        existing = result[0] if result else 0
-        if existing > 0:
-            print(f"Pocket cards: skipped (already have {existing} cards). Use --force to re-download.")
-            conn.close()
-            return existing
+    Returns (cards_ingested, pocket_set_fetch_failures, pocket_card_fetch_failures).
+    """
+    conn = get_connection()
 
     print("Fetching Pocket cards from TCGdex...")
 
@@ -679,8 +989,11 @@ def ingest_pocket_cards(force: bool = False) -> int:
     sets_list = series_data.get("sets", [])
     print(f"  Found {len(sets_list)} Pocket sets")
 
-    conn.execute("DELETE FROM pocket_cards")
+    if force:
+        conn.execute("DELETE FROM pocket_cards")
     ingested = 0
+    pocket_set_fetch_failures = 0
+    pocket_card_fetch_failures = 0
     for set_idx, set_info in enumerate(sets_list, 1):
         set_id = set_info["id"]
         print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
@@ -691,13 +1004,28 @@ def ingest_pocket_cards(force: bool = False) -> int:
             set_resp.raise_for_status()
             set_data = set_resp.json()
         except Exception as e:
+            pocket_set_fetch_failures += 1
             print(f"failed ({e})")
             continue
 
+        serie_id = (set_data.get("serie") or {}).get("id") or ""
         cards_brief = set_data.get("cards", [])
+        existing_ids = {
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM pocket_cards WHERE set_id = ?", [set_id]
+            ).fetchall()
+        }
+        cards_to_fetch = [
+            card for card in cards_brief if force or card["id"] not in existing_ids
+        ]
+        if not cards_to_fetch:
+            print(f"complete ({len(cards_brief)} cards)")
+            continue
+
         set_ingested = 0
 
-        for card_brief in cards_brief:
+        for card_brief in cards_to_fetch:
             card_id = card_brief["id"]
 
             # Fetch full card data
@@ -706,6 +1034,7 @@ def ingest_pocket_cards(force: bool = False) -> int:
                 card_resp.raise_for_status()
                 card = card_resp.json()
             except Exception as e:
+                pocket_card_fetch_failures += 1
                 print(f"\n    Warning: Failed to fetch {card_id}: {e}")
                 time.sleep(0.05)
                 continue
@@ -737,9 +1066,9 @@ def ingest_pocket_cards(force: bool = False) -> int:
             boosters = card.get("boosters") or []
             packs = [{"id": b.get("id", ""), "name": b.get("name", "")} for b in boosters]
 
-            # Image URL from TCGdex image field
-            image_base = card.get("image", "")
-            image_url = f"{image_base}/high.webp" if image_base else ""
+            image_url = tcgdx_card_high_webp_url(
+                card, serie_id=serie_id, set_id=set_id, japanese_locale=False
+            )
 
             conn.execute("""
                 INSERT INTO pocket_cards
@@ -770,39 +1099,530 @@ def ingest_pocket_cards(force: bool = False) -> int:
             time.sleep(0.05)
 
         ingested += set_ingested
-        print(f"{set_ingested} cards")
+        print(f"{set_ingested} new card(s)")
 
     conn.close()
     print(f"  Saved {ingested} Pocket cards.")
-    return ingested
+    if pocket_set_fetch_failures or pocket_card_fetch_failures:
+        print(
+            f"  ({pocket_set_fetch_failures} pocket set fetch error(s), "
+            f"{pocket_card_fetch_failures} pocket card fetch error(s) this run.)"
+        )
+    return ingested, pocket_set_fetch_failures, pocket_card_fetch_failures
 
 
-def run_ingestion(set_id: Optional[str] = None, skip_pokemon: bool = False, skip_pocket: bool = False, skip_tcg: bool = False, pocket_only: bool = False, force: bool = False) -> int:
+# ── Japanese TCG ingestion ───────────────────────────────────────────────
+
+
+def ingest_japanese_sets() -> None:
+    """Fetch Japanese sets from the TCGdex API and upsert into japanese_sets."""
+    print("Fetching Japanese sets...")
+    resp = httpx.get(f"{TCGDEX_JA_BASE}/sets", timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json()
+
+    sets_list = data if isinstance(data, list) else data.get("sets", [])
+    conn = get_connection()
+    conn.execute("DELETE FROM japanese_sets")
+    count = 0
+    for s in sets_list:
+        card_count_raw = s.get("cardCount", {})
+        if isinstance(card_count_raw, dict):
+            card_count = card_count_raw.get("official", card_count_raw.get("total", 0))
+        else:
+            card_count = int(card_count_raw) if card_count_raw else 0
+
+        conn.execute("""
+            INSERT OR REPLACE INTO japanese_sets
+                (id, name, series, release_date, card_count, logo_url)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, [
+            s["id"],
+            s.get("name", s["id"]),
+            s.get("serie", {}).get("name", "") if isinstance(s.get("serie"), dict) else s.get("serie", ""),
+            s.get("releaseDate", ""),
+            card_count,
+            s.get("logo", ""),
+        ])
+        count += 1
+
+    conn.close()
+    print(f"  Saved {count} Japanese sets.")
+
+
+def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
+    """Fetch Japanese cards from the TCGdex API and upsert into japanese_cards.
+
+    Returns (cards_ingested, japanese_set_fetch_failures, japanese_card_fetch_failures).
+    """
+    conn = get_connection()
+
+    print("Fetching Japanese cards from TCGdex...")
+
+    resp = httpx.get(f"{TCGDEX_JA_BASE}/sets", timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json()
+    sets_list = data if isinstance(data, list) else data.get("sets", [])
+    print(f"  Found {len(sets_list)} Japanese sets")
+
+    if force:
+        conn.execute("DELETE FROM japanese_cards")
+    ingested = 0
+    japanese_set_fetch_failures = 0
+    japanese_card_fetch_failures = 0
+    for set_idx, set_info in enumerate(sets_list, 1):
+        set_id = set_info["id"]
+        print(f"  [{set_idx}/{len(sets_list)}] {set_id}...", end=" ", flush=True)
+
+        try:
+            set_resp = httpx.get(f"{TCGDEX_JA_BASE}/sets/{quote(set_id, safe='')}", timeout=REQUEST_TIMEOUT)
+            set_resp.raise_for_status()
+            set_data = set_resp.json()
+        except Exception as e:
+            japanese_set_fetch_failures += 1
+            print(f"failed ({e})")
+            continue
+
+        serie_id = (set_data.get("serie") or {}).get("id") or ""
+        cards_brief = set_data.get("cards", [])
+        existing_ids = {
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM japanese_cards WHERE set_id = ?", [set_id]
+            ).fetchall()
+        }
+        cards_to_fetch = [
+            card for card in cards_brief if force or card["id"] not in existing_ids
+        ]
+        if not cards_to_fetch:
+            print(f"complete ({len(cards_brief)} cards)")
+            continue
+
+        set_ingested = 0
+
+        for card_brief in cards_to_fetch:
+            card_id = card_brief["id"]
+
+            try:
+                card_resp = httpx.get(f"{TCGDEX_JA_BASE}/cards/{quote(card_id, safe='')}", timeout=REQUEST_TIMEOUT)
+                card_resp.raise_for_status()
+                card = card_resp.json()
+            except Exception as e:
+                japanese_card_fetch_failures += 1
+                print(f"\n    Warning: Failed to fetch {card_id}: {e}")
+                time.sleep(0.05)
+                continue
+
+            local_id = card.get("localId", "")
+            try:
+                number = int(local_id)
+            except (ValueError, TypeError):
+                number = 0
+
+            category = card.get("category", "")
+            card_type = category.lower() if category else ""
+
+            types = card.get("types") or []
+            element = types[0] if types else ""
+
+            stage_raw = card.get("stage", "")
+            stage = stage_raw.lower() if stage_raw else ""
+
+            weaknesses = card.get("weaknesses") or []
+            weakness = weaknesses[0].get("type", "") if weaknesses else ""
+
+            image_url = tcgdx_card_high_webp_url(
+                card, serie_id=serie_id, set_id=set_id, japanese_locale=True
+            )
+
+            conn.execute("""
+                INSERT OR REPLACE INTO japanese_cards
+                    (id, name, set_id, number, rarity, card_type, element, hp,
+                     stage, retreat_cost, weakness, evolves_from, illustrator,
+                     image_url, raw_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                card_id,
+                card.get("name", ""),
+                set_id,
+                number,
+                card.get("rarity", ""),
+                card_type,
+                element,
+                card.get("hp"),
+                stage,
+                card.get("retreat"),
+                weakness,
+                card.get("evolveFrom", ""),
+                card.get("illustrator", ""),
+                image_url,
+                json.dumps(card),
+            ])
+            set_ingested += 1
+            time.sleep(0.05)
+
+        ingested += set_ingested
+        print(f"{set_ingested} new card(s)")
+
+    conn.close()
+    print(f"  Saved {ingested} Japanese cards.")
+    if japanese_set_fetch_failures or japanese_card_fetch_failures:
+        print(
+            f"  ({japanese_set_fetch_failures} Japanese set fetch error(s), "
+            f"{japanese_card_fetch_failures} Japanese card fetch error(s) this run.)"
+        )
+    return ingested, japanese_set_fetch_failures, japanese_card_fetch_failures
+
+
+# ── Japanese TCG ingestion from PTCG-database ──────────────────────────────
+
+# PTCG-database card_type values mapped to our canonical English enum.
+# Some entries are in Japanese, some are already English; handle both.
+_CARD_TYPE_MAP: dict[str, str] = {
+    "Pokémon": "Pokémon",
+    "pokémon": "Pokémon",
+    "ポケモン": "Pokémon",
+    "トレーナー": "Trainer",
+    "サポート": "Trainer",
+    "グッズ": "Trainer",
+    "ポケモンのどうぐ": "Trainer",
+    "スタジアム": "Trainer",
+    "エネルギー": "Energy",
+    "基本エネルギー": "Energy",
+    "特殊エネルギー": "Energy",
+}
+
+# PTCG-database stage values mapped from Japanese to English.
+# Normalize whitespace before lookup.
+_STAGE_MAP: dict[str, str] = {
+    "たね": "Basic",
+    "1進化": "Stage 1",
+    "2進化": "Stage 2",
+}
+
+PTCGDB_REPO_API = "https://api.github.com/repos/type-null/PTCG-database"
+PTCGDB_RAW = "https://raw.githubusercontent.com/type-null/PTCG-database/main"
+
+
+def ingest_japanese_set_ptcgdb(set_id: str, json_files: Optional[list[str]] = None) -> int:
+    """Fetch Japanese cards for *set_id* from PTCG-database and store in
+    ``japanese_cards_ptcgdb``.
+
+    If *json_files* is provided (list of filenames), skips the GitHub API
+    directory-listing call entirely.
+
+    IDs are prefixed with ``ptcgdb-`` to avoid overwriting TCGdex rows
+    that share the same ``{set_id}-{number}`` convention.
+
+    Returns number of cards ingested.
+    """
+    conn = get_connection()
+
+    if json_files is None:
+        # Standalone mode — list directory via GitHub Contents API.
+        dir_url = f"{PTCGDB_REPO_API}/contents/data_jp/{set_id}"
+        token = os.environ.get("GITHUB_TOKEN", "")
+        headers: dict[str, str] = {"Accept": "application/vnd.github.v3+json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        resp = httpx.get(dir_url, headers=headers, timeout=REQUEST_TIMEOUT)
+        if resp.status_code == 403:
+            print(f"  GitHub API rate-limited listing {set_id}; set GITHUB_TOKEN env var")
+            conn.close()
+            return 0
+        if resp.status_code == 404:
+            print(f"  PTCG-database has no data_jp/{set_id}/ directory — skipping")
+            conn.close()
+            return 0
+        resp.raise_for_status()
+        entries = resp.json()
+        if not isinstance(entries, list):
+            print(f"  Unexpected GitHub API response for {set_id} — expected list")
+            conn.close()
+            return 0
+        json_files = [e["name"] for e in entries if e["name"].endswith(".json")]
+
+    # 2. Fetch & parse each card file
+    cards_list: list[dict[str, object]] = []
+    skipped = 0
+    for fname in json_files:
+        file_url = f"{PTCGDB_RAW}/data_jp/{set_id}/{fname}"
+        try:
+            fr = httpx.get(file_url, timeout=REQUEST_TIMEOUT)
+            if fr.status_code == 404:
+                skipped += 1
+                continue
+            fr.raise_for_status()
+            raw = fr.json()
+        except Exception as exc:
+            skipped += 1
+            print(f"  Skipping {fname}: {exc}")
+            continue
+
+        jp_id = raw.get("jp_id")
+        number: str = str(raw.get("number") or "")
+        set_name = str(raw.get("set_name", "")).lower().strip()
+
+        # card_id = {set_name}-{normalized_number}
+        normalized_number = _normalize_jpn_number(number)
+        card_id = f"{set_name}-{normalized_number}"
+        prefixed_id = f"ptcgdb-{card_id}"
+
+        # card_type — map to English enum
+        raw_card_type: str = str(raw.get("card_type") or "")
+        card_type = _CARD_TYPE_MAP.get(raw_card_type, raw_card_type) or None
+
+        # rarity — default to "Common" when absent
+        rarity: str = str(raw.get("rarity") or "").strip()
+        if not rarity:
+            rarity = "Common"
+
+        # stage — map Japanese → English
+        raw_stage: str = str(raw.get("stage") or "").strip()
+        raw_stage = re.sub(r"\s+", "", raw_stage)  # normalize whitespace
+        stage = _STAGE_MAP.get(raw_stage, raw_stage) or None
+
+        # types array for JSONB
+        types: list[str] = raw.get("types") or []
+        element: str = types[0] if types else ""
+
+        # tags → subtypes JSONB array
+        tags: list[str] = raw.get("tags") or []
+        subtypes: list[str] = tags if isinstance(tags, list) else []
+
+        # author — array → comma-joined
+        author = raw.get("author") or []
+        illustrator: str = ", ".join(author) if isinstance(author, list) else str(author)
+
+        hp_raw = raw.get("hp")
+        hp: str | None = str(hp_raw) if hp_raw is not None else None
+
+        retreat = raw.get("retreat")
+        retreat_cost: int | None = int(retreat) if retreat is not None else None
+
+        weakness_data = raw.get("weakness") or {}
+        weakness_types: list[str] = weakness_data.get("type") or [] if isinstance(weakness_data, dict) else []
+        weakness: str = weakness_types[0] if weakness_types else ""
+
+        evolve_from: str | None = raw.get("evolve_from") or None
+
+        img_url: str = str(raw.get("img") or "")
+
+        # raw_data for jpn_card_key dedup + full source JSON
+        raw_data: dict[str, object] = dict(raw)
+        raw_data["jpn_card_key"] = _build_jpn_card_key(set_name, number)
+
+        cards_list.append({
+            "id": prefixed_id,
+            "name": str(raw.get("name") or "Unknown"),
+            "set_id": set_name,
+            "number": number,
+            "rarity": rarity,
+            "card_type": card_type,
+            "element": element,
+            "types": json.dumps(types),
+            "subtypes": json.dumps(subtypes),
+            "hp": hp,
+            "stage": stage,
+            "retreat_cost": retreat_cost,
+            "weakness": weakness,
+            "evolves_from": evolve_from,
+            "illustrator": illustrator,
+            "image_small": img_url,
+            "image_large": img_url,
+            "raw_data": json.dumps(raw_data),
+        })
+
+    # 3. Upsert into japanese_cards_ptcgdb
+    for c in cards_list:
+        conn.execute("""
+            INSERT OR REPLACE INTO japanese_cards_ptcgdb
+                (id, name, set_id, number, rarity, card_type, element, types, subtypes, hp,
+                 stage, retreat_cost, weakness, evolves_from, illustrator,
+                 image_small, image_large, raw_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, [
+            c["id"], c["name"], c["set_id"], c["number"], c["rarity"],
+            c["card_type"], c["element"], c["types"], c["subtypes"], c["hp"], c["stage"],
+            c["retreat_cost"], c["weakness"], c["evolves_from"],
+            c["illustrator"], c["image_small"], c["image_large"], c["raw_data"],
+        ])
+
+    conn.close()
+    total = len(cards_list)
+    if skipped:
+        print(f"  PTCG-db {set_id}: {total} cards ingested, {skipped} files skipped")
+    return total
+
+
+def ingest_all_japanese_ptcgdb_sets() -> tuple[int, int]:
+    """Ingest ALL Japanese sets from PTCG-database.
+
+    Uses a single recursive git-tree API call to discover all files under
+    data_jp/ — no GITHUB_TOKEN required (1 API call vs 316).
+
+    Tracks failures in ``failed_sets_ptcgdb`` so they can be retried.
+
+    Returns (total_sets_processed, total_cards_ingested).
+    """
+    tree_url = f"{PTCGDB_REPO_API}/git/trees/main:data_jp?recursive=1"
+    headers: dict[str, str] = {"Accept": "application/vnd.github.v3+json"}
+
+    print("Discovering PTCG-database files (one tree API call)...")
+    tree_resp = httpx.get(tree_url, headers=headers, timeout=REQUEST_TIMEOUT)
+    if tree_resp.status_code == 403:
+        print("GitHub API rate-limited. Wait a few minutes and retry.")
+        return (0, 0)
+    tree_resp.raise_for_status()
+    tree_data = tree_resp.json()
+    tree_entries = tree_data.get("tree", [])
+    if not tree_entries:
+        print("Empty tree response — check repo name / branch.")
+        return (0, 0)
+
+    # Group .json files by their parent directory (set_id)
+    # Tree paths look like: "SM12a/37205.json", "no_set/foo.json"
+    by_set: dict[str, list[str]] = {}
+    skipped_no_set = 0
+    for item in tree_entries:
+        path = item.get("path", "")
+        if not path.endswith(".json"):
+            continue
+        if "/" not in path:
+            continue
+        dirname, filename = path.split("/", 1)
+        if dirname == "no_set":
+            skipped_no_set += 1
+            continue
+        by_set.setdefault(dirname, []).append(filename)
+
+    set_ids = sorted(by_set.keys())
+    total_sets = len(set_ids)
+    total_files = sum(len(v) for v in by_set.values())
+    print(f"Found {total_sets} sets, {total_files} card files ({skipped_no_set} in no_set, skipped)")
+
+    # Clear previous failures so we only track this run
+    conn = get_connection()
+    conn.execute("DELETE FROM failed_sets_ptcgdb")
+    conn.close()
+
+    processed = 0
+    total_cards = 0
+    for i, sid in enumerate(set_ids):
+        pct = (i / total_sets) * 100
+        fnames = by_set[sid]
+        print(f"[{i + 1}/{total_sets}] {sid} ({pct:.0f}%, {len(fnames)} files) ...", end=" ", flush=True)
+        try:
+            n = ingest_japanese_set_ptcgdb(sid, json_files=fnames)
+            if n > 0:
+                print(f"{n} cards")
+                total_cards += n
+                processed += 1
+            else:
+                print("0 cards — skipping")
+        except Exception as exc:
+            reason = str(exc)[:200]
+            print(f"FAILED — {reason}")
+            c = get_connection()
+            c.execute(
+                "INSERT OR REPLACE INTO failed_sets_ptcgdb (set_id, reason) VALUES (?, ?)",
+                [sid, reason],
+            )
+            c.close()
+
+    # Final summary
+    c = get_connection()
+    failures = c.execute("SELECT COUNT(*) FROM failed_sets_ptcgdb").fetchone()[0]
+    c.close()
+
+    print()
+    print(f"PTCG-database batch complete:")
+    print(f"  Sets processed: {processed}/{total_sets}")
+    print(f"  Total cards:    {total_cards}")
+    if failures:
+        print(f"  Failed sets:    {failures} (see failed_sets_ptcgdb)")
+    return (processed, total_cards)
+
+
+def run_ingestion(
+    set_id: Optional[str] = None,
+    skip_pokemon: bool = False,
+    skip_pocket: bool = False,
+    skip_tcg: bool = False,
+    skip_japanese: bool = False,
+    pocket_only: bool = False,
+    japanese_only: bool = False,
+    japanese_ptcgdb_set: Optional[str] = None,
+    japanese_ptcgdb_all: bool = False,
+    force: bool = False,
+) -> IngestFailureSummary:
     """Run the full ingestion pipeline."""
+    stats = IngestFailureSummary()
     initialize_database()
+
+    if japanese_ptcgdb_all:
+        try:
+            processed, total_cards = ingest_all_japanese_ptcgdb_sets()
+            print(f"  Japanese PTCG-db batch: {processed} sets, {total_cards} cards")
+            c = get_connection()
+            failures = c.execute("SELECT COUNT(*) FROM failed_sets_ptcgdb").fetchone()[0]
+            c.close()
+            stats.japanese_ptcgdb_failures = failures
+        except Exception as e:
+            stats.japanese_ptcgdb_failures += 1
+            print(f"  Japanese PTCG-db batch: failed — {e}")
+        return stats
+
+    if japanese_ptcgdb_set:
+        try:
+            n = ingest_japanese_set_ptcgdb(japanese_ptcgdb_set)
+            print(f"  Japanese PTCG-db cards ({japanese_ptcgdb_set}): {n} rows")
+        except Exception as e:
+            stats.japanese_ptcgdb_failures += 1
+            print(f"  Japanese PTCG-db ({japanese_ptcgdb_set}): failed — {e}")
+        return stats
 
     if pocket_only:
         ingest_pocket_sets()
-        ingest_pocket_cards(force=force)
-        return 0
+        _, se, ce = ingest_pocket_cards(force=force)
+        stats.pocket_set_fetch_failures = se
+        stats.pocket_card_fetch_failures = ce
+        return stats
+
+    if japanese_only:
+        ingest_japanese_sets()
+        _, se, ce = ingest_japanese_cards(force=force)
+        stats.japanese_set_fetch_failures = se
+        stats.japanese_card_fetch_failures = ce
+        return stats
 
     # Ingest Pokemon metadata first (unless skipped)
     if not skip_pokemon:
-        ingest_pokemon_metadata(force=force)
+        _, pe = ingest_pokemon_metadata(force=force)
+        stats.pokemon_species_fetch_failures = pe
 
     # Ingest main TCG cards (unless skipped)
     if not skip_tcg:
         set_lookup = ingest_sets()
-        total = ingest_cards(set_lookup, set_id=set_id, force=force)
-    else:
-        total = 0
+        _, te = ingest_cards(set_lookup, set_id=set_id, force=force)
+        stats.tcg_set_fetch_failures = te
 
     # Ingest Pocket data (unless skipped)
     if not skip_pocket:
         ingest_pocket_sets()
-        ingest_pocket_cards(force=force)
+        _, se, ce = ingest_pocket_cards(force=force)
+        stats.pocket_set_fetch_failures = se
+        stats.pocket_card_fetch_failures = ce
 
-    return total
+    # Ingest Japanese TCG data (unless skipped)
+    if not skip_japanese:
+        ingest_japanese_sets()
+        _, se, ce = ingest_japanese_cards(force=force)
+        stats.japanese_set_fetch_failures = se
+        stats.japanese_card_fetch_failures = ce
+
+    return stats
 
 
 def main():
@@ -832,10 +1652,35 @@ def main():
         help="Skip fetching main TCG card data from pokemontcg.io.",
     )
     parser.add_argument(
+        "--skip-japanese",
+        dest="skip_japanese",
+        action="store_true",
+        help="Skip fetching Japanese TCG data from TCGdex.",
+    )
+    parser.add_argument(
         "--pocket",
         dest="pocket_only",
         action="store_true",
         help="Only fetch Pocket data (skip TCG cards and Pokemon metadata).",
+    )
+    parser.add_argument(
+        "--japanese",
+        dest="japanese_only",
+        action="store_true",
+        help="Only fetch Japanese TCG data from TCGdex.",
+    )
+    parser.add_argument(
+        "--japanese-ptcgdb",
+        dest="japanese_ptcgdb_set",
+        default=None,
+        metavar="SET_ID",
+        help="Fetch Japanese cards for SET_ID from PTCG-database (e.g. SM12a).",
+    )
+    parser.add_argument(
+        "--japanese-ptcgdb-all",
+        dest="japanese_ptcgdb_all",
+        action="store_true",
+        help="Fetch ALL Japanese sets from PTCG-database (requires GITHUB_TOKEN env var).",
     )
     parser.add_argument(
         "--force",
@@ -861,6 +1706,12 @@ def main():
         action="store_true",
         help="After ingest, run push_duckdb_to_supabase.py (set SUPABASE_URL + SUPABASE_SERVICE_KEY).",
     )
+    parser.add_argument(
+        "--fail-on-partial",
+        dest="fail_on_partial",
+        action="store_true",
+        help="Exit with status 1 if any API step skipped data (TCG sets, PokeAPI species, Pocket, Japanese). For CI.",
+    )
     args = parser.parse_args()
     if args.normalize_only:
         conn = get_connection()
@@ -869,11 +1720,45 @@ def main():
         print(f"Normalized {n} supertype variant(s) to 'Pokémon'.")
         return
     if args.clear_failed:
-        conn = get_connection()
-        deleted = conn.execute("DELETE FROM failed_sets").rowcount
-        conn.close()
+        deleted = clear_failed_sets()
         print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
-    run_ingestion(set_id=args.set_id, skip_pokemon=args.skip_pokemon, skip_pocket=args.skip_pocket, skip_tcg=args.skip_tcg, pocket_only=args.pocket_only, force=args.force)
+    started = time.monotonic()
+    summary = run_ingestion(
+        set_id=args.set_id,
+        skip_pokemon=args.skip_pokemon,
+        skip_pocket=args.skip_pocket,
+        skip_tcg=args.skip_tcg,
+        skip_japanese=args.skip_japanese,
+        pocket_only=args.pocket_only,
+        japanese_only=args.japanese_only,
+        japanese_ptcgdb_set=args.japanese_ptcgdb_set,
+        japanese_ptcgdb_all=args.japanese_ptcgdb_all,
+        force=args.force,
+    )
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        conn = get_connection()
+        try:
+            counts = source_row_counts(conn)
+        finally:
+            conn.close()
+        write_step_summary(
+            format_ingest_summary(summary, counts, time.monotonic() - started)
+        )
+
+    if args.fail_on_partial and summary.has_partial_failures():
+        print(
+            "Ingest completed with partial API failures — "
+            f"TCG sets: {summary.tcg_set_fetch_failures}, "
+            f"PokeAPI species: {summary.pokemon_species_fetch_failures}, "
+            f"Pocket sets: {summary.pocket_set_fetch_failures}, "
+            f"Pocket cards: {summary.pocket_card_fetch_failures}, "
+            f"Japanese sets: {summary.japanese_set_fetch_failures}, "
+            f"Japanese cards: {summary.japanese_card_fetch_failures}, "
+            f"Japanese PTCG-db: {summary.japanese_ptcgdb_failures}. "
+            "Exiting with status 1 (--fail-on-partial).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     if args.push_supabase:
         push_script = os.path.join(SCRIPT_DIR, "push_duckdb_to_supabase.py")

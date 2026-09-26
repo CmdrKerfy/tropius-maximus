@@ -9,6 +9,9 @@
 #   SUPABASE_SERVICE_KEY   (service role — never log, never commit)
 # Optional:
 #   POKEMON_TCG_API_KEY    (higher pokemontcg.io rate limits)
+#
+# PTCG-db Japanese cards are never published here; push_duckdb_to_supabase.py
+# requires an explicit --include-ptcgdb (manual runs only).
 
 name: Ingest and push to Supabase
 
@@ -17,9 +20,28 @@ on:
   schedule:
     - cron: "30 7 * * 1"
 
+permissions:
+  contents: read
+
+# Never run two ingests at once (they share the DuckDB cache and Supabase rows);
+# queue instead of cancelling so an in-flight publication is never interrupted.
+concurrency:
+  group: ingest-supabase
+  cancel-in-progress: false
+
 jobs:
   ingest-push:
     runs-on: ubuntu-latest
+    # A run starting without a cached DuckDB has taken ~3.5 h; GitHub's hard cap is 6 h.
+    timeout-minutes: 350
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # Unbuffered output keeps the `tee`'d logs live, in order, and complete on a timeout kill.
+      PYTHONUNBUFFERED: "1"
+    defaults:
+      run:
+        # Explicit bash enables pipefail, so `| tee` does not hide script failures.
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -32,21 +54,106 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scripts/requirements-ci.txt
 
-      - name: Cache DuckDB data file
-        uses: actions/cache@v5
+      - name: Test Supabase push batching
+        run: python scripts/test_push_duckdb_to_supabase.py
+
+      - name: Test ingest database helpers
+        run: python scripts/test_ingest.py
+
+      - name: Test Japanese card key parity
+        run: python scripts/test_jpn_card_key.py
+
+      - name: Restore DuckDB progress
+        id: duckdb-cache
+        uses: actions/cache/restore@v5
         with:
           path: public/data/pokemon.duckdb
-          key: duckdb-${{ runner.os }}-${{ hashFiles('scripts/ingest.py', 'scripts/push_duckdb_to_supabase.py') }}
+          key: duckdb-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             duckdb-${{ runner.os }}-
 
-      - name: Ingest (TCG + PokeAPI + Pocket)
+      # --clear-failed drops bogus failed_sets rows (e.g. after API blips) so ingest
+      # is not stuck skipping most sets; same as deploy-pages.yml scheduled ingest.
+      # --fail-on-partial exits 1 so GitHub can notify on incomplete API pulls (no silent green).
+      # The step timeout (not the job timeout) bounds ingest so progress is still saved.
+      - name: Ingest with one automatic resume pass
+        id: ingest
+        continue-on-error: true
+        timeout-minutes: 300
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
-        run: python scripts/ingest.py
+        run: |
+          mkdir -p ingest-logs
+          for attempt in 1 2; do
+            echo "Ingest attempt ${attempt}/2"
+            if python scripts/ingest.py --clear-failed --fail-on-partial 2>&1 | tee -a ingest-logs/ingest.log; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 2 ]; then
+              echo "Ingest incomplete; retrying from saved local progress in 30 seconds."
+              sleep 30
+            fi
+          done
+          exit 1
 
+      # Save successful progress even when one upstream API remains unavailable.
+      # The next run restores this snapshot, skips complete sets, and retries only gaps.
+      - name: Save DuckDB progress
+        if: always() && steps.ingest.outcome != 'skipped'
+        uses: actions/cache/save@v5
+        with:
+          path: public/data/pokemon.duckdb
+          key: ${{ steps.duckdb-cache.outputs.cache-primary-key }}
+
+      # Publication runs only after a complete ingest.
       - name: Push DuckDB → Supabase
+        if: steps.ingest.outcome == 'success'
+        timeout-minutes: 45
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python scripts/push_duckdb_to_supabase.py
+        run: |
+          mkdir -p ingest-logs
+          python scripts/push_duckdb_to_supabase.py 2>&1 | tee ingest-logs/push.log
+
+      - name: Report incomplete ingest after saving progress
+        if: steps.ingest.outcome == 'failure'
+        run: |
+          echo "Ingest was incomplete. DuckDB progress was saved; the next run will retry missing data."
+          {
+            echo "### Publication skipped"
+            echo ""
+            echo "Ingest did not complete (partial API failures or step timeout), so nothing was pushed to Supabase."
+            echo "DuckDB progress was saved; the next run retries only the gaps."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      # Artifacts are not masked like the live log, so scrub secret values first.
+      - name: Redact secrets from logs
+        id: redact
+        if: failure()
+        env:
+          REDACT_1: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          REDACT_2: ${{ secrets.SUPABASE_URL }}
+          REDACT_3: ${{ secrets.POKEMON_TCG_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          secrets = [os.environ.get(f"REDACT_{i}", "") for i in (1, 2, 3)]
+          for log in Path("ingest-logs").glob("*.log"):
+              text = log.read_text(encoding="utf-8", errors="replace")
+              for value in filter(None, secrets):
+                  text = text.replace(value, "***")
+              log.write_text(text, encoding="utf-8")
+          PY
+
+      # Upload only scrubbed logs: skip if redaction itself failed.
+      - name: Upload logs on failure
+        if: failure() && steps.redact.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ingest-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ingest-logs/
+          if-no-files-found: ignore
+          retention-days: 14
