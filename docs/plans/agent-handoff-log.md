@@ -49,6 +49,33 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.4 Workbench move hotfix (migration written and tested; not applied, not committed)
+
+- Preflight sent and accepted:
+  - Model accepted: yes (Claude Opus 5.5, `claude-opus-5-5`)
+  - Token-feasibility declared: likely
+  - Scope selected: 0B.4 only
+- Branch: `v2/supabase-migration` at pushed `955aaa3`; nothing committed, pushed, applied, or dispatched; `main` untouched.
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md` (0B.4 checklist + "0B.4 results")
+- Completed:
+  - Reproduced as the owner (rolled back): `ERROR 42804: COALESCE types jsonb and text[] cannot be matched` (038 function, line 55). Every production move fails before writing.
+  - New migration `supabase/migrations/20260926210118_workbench_move_cards_jsonb.sql`: JSONB read (`jsonb_array_elements_text`) and write (`to_jsonb`), same signature, both rows locked `ORDER BY id FOR UPDATE`, SECURITY INVOKER + RLS unchanged, ACL kept. Order-preserving dedupe replaces 038's `SELECT DISTINCT` (recommended; owner to confirm).
+- Validation run:
+  - One rolled-back transaction as `authenticated` with the owner's and a second real user's claims: owner move, duplicates, already-in-target, capacity overflow, not-in-source, same list, shared list in both directions, other user's private list (not found), anonymous (sign-in required), all stored elements JSON strings. All as expected (table in plan).
+  - After rollback: deployed function hash/ACL unchanged, no test rows, real lists 2/6/7 unchanged.
+  - `npm run check:quick` not run (no app code changed).
+- Migrations touched:
+  - `supabase/migrations/20260926210118_workbench_move_cards_jsonb.sql` (created, **not applied**)
+- Open risks or assumptions:
+  - Concurrent moves untested (Phase 2A). The app/PostgREST path is confirmed only by signed-in QA after applying.
+  - `PUBLIC`/`anon` still hold EXECUTE (rejected at runtime by the sign-in check; Phase 2C).
+  - Remote migration history tracks only `001`–`029`; never run `supabase db push`.
+  - Owner screenshots `tests/IMG_6879.jpg`, `tests/IMG_6880.jpg` remain untracked; do not commit.
+- Next action (single first step):
+  - Owner reviews the migration; on approval, commit it with the plan/log updates, apply its SQL once, run the post-apply check, and move a card between two lists in the app.
+
+---
+
 ### 2026-09-26 (local) - Phase 0B.2 committed, pushed, and migrations applied
 
 - Preflight: continuation of the accepted 0B.2 session (Claude Opus 5.5); owner approved commit, push, and applying migrations.
