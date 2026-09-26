@@ -387,6 +387,142 @@ class PtcgdbOptInTests(unittest.TestCase):
         self.assertFalse(push.INCLUDE_PTCGDB)
 
 
+def _tcgdex_japanese_db(tmp, rows):
+    """DuckDB file with japanese_cards holding ``rows`` (id, set_id, number, is_custom)."""
+    db_path = str(Path(tmp) / "japanese.duckdb")
+    conn = duckdb.connect(db_path)
+    try:
+        conn.execute("CREATE TABLE japanese_sets (id VARCHAR PRIMARY KEY, name VARCHAR)")
+        conn.execute(
+            "CREATE TABLE japanese_cards ("
+            "id VARCHAR PRIMARY KEY, name VARCHAR, card_type VARCHAR, rarity VARCHAR, "
+            "illustrator VARCHAR, set_id VARCHAR, number INTEGER, element VARCHAR, hp INTEGER, "
+            "stage VARCHAR, retreat_cost INTEGER, weakness VARCHAR, evolves_from VARCHAR, "
+            "image_url VARCHAR, raw_data JSON, is_custom BOOLEAN DEFAULT FALSE)"
+        )
+        for card_id, set_id, number, is_custom in rows:
+            conn.execute(
+                "INSERT INTO japanese_cards (id, name, set_id, number, is_custom) VALUES (?, ?, ?, ?, ?)",
+                [card_id, card_id, set_id, number, is_custom],
+            )
+    finally:
+        conn.close()
+    return duckdb.connect(db_path, read_only=True)
+
+
+class _PagedIdClient:
+    """Serves ``ids`` in sorted pages and records each query's filters."""
+
+    def __init__(self, ids):
+        self.ids = sorted(ids)
+        self.queries = []
+
+    def table(self, name):
+        client = self
+
+        class Query:
+            def __init__(self):
+                self.filters = {"table": name}
+
+            def select(self, cols):
+                self.filters["select"] = cols
+                return self
+
+            def eq(self, col, value):
+                self.filters[f"eq:{col}"] = value
+                return self
+
+            def gt(self, col, value):
+                self.filters[f"gt:{col}"] = value
+                return self
+
+            def order(self, col):
+                return self
+
+            def limit(self, n):
+                self.filters["limit"] = n
+                return self
+
+            def execute(self):
+                client.queries.append(self.filters)
+                after = self.filters.get("gt:id")
+                rows = [i for i in client.ids if after is None or i > after][: self.filters["limit"]]
+                return type("Response", (), {"data": [{"id": i} for i in rows]})()
+
+        return Query()
+
+
+class TcgdexJapaneseTwinTests(unittest.TestCase):
+    def test_twin_id_matches_ingest_ptcgdb_ids(self):
+        self.assertEqual(push.ptcgdb_twin_id("SV4a", "005"), "ptcgdb-sv4a-5")
+        self.assertEqual(push.ptcgdb_twin_id("SV-P", "21"), "ptcgdb-sv-p-21")
+        self.assertEqual(push.ptcgdb_twin_id("SM12a", "172"), "ptcgdb-sm12a-172")
+        self.assertIsNone(push.ptcgdb_twin_id(None, "1"))
+
+    def test_rows_with_a_ptcgdb_twin_are_skipped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _tcgdex_japanese_db(
+                tmp,
+                [
+                    ("SV4a-005", "SV4a", 5, False),   # twin published → skip
+                    ("SV4a-006", "SV4a", 6, False),   # no twin → publish
+                    ("SM1-001", "SM1", 1, False),     # no twin → publish
+                    ("SV4a-007", "SV4a", 7, True),    # custom → never published
+                ],
+            )
+            client = _FakeClient(max_rows=1000)
+            try:
+                published, skipped = push.push_japanese_cards(
+                    conn, client, "now", {"ptcgdb-sv4a-5", "ptcgdb-sv4a-7"}
+                )
+            finally:
+                conn.close()
+
+        self.assertEqual((published, skipped), (2, 1))
+        self.assertEqual(client.pushed_ids, ["SV4a-006", "SM1-001"])
+
+    def test_without_ptcgdb_ids_everything_publishes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _tcgdex_japanese_db(tmp, [("SV4a-005", "SV4a", 5, False)])
+            client = _FakeClient(max_rows=1000)
+            try:
+                self.assertEqual(push.push_japanese_cards(conn, client, "now"), (1, 0))
+            finally:
+                conn.close()
+
+    def test_published_ids_are_keyset_paged(self):
+        ids = [f"ptcgdb-s-{i:04d}" for i in range(5)]
+        client = _PagedIdClient(ids)
+        with patch.object(push, "PTCGDB_ID_PAGE_SIZE", 2):
+            result = push.fetch_published_ptcgdb_ids(client)
+
+        self.assertEqual(result, set(ids))
+        self.assertEqual([q.get("gt:id") for q in client.queries], [None, ids[1], ids[3]])
+        self.assertTrue(all(q["eq:origin"] == "ptcgdb" and q["select"] == "id" for q in client.queries))
+
+    def test_exact_page_multiple_ends_on_empty_page(self):
+        client = _PagedIdClient(["a", "b"])
+        with patch.object(push, "PTCGDB_ID_PAGE_SIZE", 2):
+            self.assertEqual(push.fetch_published_ptcgdb_ids(client), {"a", "b"})
+        self.assertEqual(len(client.queries), 2)
+
+    def test_dry_run_has_no_published_ids(self):
+        self.assertEqual(push.fetch_published_ptcgdb_ids(None), set())
+
+    def test_staged_ids_exclude_custom_rows_and_missing_table(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _ptcgdb_db(tmp, [("ptcgdb-sv4a-1", "sv4a", False), ("custom-1", "sv4a", True)])
+            try:
+                self.assertEqual(push.staged_ptcgdb_ids(conn), {"ptcgdb-sv4a-1"})
+            finally:
+                conn.close()
+            empty = duckdb.connect(str(Path(tmp) / "empty.duckdb"))
+            try:
+                self.assertEqual(push.staged_ptcgdb_ids(empty), set())
+            finally:
+                empty.close()
+
+
 class StepSummaryTests(unittest.TestCase):
     def test_maintenance_outcomes_are_recorded_for_the_summary(self):
         client = _ScriptedRpcClient(

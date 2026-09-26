@@ -23,6 +23,10 @@ PTCG-database Japanese cards (``japanese_cards_ptcgdb``) are skipped unless
 ``--include-ptcgdb`` is passed, so cached staging rows cannot silently recreate
 cross-source duplicates on a scheduled run.
 
+TCGdex Japanese cards whose PTCG-db twin (same set and normalized number) is already
+published are skipped: PTCG-db is the preferred Japanese source, and upserting the
+TCGdex copy would recreate the duplicate removed by the May 2026 dedup.
+
 Optional: run after ``python scripts/ingest.py`` or use ``ingest.py --push-supabase``.
 """
 
@@ -36,6 +40,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import duckdb
+
+from jpn_card_key_utils import _normalize_jpn_number
 
 try:
     from postgrest import SyncPostgrestClient
@@ -449,7 +455,50 @@ def push_pocket_cards(conn, sb, now_iso: str) -> int:
     return batch_upsert(sb, "cards", rows_out)
 
 
-def push_japanese_cards(conn, sb, now_iso: str) -> int:
+def ptcgdb_twin_id(set_id: object, number: object) -> str | None:
+    """The PTCG-db card ID for the same Japanese card (mirrors ingest.py's ptcgdb IDs)."""
+    if not set_id:
+        return None
+    return f"ptcgdb-{str(set_id).lower().strip()}-{_normalize_jpn_number(number)}"
+
+
+PTCGDB_ID_PAGE_SIZE = 1000
+
+
+def fetch_published_ptcgdb_ids(sb) -> set[str]:
+    """IDs of PTCG-db cards already in Supabase (keyset-paged on the primary key)."""
+    ids: set[str] = set()
+    if sb is None:
+        return ids
+    last = None
+    while True:
+        query = sb.table("cards").select("id").eq("origin", "ptcgdb")
+        if last is not None:
+            query = query.gt("id", last)
+        page = query.order("id").limit(PTCGDB_ID_PAGE_SIZE).execute().data
+        ids.update(row["id"] for row in page)
+        if len(page) < PTCGDB_ID_PAGE_SIZE:
+            return ids
+        last = page[-1]["id"]
+
+
+def staged_ptcgdb_ids(conn) -> set[str]:
+    """IDs that ``--include-ptcgdb`` would publish in this run."""
+    if not count_staged_ptcgdb_rows(conn):
+        return set()
+    return {
+        row[0]
+        for row in conn.execute(
+            "SELECT id FROM japanese_cards_ptcgdb WHERE COALESCE(is_custom, FALSE) = FALSE"
+        ).fetchall()
+    }
+
+
+def push_japanese_cards(conn, sb, now_iso: str, ptcgdb_ids: set[str] | frozenset = frozenset()) -> tuple[int, int]:
+    """Upsert TCGdex Japanese cards, skipping any whose PTCG-db twin is in ``ptcgdb_ids``.
+
+    Returns (published, skipped_twins).
+    """
     sql = """
         SELECT * FROM japanese_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
@@ -461,11 +510,15 @@ def push_japanese_cards(conn, sb, now_iso: str) -> int:
             set_names[s["id"]] = s.get("name") or s["id"]
 
     rows_out = []
+    skipped = 0
     for c in fetch_dicts(conn, sql):
         num = c.get("number")
         num_str = str(int(num)) if num is not None else None
         ill = c.get("illustrator") or None
         sid = c.get("set_id") or None
+        if ptcgdb_twin_id(sid, num_str) in ptcgdb_ids:
+            skipped += 1
+            continue
         rows_out.append(
             {
                 "id": c["id"],
@@ -492,7 +545,7 @@ def push_japanese_cards(conn, sb, now_iso: str) -> int:
                 "last_seen_in_api": now_iso,
             }
         )
-    return batch_upsert(sb, "cards", rows_out)
+    return batch_upsert(sb, "cards", rows_out), skipped
 
 
 def push_ptcgdb_sets(conn, sb) -> int:
@@ -722,8 +775,15 @@ def _publish_all(conn, sb, now_iso: str, counts: dict[str, int]) -> dict:
     counts["cards (tcgdex Pocket)"] = push_pocket_cards(conn, sb, now_iso)
     print(f"  cards (tcgdex Pocket): {counts['cards (tcgdex Pocket)']} rows")
 
-    counts["cards (tcgdex Japanese)"] = push_japanese_cards(conn, sb, now_iso)
-    print(f"  cards (tcgdex Japanese): {counts['cards (tcgdex Japanese)']} rows")
+    ptcgdb_ids = fetch_published_ptcgdb_ids(sb)
+    if INCLUDE_PTCGDB:
+        ptcgdb_ids |= staged_ptcgdb_ids(conn)
+    if sb is None:
+        print("  (dry run: PTCG-db twins not checked; published IDs are read from Supabase)")
+    published, skipped = push_japanese_cards(conn, sb, now_iso, ptcgdb_ids)
+    counts["cards (tcgdex Japanese)"] = published
+    counts["tcgdex Japanese skipped (PTCG-db twin)"] = skipped
+    print(f"  cards (tcgdex Japanese): {published} rows; skipped {skipped} with a PTCG-db twin")
 
     ptcgdb = push_ptcgdb_if_requested(conn, sb, now_iso, INCLUDE_PTCGDB)
     if ptcgdb["included"]:
