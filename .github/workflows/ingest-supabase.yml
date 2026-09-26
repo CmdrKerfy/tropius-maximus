@@ -36,6 +36,8 @@ jobs:
     timeout-minutes: 350
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # Unbuffered output keeps the `tee`'d logs live, in order, and complete on a timeout kill.
+      PYTHONUNBUFFERED: "1"
     defaults:
       run:
         # Explicit bash enables pipefail, so `| tee` does not hide script failures.
@@ -128,6 +130,7 @@ jobs:
 
       # Artifacts are not masked like the live log, so scrub secret values first.
       - name: Redact secrets from logs
+        id: redact
         if: failure()
         env:
           REDACT_1: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -145,8 +148,9 @@ jobs:
               log.write_text(text, encoding="utf-8")
           PY
 
+      # Upload only scrubbed logs: skip if redaction itself failed.
       - name: Upload logs on failure
-        if: failure()
+        if: failure() && steps.redact.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: ingest-logs-${{ github.run_id }}-${{ github.run_attempt }}

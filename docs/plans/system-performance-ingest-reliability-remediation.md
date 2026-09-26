@@ -1,6 +1,6 @@
 # System performance, ingest, and reliability remediation
 
-**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`) and its migration **applied to production 2026-09-26**; **accepted** after the owner's post-apply check and signed-in move QA; pushed. 0B.3 v2-side hardening implemented 2026-09-26 and awaiting review; `main` sync not done. Phase 0C has not started.
+**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`) and its migration **applied to production 2026-09-26**; **accepted** after the owner's post-apply check and signed-in move QA; pushed. 0B.3 v2-side hardening committed (`954a5bd`) and **approved in review 2026-09-26**; `main` sync not done. Phase 0C has not started.
 **Created:** 2026-09-25  
 **Last reconciled:** 2026-09-26 against pushed `v2/supabase-migration` commit `bff91cc`; plan review corrections applied 2026-09-26 (see "Plan review 2026-09-26")
 **Primary branch:** `v2/supabase-migration`  
@@ -226,7 +226,7 @@ These changes do **not** complete Phase 0: the default branch is still old, refr
 
 ### 0B. Stabilize v2 and prepare an ingest-only default-branch sync
 
-**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 is accepted (2026-09-26). 0B.3 is pending.
+**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 is accepted (2026-09-26). 0B.3 v2-side work is approved in review (`954a5bd`); the `main` sync and a real Actions run are pending.
 
 Implement and review the following as separate, focused commits. Do not combine ingest maintenance, frontend filters, and default-branch synchronization into one change.
 
@@ -316,7 +316,7 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 
 #### 0B.3 Harden and recalculate the default-branch sync
 
-**Status:** v2-side hardening implemented 2026-09-26 (Claude Opus 5.5); awaiting review. The `main` sync has **not** happened and needs explicit owner approval.
+**Status:** v2-side hardening implemented 2026-09-26 (Claude Opus 5.5), committed `954a5bd`; **approved in review 2026-09-26** (see "Review" below). The `main` sync has **not** happened and needs explicit owner approval.
 
 - [x] Re-diff the complete ingest unit from current v2 HEAD against the **actual remote** `main` (local `main` may be stale):
   - `.github/workflows/ingest-supabase.yml`
@@ -379,6 +379,17 @@ Findings:
 - First scheduled run from `main` after the sync starts without cached progress (~3.5 h observed); within the 300-min step timeout, but a slow upstream could exceed it. It is resumable; a second run would finish the gaps.
 - The first `main` Pages run after the sync uses v2 `ingest.py` against the committed v1 `pokemon.duckdb` (additive tables only; empty Japanese tables will be created in it).
 - Loading new PTCG-db cards now requires running the push manually with `--include-ptcgdb`.
+
+**Review (2026-09-26, reviewing agent Claude Opus 5.5): APPROVED.**
+
+- HEAD verified `954a5bd`; remote `main` verified `2e5543a` (matches the re-diff). Commit touches only the two workflows, `ingest.py`, `push_duckdb_to_supabase.py`, their tests, and docs — no `src/`, `package*.json`, or `supabase/` changes.
+- Reran: `test_ingest.py` 14 OK, `test_push_duckdb_to_supabase.py` 30 OK, `test_jpn_card_key.py` passed, `npm run check:quick` exit 0.
+- Workflow logic checked: push gated on `steps.ingest.outcome == 'success'`; cache save still `always() && outcome != 'skipped'`; step timeouts 300/45 under job 350 (< 360 cap); concurrency group shared, non-cancelling; `shell: bash` gives `-eo pipefail` (simulated locally: failing script detected through `tee` in both the retry loop and push step); redaction runs before upload and skips empty secrets; PTCG-db publish needs `--include-ptcgdb` (`ingest.py --push-supabase` never passes it, so it stays off); v1 `deploy-pages.yml` uses `--clear-failed --skip-japanese` without `--fail-on-partial`. `actions/upload-artifact@v7` tag exists.
+- All nine checked 0B.3 boxes verified against the diff.
+- Non-blocking hardening (owner-approved and **applied 2026-09-26** in `ingest-supabase.yml`; YAML re-parsed):
+  1. If the redaction step itself errors, `Upload logs on failure` still runs (`failure()` stays true) and would upload unscrubbed logs. Applied: `id: redact` on the redaction step and `if: failure() && steps.redact.outcome == 'success'` on the upload.
+  2. Python stdout is block-buffered when piped to `tee`: live logs lag, stdout/stderr interleave out of order in artifacts, and unflushed output is lost on a step-timeout kill. Applied: `PYTHONUNBUFFERED: "1"` in the job `env`.
+- Watch on the first real run (not defects): a timed-out ingest step should show outcome `failure` and still save the cache; if ingest ends near 300 min and push is slow, the 350-min job cap could cancel the push before the view refresh (upserts are idempotent; `failure()` steps do not run on cancellation).
 
 **Proposed `main` sync (not executed; needs explicit owner approval):** one commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
 
@@ -837,4 +848,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.3 v2-side hardening is implemented and awaiting owner review (see 0B.3). Next single step: owner reviews the 0B.3 commit, then decides (a) whether to validate the new workflow with a v2 `workflow_dispatch` first (writes to production Supabase; needs approval) and (b) whether to authorize the ingest-only sync to `main` exactly as listed under "Proposed `main` sync". Then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.3 v2-side hardening (`954a5bd`) is approved in review (see 0B.3 "Review"). Both review hardening fixes are applied. Next single step: owner decides (a) whether to validate the new workflow with a v2 `workflow_dispatch` first (writes to production Supabase; needs approval) and (b) whether to authorize the ingest-only sync to `main` exactly as listed under "Proposed `main` sync". Then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

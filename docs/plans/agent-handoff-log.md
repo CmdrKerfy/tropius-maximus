@@ -49,6 +49,17 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.3 review: APPROVED
+
+- Preflight: model Claude Opus 5.5; token feasibility likely; scope full (review only).
+- Branch: `v2/supabase-migration` at `954a5bd` (verified). Plan: `docs/plans/system-performance-ingest-reliability-remediation.md` (0B.3 "Review").
+- Completed: reviewed `git show 954a5bd`; verified all nine checked 0B.3 boxes; confirmed remote `main` = `2e5543a`; checked publish gate, timeouts (300/45/350), concurrency, `bash` pipefail + `tee` (simulated), redaction-before-upload, PTCG-db opt-in, v1 `--skip-japanese`.
+- Validation: `test_ingest.py` 14 OK; `test_push_duckdb_to_supabase.py` 30 OK; `test_jpn_card_key.py` pass; `npm run check:quick` exit 0.
+- Migrations touched: none.
+- Review fixes (owner-approved, applied, committed with the review notes): upload log artifact only if redaction succeeded; `PYTHONUNBUFFERED=1` in the job env.
+- Open risks: workflow still unexercised by a real Actions run. Nothing pushed, dispatched, or synced to `main`.
+- Next action: owner decides on a v2 `workflow_dispatch` validation run (writes to production Supabase), then on the ingest-only `main` sync listed under 0B.3 "Proposed `main` sync".
+
 ### 2026-09-26 (local) - Phase 0B.3 v2-side hardening (awaiting review)
 
 - Preflight sent and accepted:
