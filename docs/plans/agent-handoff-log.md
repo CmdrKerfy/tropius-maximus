@@ -49,6 +49,23 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Step 3 warm ingest verified; 2C/2E applied
+
+- Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `b086039`, remote `main` `e4bddef`.
+- Scope: step 3 and step 4 (migrations) of "Exact next action" in `docs/plans/system-performance-ingest-reliability-remediation.md`, plus parallel items the owner picked.
+- Completed:
+  - Owner-approved dispatch: run `36280555247` on `main` `e4bddef` succeeded in 3.5 min (warm cache). Verified read-only: no collisions; 0 unchanged (first fingerprinted run); pokemontcg.io 20,670 = published; English Neo set names in the TCG filter; `ja-neo1`…`ja-neo4` with 323 cards; `api_hash` filled on all 27,480 published rows. Details are in "Step 3 result".
+  - Owner-approved: 2C (`20260926223550`) and 2E (`20260926223742`) applied as SQL through the Supabase MCP tool after the run finished. Header checks passed: 3 functions are service_role/postgres only; partitions through 2028_q3, RLS on, 4 indexes each.
+  - Owner decision: the 2 anonymous `auth.users` rows are verified users and stay.
+  - v2 `b086039` pushed.
+  - Owner-approved `main` sync of the push script + its test (identical to v2 `b086039`; push 61 OK, ingest 14 OK, parity passed in a temporary `main` worktree): `main` `94da8f1`. Pages rebuild `36281141305` was triggered.
+  - Playwright hang diagnosed: `@playwright/test` 1.49.1 plus local Node 25.9.0 hangs on any `.mjs` config; 1.63.0 works. CI (Node 24) is unaffected. No repo change yet.
+- Validation: SQL checks above; isolated scratchpad repro for Playwright. No app code changed.
+- Migrations touched: `20260926223550_…` and `20260926223742_…`, now applied.
+- Open risks:
+  - The 2026-09-28 07:30 UTC run is the first "mostly unchanged" run; check its summary, including the new `ensure_edit_history_partitions` row.
+- Next action: ask the owner to approve bumping `@playwright/test` to ^1.63 on v2 and installing its Chromium (the step in "Exact next action").
+
 ### 2026-09-26 (local) - Neo repair applied and verified
 
 - Scope: step 2 of "Exact next action" in `docs/plans/system-performance-ingest-reliability-remediation.md`.

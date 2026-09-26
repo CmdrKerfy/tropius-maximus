@@ -543,7 +543,7 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - [ ] Add an `ingest_run_id` and source-level run manifest.
 - [ ] Track when each row was actually observed upstream.
 - [ ] Update `last_seen_in_api` only for rows fetched in the current successful source run.
-- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately. **Implemented 2026-09-26 (v2 `6746bfc`, `main` `e4bddef`); migration applied 2026-09-26 — see "Publication gate" under 1B. First fingerprinted push pending.**
+- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately. **Implemented 2026-09-26 (v2 `6746bfc`, `main` `e4bddef`); migration applied 2026-09-26 — see "Publication gate" under 1B. First fingerprinted push done 2026-09-26 (run `36280555247`); the next run should show mostly "unchanged".**
 - [x] Replace whole-source “table nonempty” skipping for Pocket/Japanese with missing-card-ID reconciliation. (`4493d76`; correction/full-refresh policy remains below.)
 - [ ] Count only non-custom cards when deciding whether an English set is complete.
 - [ ] Define periodic full-refresh cadence for corrections to prices, rarity, names, and images.
@@ -629,6 +629,8 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
   - fills every fingerprint. That first run is a full rewrite once, so expect the refresh to need retries.
 
   Expected afterwards: pokemontcg.io = published count, no collisions reported, and the TCG set filter shows English Neo names.
+
+  **Result (run `36280555247`, `main` `e4bddef`, verified 2026-09-26 ~23:53 UTC, read-only):** all as expected. See "Step 3 result" under "Exact next action".
 
 ### 1C. Add robust retries and atomic boundaries
 
@@ -760,7 +762,7 @@ Create separate migrations for each subsection.
 ### 2C. Harden privileged functions
 
 - [x] Inspect actual function ACLs, including implicit `PUBLIC` execution. (2026-09-26, read-only)
-- [ ] Revoke authenticated/anon execution from maintenance refresh and analyze functions. (Migration written and tested locally; not applied.)
+- [x] Revoke authenticated/anon execution from maintenance refresh and analyze functions. (Applied 2026-09-26 23:53 UTC; see below.)
 - [ ] Move privileged helpers out of exposed schema when practical.
 - [x] Retain only intentional anonymous access for public sharing. (`get_public_card_for_share` unchanged.)
 
@@ -774,7 +776,9 @@ Create separate migrations for each subsection.
 - Callers: only `push_duckdb_to_supabase.py` (service key) calls the two maintenance functions. No other function body references the three; `pg_cron` is not installed; owner is `postgres`.
 - SECURITY INVOKER RPCs remain callable by anon, but RLS rejects anonymous sessions (2B/2D territory).
 
-**Migration `supabase/migrations/20260926223550_revoke_client_execute_privileged_functions.sql` (not applied):** revokes EXECUTE on the three functions from `PUBLIC, anon, authenticated`, grants `service_role`, and notifies PostgREST. The function and index of `get_card_names_by_source` stay; removing them is Phase 5. Tested on a throwaway local Postgres 18: anon/authenticated false, service_role true, and an anon call gets `permission denied`. Safe to apply at any time; it does not affect the push, which uses the service key. The post-apply check query is in the file header. Note for future migrations: because of the default ACL, each new privileged function must revoke explicitly (as 2E does).
+**Migration `supabase/migrations/20260926223550_revoke_client_execute_privileged_functions.sql` (applied 2026-09-26 ~23:53 UTC, owner-approved, as SQL via the Supabase MCP tool after run `36280555247` finished):** revokes EXECUTE on the three functions from `PUBLIC, anon, authenticated`, grants `service_role`, and notifies PostgREST. The function and index of `get_card_names_by_source` stay; removing them is Phase 5. Tested on a throwaway local Postgres 18: anon/authenticated false, service_role true, and an anon call gets `permission denied`. Safe to apply at any time; it does not affect the push, which uses the service key. The post-apply check query is in the file header. Note for future migrations: because of the default ACL, each new privileged function must revoke explicitly (as 2E does).
+
+**Post-apply check (2026-09-26):** all three functions `anon_x=false`, `auth_x=false`, `svc_x=true`; `proacl` `{postgres=X/postgres,service_role=X/postgres}`.
 
 ### 2D. Make audit writes server-authoritative
 
@@ -785,14 +789,14 @@ Create separate migrations for each subsection.
 
 ### 2E. Automate edit-history partitions
 
-- [ ] Create partitions beyond 2027-Q2. (Migration written and tested locally; not applied.)
-- [ ] Add a scheduled or deployment-time partition creation mechanism. (Weekly push call on v2; needs a `main` sync.)
-- [ ] Add an alert/check when less than two future quarters remain. (Same.)
+- [x] Create partitions beyond 2027-Q2. (Applied 2026-09-26 ~23:54 UTC; through 2028-Q3.)
+- [x] Add a scheduled or deployment-time partition creation mechanism. (Weekly push call; on `main` since `94da8f1`.)
+- [x] Add an alert/check when less than two future quarters remain. (Same; `::warning` in the push.)
 - [ ] Add an `edited_at DESC` index only after authenticated EXPLAIN confirms need.
 
 **Baseline (2026-09-26, read-only):** six partitions 2026-Q1…2027-Q2 with UTC bounds and no DEFAULT partition. 518 rows, newest 2026-05-16. Each partition has RLS on with no policies (the policies live on the parent), which blocks direct API access; the `ensure_rls` event trigger enables RLS on new `public` tables but swallows its own errors. Each partition inherits 4 indexes. Without new partitions, every annotation save fails from 2027-07-01, because saves write history in the same transaction.
 
-**Migration `supabase/migrations/20260926223742_edit_history_partition_maintenance.sql` (not applied):**
+**Migration `supabase/migrations/20260926223742_edit_history_partition_maintenance.sql` (applied 2026-09-26 ~23:54 UTC, owner-approved, as SQL via the Supabase MCP tool; no workflow running):**
 - `ensure_edit_history_partitions(p_quarters_ahead int DEFAULT 4) RETURNS jsonb`:
   - creates any missing `edit_history_<yyyy>_q<n>` from the current UTC quarter through current + N, with UTC bounds, and enables RLS on each explicitly;
   - returns `{created, horizon, future_quarters}`;
@@ -811,6 +815,8 @@ Create separate migrations for each subsection.
 - It adds a row to the step-summary maintenance table.
 - It emits `::warning` when the call fails (including "function missing" before the migration is applied) or when fewer than 2 future quarters remain.
 - 4 new tests; push suite 61 OK.
+
+**Post-apply check (2026-09-26):** the one-time call returned `created` 2027_q3…2028_q3, `horizon` 2028-10-01, `future_quarters` 8. 11 partitions 2026_q1…2028_q3, all `rls = true` with 4 indexes, contiguous UTC bounds. `ensure_edit_history_partitions(integer)`: `anon_x=false`, `auth_x=false`, `svc_x=true`.
 
 Validation:
 
@@ -1060,48 +1066,27 @@ Acceptance:
 
 ## Exact next action
 
-Done 2026-09-26 (owner-approved): steps 2–4 of the gate rollout.
-- v2 `6746bfc` pushed: gate, migration, tests, docs.
-- Migration `20260926220844_cards_api_hash.sql` applied as SQL by the owner and verified (1B "Publication gate").
-- `main` `e4bddef` pushed (`ab2e3b6..e4bddef`). It contains `push_duckdb_to_supabase.py` + its test only, identical to v2 `6746bfc`. Tests 57/14/parity passed in the `main` tree. Pages rebuild `36276305809` was triggered.
+History of the gate rollout, 0C, the search RLS fix and the Neo repair (all 2026-09-26) is in `docs/plans/agent-handoff-log.md` and in the 0C, 1B, 2C, 2E, 4C, 3D and Phase 5 sections above.
 
-0C run `36274892062` (dispatched on `main` `ab2e3b6`, old script, cold cache) was still in the ingest step at 22:35 UTC, with about 3.5 h expected. It keeps the old script, so it will overwrite the Neo rows again and will not fill `api_hash`.
+Done 2026-09-26 (owner-approved each):
+1. 0C verification; search RLS fix (owner confirmed search "much improved").
+2. Neo repair (1B "Production repair").
+3. **Step 3 result:** warm run `36280555247` on `main` `e4bddef` (new script) succeeded 23:48:00–23:51:30 UTC. Ingest 26 s (cache warm), push 2 m 42 s. Verified read-only:
+   - no collisions reported (no `::warning` besides the runner-image notice);
+   - 0 unchanged (first fingerprinted run, full rewrite as expected); refresh 20.8 s and ANALYZE 31.0 s, both 1 attempt;
+   - pokemontcg.io **20,670 = published 20,670** (the 14-row gap is closed: `neo4-100` "Lucky Stadium", `neo4-113` "Shining Tyranitar", both `pokemontcg.io`);
+   - `neo1`–`neo4` sets: `pokemontcg.io`, English names (Neo Genesis/Discovery/Revelation/Destiny), series "Neo"; 111/75/66/113 cards, 0 Japanese;
+   - `ja-neo1`…`ja-neo4`: tcgdex, 96/57/57/113 = 323 Japanese cards;
+   - `api_hash` filled on all 20,670 + 2,480 Pocket + 4,330 tcgdex Japanese; ptcgdb 19,705 and manual 12,041 stay NULL (not published);
+   - `explore_filter_options`: tcg 259 sets (English Neo names), japanese 393 (was 389; +4 `ja-neo*`, visible by owner decision), pocket 15, custom 81.
+4. 2C and 2E migrations applied as SQL (Supabase MCP) right after the run; header checks passed (see 2C/2E "Post-apply check").
+- Owner decision: the 2 anonymous `auth.users` rows are verified users and **stay**. Closed.
+- v2 `b086039` (Neo repair record) pushed.
+- Local Playwright hang diagnosed: `@playwright/test` 1.49.1 hangs loading any `.mjs` config under the local Node v25.9.0 (a minimal `.cjs` config lists fine; a minimal `.mjs` config hangs). 1.63.0 lists the same `.mjs` config immediately. CI uses Node 24, so CI is unaffected. Fix = bump `@playwright/test` (4D) + `npx playwright install chromium`, or run locally on Node 24.
 
-Done 2026-09-26 while run `36274892062` ingests (v2 working tree, uncommitted):
-- Step 4 decided: keep Japanese Neo visible (1B "Publication gate").
-- 2C ACL audit and revoke migration `20260926223550_…` (not applied).
-- 2E partition migration `20260926223742_…` and weekly push check (not applied; push change is v2 only).
-- Tests: push 61 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Both migrations were exercised on a throwaway local Postgres 18.
-- Committed and pushed as v2 `abab818`.
-- Then 4C (`vercel.json` immutable `/assets/*`, `no-cache` HTML) and 3D (sort options, short-search message and stuck skeleton, Card Detail arrows, dialog semantics and focus, eager first grid row): v2 `06f3927`, pushed and deployed to Vercel Production. See the 4C and 3D sections. Owner: a quick signed-in check of Explore sort, a 2-letter search, and Card Detail.
-- Open: the local Playwright runner hangs (even `--list`); diagnose before relying on `npm run check`.
+- Owner-approved `main` sync: `scripts/push_duckdb_to_supabase.py` + its test copied from v2 `b086039` (identical), tested in a temporary `main` worktree (push 61 OK, ingest 14 OK, parity passed), and pushed as `main` `94da8f1` (`e4bddef..94da8f1`). The Pages rebuild `36281141305` was triggered by the push.
 
-Done 2026-09-26 23:35 UTC:
-- Run `36274892062` succeeded. 0C verification passed: see "0C result" in 0C.
-- Search RLS fix applied by the owner, and the Explore count label fixed. See Phase 5 "Search RLS fix".
-- Committed and pushed to v2 with the plan and handoff updates.
+Next step, needing owner approval (plain-English summary with the ask):
+1. Bump `@playwright/test` to ^1.63 on v2 and install its Chromium; confirm `npx playwright test --list` and `npm run check`.
 
-Done 2026-09-26 (after 23:35 UTC): Neo repair.
-- The owner ran the guarded Neo repair (1B "Production repair" SQL) in the SQL editor. Preconditions were re-verified read-only first: 323 Japanese rows, no references from annotations, edit_history, batch_selections, or workbench_queues, and no workflow running.
-- Verified afterwards:
-  - 0 tcgdex Japanese cards in `neo1`–`neo4`;
-  - the 351 other Neo cards are untouched;
-  - all 4 Neo set rows are `origin='pokemontcg.io'`;
-  - tcgdex total is 6,487.
-- The set names are still Japanese (`金、銀、新世界へ...` etc.) until the step 3 push rewrites them. That is expected.
-
-Next steps, each needing owner approval (plain-English summary with each ask):
-1. (Done: 0C verification; owner confirmed search "much improved".) Decide whether to delete the 2 anonymous `auth.users` rows.
-2. (Done: Neo repair, see above.)
-3. Dispatch a warm `main` ingest (new script) and verify:
-   - no collisions reported;
-   - "unchanged" is about 0 (the first fingerprinted run rewrites everything, so expect refresh retries);
-   - pokemontcg.io equals the published count;
-   - English Neo names in the TCG set filter;
-   - `ja-neo1`…`ja-neo4` present with 323 cards;
-   - `api_hash` filled.
-4. (2C/2E are already committed as v2 `abab818`.) With separate approvals:
-   - apply the 2C and 2E migrations as SQL (owner in the SQL editor if blocked) and run the check queries in their headers;
-   - sync `scripts/push_duckdb_to_supabase.py` + its test to `main` (after step 3, so the warm run is not disturbed).
-
-Also watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC, now with the new script, so it should be mostly "unchanged" if step 3 ran first). Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+Watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC). The Supabase run should report mostly "unchanged" cards and an `ensure_edit_history_partitions` row with `future_quarters` 8 (or 7 after 2026-10-01) and nothing created. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
