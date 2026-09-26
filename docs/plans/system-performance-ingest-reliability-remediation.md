@@ -535,7 +535,7 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - [ ] Add an `ingest_run_id` and source-level run manifest.
 - [ ] Track when each row was actually observed upstream.
 - [ ] Update `last_seen_in_api` only for rows fetched in the current successful source run.
-- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately.
+- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately. **Implemented 2026-09-26 on v2; migration not applied — see "Publication gate" under 1B.**
 - [x] Replace whole-source “table nonempty” skipping for Pocket/Japanese with missing-card-ID reconciliation. (`4493d76`; correction/full-refresh policy remains below.)
 - [ ] Count only non-custom cards when deciding whether an English set is complete.
 - [ ] Define periodic full-refresh cadence for corrections to prices, rarity, names, and images.
@@ -557,6 +557,70 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - Fix `ee01e4b` (pushed): before publishing TCGdex Japanese rows, read published PTCG-db IDs from Supabase (keyset-paged, 1,000/page) plus staged IDs under `--include-ptcgdb`; skip any row whose twin ID `ptcgdb-<lower(set_id)>-<normalized number>` (same rule as `ingest.py`) matches. Skipped count is logged and appears in the step summary as "tcgdex Japanese skipped (PTCG-db twin)". Dry run cannot check twins (no client) and says so. 7 new tests (push suite 37 OK); `npm run check:quick` exit 0.
 - Production cleanup (owner-approved): verified 0 annotations / edit_history / batch_selections / workbench_queues references; the only FK to `cards` is annotations. Guarded `DO` block deleted exactly 8,451 unannotated `tcgdex` twins (aborts on any other count). After: tcgdex Japanese 4,330, ptcgdb 19,705, Pocket 2,480 (unchanged). Ran `refresh_explore_filter_options()` and `analyze_cards_and_annotations()`. 107 TCGdex Japanese `sets` rows now have no cards; they are not shown in Explore because the view builds Japanese set options only from sets with cards. No backup table (rows are reproducible API data).
 - Expected on the next push: "tcgdex Japanese skipped (PTCG-db twin)" ≈ 8,451, tcgdex Japanese published ≈ 4,330.
+
+**English/Japanese Neo ID collision (found 2026-09-26 while explaining the 14-row gap; read-only, not fixed):**
+
+- **Symptom:** run `36273193023` published 20,670 pokemontcg.io cards, but production has 20,656.
+- **Cause:** TCGdex Japanese uses the same set IDs `neo1`–`neo4` as the English Neo sets. Japanese card numbers are zero-padded (`neo4-001`), so only numbers ≥100 collide: `neo4-100`…`neo4-113` (English Neo Destiny 100–113). The push sends English rows first, then Japanese rows, and both are plain primary-key upserts. So on every push, the Japanese rows overwrite:
+  - those 14 English cards (now `origin='tcgdex'`, `origin_detail='japanese'`, with Japanese names);
+  - the four `sets` rows `neo1`–`neo4` (now `origin='tcgdex'`, with Japanese names and no series).
+- **User-visible effects:**
+  - Explore's **TCG** set filter lists Neo Genesis, Discovery, Revelation and Destiny under their Japanese names (`金、銀、新世界へ...` etc.).
+  - English Neo Destiny is missing 14 cards.
+  - The 323 Japanese Neo cards (96/57/57/113) have no entry in the Japanese set filter.
+- **Annotations:** the 14 overwritten rows and the other Japanese Neo cards have none; the English Neo cards have 24 (on non-colliding IDs).
+- **Local check** (May DuckDB snapshot): no other set or card ID collisions between TCG, TCGdex Japanese and Pocket.
+- **Prior workaround (found later):** `01e2976`/migration 045 hid Japanese `neo1`–`neo4` from Japanese/All views (`HIDDEN_JPN_SET_IDS` in `appAdapter.js`; `set_id NOT IN ('neo1'…)` in the filter view). There is no recorded rationale beyond the collision.
+
+**Publication gate + `ja-` namespacing (implemented 2026-09-26, owner-approved design; code on v2, not yet applied):**
+
+- **Migration** `supabase/migrations/20260926220844_cards_api_hash.sql`: `ALTER TABLE cards ADD COLUMN IF NOT EXISTS api_hash text` (nullable, no default, so it only changes the catalog; it takes a brief ACCESS EXCLUSIVE lock, so apply it while no push is running), a column comment, and `NOTIFY pgrst, 'reload schema'`. Not applied.
+- **`scripts/push_duckdb_to_supabase.py`:**
+  - `fetch_publish_gate` reads `id, origin, api_hash` for all cards and `id, origin` for all sets (keyset-paged, 1,000 per page; about 66 + 1 requests).
+  - `PublishGate` skips and reports any card or set whose ID is owned by another origin, including manual cards and IDs claimed earlier in the same run. It also skips cards whose SHA-256 fingerprint (the payload without `last_seen_in_api`) is unchanged, and adds `api_hash` to the rows it publishes.
+  - If the column is missing (42703/PGRST204 naming `api_hash`), it falls back to ownership checks only. Every row is then published, and the summary says "fingerprints off", so deploy order cannot break a run.
+  - Collisions go to a `::warning` annotation and to the step summary (first 20 IDs per source); unchanged counts go to the summary.
+  - The PTCG-db twin set now comes from the gate; `fetch_published_ptcgdb_ids` was removed.
+  - `japanese_set_id_map`: TCGdex Japanese sets whose upstream ID also exists in DuckDB `sets` (English) are published as `ja-<id>`, and their cards as `ja-<card id>` with `set_id` `ja-<id>`. **Deviation from the proposal ("in `ingest.py`"):** DuckDB keeps upstream IDs, because incremental ingest and image URLs use them; only the published IDs change. The twin check still uses the upstream set ID.
+  - `pokemon_metadata` is unchanged (plain upsert).
+- **Behavior changes:**
+  - `last_seen_in_api` is stamped only on rows actually published; nothing reads it (1A's run manifest replaces it).
+  - A manual card whose ID matches an API ID is no longer converted to an API card.
+  - An in-place edit to an API card column would no longer be reverted by the next push unless upstream changes. Phase 2B restricts card writes.
+  - **Japanese Neo becomes visible:** the `ja-neo*` sets and cards are not covered by `HIDDEN_JPN_SET_IDS` or the view's `neo1`–`neo4` exclusion, so they appear in Japanese/All views and the Japanese set filter. This is an owner decision: keep them visible (recommended; the hiding was a collision workaround, and the dead `neo*` hide list can be removed later) or add `ja-neo1`…`ja-neo4` to both.
+- **Validation:**
+  - `test_push_duckdb_to_supabase.py` 57 OK (19 new: fingerprint, gate collisions/unchanged/claims/sets, fallback, fatal read errors, dry run, namespacing, twin check on the upstream ID, summary and warning).
+  - `test_ingest.py` 14 OK; parity passed; `npm run check:quick` exit 0.
+  - A local dry run against the May DuckDB logged "Japanese sets published with the 'ja-' prefix: neo1, neo2, neo3, neo4".
+- **Production repair (not run; owner approval required; run only after the new script is on `main` and while no push is running).** Read-only preconditions checked 2026-09-26: `cards.set_id` has a foreign key to `sets(id)`, so the English Neo cards need the `neo1`–`neo4` set rows (return ownership; do not delete). The 323 Japanese Neo rows have 0 annotations, edit_history, Workbench or batch_selections references.
+
+  ```sql
+  DO $$
+  DECLARE v_cards int; v_sets int;
+  BEGIN
+    IF EXISTS (SELECT 1 FROM public.annotations a JOIN public.cards c ON c.id = a.card_id
+               WHERE c.origin = 'tcgdex' AND c.origin_detail = 'japanese'
+                 AND c.set_id IN ('neo1','neo2','neo3','neo4')) THEN
+      RAISE EXCEPTION 'Japanese Neo cards are annotated; aborting';
+    END IF;
+    DELETE FROM public.cards
+     WHERE origin = 'tcgdex' AND origin_detail = 'japanese' AND set_id IN ('neo1','neo2','neo3','neo4');
+    GET DIAGNOSTICS v_cards = ROW_COUNT;
+    IF v_cards <> 323 THEN RAISE EXCEPTION 'expected 323 Japanese Neo cards, found %', v_cards; END IF;
+    UPDATE public.sets SET origin = 'pokemontcg.io'
+     WHERE id IN ('neo1','neo2','neo3','neo4') AND origin = 'tcgdex';
+    GET DIAGNOSTICS v_sets = ROW_COUNT;
+    IF v_sets <> 4 THEN RAISE EXCEPTION 'expected 4 tcgdex-owned Neo set rows, found %', v_sets; END IF;
+  END $$;
+  ```
+
+  The next push (new script) then:
+  - rewrites the four set rows with English names and series (same origin now);
+  - inserts `neo4-100`…`neo4-113` as English cards;
+  - inserts `ja-neo1`…`ja-neo4` and their 323 cards;
+  - fills every fingerprint. That first run is a full rewrite once, so expect the refresh to need retries.
+
+  Expected afterwards: pokemontcg.io = published count, no collisions reported, and the TCG set filter shows English Neo names.
 
 ### 1C. Add robust retries and atomic boundaries
 
@@ -907,16 +971,15 @@ Acceptance:
 
 ## Exact next action
 
-The refresh-timeout headroom fix shipped: v2 `6766075` and `main` `ab2e3b6` (5 maintenance attempts, `(15, 30, 60, 120)` s backoff; diagnosis under 0B.3 "Refresh timeout headroom"). The owner chose the scheduled `main` run on 2026-09-28 07:30 UTC as the 0C run (cold cache, about 3.5 h).
+Done 2026-09-26: the refresh retry headroom is on v2 `6766075` and `main` `ab2e3b6`. Owner-approved `main` ingest dispatch run `36274892062` (0C run, cold cache) was still running at the time of writing. The 14-row gap is explained by the English/Japanese Neo ID collision (1B). The publication gate (fingerprints + collision guard) and `ja-` namespacing are implemented on v2, uncommitted, with migration `20260926220844_cards_api_hash.sql` not applied (1B "Publication gate").
 
-Next single step, after that run finishes (about 11:00 UTC or later):
-1. Complete the 0C checklist against the "Pre-run baseline" under 0C:
-   - `gh run list --workflow ingest-supabase.yml --branch main`, then read the run log;
-   - confirm ingest success, publication, refresh attempts and duration, and ANALYZE;
-   - confirm "tcgdex Japanese skipped (PTCG-db twin)" is about 8,451 and tcgdex Japanese published is about 4,330;
-   - run the read-only Supabase checks: counts by origin, newest `last_seen_in_api`, 0 Japanese twins, 4 view rows, and an authenticated representative Explore query;
-   - report Pocket coverage honestly (TCGdex stops at `B2a`).
-2. If the refresh needed 3 or more attempts, pull the Postgres logs for the refresh window.
-3. Then ask the owner for the 0C phase-gate sign-off.
+Next steps, each needing owner approval (plain-English summary with each ask):
+1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline". Expect pokemontcg.io 20,656 again: the old script on `main` re-overwrites the Neo rows.
+2. Commit the gate, migration, tests and docs on v2, then push.
+3. With no push running, apply `20260926220844_cards_api_hash.sql` as SQL (not `supabase db push`). Verify `api_hash` exists and PostgREST sees it.
+4. Sync `push_duckdb_to_supabase.py` and its test to `main`.
+5. Run the guarded Neo repair (1B).
+6. Dispatch a warm `main` ingest to publish the English Neo rows plus the `ja-` rows and fill fingerprints, then verify: no collisions; the unchanged count is about 0 on this run and about all rows on the one after.
+7. Owner decision: keep Japanese Neo visible (recommended) or extend the hide list.
 
-Also check the v1 Pages scheduled run at 06:00 UTC (`--skip-japanese`). Open question: pokemontcg.io has 20,656 rows in the database vs 20,670 published. Phase 1E.1–1E.3 (no-write) may start in parallel. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+Also watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC should be warm and, after step 4, mostly "unchanged"). Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

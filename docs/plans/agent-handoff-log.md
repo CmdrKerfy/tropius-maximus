@@ -49,6 +49,21 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - 0C run dispatched; Neo collision found; publication gate implemented (uncommitted)
+
+- Owner approved: `main` ingest dispatch (run `36274892062`, cold cache, in progress at the time of writing = 0C run); investigate the 14-row gap; implement "skip unchanged rows" with the collision guard and `ja-` Neo namespacing.
+- Found: TCGdex Japanese reuses `neo1`–`neo4`, so every push overwrites English `neo4-100`…`neo4-113` and the four English Neo `sets` rows. The TCG set filter shows Japanese names for the Neo sets. None of the affected rows are annotated. An earlier workaround hid Japanese Neo (`HIDDEN_JPN_SET_IDS`, migration 045).
+- Implemented (v2 working tree, uncommitted):
+  - migration `20260926220844_cards_api_hash.sql` (not applied);
+  - `PublishGate` in `push_duckdb_to_supabase.py`: fingerprints, collision skip + report, fallback without the column;
+  - `ja-` IDs for colliding Japanese sets at publish time (a deviation: not in `ingest.py`);
+  - 19 new tests;
+  - docs: 1A, 1B "Publication gate", "Exact next action".
+- Validation: push 57 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0, local dry run OK. Read-only preconditions for the Neo repair checked (FK to sets; 0 references to the 323 Japanese Neo rows).
+- Migrations touched: `20260926220844_cards_api_hash.sql` (written, not applied).
+- Open risks: the first run after the migration rewrites every row once; Japanese Neo becomes visible (owner decision); in-place API card edits are no longer reverted by the push.
+- Next action: after run `36274892062` finishes, do the 0C verification, then ask the owner for steps 2–6 in the plan's "Exact next action".
+
 ### 2026-09-26 (local) - Refresh headroom fix shipped to v2 and `main`; 0C = Monday scheduled run
 
 - The owner approved all three: v2 `6766075` pushed (`b252f80..6766075`); `main` sync `ab2e3b6` pushed (`ef0d0d6..ab2e3b6`; `push_duckdb_to_supabase.py` + its test only, identical to v2; tests 38/14/parity passed in the `main` tree; temp worktree removed). v1 Pages rebuild run `36274769225` was triggered by the push.

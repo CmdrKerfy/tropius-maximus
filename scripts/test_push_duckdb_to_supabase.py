@@ -422,11 +422,16 @@ def _tcgdex_japanese_db(tmp, rows):
     return duckdb.connect(db_path, read_only=True)
 
 
-class _PagedIdClient:
-    """Serves ``ids`` in sorted pages and records each query's filters."""
+class _PagedRowsClient:
+    """Serves each table's rows in ID order, one keyset page per query.
 
-    def __init__(self, ids):
-        self.ids = sorted(ids)
+    Selecting a column listed in ``missing_columns`` raises PostgREST's
+    undefined-column error, like a query against an unmigrated schema.
+    """
+
+    def __init__(self, tables, missing_columns=()):
+        self.tables = {name: sorted(rows, key=lambda r: r["id"]) for name, rows in tables.items()}
+        self.missing_columns = set(missing_columns)
         self.queries = []
 
     def table(self, name):
@@ -438,10 +443,6 @@ class _PagedIdClient:
 
             def select(self, cols):
                 self.filters["select"] = cols
-                return self
-
-            def eq(self, col, value):
-                self.filters[f"eq:{col}"] = value
                 return self
 
             def gt(self, col, value):
@@ -457,9 +458,14 @@ class _PagedIdClient:
 
             def execute(self):
                 client.queries.append(self.filters)
+                columns = self.filters["select"].split(",")
+                for col in columns:
+                    if col in client.missing_columns:
+                        raise APIError({"code": "42703", "message": f"column {name}.{col} does not exist"})
                 after = self.filters.get("gt:id")
-                rows = [i for i in client.ids if after is None or i > after][: self.filters["limit"]]
-                return type("Response", (), {"data": [{"id": i} for i in rows]})()
+                rows = [r for r in client.tables.get(name, []) if after is None or r["id"] > after]
+                page = [{c: r.get(c) for c in columns} for r in rows[: self.filters["limit"]]]
+                return type("Response", (), {"data": page})()
 
         return Query()
 
@@ -502,24 +508,25 @@ class TcgdexJapaneseTwinTests(unittest.TestCase):
             finally:
                 conn.close()
 
-    def test_published_ids_are_keyset_paged(self):
-        ids = [f"ptcgdb-s-{i:04d}" for i in range(5)]
-        client = _PagedIdClient(ids)
-        with patch.object(push, "PTCGDB_ID_PAGE_SIZE", 2):
-            result = push.fetch_published_ptcgdb_ids(client)
+    def test_existing_rows_are_keyset_paged(self):
+        ids = [f"card-{i:04d}" for i in range(5)]
+        client = _PagedRowsClient({"cards": [{"id": i, "origin": "tcgdex"} for i in ids]})
+        with patch.object(push, "EXISTING_PAGE_SIZE", 2):
+            rows = push.fetch_all_rows(client, "cards", "id,origin")
 
-        self.assertEqual(result, set(ids))
+        self.assertEqual([r["id"] for r in rows], ids)
         self.assertEqual([q.get("gt:id") for q in client.queries], [None, ids[1], ids[3]])
-        self.assertTrue(all(q["eq:origin"] == "ptcgdb" and q["select"] == "id" for q in client.queries))
+        self.assertTrue(all(q["select"] == "id,origin" for q in client.queries))
 
     def test_exact_page_multiple_ends_on_empty_page(self):
-        client = _PagedIdClient(["a", "b"])
-        with patch.object(push, "PTCGDB_ID_PAGE_SIZE", 2):
-            self.assertEqual(push.fetch_published_ptcgdb_ids(client), {"a", "b"})
+        client = _PagedRowsClient({"cards": [{"id": "a"}, {"id": "b"}]})
+        with patch.object(push, "EXISTING_PAGE_SIZE", 2):
+            self.assertEqual(len(push.fetch_all_rows(client, "cards", "id")), 2)
         self.assertEqual(len(client.queries), 2)
 
-    def test_dry_run_has_no_published_ids(self):
-        self.assertEqual(push.fetch_published_ptcgdb_ids(None), set())
+    def test_published_ptcgdb_ids_come_from_the_gate(self):
+        gate = push.PublishGate({"ptcgdb-sv4a-5": ("ptcgdb", None), "SV4a-006": ("tcgdex", None)})
+        self.assertEqual(gate.ids_with_origin("ptcgdb"), {"ptcgdb-sv4a-5"})
 
     def test_staged_ids_exclude_custom_rows_and_missing_table(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -616,6 +623,189 @@ class StepSummaryTests(unittest.TestCase):
             self.assertEqual(path.read_text(), "one\ntwo\n")
         with patch.dict("os.environ", {}, clear=True):
             push.write_step_summary("ignored")  # no env var: no-op, no error
+
+
+def _card(card_id, origin="pokemontcg.io", name="Pikachu", **extra):
+    return {"id": card_id, "name": name, "origin": origin, "last_seen_in_api": "run-1", **extra}
+
+
+class ApiHashTests(unittest.TestCase):
+    def test_ignores_observation_stamp_and_key_order(self):
+        a = {"id": "x", "name": "A", "raw_data": {"b": 1, "a": [1.5, "ポ"]}, "last_seen_in_api": "t1"}
+        b = {"last_seen_in_api": "t2", "raw_data": {"a": [1.5, "ポ"], "b": 1}, "name": "A", "id": "x"}
+        self.assertEqual(push.api_hash(a), push.api_hash(b))
+
+    def test_changes_with_content(self):
+        self.assertNotEqual(push.api_hash(_card("x")), push.api_hash(_card("x", name="Raichu")))
+        self.assertNotEqual(push.api_hash(_card("x")), push.api_hash(_card("x", prices={"usd": 1.0})))
+
+
+class PublishGateTests(unittest.TestCase):
+    def test_card_owned_by_another_origin_is_skipped_and_reported(self):
+        gate = push.PublishGate({"xyp-JP279": ("manual", None)}, hashes=True)
+        out = gate.filter_cards("cards (pokemontcg.io)", [_card("xyp-JP279"), _card("sv1-1")])
+        self.assertEqual([r["id"] for r in out], ["sv1-1"])
+        self.assertEqual(gate.collisions, {"cards (pokemontcg.io)": ["xyp-JP279"]})
+
+    def test_unchanged_cards_are_skipped_and_changed_or_new_cards_carry_the_hash(self):
+        same, changed = _card("a"), _card("b", name="New name")
+        gate = push.PublishGate(
+            {"a": ("pokemontcg.io", push.api_hash(same)), "b": ("pokemontcg.io", "old-hash")}, hashes=True
+        )
+        out = gate.filter_cards("cards (pokemontcg.io)", [{**same, "last_seen_in_api": "run-2"}, changed, _card("c")])
+        self.assertEqual([r["id"] for r in out], ["b", "c"])
+        self.assertEqual(out[0]["api_hash"], push.api_hash(changed))
+        self.assertEqual(gate.unchanged, {"cards (pokemontcg.io)": 1})
+
+    def test_rows_without_a_stored_hash_are_published(self):
+        gate = push.PublishGate({"a": ("pokemontcg.io", None)}, hashes=True)
+        self.assertEqual(len(gate.filter_cards("cards", [_card("a")])), 1)
+
+    def test_without_the_hash_column_every_row_is_published_without_api_hash(self):
+        row = _card("a")
+        gate = push.PublishGate({"a": ("pokemontcg.io", push.api_hash(row))}, hashes=False)
+        out = gate.filter_cards("cards", [row])
+        self.assertEqual(out, [row])
+        self.assertEqual(gate.unchanged, {})
+
+    def test_ids_published_earlier_in_the_run_are_claimed(self):
+        gate = push.PublishGate(hashes=True)
+        gate.filter_cards("cards (pokemontcg.io)", [_card("neo4-100")])
+        out = gate.filter_cards("cards (tcgdex Japanese)", [_card("neo4-100", origin="tcgdex")])
+        self.assertEqual(out, [])
+        self.assertEqual(gate.collisions, {"cards (tcgdex Japanese)": ["neo4-100"]})
+
+    def test_set_owned_by_another_origin_is_skipped(self):
+        gate = push.PublishGate(sets={"neo1": "tcgdex"})
+        rows = [{"id": "neo1", "origin": "pokemontcg.io"}, {"id": "base1", "origin": "pokemontcg.io"}]
+        self.assertEqual([r["id"] for r in gate.filter_sets("sets (TCG)", rows)], ["base1"])
+        self.assertEqual(gate.collisions, {"sets (TCG)": ["neo1"]})
+
+    def test_empty_gate_publishes_everything(self):
+        gate = push.PublishGate()
+        self.assertEqual(len(gate.filter_cards("cards", [_card("a"), _card("b")])), 2)
+        self.assertEqual((gate.collisions, gate.unchanged), ({}, {}))
+
+
+class FetchPublishGateTests(unittest.TestCase):
+    def test_reads_ownership_and_hashes(self):
+        client = _PagedRowsClient(
+            {
+                "cards": [{"id": "a", "origin": "manual", "api_hash": None}, {"id": "b", "origin": "tcgdex", "api_hash": "h"}],
+                "sets": [{"id": "neo1", "origin": "tcgdex"}],
+            }
+        )
+        with patch("builtins.print"):
+            gate = push.fetch_publish_gate(client)
+        self.assertTrue(gate.hashes)
+        self.assertEqual(gate.cards, {"a": ("manual", None), "b": ("tcgdex", "h")})
+        self.assertEqual(gate.sets, {"neo1": "tcgdex"})
+
+    def test_falls_back_to_ownership_only_before_the_migration(self):
+        client = _PagedRowsClient(
+            {"cards": [{"id": "a", "origin": "manual"}], "sets": []}, missing_columns={"api_hash"}
+        )
+        with patch("builtins.print") as printed:
+            gate = push.fetch_publish_gate(client)
+        self.assertFalse(gate.hashes)
+        self.assertEqual(gate.cards, {"a": ("manual", None)})
+        self.assertTrue(any("api_hash not found" in str(c.args[0]) for c in printed.call_args_list))
+
+    def test_other_read_errors_are_fatal(self):
+        client = _PagedRowsClient({"cards": [], "sets": []}, missing_columns={"origin"})
+        with patch("builtins.print"), self.assertRaises(APIError):
+            push.fetch_publish_gate(client)
+
+    def test_dry_run_gate_is_empty(self):
+        with patch("builtins.print"):
+            gate = push.fetch_publish_gate(None)
+        self.assertEqual((gate.cards, gate.sets, gate.hashes), ({}, {}, False))
+
+
+class JapaneseSetNamespaceTests(unittest.TestCase):
+    def _db(self, tmp):
+        conn = _tcgdex_japanese_db(
+            tmp,
+            [("neo4-100", "neo4", 100, False), ("neo4-001", "neo4", 1, False), ("SV4a-005", "SV4a", 5, False)],
+        )
+        conn.close()
+        path = str(Path(tmp) / "japanese.duckdb")
+        rw = duckdb.connect(path)
+        try:
+            rw.execute("CREATE TABLE sets (id VARCHAR PRIMARY KEY, name VARCHAR)")
+            rw.execute("INSERT INTO sets VALUES ('neo4', 'Neo Destiny'), ('sv4', 'Paradox Rift')")
+            rw.execute("INSERT INTO japanese_sets VALUES ('neo4', '闇、そして光へ...'), ('SV4a', 'シャイニートレジャーex')")
+        finally:
+            rw.close()
+        return duckdb.connect(path, read_only=True)
+
+    def test_only_sets_sharing_an_english_id_are_prefixed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = self._db(tmp)
+            try:
+                self.assertEqual(push.japanese_set_id_map(conn), {"neo4": "ja-neo4"})
+            finally:
+                conn.close()
+
+    def test_cards_and_sets_in_prefixed_sets_get_ja_ids(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = self._db(tmp)
+            client = _FakeClient(max_rows=1000)
+            captured = []
+            original = push.batch_upsert
+            try:
+                with patch.object(push, "batch_upsert", side_effect=lambda sb, t, rows: captured.append((t, rows)) or original(sb, t, rows)):
+                    set_map = push.japanese_set_id_map(conn)
+                    gate = push.PublishGate({"neo4-100": ("pokemontcg.io", "h")}, {"neo4": "pokemontcg.io"}, hashes=True)
+                    push.push_japanese_sets(conn, client, gate, set_map)
+                    published, skipped = push.push_japanese_cards(conn, client, "now", set(), gate, set_map)
+            finally:
+                conn.close()
+
+        sets_rows = dict(captured)["sets"]
+        cards_rows = dict(captured)["cards"]
+        self.assertEqual(sorted(r["id"] for r in sets_rows), ["SV4a", "ja-neo4"])
+        self.assertEqual(sorted(r["id"] for r in cards_rows), ["SV4a-005", "ja-neo4-001", "ja-neo4-100"])
+        self.assertEqual({r["set_id"] for r in cards_rows if r["id"].startswith("ja-")}, {"ja-neo4"})
+        self.assertEqual({r["set_name"] for r in cards_rows if r["id"].startswith("ja-")}, {"闇、そして光へ..."})
+        self.assertEqual((published, skipped), (3, 0))
+        self.assertEqual(gate.collisions, {})  # the English neo4 rows are left alone
+
+    def test_twin_check_uses_the_upstream_set_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = self._db(tmp)
+            try:
+                published, skipped = push.push_japanese_cards(
+                    conn, _FakeClient(max_rows=1000), "now", {"ptcgdb-neo4-100"}, None, push.japanese_set_id_map(conn)
+                )
+            finally:
+                conn.close()
+        self.assertEqual((published, skipped), (2, 1))
+
+
+class GateSummaryTests(unittest.TestCase):
+    def test_summary_lists_unchanged_rows_and_collisions(self):
+        gate = push.PublishGate(hashes=True)
+        gate.unchanged = {"cards (pokemontcg.io)": 20656}
+        gate.collisions = {"cards (pokemontcg.io)": [f"neo4-{n}" for n in range(100, 125)]}
+        text = push.format_push_summary({"cards (pokemontcg.io)": 0}, None, 30.0, {}, gate)
+        self.assertIn("Card fingerprints: on", text)
+        self.assertIn("| cards (pokemontcg.io) unchanged (skipped) | 20,656 |", text)
+        self.assertIn("- cards (pokemontcg.io): 25 — `neo4-100`", text)
+        self.assertIn("(+5 more)", text)
+
+    def test_summary_flags_missing_fingerprint_column(self):
+        text = push.format_push_summary({}, None, 30.0, {}, push.PublishGate(hashes=False))
+        self.assertIn("Card fingerprints: **off**", text)
+
+    def test_collisions_are_logged_as_a_ci_warning(self):
+        gate = push.PublishGate()
+        gate.collisions = {"sets (TCG)": ["neo1", "neo2"]}
+        with patch("builtins.print") as printed:
+            push.report_collisions(gate)
+        line = printed.call_args.args[0]
+        self.assertTrue(line.startswith("::warning title=ID collision (sets (TCG))::2 row(s)"))
+        self.assertIn("neo1, neo2", line)
 
 
 if __name__ == "__main__":

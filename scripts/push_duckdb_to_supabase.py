@@ -4,9 +4,14 @@ Push API-sourced rows from the ingest DuckDB file into Supabase.
 
 Reads the same database as ``scripts/ingest.py`` (default: ``public/data/pokemon.duckdb``).
 Upserts ``sets``, ``cards`` (origins ``pokemontcg.io`` and ``tcgdex``; ``ptcgdb`` only with
-``--include-ptcgdb``), and ``pokemon_metadata``. Rows with ``is_custom`` in DuckDB are skipped. Does not touch
-``origin = manual`` cards in Postgres unless their IDs collide with API IDs (same as a
-normal upsert by primary key).
+``--include-ptcgdb``), and ``pokemon_metadata``. Rows with ``is_custom`` in DuckDB are skipped.
+
+A card or set whose ID already belongs to another origin in Postgres (for example a
+``manual`` card) is never overwritten: it is skipped and reported as an ID collision.
+Cards whose content fingerprint (``cards.api_hash``) is unchanged are skipped, so a run
+without upstream changes writes almost nothing; ``last_seen_in_api`` is therefore only
+stamped on rows that were published. TCGdex Japanese sets whose upstream ID is also an
+English set ID (``neo1``–``neo4``) are published as ``ja-<id>`` (cards ``ja-<card id>``).
 
 Environment (same as ``migrate_data.py``):
 
@@ -33,6 +38,7 @@ Optional: run after ``python scripts/ingest.py`` or use ``ingest.py --push-supab
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import sys
@@ -165,6 +171,128 @@ def batch_upsert(sb, table: str, rows: list) -> int:
         total += size
         i += size
     return total
+
+
+# Publication gate: what Supabase already holds, read once per push.
+EXISTING_PAGE_SIZE = 1000
+API_HASH_EXCLUDED_KEYS = ("last_seen_in_api", "api_hash")
+COLLISION_IDS_IN_SUMMARY = 20
+
+
+def api_hash(row: dict) -> str:
+    """SHA-256 of a published payload, ignoring the per-run observation stamp."""
+    payload = {k: v for k, v in row.items() if k not in API_HASH_EXCLUDED_KEYS}
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+class PublishGate:
+    """Supabase's card/set ownership and card fingerprints for this push.
+
+    A row whose ID already belongs to another origin (a manual card, or
+    another source's row) is skipped and reported, never overwritten. With
+    ``hashes`` (the ``cards.api_hash`` column exists), cards whose fingerprint
+    is unchanged are skipped, so a push without upstream changes writes almost
+    nothing. An empty gate (dry run) publishes everything.
+
+    Rows published in this run claim their IDs, so a later source in the same
+    push cannot overwrite them either.
+    """
+
+    def __init__(self, cards: dict | None = None, sets: dict | None = None, hashes: bool = False):
+        self.cards = dict(cards or {})  # id -> (origin, api_hash or None)
+        self.sets = dict(sets or {})  # id -> origin
+        self.hashes = hashes
+        self.collisions: dict[str, list[str]] = {}
+        self.unchanged: dict[str, int] = {}
+
+    def ids_with_origin(self, origin: str) -> set[str]:
+        return {card_id for card_id, (o, _) in self.cards.items() if o == origin}
+
+    def _collide(self, label: str, row_id: str) -> None:
+        self.collisions.setdefault(label, []).append(row_id)
+
+    def filter_cards(self, label: str, rows: list[dict]) -> list[dict]:
+        out = []
+        for row in rows:
+            existing = self.cards.get(row["id"])
+            if existing and existing[0] != row["origin"]:
+                self._collide(label, row["id"])
+                continue
+            digest = api_hash(row)
+            if self.hashes and existing and existing[1] == digest:
+                self.unchanged[label] = self.unchanged.get(label, 0) + 1
+                continue
+            self.cards[row["id"]] = (row["origin"], digest)
+            out.append({**row, "api_hash": digest} if self.hashes else row)
+        return out
+
+    def filter_sets(self, label: str, rows: list[dict]) -> list[dict]:
+        out = []
+        for row in rows:
+            existing = self.sets.get(row["id"])
+            if existing and existing != row["origin"]:
+                self._collide(label, row["id"])
+                continue
+            self.sets[row["id"]] = row["origin"]
+            out.append(row)
+        return out
+
+
+def fetch_all_rows(sb, table: str, columns: str) -> list[dict]:
+    """Every row of ``table`` (selected ``columns``), keyset-paged on ``id``."""
+    rows: list[dict] = []
+    last = None
+    while True:
+        query = sb.table(table).select(columns)
+        if last is not None:
+            query = query.gt("id", last)
+        page = query.order("id").limit(EXISTING_PAGE_SIZE).execute().data
+        rows.extend(page)
+        if len(page) < EXISTING_PAGE_SIZE:
+            return rows
+        last = page[-1]["id"]
+
+
+def _is_missing_api_hash_column(exc: BaseException) -> bool:
+    message = str(getattr(exc, "message", None) or exc)
+    return _error_code(exc) in {"42703", "PGRST204"} and "api_hash" in message
+
+
+def fetch_publish_gate(sb) -> PublishGate:
+    """Read card/set ownership (and card fingerprints when available)."""
+    if sb is None:
+        print("  (dry run: ID collisions and unchanged rows not checked; every row counts as published)")
+        return PublishGate()
+    try:
+        cards = fetch_all_rows(sb, "cards", "id,origin,api_hash")
+        hashes = True
+    except Exception as exc:
+        if not _is_missing_api_hash_column(exc):
+            raise
+        print(
+            "  (cards.api_hash not found — migration 20260926220844 not applied; "
+            "publishing every row without fingerprints)",
+            flush=True,
+        )
+        cards = fetch_all_rows(sb, "cards", "id,origin")
+        hashes = False
+    sets = fetch_all_rows(sb, "sets", "id,origin")
+    print(f"  existing: {len(cards)} cards, {len(sets)} sets (fingerprints: {'on' if hashes else 'off'})")
+    return PublishGate(
+        {r["id"]: (r["origin"], r.get("api_hash")) for r in cards},
+        {r["id"]: r["origin"] for r in sets},
+        hashes,
+    )
+
+
+def publish(sb, gate: PublishGate, table: str, label: str, rows: list[dict]) -> int:
+    """Upsert the rows the gate lets through; returns how many were written."""
+    if table == "cards":
+        rows = gate.filter_cards(label, rows)
+    else:
+        rows = gate.filter_sets(label, rows)
+    return batch_upsert(sb, table, rows)
 
 
 # Post-push maintenance RPCs. These need the service_role timeout budget from
@@ -333,7 +461,8 @@ def fetch_dicts(conn: duckdb.DuckDBPyConnection, sql: str) -> list[dict]:
     return [dict(zip(names, row)) for row in cur.fetchall()]
 
 
-def push_sets(conn, sb) -> tuple[int, int]:
+def push_sets(conn, sb, gate: PublishGate | None = None) -> tuple[int, int]:
+    gate = gate or PublishGate()
     tcg = fetch_dicts(conn, "SELECT * FROM sets")
     rows = []
     for s in tcg:
@@ -350,7 +479,7 @@ def push_sets(conn, sb) -> tuple[int, int]:
                 "origin": "pokemontcg.io",
             }
         )
-    n_tcg = batch_upsert(sb, "sets", rows)
+    n_tcg = publish(sb, gate, "sets", "sets (TCG)", rows)
 
     pocket = fetch_dicts(conn, "SELECT * FROM pocket_sets")
     rows = []
@@ -367,7 +496,7 @@ def push_sets(conn, sb) -> tuple[int, int]:
                 "origin": "tcgdex",
             }
         )
-    n_pocket = batch_upsert(sb, "sets", rows)
+    n_pocket = publish(sb, gate, "sets", "sets (Pocket)", rows)
     return n_tcg, n_pocket
 
 
@@ -390,7 +519,7 @@ def push_pokemon_metadata(conn, sb) -> int:
     return batch_upsert(sb, "pokemon_metadata", rows)
 
 
-def push_tcg_cards(conn, sb, now_iso: str) -> int:
+def push_tcg_cards(conn, sb, now_iso: str, gate: PublishGate | None = None) -> int:
     sql = """
         SELECT * FROM tcg_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
@@ -422,10 +551,10 @@ def push_tcg_cards(conn, sb, now_iso: str) -> int:
                 "last_seen_in_api": now_iso,
             }
         )
-    return batch_upsert(sb, "cards", rows_out)
+    return publish(sb, gate or PublishGate(), "cards", "cards (pokemontcg.io)", rows_out)
 
 
-def push_pocket_cards(conn, sb, now_iso: str) -> int:
+def push_pocket_cards(conn, sb, now_iso: str, gate: PublishGate | None = None) -> int:
     sql = """
         SELECT * FROM pocket_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
@@ -460,7 +589,7 @@ def push_pocket_cards(conn, sb, now_iso: str) -> int:
                 "last_seen_in_api": now_iso,
             }
         )
-    return batch_upsert(sb, "cards", rows_out)
+    return publish(sb, gate or PublishGate(), "cards", "cards (tcgdex Pocket)", rows_out)
 
 
 def ptcgdb_twin_id(set_id: object, number: object) -> str | None:
@@ -468,26 +597,6 @@ def ptcgdb_twin_id(set_id: object, number: object) -> str | None:
     if not set_id:
         return None
     return f"ptcgdb-{str(set_id).lower().strip()}-{_normalize_jpn_number(number)}"
-
-
-PTCGDB_ID_PAGE_SIZE = 1000
-
-
-def fetch_published_ptcgdb_ids(sb) -> set[str]:
-    """IDs of PTCG-db cards already in Supabase (keyset-paged on the primary key)."""
-    ids: set[str] = set()
-    if sb is None:
-        return ids
-    last = None
-    while True:
-        query = sb.table("cards").select("id").eq("origin", "ptcgdb")
-        if last is not None:
-            query = query.gt("id", last)
-        page = query.order("id").limit(PTCGDB_ID_PAGE_SIZE).execute().data
-        ids.update(row["id"] for row in page)
-        if len(page) < PTCGDB_ID_PAGE_SIZE:
-            return ids
-        last = page[-1]["id"]
 
 
 def staged_ptcgdb_ids(conn) -> set[str]:
@@ -502,11 +611,39 @@ def staged_ptcgdb_ids(conn) -> set[str]:
     }
 
 
-def push_japanese_cards(conn, sb, now_iso: str, ptcgdb_ids: set[str] | frozenset = frozenset()) -> tuple[int, int]:
+JAPANESE_SET_ID_PREFIX = "ja-"
+
+
+def japanese_set_id_map(conn) -> dict[str, str]:
+    """Published IDs for TCGdex Japanese sets whose upstream ID is also an English set ID.
+
+    TCGdex Japanese reuses ``neo1``–``neo4``; published unchanged, those rows
+    overwrote the English Neo sets and cards (``neo4-100``…``neo4-113``). DuckDB
+    keeps upstream IDs (incremental ingest and image URLs depend on them); only
+    the published set and card IDs get the ``ja-`` prefix.
+    """
+    return {
+        row[0]: f"{JAPANESE_SET_ID_PREFIX}{row[0]}"
+        for row in conn.execute(
+            "SELECT j.id FROM japanese_sets j JOIN sets s ON s.id = j.id ORDER BY j.id"
+        ).fetchall()
+    }
+
+
+def push_japanese_cards(
+    conn,
+    sb,
+    now_iso: str,
+    ptcgdb_ids: set[str] | frozenset = frozenset(),
+    gate: PublishGate | None = None,
+    set_id_map: dict[str, str] | None = None,
+) -> tuple[int, int]:
     """Upsert TCGdex Japanese cards, skipping any whose PTCG-db twin is in ``ptcgdb_ids``.
 
-    Returns (published, skipped_twins).
+    Cards in sets listed in ``set_id_map`` are published under the mapped set
+    ID with the ``ja-`` card ID prefix. Returns (published, skipped_twins).
     """
+    set_id_map = set_id_map or {}
     sql = """
         SELECT * FROM japanese_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
@@ -529,13 +666,13 @@ def push_japanese_cards(conn, sb, now_iso: str, ptcgdb_ids: set[str] | frozenset
             continue
         rows_out.append(
             {
-                "id": c["id"],
+                "id": f"{JAPANESE_SET_ID_PREFIX}{c['id']}" if sid in set_id_map else c["id"],
                 "name": c.get("name") or "Unknown",
                 "card_type": c.get("card_type") or None,
                 "rarity": c.get("rarity") or None,
                 "artist": ill,
                 "illustrator": ill,
-                "set_id": sid,
+                "set_id": set_id_map.get(sid, sid),
                 "set_name": set_names.get(sid) if sid else None,
                 "number": num_str,
                 "element": c.get("element") or None,
@@ -553,10 +690,10 @@ def push_japanese_cards(conn, sb, now_iso: str, ptcgdb_ids: set[str] | frozenset
                 "last_seen_in_api": now_iso,
             }
         )
-    return batch_upsert(sb, "cards", rows_out), skipped
+    return publish(sb, gate or PublishGate(), "cards", "cards (tcgdex Japanese)", rows_out), skipped
 
 
-def push_ptcgdb_sets(conn, sb) -> int:
+def push_ptcgdb_sets(conn, sb, gate: PublishGate | None = None) -> int:
     """Upsert sets referenced by PTCG-database Japanese cards."""
     sql = "SELECT DISTINCT set_id FROM japanese_cards_ptcgdb WHERE is_custom IS NOT TRUE"
     rows = []
@@ -572,11 +709,11 @@ def push_ptcgdb_sets(conn, sb) -> int:
             }
         )
     if rows:
-        return batch_upsert(sb, "sets", rows)
+        return publish(sb, gate or PublishGate(), "sets", "sets (PTCG-db)", rows)
     return 0
 
 
-def push_japanese_cards_ptcgdb(conn, sb, now_iso: str) -> int:
+def push_japanese_cards_ptcgdb(conn, sb, now_iso: str, gate: PublishGate | None = None) -> int:
     """Push PTCG-database Japanese cards (ptcgdb- prefix IDs) to Supabase."""
     sql = """
         SELECT * FROM japanese_cards_ptcgdb
@@ -614,7 +751,7 @@ def push_japanese_cards_ptcgdb(conn, sb, now_iso: str) -> int:
                 "last_seen_in_api": now_iso,
             }
         )
-    return batch_upsert(sb, "cards", rows_out)
+    return publish(sb, gate or PublishGate(), "cards", "cards (PTCG-db Japanese)", rows_out)
 
 
 def count_staged_ptcgdb_rows(conn) -> int:
@@ -632,7 +769,7 @@ def count_staged_ptcgdb_rows(conn) -> int:
     ).fetchone()[0]
 
 
-def push_ptcgdb_if_requested(conn, sb, now_iso: str, include: bool) -> dict:
+def push_ptcgdb_if_requested(conn, sb, now_iso: str, include: bool, gate: PublishGate | None = None) -> dict:
     """Publish PTCG-db Japanese sets/cards only when explicitly requested.
 
     Returns {"staged", "included", "sets", "cards"} for logging and the step summary.
@@ -643,16 +780,20 @@ def push_ptcgdb_if_requested(conn, sb, now_iso: str, include: bool) -> dict:
         print(f"  cards (PTCG-db Japanese): skipped {staged} staged row(s); pass --include-ptcgdb to publish")
         return result
     if staged:
-        result["sets"] = push_ptcgdb_sets(conn, sb)
+        result["sets"] = push_ptcgdb_sets(conn, sb, gate)
         if result["sets"]:
             print(f"  sets (PTCG-db): {result['sets']} rows")
-        result["cards"] = push_japanese_cards_ptcgdb(conn, sb, now_iso)
+        result["cards"] = push_japanese_cards_ptcgdb(conn, sb, now_iso, gate)
     print(f"  cards (PTCG-db Japanese): {result['cards']} rows")
     return result
 
 
 def format_push_summary(
-    counts: dict[str, int], ptcgdb: dict | None, publish_seconds: float | None, maintenance: dict
+    counts: dict[str, int],
+    ptcgdb: dict | None,
+    publish_seconds: float | None,
+    maintenance: dict,
+    gate: PublishGate | None = None,
 ) -> str:
     """Markdown for $GITHUB_STEP_SUMMARY. Never includes URLs or keys."""
     lines = ["### Push DuckDB → Supabase", ""]
@@ -667,8 +808,18 @@ def format_push_summary(
             lines += [f"- PTCG-db: published ({ptcgdb['staged']:,} staged row(s))"]
         else:
             lines += [f"- PTCG-db: skipped {ptcgdb['staged']:,} staged row(s) (opt-in: `--include-ptcgdb`)"]
+    if gate is not None and not DRY_RUN:
+        lines += [f"- Card fingerprints: {'on (unchanged cards skipped)' if gate.hashes else '**off** (`cards.api_hash` missing; every row rewritten)'}"]
     lines += ["", "| Published | Rows |", "|---|---:|"]
     lines += [f"| {label} | {n:,} |" for label, n in counts.items()]
+    if gate is not None:
+        lines += [f"| {label} unchanged (skipped) | {n:,} |" for label, n in gate.unchanged.items()]
+        if gate.collisions:
+            lines += ["", "**ID collisions (skipped; the ID belongs to another origin):**", ""]
+            for label, ids in gate.collisions.items():
+                shown = ", ".join(f"`{i}`" for i in ids[:COLLISION_IDS_IN_SUMMARY])
+                more = f" (+{len(ids) - COLLISION_IDS_IN_SUMMARY:,} more)" if len(ids) > COLLISION_IDS_IN_SUMMARY else ""
+                lines += [f"- {label}: {len(ids):,} — {shown}{more}"]
     lines += ["", "| Maintenance RPC | Result | Attempts | Duration |", "|---|---|---:|---:|"]
     for name in ("refresh_explore_filter_options", "analyze_cards_and_annotations"):
         step = maintenance.get(name)
@@ -694,12 +845,13 @@ def write_step_summary(markdown: str) -> None:
         print(f"  (could not write step summary: {exc})", file=sys.stderr)
 
 
-def push_japanese_sets(conn, sb) -> int:
+def push_japanese_sets(conn, sb, gate: PublishGate | None = None, set_id_map: dict[str, str] | None = None) -> int:
+    set_id_map = set_id_map or {}
     rows = []
     for s in fetch_dicts(conn, "SELECT * FROM japanese_sets"):
         rows.append(
             {
-                "id": s["id"],
+                "id": set_id_map.get(s["id"], s["id"]),
                 "name": s.get("name") or s["id"],
                 "series": s.get("series") or None,
                 "release_date": clean_date(s.get("release_date")),
@@ -708,7 +860,7 @@ def push_japanese_sets(conn, sb) -> int:
                 "origin": "tcgdex",
             }
         )
-    return batch_upsert(sb, "sets", rows)
+    return publish(sb, gate or PublishGate(), "sets", "sets (Japanese)", rows)
 
 
 def main() -> None:
@@ -742,13 +894,15 @@ def main() -> None:
 
     counts: dict[str, int] = {}
     ptcgdb = None
+    gate = None
     publish_seconds = None
     maintenance: dict = {}
     started = time.monotonic()
     try:
         conn = duckdb.connect(str(duck_path), read_only=True)
         try:
-            ptcgdb = _publish_all(conn, sb, now_iso, counts)
+            gate = fetch_publish_gate(sb)
+            ptcgdb = _publish_all(conn, sb, now_iso, counts, gate)
         finally:
             conn.close()
         publish_seconds = time.monotonic() - started
@@ -757,47 +911,65 @@ def main() -> None:
         if not DRY_RUN and sb:
             refresh_post_push_data(sb, maintenance)
     finally:
-        write_step_summary(format_push_summary(counts, ptcgdb, publish_seconds, maintenance))
+        write_step_summary(format_push_summary(counts, ptcgdb, publish_seconds, maintenance, gate))
 
     print("Done.")
 
 
-def _publish_all(conn, sb, now_iso: str, counts: dict[str, int]) -> dict:
-    """Upsert every source, filling ``counts`` as each step finishes.
+def _publish_all(conn, sb, now_iso: str, counts: dict[str, int], gate: PublishGate) -> dict:
+    """Upsert every source through ``gate``, filling ``counts`` as each step finishes.
 
     Returns the PTCG-db result from push_ptcgdb_if_requested.
     """
-    counts["sets (TCG)"], counts["sets (Pocket)"] = push_sets(conn, sb)
+    set_id_map = japanese_set_id_map(conn)
+    if set_id_map:
+        print(f"  Japanese sets published with the '{JAPANESE_SET_ID_PREFIX}' prefix: {', '.join(set_id_map)}")
+
+    counts["sets (TCG)"], counts["sets (Pocket)"] = push_sets(conn, sb, gate)
     print(f"  sets (TCG): {counts['sets (TCG)']} rows")
     print(f"  sets (Pocket): {counts['sets (Pocket)']} rows")
 
-    counts["sets (Japanese)"] = push_japanese_sets(conn, sb)
+    counts["sets (Japanese)"] = push_japanese_sets(conn, sb, gate, set_id_map)
     print(f"  sets (Japanese): {counts['sets (Japanese)']} rows")
 
     counts["pokemon_metadata"] = push_pokemon_metadata(conn, sb)
     print(f"  pokemon_metadata: {counts['pokemon_metadata']} rows")
 
-    counts["cards (pokemontcg.io)"] = push_tcg_cards(conn, sb, now_iso)
+    counts["cards (pokemontcg.io)"] = push_tcg_cards(conn, sb, now_iso, gate)
     print(f"  cards (pokemontcg.io): {counts['cards (pokemontcg.io)']} rows")
 
-    counts["cards (tcgdex Pocket)"] = push_pocket_cards(conn, sb, now_iso)
+    counts["cards (tcgdex Pocket)"] = push_pocket_cards(conn, sb, now_iso, gate)
     print(f"  cards (tcgdex Pocket): {counts['cards (tcgdex Pocket)']} rows")
 
-    ptcgdb_ids = fetch_published_ptcgdb_ids(sb)
+    ptcgdb_ids = gate.ids_with_origin("ptcgdb")
     if INCLUDE_PTCGDB:
         ptcgdb_ids |= staged_ptcgdb_ids(conn)
-    if sb is None:
-        print("  (dry run: PTCG-db twins not checked; published IDs are read from Supabase)")
-    published, skipped = push_japanese_cards(conn, sb, now_iso, ptcgdb_ids)
+    published, skipped = push_japanese_cards(conn, sb, now_iso, ptcgdb_ids, gate, set_id_map)
     counts["cards (tcgdex Japanese)"] = published
     counts["tcgdex Japanese skipped (PTCG-db twin)"] = skipped
     print(f"  cards (tcgdex Japanese): {published} rows; skipped {skipped} with a PTCG-db twin")
 
-    ptcgdb = push_ptcgdb_if_requested(conn, sb, now_iso, INCLUDE_PTCGDB)
+    ptcgdb = push_ptcgdb_if_requested(conn, sb, now_iso, INCLUDE_PTCGDB, gate)
     if ptcgdb["included"]:
         counts["sets (PTCG-db)"] = ptcgdb["sets"]
         counts["cards (PTCG-db Japanese)"] = ptcgdb["cards"]
+
+    for label, n in gate.unchanged.items():
+        print(f"  {label}: {n} unchanged (skipped)")
+    report_collisions(gate)
     return ptcgdb
+
+
+def report_collisions(gate: PublishGate) -> None:
+    """Log ID collisions (skipped rows owned by another origin) as a CI warning."""
+    for label, ids in gate.collisions.items():
+        shown = ", ".join(ids[:COLLISION_IDS_IN_SUMMARY])
+        more = f" (+{len(ids) - COLLISION_IDS_IN_SUMMARY} more)" if len(ids) > COLLISION_IDS_IN_SUMMARY else ""
+        print(
+            f"::warning title=ID collision ({label})::{len(ids)} row(s) skipped because the ID "
+            f"belongs to another origin: {shown}{more}",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":
