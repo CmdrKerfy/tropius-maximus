@@ -455,6 +455,49 @@ def refresh_post_push_data(sb, report: dict | None = None) -> tuple[bool, bool]:
     return True, stats_refreshed
 
 
+EDIT_HISTORY_QUARTERS_AHEAD = 4
+EDIT_HISTORY_MIN_FUTURE_QUARTERS = 2
+
+
+def ensure_edit_history_partitions(sb, report: dict | None = None) -> dict | None:
+    """Keep quarterly edit_history partitions ahead of now (Phase 2E); never fatal.
+
+    Annotation saves write edit_history in the same transaction, so a missing
+    partition for the current date makes every save fail. Calls the
+    service-role RPC once (a failure is retried by next week's run) and emits a
+    warning when it fails or fewer than EDIT_HISTORY_MIN_FUTURE_QUARTERS full
+    quarters remain after the current one. Returns the RPC result or None.
+    """
+    if report is None:
+        report = {}
+    name = "ensure_edit_history_partitions"
+    started = time.monotonic()
+    try:
+        result = sb.rpc(name, {"p_quarters_ahead": EDIT_HISTORY_QUARTERS_AHEAD}).execute()
+    except Exception as exc:
+        reason = describe_maintenance_error(exc)
+        report[name] = {"status": "failed (nonfatal)", "attempts": 1, "reason": reason}
+        print(f"::warning title=edit_history partition check failed (nonfatal)::{reason}", flush=True)
+        return None
+    seconds = time.monotonic() - started
+    data = getattr(result, "data", None) or {}
+    future = int(data.get("future_quarters") or 0)
+    horizon = data.get("horizon") or "unknown"
+    created = list(data.get("created") or [])
+    status = f"ok: {future} future quarter(s), through {horizon}"
+    if created:
+        status += f"; created {', '.join(created)}"
+    report[name] = {"status": status, "attempts": 1, "seconds": seconds}
+    print(f"  edit_history partitions: {status}")
+    if future < EDIT_HISTORY_MIN_FUTURE_QUARTERS:
+        print(
+            f"::warning title=edit_history partitions running out::only {future} future quarter(s) "
+            f"(through {horizon}); annotation saves fail once no partition covers the current date",
+            flush=True,
+        )
+    return data
+
+
 def fetch_dicts(conn: duckdb.DuckDBPyConnection, sql: str) -> list[dict]:
     cur = conn.execute(sql)
     names = [c[0] for c in cur.description]
@@ -821,7 +864,7 @@ def format_push_summary(
                 more = f" (+{len(ids) - COLLISION_IDS_IN_SUMMARY:,} more)" if len(ids) > COLLISION_IDS_IN_SUMMARY else ""
                 lines += [f"- {label}: {len(ids):,} — {shown}{more}"]
     lines += ["", "| Maintenance RPC | Result | Attempts | Duration |", "|---|---|---:|---:|"]
-    for name in ("refresh_explore_filter_options", "analyze_cards_and_annotations"):
+    for name in ("refresh_explore_filter_options", "analyze_cards_and_annotations", "ensure_edit_history_partitions"):
         step = maintenance.get(name)
         if step is None:
             lines += [f"| `{name}` | not run | | |"]
@@ -907,8 +950,11 @@ def main() -> None:
             conn.close()
         publish_seconds = time.monotonic() - started
 
-        # Refresh the Explore filter options materialized view and planner stats.
         if not DRY_RUN and sb:
+            # Nonfatal and independent of publication; runs first so a fatal
+            # refresh failure cannot skip it.
+            ensure_edit_history_partitions(sb, maintenance)
+            # Refresh the Explore filter options materialized view and planner stats.
             refresh_post_push_data(sb, maintenance)
     finally:
         write_step_summary(format_push_summary(counts, ptcgdb, publish_seconds, maintenance, gate))

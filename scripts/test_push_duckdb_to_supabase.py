@@ -808,5 +808,76 @@ class GateSummaryTests(unittest.TestCase):
         self.assertIn("neo1, neo2", line)
 
 
+class _PartitionRpcClient:
+    """RPC client returning ``data`` (or raising ``error``) for every call."""
+
+    def __init__(self, data=None, error=None):
+        self.data = data
+        self.error = error
+        self.calls = []
+
+    def rpc(self, function_name, params):
+        self.calls.append((function_name, params))
+        client = self
+
+        class Request:
+            def execute(self_inner):
+                if client.error is not None:
+                    raise client.error
+
+                class Result:
+                    data = client.data
+
+                return Result()
+
+        return Request()
+
+
+class EditHistoryPartitionTests(unittest.TestCase):
+    def _run(self, client):
+        report = {}
+        with patch("builtins.print") as printed:
+            data = push.ensure_edit_history_partitions(client, report)
+        lines = [str(c.args[0]) for c in printed.call_args_list if c.args]
+        return data, report, lines
+
+    def test_requests_four_quarters_ahead_and_records_the_horizon(self):
+        client = _PartitionRpcClient(
+            {"created": ["edit_history_2027_q3"], "horizon": "2027-10-01", "future_quarters": 4}
+        )
+        data, report, lines = self._run(client)
+        self.assertEqual(client.calls, [("ensure_edit_history_partitions", {"p_quarters_ahead": 4})])
+        self.assertEqual(data["future_quarters"], 4)
+        step = report["ensure_edit_history_partitions"]
+        self.assertEqual(step["status"], "ok: 4 future quarter(s), through 2027-10-01; created edit_history_2027_q3")
+        self.assertIn("seconds", step)
+        self.assertFalse(any(line.startswith("::warning") for line in lines))
+
+    def test_warns_when_fewer_than_two_future_quarters_remain(self):
+        client = _PartitionRpcClient({"created": [], "horizon": "2027-01-01", "future_quarters": 1})
+        _, report, lines = self._run(client)
+        self.assertTrue(report["ensure_edit_history_partitions"]["status"].startswith("ok: 1 future"))
+        self.assertTrue(any(line.startswith("::warning title=edit_history partitions running out::") for line in lines))
+
+    def test_rpc_failure_is_nonfatal_and_reported(self):
+        client = _PartitionRpcClient(
+            error=APIError({"code": "PGRST202", "message": "Could not find the function"})
+        )
+        data, report, lines = self._run(client)
+        self.assertIsNone(data)
+        step = report["ensure_edit_history_partitions"]
+        self.assertEqual(step["status"], "failed (nonfatal)")
+        self.assertIn("PGRST202", step["reason"])
+        self.assertTrue(any(line.startswith("::warning title=edit_history partition check failed") for line in lines))
+
+    def test_summary_lists_the_partition_check(self):
+        text = push.format_push_summary(
+            {}, None, 1.0,
+            {"ensure_edit_history_partitions": {"status": "ok: 8 future quarter(s), through 2028-10-01", "attempts": 1, "seconds": 0.2}},
+        )
+        self.assertIn("| `ensure_edit_history_partitions` | ok: 8 future quarter(s), through 2028-10-01 | 1 | 0.2 s |", text)
+        self.assertIn("| `refresh_explore_filter_options` | not run |", push.format_push_summary({}, None, None, {}))
+
+
 if __name__ == "__main__":
     unittest.main()
