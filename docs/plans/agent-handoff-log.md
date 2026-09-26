@@ -49,6 +49,25 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.2 committed, pushed, and migrations applied
+
+- Preflight: continuation of the accepted 0B.2 session (Claude Opus 5.5); owner approved commit, push, and applying migrations.
+- Branch: `v2/supabase-migration` — `6f36a0d` (0B.2), `3bde76b` (Pocket badge fix), pushed `bff91cc..3bde76b`; Vercel auto-deploys. `main` untouched.
+- Migrations applied to production (as SQL, in order; untracked in migration history like 030–057):
+  1. `20260926092111_service_role_maintenance_timeout.sql` — `service_role` rolconfig now `statement_timeout=60s, lock_timeout=60s`.
+  2. `20260926092113_refresh_explore_filter_options_concurrently.sql` — verified CONCURRENTLY, `search_path=""`, ACL unchanged.
+  3. `20260926092115_explore_filter_options_annotation_facets.sql` — 4 rows, `facets_version` 1, specialties ACE SPEC/Pokémon Tool/Pokémon Tool F/Technical Machine, 42 actions, 32 poses; ACL SELECT for authenticated + service_role only.
+- Validation: as `service_role` with 60 s limit — refresh 7.5 s, ANALYZE 12.5 s; authenticated read of the view OK; `npm run check:quick` pass before push.
+- Open risks:
+  - PostgREST/service-key path not exercised by the agent (no key access); confirm on the next ingest run's log.
+  - Remote migration history tracks only `001`–`029`; never run `supabase db push`.
+  - Mobile zoomed-out load shelved (not reproduced). Remaining stale `VITE_USE_FILTER_OPTIONS_RPC` doc references listed in the plan.
+  - Owner screenshots `tests/IMG_6879.jpg`, `tests/IMG_6880.jpg` are untracked; do not commit.
+- Next action (single first step):
+  - Phase 0B.4: reproduce the Workbench move error as an authenticated user and record the error text.
+
+---
+
 ### 2026-09-26 (local) - Phase 0B.2 implemented (uncommitted; migrations created, not applied)
 
 - Preflight sent and accepted:

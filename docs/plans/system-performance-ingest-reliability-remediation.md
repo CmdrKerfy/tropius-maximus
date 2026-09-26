@@ -1,6 +1,6 @@
 # System performance, ingest, and reliability remediation
 
-**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling and post-push maintenance are not yet trustworthy. Phase 0B.1 accepted; 0B.2 is implemented as an uncommitted diff awaiting review (three migrations created, **none applied**); Phase 0C has not started.
+**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. Phase 0C has not started.
 **Created:** 2026-09-25  
 **Last reconciled:** 2026-09-26 against pushed `v2/supabase-migration` commit `bff91cc`; plan review corrections applied 2026-09-26 (see "Plan review 2026-09-26")
 **Primary branch:** `v2/supabase-migration`  
@@ -226,7 +226,7 @@ These changes do **not** complete Phase 0: the default branch is still old, refr
 
 ### 0B. Stabilize v2 and prepare an ingest-only default-branch sync
 
-**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is implemented (uncommitted, awaiting review; migrations not applied). 0B.3 and 0B.4 are pending.
+**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.3 and 0B.4 are pending.
 
 Implement and review the following as separate, focused commits. Do not combine ingest maintenance, frontend filters, and default-branch synchronization into one change.
 
@@ -246,12 +246,12 @@ Implement and review the following as separate, focused commits. Do not combine 
 
 #### 0B.2 Make post-push maintenance and filter options trustworthy
 
-**Status:** Implemented 2026-09-26 (Claude Opus 5.5) as an **uncommitted diff awaiting review**. Three migrations were created and **none were applied** (locally or remotely). Nothing was committed, pushed, deployed, or dispatched.
+**Status:** Implemented 2026-09-26 (Claude Opus 5.5). Committed as `6f36a0d` and pushed to `v2/supabase-migration` with owner approval (Pocket badge fix separately as `3bde76b`). All three migrations were **applied to production on 2026-09-26 with owner approval**, run as SQL in order (the same way as 030–057; they are not recorded in the migration history table). No ingest has been dispatched.
 
 Do the timeout fix first; retries alone cannot succeed against a deterministic 8 s limit (see Verified defects).
 
 - [x] **Fix the maintenance timeout budget (migration; owner approval required before applying to production).** Written as `20260926092111_service_role_maintenance_timeout.sql`: `ALTER ROLE service_role SET statement_timeout = '60s'` + `lock_timeout = '60s'` + `NOTIFY pgrst, 'reload config'`. **Deviation flagged:** the plan/prompt preferred `120s`; the Supabase Timeouts doc says Client API queries have a max-configurable timeout of 60 s, so 60 s was used (still ~3× the expected refresh). **Owner deferred to the recommendation (2026-09-26): keep 60 s.** Docs confirmed (citations below). No function-level `SET statement_timeout` is used. Not applied.
-- [ ] After the change, verify with a timed RPC call (service key, never logged) that the refresh and `ANALYZE` complete. Record their durations. **Blocked on applying the migrations (owner approval).**
+- [x] After the change, verify that the refresh and `ANALYZE` complete, with durations. Done 2026-09-26 as `service_role` over SQL with the 60 s limit: **refresh (CONCURRENTLY) 7.5 s, ANALYZE 12.5 s** (ANALYZE would have failed under the old 8 s). The service key is not available to agents, so the PostgREST path itself is confirmed only by the next ingest run's log lines (`refreshed in …s`, `analyze … refreshed in …s`).
 - [x] Switch the refresh to `REFRESH MATERIALIZED VIEW CONCURRENTLY` (the unique index already exists) so Explore reads are not blocked during the refresh. Written as `20260926092113_refresh_explore_filter_options_concurrently.sql`. Re-measure after applying (not possible read-only).
 - [x] Retry `refresh_explore_filter_options` with bounded backoff for transient failures; after exhaustion, raise so the ingest workflow fails.
 - [x] Retry `analyze_cards_and_annotations` with bounded backoff, but keep final failure nonfatal and prominently annotate it in logs/summary.
@@ -264,13 +264,13 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 
 **0B.2 results**
 
-- **Expected red ingest (not a regression):** until `20260926092111_service_role_maintenance_timeout.sql` is applied, the next ingest that runs this v2 push script **will fail at the `refresh_explore_filter_options` step** (three attempts, each `57014` at the inherited 8 s limit, then `::error` and exit 1). That is the intended behavior: the old script swallowed this failure and stayed green with a stale view. (Scheduled runs still execute `main`'s older script until 0B.3, so they keep the old swallow-and-stay-green behavior.)
-- **Required migration apply order** (owner approval required; apply in exactly this order, then verify):
+- **Expected red ingest (historical; migration 1 is now applied):** until `20260926092111_service_role_maintenance_timeout.sql` was applied, the next ingest that runs this v2 push script **will fail at the `refresh_explore_filter_options` step** (three attempts, each `57014` at the inherited 8 s limit, then `::error` and exit 1). That is the intended behavior: the old script swallowed this failure and stayed green with a stale view. (Scheduled runs still execute `main`'s older script until 0B.3, so they keep the old swallow-and-stay-green behavior.)
+- **Migration apply order** (applied 2026-09-26 in this order; post-apply checks: `service_role` rolconfig = 60 s/60 s; function SECURITY DEFINER + `search_path=""` + CONCURRENTLY, ACL unchanged; view has 4 rows, `facets_version` 1, the four specialties, 42 actions, 32 poses, TCG rarities 51 / artists 400, ACL `authenticated=r`, `service_role=r`; authenticated read OK):
   1. `supabase/migrations/20260926092111_service_role_maintenance_timeout.sql` — then read-only check `SELECT rolname, rolconfig FROM pg_roles WHERE rolname = 'service_role';`
   2. `supabase/migrations/20260926092113_refresh_explore_filter_options_concurrently.sql`
   3. `supabase/migrations/20260926092115_explore_filter_options_annotation_facets.sql` — drops/recreates the view WITH DATA (~17 s; Explore filter-option reads wait on the lock and the new client falls back to split RPCs if they time out). Afterwards `SELECT options->'specialties', options->'facets_version' FROM explore_filter_options WHERE source = 'tcg';`
   4. Then the timed service-key RPC verification (refresh + `ANALYZE`), recording durations.
-- **Migration naming:** existing files use `NNN_` prefixes (`001`–`057`); the installed CLI (`supabase` v2.90.0, `supabase migration new`) generates `YYYYMMDDHHMMSS_` timestamps. Both sort correctly after `057_…`. Confirm the remote migration history format before `db push` so the two styles do not confuse the tracker.
+- **Migration naming:** existing files use `NNN_` prefixes (`001`–`057`); the installed CLI (`supabase` v2.90.0, `supabase migration new`) generates `YYYYMMDDHHMMSS_` timestamps. Both sort correctly after `057_…`. Checked 2026-09-26 (read-only `list_migrations`): the remote history table records only `001`–`029`; `030`–`057` were applied manually (SQL editor) and are untracked. **Do not run `supabase db push`** — it would try to re-apply 030–057. Apply the 0B.2 files the same way as 030–057 (run each file's SQL once, in order) until migration history is reconciled.
 - **Docs citations (timeout budget):**
   - Supabase, Database → Postgres → Timeouts, "Role level": https://supabase.com/docs/guides/database/postgres/timeouts#role-level — "`service_role`: none (defaults to the `authenticator` role's 8s timeout if unset)"; Client API changes need `NOTIFY pgrst, 'reload config'`; Client API queries have a max-configurable timeout of 60 s.
   - PostgREST, References → Transactions, "Impersonated Role Settings": https://docs.postgrest.org/en/stable/references/transactions.html — "PostgREST applies the impersonated roles settings as transaction-scoped settings."
@@ -759,4 +759,4 @@ Acceptance:
 
 ## Exact next action
 
-Review the uncommitted 0B.2 diff (see "0B.2 results"), including the 60 s versus 120 s timeout choice. If approved, commit it on `v2/supabase-migration`, then — only with explicit owner approval — apply the three migrations in the recorded order and run the timed service-key RPC verification of the refresh and `ANALYZE`, recording durations. Expect any v2 ingest run before migration 1 is applied to fail at the refresh step. After 0B.2 is accepted, ask the owner whether to do 0B.4 (Workbench move hotfix) next or 0B.3. Do not begin Phase 1E, change `main`, dispatch another ingest, deploy, or start Phase 0C without explicit owner authorization.
+0B.2 is applied. Next: Phase 0B.4 (Workbench move hotfix) — start with its first item: reproduce the move error as an authenticated user (rollback-transaction probe or in the app) and record the error text, then write the replacement `move_workbench_cards` migration. Owner approval is required before applying it. In parallel/afterwards: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
