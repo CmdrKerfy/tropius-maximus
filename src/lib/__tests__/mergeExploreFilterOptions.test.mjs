@@ -73,3 +73,13 @@ test("does not add a filter when no valid set IDs are selected", () => {
 
   assert.equal(applyExploreSetIdFilter(query, ["", null, "  "]), query);
 });
+
+test("only non-Japanese TCGdex cards are labelled Pocket", async () => {
+  const { isPocketOrigin } = await import("../cardSource.js");
+  assert.equal(isPocketOrigin("tcgdex", null), true);
+  assert.equal(isPocketOrigin("tcgdex", ""), true);
+  assert.equal(isPocketOrigin("tcgdex", "japanese"), false);
+  assert.equal(isPocketOrigin("ptcgdb", "japanese"), false);
+  assert.equal(isPocketOrigin("pokemontcg.io", null), false);
+  assert.equal(isPocketOrigin("manual", "pokumon"), false);
+});

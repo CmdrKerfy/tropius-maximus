@@ -20,6 +20,7 @@ import {
   mergeSortedUniqueStrings,
 } from "../../lib/exploreFilterOptionsSource.js";
 import { applyExploreSetIdFilter } from "../../lib/exploreSetFilter.js";
+import { isPocketOrigin } from "../../lib/cardSource.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
 import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
 
@@ -753,7 +754,7 @@ function gridRowFromCard(row) {
     rarity: row.rarity,
     supertype: row.supertype,
     subtypes: row.subtypes,
-    is_pocket: row.origin === "tcgdex" || row.origin === "ptcgdb",
+    is_pocket: isPocketOrigin(row.origin, row.origin_detail),
     is_custom: row.origin === "manual" && !isPromoOriginDetail(row.origin_detail),
     is_promo:
       row.origin === "manual" &&

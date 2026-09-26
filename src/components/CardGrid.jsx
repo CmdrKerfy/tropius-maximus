@@ -13,6 +13,7 @@ import { isEmailAuthRequired } from "../lib/authInvite.js";
 import pocketCardBg from "../../images/pocketcardbackground.webp";
 import { useSupabaseBackend } from "../db";
 import { buildCardAttributionPlainText } from "../lib/cardAttributionSummary.js";
+import { isPocketOrigin } from "../lib/cardSource.js";
 
 function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const displayImage = card.image_override || card.image_small || card.image_large;
@@ -21,10 +22,7 @@ function CardItem({ card, isSelected, onCardClick, onToggleSelection }) {
   const originDetail = String(card.origin_detail || "").toLowerCase();
   const source = String(card._source || card.source || "").toLowerCase();
   const isPocket =
-    card.is_pocket === true ||
-    card.origin === "tcgdex" ||
-    card.origin === "ptcgdb" ||
-    source === "pocket";
+    card.is_pocket === true || isPocketOrigin(card.origin, card.origin_detail) || source === "pocket";
   const isPromo =
     originDetail.includes("promo") || originDetail.includes("pokumon") || card.is_promo === true;
   const attributionTitle =
