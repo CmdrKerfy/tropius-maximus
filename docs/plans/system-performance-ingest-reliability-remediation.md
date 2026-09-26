@@ -535,7 +535,7 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - [ ] Add an `ingest_run_id` and source-level run manifest.
 - [ ] Track when each row was actually observed upstream.
 - [ ] Update `last_seen_in_api` only for rows fetched in the current successful source run.
-- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately. **Implemented 2026-09-26 on v2; migration not applied — see "Publication gate" under 1B.**
+- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately. **Implemented 2026-09-26 (v2 `6746bfc`, `main` `e4bddef`); migration applied 2026-09-26 — see "Publication gate" under 1B. First fingerprinted push pending.**
 - [x] Replace whole-source “table nonempty” skipping for Pocket/Japanese with missing-card-ID reconciliation. (`4493d76`; correction/full-refresh policy remains below.)
 - [ ] Count only non-custom cards when deciding whether an English set is complete.
 - [ ] Define periodic full-refresh cadence for corrections to prices, rarity, names, and images.
@@ -572,9 +572,9 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - **Local check** (May DuckDB snapshot): no other set or card ID collisions between TCG, TCGdex Japanese and Pocket.
 - **Prior workaround (found later):** `01e2976`/migration 045 hid Japanese `neo1`–`neo4` from Japanese/All views (`HIDDEN_JPN_SET_IDS` in `appAdapter.js`; `set_id NOT IN ('neo1'…)` in the filter view). There is no recorded rationale beyond the collision.
 
-**Publication gate + `ja-` namespacing (implemented 2026-09-26, owner-approved design; code on v2, not yet applied):**
+**Publication gate + `ja-` namespacing (implemented 2026-09-26, owner-approved design; v2 `6746bfc`, `main` `e4bddef`; migration applied; Neo repair pending):**
 
-- **Migration** `supabase/migrations/20260926220844_cards_api_hash.sql`: `ALTER TABLE cards ADD COLUMN IF NOT EXISTS api_hash text` (nullable, no default, so it only changes the catalog; it takes a brief ACCESS EXCLUSIVE lock, so apply it while no push is running), a column comment, and `NOTIFY pgrst, 'reload schema'`. Not applied.
+- **Migration** `supabase/migrations/20260926220844_cards_api_hash.sql`: `ALTER TABLE cards ADD COLUMN IF NOT EXISTS api_hash text` (nullable, no default, so it only changes the catalog; it takes a brief ACCESS EXCLUSIVE lock, so apply it while no push is running), a column comment, and `NOTIFY pgrst, 'reload schema'`. **Applied 2026-09-26 ~22:30 UTC by the owner in the SQL editor** (with `lock_timeout 5s`, during the 0C run's ingest step, no active sessions). Verified: nullable text, no default, comment present, 0 non-null; PostgREST accepts `select=api_hash` (unknown columns fail with 42703); the gate's keyset page (`id, origin, api_hash`, 1,000 rows via `cards_pkey`) runs in ~0.46 s. Side note: an anon `limit=1` read of `cards` with any non-`id` column scans the whole table (RLS hides every row) — `name` 2.1 s, `api_hash` hit the anon timeout. The app never reads cards as anon, but it is a cheap load vector (see auth abuse hardening).
 - **`scripts/push_duckdb_to_supabase.py`:**
   - `fetch_publish_gate` reads `id, origin, api_hash` for all cards and `id, origin` for all sets (keyset-paged, 1,000 per page; about 66 + 1 requests).
   - `PublishGate` skips and reports any card or set whose ID is owned by another origin, including manual cards and IDs claimed earlier in the same run. It also skips cards whose SHA-256 fingerprint (the payload without `last_seen_in_api`) is unchanged, and adds `api_hash` to the rows it publishes.
@@ -971,15 +971,26 @@ Acceptance:
 
 ## Exact next action
 
-Done 2026-09-26: the refresh retry headroom is on v2 `6766075` and `main` `ab2e3b6`. Owner-approved `main` ingest dispatch run `36274892062` (0C run, cold cache) was still running at the time of writing. The 14-row gap is explained by the English/Japanese Neo ID collision (1B). The publication gate (fingerprints + collision guard) and `ja-` namespacing are implemented on v2, uncommitted, with migration `20260926220844_cards_api_hash.sql` not applied (1B "Publication gate").
+Done 2026-09-26 (owner-approved): steps 2–4 of the gate rollout.
+- v2 `6746bfc` pushed: gate, migration, tests, docs.
+- Migration `20260926220844_cards_api_hash.sql` applied as SQL by the owner and verified (1B "Publication gate").
+- `main` `e4bddef` pushed (`ab2e3b6..e4bddef`). It contains `push_duckdb_to_supabase.py` + its test only, identical to v2 `6746bfc`. Tests 57/14/parity passed in the `main` tree. Pages rebuild `36276305809` was triggered.
+
+0C run `36274892062` (dispatched on `main` `ab2e3b6`, old script, cold cache) was still in the ingest step at 22:35 UTC, with about 3.5 h expected. It keeps the old script, so it will overwrite the Neo rows again and will not fill `api_hash`.
 
 Next steps, each needing owner approval (plain-English summary with each ask):
-1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline". Expect pokemontcg.io 20,656 again: the old script on `main` re-overwrites the Neo rows.
-2. Commit the gate, migration, tests and docs on v2, then push.
-3. With no push running, apply `20260926220844_cards_api_hash.sql` as SQL (not `supabase db push`). Verify `api_hash` exists and PostgREST sees it.
-4. Sync `push_duckdb_to_supabase.py` and its test to `main`.
-5. Run the guarded Neo repair (1B).
-6. Dispatch a warm `main` ingest to publish the English Neo rows plus the `ja-` rows and fill fingerprints, then verify: no collisions; the unchanged count is about 0 on this run and about all rows on the one after.
-7. Owner decision: keep Japanese Neo visible (recommended) or extend the hide list.
+1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline":
+   - Run log: ingest outcome, published counts, twin skips (~8,451), refresh attempts and duration, ANALYZE. If the refresh needed 3+ attempts, pull the Postgres logs for that window.
+   - Read-only SQL: counts by origin (expect pokemontcg.io 20,656), 0 Japanese twins, 4 filter-view rows, an authenticated Explore query.
+   - `api_hash` stays all NULL.
+2. Run the guarded Neo repair (1B "Production repair" SQL), only while no push is running. The auto-mode classifier blocks production SQL writes, so the owner may need to run it in the SQL editor; afterwards verify 0 Japanese cards in `neo1`–`neo4` and the 4 set rows owned by `pokemontcg.io`.
+3. Dispatch a warm `main` ingest (new script) and verify:
+   - no collisions reported;
+   - "unchanged" is about 0 (the first fingerprinted run rewrites everything, so expect refresh retries);
+   - pokemontcg.io equals the published count;
+   - English Neo names in the TCG set filter;
+   - `ja-neo1`…`ja-neo4` present with 323 cards;
+   - `api_hash` filled.
+4. Owner decision: keep Japanese Neo visible (recommended) or extend the hide list.
 
-Also watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC should be warm and, after step 4, mostly "unchanged"). Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+Also watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC, now with the new script, so it should be mostly "unchanged" if step 3 ran first). Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

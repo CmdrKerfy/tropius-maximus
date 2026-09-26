@@ -49,6 +49,18 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Gate rollout steps 2–4 done; 0C run still ingesting
+
+- Preflight: model Claude Opus 5.5; token feasibility ample; scope full. HEAD `058f802`, remote `main` `ab2e3b6` at start.
+- Owner approved doing steps 2–4 while run `36274892062` (0C, old script) ingests:
+  - v2 `6746bfc` pushed (`058f802..6746bfc`; gate, migration, tests, plan, log).
+  - Migration `20260926220844_cards_api_hash.sql`: the auto-mode classifier blocked the agent, so the owner ran it in the SQL editor. Verified: column, comment, 0 non-null; PostgREST sees it; gate page ~0.46 s.
+  - `main` `e4bddef` pushed (`ab2e3b6..e4bddef`, 2 files identical to v2; tests 57/14/parity passed in the `main` tree; temp worktree removed). Pages run `36276305809` triggered.
+- Validation: push 57 OK, ingest 14 OK, parity passed (v2 and `main` tree).
+- Observation: an anon `limit=1` read of `cards` with a non-`id` column seq-scans the table (RLS hides every row; `name` took 2.1 s, `api_hash` hit the anon timeout). No app impact; noted for auth abuse hardening.
+- Open risks: the first fingerprinted run rewrites every row (refresh retries likely); the Neo repair SQL may need the owner to run it (classifier); Japanese Neo visibility is an owner decision.
+- Next action: when run `36274892062` finishes, do the 0C verification (plan "Exact next action" step 1), then ask for the Neo repair.
+
 ### 2026-09-26 (local) - 0C run dispatched; Neo collision found; publication gate implemented (uncommitted)
 
 - Owner approved: `main` ingest dispatch (run `36274892062`, cold cache, in progress at the time of writing = 0C run); investigate the 14-row gap; implement "skip unchanged rows" with the collision guard and `ja-` Neo namespacing.
