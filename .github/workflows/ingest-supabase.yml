@@ -38,24 +38,54 @@ jobs:
       - name: Test ingest database helpers
         run: python scripts/test_ingest.py
 
-      - name: Cache DuckDB data file
-        uses: actions/cache@v5
+      - name: Restore DuckDB progress
+        id: duckdb-cache
+        uses: actions/cache/restore@v5
         with:
           path: public/data/pokemon.duckdb
-          key: duckdb-${{ runner.os }}-${{ hashFiles('scripts/ingest.py', 'scripts/push_duckdb_to_supabase.py') }}
+          key: duckdb-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             duckdb-${{ runner.os }}-
 
       # --clear-failed drops bogus failed_sets rows (e.g. after API blips) so ingest
       # is not stuck skipping most sets; same as deploy-pages.yml scheduled ingest.
       # --fail-on-partial exits 1 so GitHub can notify on incomplete API pulls (no silent green).
-      - name: Ingest (TCG + PokeAPI + Pocket)
+      - name: Ingest with one automatic resume pass
+        id: ingest
+        continue-on-error: true
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
-        run: python scripts/ingest.py --clear-failed --fail-on-partial
+        run: |
+          for attempt in 1 2; do
+            echo "Ingest attempt ${attempt}/2"
+            if python scripts/ingest.py --clear-failed --fail-on-partial; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 2 ]; then
+              echo "Ingest incomplete; retrying from saved local progress in 30 seconds."
+              sleep 30
+            fi
+          done
+          exit 1
+
+      # Save successful progress even when one upstream API remains unavailable.
+      # The next run restores this snapshot, skips complete sets, and retries only gaps.
+      - name: Save DuckDB progress
+        if: always() && steps.ingest.outcome != 'skipped'
+        uses: actions/cache/save@v5
+        with:
+          path: public/data/pokemon.duckdb
+          key: ${{ steps.duckdb-cache.outputs.cache-primary-key }}
 
       - name: Push DuckDB → Supabase
+        if: steps.ingest.outcome == 'success'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scripts/push_duckdb_to_supabase.py
+
+      - name: Report incomplete ingest after saving progress
+        if: steps.ingest.outcome == 'failure'
+        run: |
+          echo "Ingest was incomplete. DuckDB progress was saved; the next run will retry missing data."
+          exit 1

@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import duckdb
+import httpx
 
 import ingest
 
@@ -56,6 +57,90 @@ class ClearFailedSetsTests(unittest.TestCase):
                 finally:
                     conn.close()
                 self.assertEqual(remaining, 0)
+
+
+def _card(card_id):
+    return {"id": card_id, "name": card_id}
+
+
+def _http_status_error(status_code):
+    request = httpx.Request("GET", "https://example.test/cards")
+    response = httpx.Response(status_code, request=request)
+    return httpx.HTTPStatusError(
+        f"HTTP {status_code}", request=request, response=response
+    )
+
+
+class ResumableCardIngestTests(unittest.TestCase):
+    def test_transient_failure_is_retried_in_second_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "retry.duckdb")
+            calls = {"set-a": 0, "set-b": 0}
+
+            def fetch(sid):
+                calls[sid] += 1
+                if sid == "set-a" and calls[sid] == 1:
+                    raise _http_status_error(502)
+                return [_card(f"{sid}-1")]
+
+            with (
+                patch.object(ingest, "DB_PATH", db_path),
+                patch.object(ingest, "get_set_file_list", return_value=["set-a", "set-b"]),
+                patch.object(ingest, "fetch_cards_from_api", side_effect=fetch),
+                patch.object(ingest.time, "sleep", return_value=None),
+            ):
+                ingest.initialize_database()
+                total, failures = ingest.ingest_cards(
+                    {"set-a": {"total": 1}, "set-b": {"total": 1}}
+                )
+
+            self.assertEqual((total, failures), (2, 0))
+            self.assertEqual(calls, {"set-a": 2, "set-b": 1})
+
+    def test_cached_complete_set_is_not_downloaded_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "resume.duckdb")
+            with patch.object(ingest, "DB_PATH", db_path):
+                ingest.initialize_database()
+                conn = duckdb.connect(db_path)
+                try:
+                    ingest._store_tcg_cards(
+                        conn, "set-a", [_card("set-a-1")], {"name": "Set A"}
+                    )
+                finally:
+                    conn.close()
+
+                with (
+                    patch.object(ingest, "get_set_file_list", return_value=["set-a"]),
+                    patch.object(ingest, "fetch_cards_from_api") as fetch,
+                ):
+                    total, failures = ingest.ingest_cards({"set-a": {"total": 1}})
+
+            self.assertEqual((total, failures), (0, 0))
+            fetch.assert_not_called()
+
+    def test_rate_limit_response_is_treated_as_transient(self):
+        self.assertTrue(ingest._is_transient_http_status(429))
+        self.assertFalse(ingest._is_transient_http_status(404))
+
+    def test_unresolved_transient_failure_is_reported_after_retry_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "unresolved.duckdb")
+            with (
+                patch.object(ingest, "DB_PATH", db_path),
+                patch.object(ingest, "get_set_file_list", return_value=["set-a"]),
+                patch.object(
+                    ingest,
+                    "fetch_cards_from_api",
+                    side_effect=_http_status_error(500),
+                ) as fetch,
+                patch.object(ingest.time, "sleep", return_value=None),
+            ):
+                ingest.initialize_database()
+                total, failures = ingest.ingest_cards({"set-a": {"total": 1}})
+
+            self.assertEqual((total, failures), (0, 1))
+            self.assertEqual(fetch.call_count, 2)
 
     def test_empty_database_file_without_tables(self):
         with tempfile.TemporaryDirectory() as tmp:

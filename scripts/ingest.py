@@ -538,13 +538,65 @@ def get_existing_card_count(conn, set_id: str) -> int:
     return result[0] if result else 0
 
 
-def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = False) -> tuple[int, int]:
+def _is_transient_http_status(status_code: int) -> bool:
+    """Return whether an HTTP response is worth retrying later in the run."""
+    return status_code >= 500 or status_code in {408, 425, 429}
+
+
+def _store_tcg_cards(conn: duckdb.DuckDBPyConnection, sid: str, cards: list[dict], set_info: dict) -> None:
+    """Upsert one fully fetched TCG set into DuckDB."""
+    set_name = set_info.get("name", sid)
+    set_series = set_info.get("series", "")
+
+    for card in cards:
+        images = card.get("images", {})
+        prices = {
+            "tcgplayer": card.get("tcgplayer"),
+            "cardmarket": card.get("cardmarket"),
+        }
+
+        conn.execute("""
+            INSERT OR REPLACE INTO tcg_cards
+                (id, name, supertype, subtypes, hp, types, evolves_from,
+                 rarity, artist, set_id, set_name, set_series, number,
+                 regulation_mark, image_small, image_large, raw_data, prices,
+                 source, is_custom)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TCG', FALSE)
+        """, [
+            card["id"],
+            card.get("name", ""),
+            normalize_supertype(card.get("supertype", "") or ""),
+            json.dumps(card.get("subtypes", [])),
+            card.get("hp", ""),
+            json.dumps(card.get("types", [])),
+            card.get("evolvesFrom", ""),
+            card.get("rarity", ""),
+            card.get("artist", ""),
+            sid,
+            set_name,
+            set_series,
+            card.get("number", ""),
+            card.get("regulationMark", ""),
+            images.get("small", ""),
+            images.get("large", ""),
+            json.dumps(card),
+            json.dumps(prices) if prices["tcgplayer"] or prices["cardmarket"] else None,
+        ])
+
+
+def ingest_cards(
+    set_lookup: dict,
+    set_id: Optional[str] = None,
+    force: bool = False,
+    transient_retry_passes: int = 1,
+) -> tuple[int, int]:
     """Download cards from the pokemontcg.io API and upsert into the cards table.
 
     If force=False (default), skips sets that already have cards in the database.
 
     Returns (total_ingested_cards, set_fetch_failures) where set_fetch_failures counts
-    sets that hit an API error and were skipped (including rows written to failed_sets).
+    sets that still have an API error after the bounded transient retry passes
+    (including rows written to failed_sets for permanent 4xx responses).
     """
     if set_id:
         set_ids = [set_id]
@@ -557,94 +609,75 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
     conn = get_connection()
     total_ingested = 0
     skipped_count = 0
-    set_fetch_failures = 0
+    permanent_failures = 0
 
     # Load permanently-failed sets so we don't retry them
     failed_sets = {row[0] for row in conn.execute("SELECT set_id FROM failed_sets").fetchall()}
     perm_skipped = 0
 
-    for i, sid in enumerate(set_ids, 1):
-        # Skip sets that have permanently failed (4xx) in a previous run
-        if not force and sid in failed_sets:
-            perm_skipped += 1
-            continue
+    retry_queue = list(enumerate(set_ids, 1))
+    final_transient_failures = []
+    retry_passes = max(0, int(transient_retry_passes))
 
-        # Check if set already has cards (resume logic)
-        if not force:
-            existing = get_existing_card_count(conn, sid)
-            expected = set_lookup.get(sid, {}).get("total", 0)
-            if existing > 0 and (expected == 0 or existing >= expected):
-                print(f"  [{i}/{len(set_ids)}] {sid}... skipped (already have {existing} cards)")
-                skipped_count += 1
+    for pass_number in range(retry_passes + 1):
+        work_items = retry_queue
+        retry_queue = []
+        if pass_number > 0:
+            if not work_items:
+                break
+            print(
+                f"Retrying {len(work_items)} transiently failed set(s) "
+                f"(pass {pass_number}/{retry_passes})..."
+            )
+            time.sleep(RETRY_DELAY * pass_number)
+
+        for work_index, (i, sid) in enumerate(work_items):
+            if pass_number == 0:
+                # Skip sets that have permanently failed (4xx) in a previous run.
+                if not force and sid in failed_sets:
+                    perm_skipped += 1
+                    continue
+
+                # Resume from the cached DuckDB snapshot, downloading only incomplete sets.
+                if not force:
+                    existing = get_existing_card_count(conn, sid)
+                    expected = set_lookup.get(sid, {}).get("total", 0)
+                    if existing > 0 and (expected == 0 or existing >= expected):
+                        print(f"  [{i}/{len(set_ids)}] {sid}... skipped (already have {existing} cards)")
+                        skipped_count += 1
+                        continue
+
+            label = f"retry {pass_number}" if pass_number else f"{i}/{len(set_ids)}"
+            print(f"  [{label}] {sid}...", end=" ", flush=True)
+
+            try:
+                cards = fetch_cards_from_api(sid)
+            except httpx.HTTPStatusError as e:
+                if not _is_transient_http_status(e.response.status_code):
+                    permanent_failures += 1
+                    conn.execute(
+                        "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
+                        [sid, str(e.response.status_code)],
+                    )
+                    print(f"permanently unavailable ({e.response.status_code}) — will skip in future runs")
+                else:
+                    retry_queue.append((i, sid))
+                    print(f"transient failure (HTTP {e.response.status_code})")
+                continue
+            except (httpx.HTTPError, httpx.TimeoutException) as e:
+                retry_queue.append((i, sid))
+                print(f"transient failure ({e})")
                 continue
 
-        print(f"  [{i}/{len(set_ids)}] {sid}...", end=" ", flush=True)
+            _store_tcg_cards(conn, sid, cards, set_lookup.get(sid, {}))
+            total_ingested += len(cards)
+            print(f"{len(cards)} cards")
 
-        try:
-            cards = fetch_cards_from_api(sid)
-        except httpx.HTTPStatusError as e:
-            set_fetch_failures += 1
-            if e.response.status_code < 500:
-                conn.execute(
-                    "INSERT OR REPLACE INTO failed_sets (set_id, reason) VALUES (?, ?)",
-                    [sid, str(e.response.status_code)],
-                )
-                print(f"permanently unavailable ({e.response.status_code}) — will skip in future runs")
-            else:
-                print(f"failed after {MAX_RETRIES} retries (HTTP {e.response.status_code})")
-            continue
-        except (httpx.HTTPError, httpx.TimeoutException) as e:
-            set_fetch_failures += 1
-            print(f"failed after {MAX_RETRIES} retries ({e})")
-            continue
+            # Rate limit: be gentle with the API.
+            if work_index < len(work_items) - 1:
+                time.sleep(0.5)
 
-        set_info = set_lookup.get(sid, {})
-        set_name = set_info.get("name", sid)
-        set_series = set_info.get("series", "")
-
-        for card in cards:
-            images = card.get("images", {})
-
-            # Extract pricing data
-            prices = {
-                "tcgplayer": card.get("tcgplayer"),
-                "cardmarket": card.get("cardmarket"),
-            }
-
-            conn.execute("""
-                INSERT OR REPLACE INTO tcg_cards
-                    (id, name, supertype, subtypes, hp, types, evolves_from,
-                     rarity, artist, set_id, set_name, set_series, number,
-                     regulation_mark, image_small, image_large, raw_data, prices,
-                     source, is_custom)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TCG', FALSE)
-            """, [
-                card["id"],
-                card.get("name", ""),
-                normalize_supertype(card.get("supertype", "") or ""),
-                json.dumps(card.get("subtypes", [])),
-                card.get("hp", ""),
-                json.dumps(card.get("types", [])),
-                card.get("evolvesFrom", ""),
-                card.get("rarity", ""),
-                card.get("artist", ""),
-                sid,
-                set_name,
-                set_series,
-                card.get("number", ""),
-                card.get("regulationMark", ""),
-                images.get("small", ""),
-                images.get("large", ""),
-                json.dumps(card),
-                json.dumps(prices) if prices["tcgplayer"] or prices["cardmarket"] else None,
-            ])
-
-        total_ingested += len(cards)
-        print(f"{len(cards)} cards")
-
-        # Rate limit: be gentle with the API
-        if i < len(set_ids):
-            time.sleep(0.5)
+        final_transient_failures = retry_queue
 
     # Standardize any remaining Pokémon supertype variants (e.g. mojibake) to 'Pokémon'
     fixed = normalize_supertypes_in_db(conn)
@@ -657,8 +690,14 @@ def ingest_cards(set_lookup: dict, set_id: Optional[str] = None, force: bool = F
         parts.append(f"{skipped_count} sets already complete.")
     if perm_skipped:
         parts.append(f"{perm_skipped} sets permanently unavailable (skipped).")
-    if set_fetch_failures:
-        parts.append(f"{set_fetch_failures} set(s) had fetch errors this run.")
+    set_fetch_failures = permanent_failures + len(final_transient_failures)
+    if final_transient_failures:
+        parts.append(
+            f"{len(final_transient_failures)} set(s) still had transient fetch errors "
+            f"after {retry_passes} extra pass(es)."
+        )
+    if permanent_failures:
+        parts.append(f"{permanent_failures} set(s) were permanently unavailable.")
     print("Done! " + " ".join(parts))
     return total_ingested, set_fetch_failures
 
