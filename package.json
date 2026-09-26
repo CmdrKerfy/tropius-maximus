@@ -12,7 +12,7 @@
     "test:jpn-key": "node --test src/lib/__tests__/jpnCardKey.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
-    "check:quick": "npm run build && npm test && python scripts/test_jpn_card_key.py",
+    "check:quick": "npm run build && npm test && python scripts/test_jpn_card_key.py && python scripts/test_ingest.py && python scripts/test_push_duckdb_to_supabase.py",
     "check": "npm run check:quick && npm run test:e2e",
     "failed-sets": "python3 -c \"import duckdb; conn = duckdb.connect('public/data/pokemon.duckdb', read_only=True); [print(r) for r in conn.execute('SELECT set_id, reason FROM failed_sets ORDER BY set_id').fetchall()] or print('None'); conn.close()\"",
     "missing-sets": "python3 -c \"import duckdb; conn = duckdb.connect('public/data/pokemon.duckdb', read_only=True); [print(r) for r in conn.execute(\\\"SELECT s.id, s.name, s.total FROM sets s LEFT JOIN tcg_cards c ON c.set_id=s.id GROUP BY s.id,s.name,s.total HAVING COUNT(c.id)=0 ORDER BY s.id\\\").fetchall()] or print('None'); conn.close()\""

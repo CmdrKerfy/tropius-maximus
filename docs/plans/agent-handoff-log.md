@@ -49,6 +49,79 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-25 20:45 (local) - Phase 0A review follow-ups
+
+- Branch: `v2/supabase-migration`
+- Completed:
+  - `package.json`: `check:quick` now also runs `python scripts/test_ingest.py` and `python scripts/test_push_duckdb_to_supabase.py`.
+  - Plan top-level status updated to "Phase 0A implemented (uncommitted), awaiting owner approval; Phase 0B not started".
+- Validation run:
+  - Focused tests: 5/5 and 10/10 pass. `npm run check:quick` passes (includes both scripts).
+- Migrations touched:
+  - None.
+- Open risks or assumptions:
+  - Nothing committed or pushed; `main` untouched.
+- Next action (single first step):
+  - Owner approves 0A; then commit 0A on `v2/supabase-migration` and start Phase 0B with the ingest-unit diff against `main`.
+
+---
+
+### 2026-09-25 20:30 (local) - Phase 0A ingest empty-checkout fix + batching tests
+
+- Preflight sent and accepted:
+  - Model: Claude Opus 5.5 (owner-directed phase request)
+  - Token-feasibility declared: likely
+  - Scope selected: Phase 0A only
+- Branch: `v2/supabase-migration`
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md` (Phase 0A results section)
+- Scope in this slice:
+  - Review retained adaptive batching (`2a209f0`) and `clear_failed_sets()` (`74a4875`), both already committed; neither changed.
+  - Harden `get_connection()` to create the DuckDB parent directory.
+  - Add regression and batching tests.
+- Completed:
+  - `scripts/ingest.py`: parent-directory creation in `get_connection()`.
+  - `scripts/test_ingest.py`: 5 tests covering a nonexistent path, a table-less file, an older schema missing `failed_sets`, existing rows, and an offline CLI `--clear-failed` run (network patched to fail).
+  - `scripts/test_push_duckdb_to_supabase.py`: 10 tests covering repeated shrinkage, the minimum-size floor, a final short batch, exactly-once submission, fatal non-timeout errors, and dry run.
+- Validation run:
+  - Before: pre-fix `ingest.py` raises `CatalogException: Table with name failed_sets does not exist!`.
+  - Focused tests: 5/5 and 10/10 pass. Dry-run push on a fresh fixture: exit 0.
+  - `npm run check:quick` (pass)
+- Migrations touched:
+  - None.
+- Open risks or assumptions:
+  - Changes are uncommitted pending review. Corrupt/0-byte DuckDB is still fatal by design. Scheduled runs still use `main` code until Phase 0B.
+- Next action (single first step):
+  - Reviewer reruns `python scripts/test_ingest.py && python scripts/test_push_duckdb_to_supabase.py && npm run check:quick`; if approved, commit 0A and start Phase 0B with the ingest-unit diff against `main` listed in the plan's Exact next action.
+
+---
+
+### 2026-09-25 20:06 (local) - System remediation plan handoff
+
+- Preflight sent and accepted:
+  - Model accepted: yes (`GPT-5.6 Sol`)
+  - Token-feasibility declared: likely
+  - Scope selected: full documentation plan
+- Branch: `v2/supabase-migration`
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md`
+- Scope in this slice:
+  - Convert the read-only performance/ingest/database/deployment audit into a durable phased implementation and review plan.
+- Completed:
+  - Added verified baseline, guardrails, success criteria, phase dependencies, acceptance gates, validation steps, backout guidance, and reviewer/implementer handoff contract.
+  - Prioritized active ingest recovery before performance tuning.
+  - Preserved the owner-only `main` policy: ingest-only sync still requires explicit authorization.
+- Validation run:
+  - Markdown-only change; no new code validation required.
+  - Audit baseline before this documentation slice: `npm run check:quick` passed.
+- Migrations touched:
+  - None.
+- Open risks or assumptions:
+  - Scheduled Supabase ingest remains broken until Phase 0 is implemented and an approved ingest-only sync reaches the default branch.
+  - Existing unrelated working-tree changes must be preserved.
+- Next action (single first step):
+  - Start Phase 0A on `v2/supabase-migration`: review the existing adaptive batching diff, add an empty-DuckDB `--clear-failed` regression test, fix initialization order, and run `npm run check:quick`; stop for review before any `main` change.
+
+---
+
 ### 2026-05-16 — Workbench annotation jump-chip overflow quick fix
 
 - Branch: `v2/supabase-migration`

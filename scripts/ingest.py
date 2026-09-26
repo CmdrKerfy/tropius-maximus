@@ -217,6 +217,7 @@ def get_region_generation(pokedex_num: int) -> tuple:
 
 def get_connection() -> duckdb.DuckDBPyConnection:
     """Open (or create) the DuckDB database file and return a connection."""
+    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
     return duckdb.connect(DB_PATH)
 
 

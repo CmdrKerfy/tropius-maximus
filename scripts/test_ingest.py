@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Focused tests for ingest database lifecycle helpers."""
 
+import io
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -53,6 +56,70 @@ class ClearFailedSetsTests(unittest.TestCase):
                 finally:
                     conn.close()
                 self.assertEqual(remaining, 0)
+
+    def test_empty_database_file_without_tables(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "empty.duckdb")
+            duckdb.connect(db_path).close()
+            with patch.object(ingest, "DB_PATH", db_path):
+                self.assertEqual(ingest.clear_failed_sets(), 0)
+
+    def test_older_database_missing_failed_sets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "older.duckdb")
+            conn = duckdb.connect(db_path)
+            try:
+                conn.execute("CREATE TABLE tcg_cards (id VARCHAR PRIMARY KEY)")
+                conn.execute("INSERT INTO tcg_cards VALUES ('keep-me')")
+            finally:
+                conn.close()
+            with patch.object(ingest, "DB_PATH", db_path):
+                self.assertEqual(ingest.clear_failed_sets(), 0)
+            conn = duckdb.connect(db_path, read_only=True)
+            try:
+                kept = conn.execute("SELECT COUNT(*) FROM tcg_cards").fetchone()[0]
+            finally:
+                conn.close()
+            self.assertEqual(kept, 1)
+
+
+def _network_forbidden(*_args, **_kwargs):
+    raise AssertionError("network access attempted during offline ingest test")
+
+
+class ClearFailedCliTests(unittest.TestCase):
+    def test_cli_clear_failed_on_nonexistent_path_runs_offline(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "missing-dir" / "pokemon.duckdb")
+            argv = [
+                "ingest.py",
+                "--clear-failed",
+                "--fail-on-partial",
+                "--skip-pokemon",
+                "--skip-tcg",
+                "--skip-pocket",
+                "--skip-japanese",
+            ]
+            with patch.object(ingest, "DB_PATH", db_path), \
+                    patch.object(sys, "argv", argv), \
+                    patch.object(ingest.httpx, "get", _network_forbidden), \
+                    patch.object(ingest.httpx, "head", _network_forbidden), \
+                    patch.object(ingest.httpx, "Client", _network_forbidden), \
+                    redirect_stdout(io.StringIO()) as out:
+                ingest.main()
+
+            self.assertIn("Cleared 0 permanently-failed set(s)", out.getvalue())
+            conn = duckdb.connect(db_path, read_only=True)
+            try:
+                tables = {
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT table_name FROM information_schema.tables"
+                    ).fetchall()
+                }
+            finally:
+                conn.close()
+            self.assertTrue({"failed_sets", "tcg_cards", "sets"} <= tables)
 
 
 if __name__ == "__main__":

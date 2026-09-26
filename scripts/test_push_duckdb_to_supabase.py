@@ -72,6 +72,103 @@ class BatchUpsertTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "permission denied"):
             push.batch_upsert(FailingClient(), "cards", [{"id": "1"}])
 
+    def _run(self, client, rows):
+        with patch.object(push.time, "sleep", return_value=None), \
+                patch("builtins.print"):
+            return push.batch_upsert(client, "cards", rows)
+
+    def _assert_exactly_once(self, client, rows):
+        self.assertEqual(client.pushed_ids, [row["id"] for row in rows])
+
+    def test_repeated_timeouts_shrink_and_reduced_size_persists(self):
+        rows = [{"id": str(i)} for i in range(108)]
+        client = _FakeClient(max_rows=12)
+
+        self.assertEqual(self._run(client, rows), len(rows))
+
+        self.assertEqual(client.attempted_sizes[:4], [100, 50, 25, 12])
+        self.assertEqual(client.attempted_sizes[4:], [12] * 8)
+        self._assert_exactly_once(client, rows)
+
+    def test_shrinks_to_minimum_batch_size_and_succeeds(self):
+        rows = [{"id": str(i)} for i in range(35)]
+        client = _FakeClient(max_rows=push.MIN_BATCH_SIZE)
+
+        self.assertEqual(self._run(client, rows), len(rows))
+
+        self.assertEqual(client.attempted_sizes, [35, 17, 10, 10, 10, 5])
+        self._assert_exactly_once(client, rows)
+
+    def test_timeout_at_minimum_batch_size_is_fatal(self):
+        rows = [{"id": str(i)} for i in range(30)]
+        client = _FakeClient(max_rows=push.MIN_BATCH_SIZE - 1)
+
+        with self.assertRaisesRegex(RuntimeError, "57014"):
+            self._run(client, rows)
+
+        self.assertEqual(client.attempted_sizes, [30, 15, push.MIN_BATCH_SIZE])
+        self.assertEqual(client.pushed_ids, [])
+
+    def test_final_short_batch_without_timeouts(self):
+        rows = [{"id": str(i)} for i in range(push.BATCH_SIZE * 2 + 5)]
+        client = _FakeClient(max_rows=10_000)
+
+        self.assertEqual(self._run(client, rows), len(rows))
+
+        self.assertEqual(client.attempted_sizes, [push.BATCH_SIZE, push.BATCH_SIZE, 5])
+        self._assert_exactly_once(client, rows)
+
+    def test_final_short_batch_after_shrink(self):
+        rows = [{"id": str(i)} for i in range(107)]
+        client = _FakeClient(max_rows=50)
+
+        self.assertEqual(self._run(client, rows), len(rows))
+
+        self.assertEqual(client.attempted_sizes, [100, 50, 50, 7])
+        self._assert_exactly_once(client, rows)
+
+    def test_statement_timeout_text_without_code_is_retried(self):
+        client = _FakeClient(max_rows=50)
+        original_execute = _FakeRequest.execute
+
+        def execute(request):
+            if len(request.rows) > request.client.max_rows:
+                request.client.attempted_sizes.append(len(request.rows))
+                raise RuntimeError("canceling statement due to statement timeout")
+            return original_execute(request)
+
+        rows = [{"id": str(i)} for i in range(100)]
+        with patch.object(_FakeRequest, "execute", execute):
+            self.assertEqual(self._run(client, rows), len(rows))
+        self._assert_exactly_once(client, rows)
+
+    def test_non_timeout_error_after_shrink_is_fatal(self):
+        rows = [{"id": str(i)} for i in range(100)]
+        client = _FakeClient(max_rows=50)
+        original_execute = _FakeRequest.execute
+
+        def execute(request):
+            if request.client.attempted_sizes == [100, 50]:
+                request.client.attempted_sizes.append(len(request.rows))
+                raise RuntimeError("duplicate key value violates unique constraint")
+            return original_execute(request)
+
+        with patch.object(_FakeRequest, "execute", execute):
+            with self.assertRaisesRegex(RuntimeError, "duplicate key"):
+                self._run(client, rows)
+
+        self.assertEqual(client.attempted_sizes, [100, 50, 50])
+        self.assertEqual(client.pushed_ids, [str(i) for i in range(50)])
+
+    def test_dry_run_counts_rows_without_requests(self):
+        rows = [{"id": str(i)} for i in range(205)]
+        client = _FakeClient(max_rows=0)
+
+        with patch.object(push, "DRY_RUN", True):
+            self.assertEqual(self._run(client, rows), len(rows))
+
+        self.assertEqual(client.attempted_sizes, [])
+
 
 if __name__ == "__main__":
     unittest.main()
