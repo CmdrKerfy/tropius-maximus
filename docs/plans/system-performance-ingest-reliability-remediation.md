@@ -934,7 +934,7 @@ Phase gate:
 - Hashed assets (`/assets/index-*.js`) were served `public, max-age=0, must-revalidate`, so every load re-checked every chunk.
 - `/` was `no-cache, no-store, must-revalidate`; SPA routes (e.g. `/explore`) used Vercel's default `public, max-age=0, must-revalidate`, which stays as is.
 - All `dist/assets` names are content-hashed, `public/` has no `assets/` folder, and `middleware.js` only matches `/share/card/*`.
-- Verify after deploy: an asset returns `max-age=31536000, immutable`, and `/` returns `no-cache`.
+- **Verified after deploy (`06f3927`, Vercel deployment 6685476683):** `/assets/index-Bj7EgWFN.js` returns `public, max-age=31536000, immutable` and `/` returns `no-cache`. `/explore` and `/share/card/*` are unchanged (`public, max-age=0, must-revalidate`).
 - [ ] Use Vercel commit/deployment identifiers instead of timestamp fallback for release identity.
 - [ ] Record application SHA and compatible migration version.
 
@@ -1053,7 +1053,8 @@ Done 2026-09-26 while run `36274892062` ingests (v2 working tree, uncommitted):
 - 2E partition migration `20260926223742_…` and weekly push check (not applied; push change is v2 only).
 - Tests: push 61 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Both migrations were exercised on a throwaway local Postgres 18.
 - Committed and pushed as v2 `abab818`.
-- Then 4C (`vercel.json` immutable `/assets/*`, `no-cache` HTML) and 3D (sort options, short-search message and stuck skeleton, Card Detail arrows, dialog semantics and focus, eager first grid row). See the 4C and 3D sections. A v2 push deploys to Vercel **Production**; verify the headers and a quick Explore/Card Detail check afterwards.
+- Then 4C (`vercel.json` immutable `/assets/*`, `no-cache` HTML) and 3D (sort options, short-search message and stuck skeleton, Card Detail arrows, dialog semantics and focus, eager first grid row): v2 `06f3927`, pushed and deployed to Vercel Production. See the 4C and 3D sections. Owner: a quick signed-in check of Explore sort, a 2-letter search, and Card Detail.
+- Open: the local Playwright runner hangs (even `--list`); diagnose before relying on `npm run check`.
 
 Next steps, each needing owner approval (plain-English summary with each ask):
 1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline":

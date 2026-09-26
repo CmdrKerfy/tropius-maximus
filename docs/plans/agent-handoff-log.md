@@ -49,6 +49,22 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - 4C caching + 3D Explore/Card Detail UX shipped to v2 (0C run still ingesting)
+
+- Scope: the owner picked 4C, then 3D, while run `36274892062` ingests. `abab818` (2C/2E) was pushed first.
+- Completed: v2 `06f3927` pushed, which deploys to Vercel Production.
+  - 4C: `vercel.json` sets `/assets/*` immutable for 1 year and HTML `no-cache`.
+  - 3D:
+    - Pokédex/Price/Region sorts hidden on Supabase (they silently sorted by name);
+    - 3-character search message (also fixes a skeleton that spun forever);
+    - Card Detail arrow keys ignore text fields; dialog role, label, Tab trap and focus restore;
+    - eager first grid row.
+  - Details are in the plan's 4C and 3D sections.
+- Validation: production headers verified after deploy (assets immutable, `/` no-cache). `npm run check:quick` pass. The Playwright **runner hangs locally** (even `--list`; pre-existing, undiagnosed), so a DuckDB preview was driven with the Playwright library instead: 15/15 checks passed. The Supabase sort hiding has unit tests only.
+- Migrations touched: none. 2C/2E (`abab818`) are still not applied.
+- Risks: the owner should do a quick signed-in look at Explore sort, a short search, and Card Detail on production. Check that nothing else under `/assets/` is expected to change without a new hashed name (none found).
+- Next action: when run `36274892062` completes, do the 0C verification (plan "Exact next action" step 1).
+
 ### 2026-09-26 (local) - Neo visibility decided; 2C + 2E migrations written (0C run still ingesting)
 
 - Preflight: model Claude Opus 5.5; token feasibility ample; scope: owner picked "keep Neo visible, then 2C and 2E" while run `36274892062` ingests. HEAD `47a00c2`, remote `main` `e4bddef`; `cards.api_hash` verified present.
