@@ -427,7 +427,7 @@ Findings:
   - It applies to both RPCs; ANALYZE stays nonfatal.
   - A new test, `test_retry_window_outlasts_post_upsert_io_window`, pins the invariant; the transient-then-success test now compares a backoff prefix.
 - **Validation:** `test_push_duckdb_to_supabase.py` 38 OK; `test_ingest.py` 14 OK; parity passed; `npm run check:quick` exit 0.
-- **Not yet on `main`:** the scheduled 2026-09-28 07:30 UTC run executes `main`'s script (3 attempts). Its full upsert after a cold-cache ingest could exhaust retries and go red, which is the correct failure mode, with a stale view. Syncing `push_duckdb_to_supabase.py` plus its test to `main` needs owner approval.
+- **Shipped (owner-approved 2026-09-26):** v2 `6766075` (pushed). Synced to `main` as `ab2e3b6` (`ef0d0d6..ab2e3b6`): the two files only, identical to v2; tests 38/14/parity passed in the `main` tree. The two files on `main` matched v2 `b252f80` before the sync, so it carries only this change. The push triggered the usual v1 Pages rebuild.
 
 **Proposed `main` sync (not executed; needs explicit owner approval):** prepared 2026-09-26 as staged (uncommitted) changes in a temporary worktree on `origin/main` `2e5543a` (scratchpad `main-sync/`, full patch `main-sync.patch`, 8 files, +2,538/−142); tests pass in that tree (30/14/parity); `requirements-ci.txt` already identical. **Re-staged 2026-09-26 from v2 `ee01e4b`** (includes the 1B twin fix): 8 files, +2,734/−142, staged files identical to `ee01e4b`, tests 37/14/parity pass in the `main` tree. One commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
 
@@ -497,7 +497,7 @@ Acceptance:
 - Japanese tcgdex rows with a ptcgdb twin: 0.
 - `explore_filter_options`: 4 source rows, with set-option counts tcg 259, japanese 389, pocket 15, custom 81.
 
-**Proposed 0C run:** use the scheduled `main` run on 2026-09-28 07:30 UTC as the 0C run instead of a manual dispatch, after the refresh-retry fix is synced to `main` (owner approval). Expect a cold cache (about 3.5 h), about 8,451 tcgdex Japanese rows skipped as twins, and about 4,330 published.
+**0C run (owner-approved 2026-09-26):** the scheduled `main` run on 2026-09-28 07:30 UTC (`main` `ab2e3b6`, which includes the refresh-retry fix) is the 0C run. There is no manual dispatch. Expect a cold cache (about 3.5 h), about 8,451 tcgdex Japanese rows skipped as twins, and about 4,330 published.
 
 - [ ] Run `workflow_dispatch` from the corrected default branch.
 - [ ] Confirm ingest, publication, materialized-view refresh, and planner-statistics refresh all succeed.
@@ -907,13 +907,16 @@ Acceptance:
 
 ## Exact next action
 
-The refresh-timeout headroom is diagnosed and fixed script-only in the v2 working tree (uncommitted): `push_duckdb_to_supabase.py` now makes 5 maintenance attempts with `(15, 30, 60, 120)` s backoff; see 0B.3 "Refresh timeout headroom". The cause is an I/O stall after the full upsert, not the query plan; function-level timeouts and ANALYZE-first were ruled out with evidence. There is no migration. The 0C pre-run baseline is recorded.
+The refresh-timeout headroom fix shipped: v2 `6766075` and `main` `ab2e3b6` (5 maintenance attempts, `(15, 30, 60, 120)` s backoff; diagnosis under 0B.3 "Refresh timeout headroom"). The owner chose the scheduled `main` run on 2026-09-28 07:30 UTC as the 0C run (cold cache, about 3.5 h).
 
-Next single step: with owner approval,
-1. commit the fix plus these docs on v2 and push;
-2. sync `scripts/push_duckdb_to_supabase.py` and `scripts/test_push_duckdb_to_supabase.py` to `main` before 2026-09-28 07:30 UTC;
-3. let that scheduled run serve as the 0C run, then complete the 0C verification against the baseline.
+Next single step, after that run finishes (about 11:00 UTC or later):
+1. Complete the 0C checklist against the "Pre-run baseline" under 0C:
+   - `gh run list --workflow ingest-supabase.yml --branch main`, then read the run log;
+   - confirm ingest success, publication, refresh attempts and duration, and ANALYZE;
+   - confirm "tcgdex Japanese skipped (PTCG-db twin)" is about 8,451 and tcgdex Japanese published is about 4,330;
+   - run the read-only Supabase checks: counts by origin, newest `last_seen_in_api`, 0 Japanese twins, 4 view rows, and an authenticated representative Explore query;
+   - report Pocket coverage honestly (TCGdex stops at `B2a`).
+2. If the refresh needed 3 or more attempts, pull the Postgres logs for the refresh window.
+3. Then ask the owner for the 0C phase-gate sign-off.
 
-If the owner declines the `main` sync, the Monday run may go red at refresh (a correct failure with a stale view); rerun the refresh manually and treat 0C as pending.
-
-Also watch the v1 Pages run at 06:00 UTC (`--skip-japanese`). Phase 1E.1–1E.3 (no-write) may start in parallel. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+Also check the v1 Pages scheduled run at 06:00 UTC (`--skip-japanese`). Open question: pokemontcg.io has 20,656 rows in the database vs 20,670 published. Phase 1E.1–1E.3 (no-write) may start in parallel. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

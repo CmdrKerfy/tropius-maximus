@@ -49,6 +49,12 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Refresh headroom fix shipped to v2 and `main`; 0C = Monday scheduled run
+
+- The owner approved all three: v2 `6766075` pushed (`b252f80..6766075`); `main` sync `ab2e3b6` pushed (`ef0d0d6..ab2e3b6`; `push_duckdb_to_supabase.py` + its test only, identical to v2; tests 38/14/parity passed in the `main` tree; temp worktree removed). v1 Pages rebuild run `36274769225` was triggered by the push.
+- 0C: the scheduled `main` run on 2026-09-28 07:30 UTC is the 0C run; there is no manual dispatch.
+- Next action: after that run finishes, complete the 0C verification per the plan's "Exact next action", then ask the owner for the phase-gate sign-off.
+
 ### 2026-09-26 (local) - Refresh timeout headroom diagnosed; script-only fix (uncommitted)
 
 - Preflight: model Claude Opus 5.5; token feasibility ample; scope full. HEAD `b252f80`; remote `main` `ef0d0d6` (the sync landed on top of `2e5543a`).
@@ -63,7 +69,7 @@ If token feasibility is **unlikely**, the agent must propose:
   - Plan: 0B.3 "Refresh timeout headroom", 1A item, 0C pre-run baseline, "Exact next action".
 - Validation: push tests 38 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Read-only production SQL and logs; the temp-function probe was rolled back.
 - Migrations touched: none. Nothing committed, pushed, applied, or dispatched.
-- Open risks: `main`'s 2026-09-28 07:30 UTC scheduled run still uses 3 attempts with `(5, 15)` backoff and may exhaust retries after a cold-cache full upsert. The 14-row gap (pokemontcg.io 20,656 in the database vs 20,670 published) is unexplained.
+- Open risks (the retry risk was resolved by `ab2e3b6`): The 14-row gap (pokemontcg.io 20,656 in the database vs 20,670 published) is unexplained.
 - Next action: owner approves (a) the v2 commit and push, and (b) syncing the two push-script files to `main` before Monday, so the scheduled run serves as 0C.
 
 ### 2026-09-26 (local) - 0B.3 ingest-only `main` sync landed
