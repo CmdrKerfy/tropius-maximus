@@ -27,6 +27,14 @@ jobs:
           node-version: "24"
           cache: npm
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements-ci.txt
+
       - name: Install dependencies
         run: npm ci
 

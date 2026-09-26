@@ -19,6 +19,7 @@ import {
   groupExploreSetsBySource,
   mergeExploreFilterOptions,
 } from "../../lib/mergeExploreFilterOptions.js";
+import { applyExploreSetIdFilter } from "../../lib/exploreSetFilter.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
 import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
 
@@ -711,16 +712,6 @@ function postgrestInTextValue(v) {
   return `"${s}"`;
 }
 
-function setIdOrNameClauses(values = []) {
-  return values
-    .map((v) => String(v ?? "").trim())
-    .filter(Boolean)
-    .flatMap((v) => {
-      const safe = postgrestOrEqValue(v);
-      return [`set_id.eq.${safe}`, `set_name.eq.${safe}`];
-    });
-}
-
 function excludeHiddenJapaneseSets(query) {
   return query.or(`origin_detail.is.null,origin_detail.neq.japanese,${HIDDEN_JPN_SET_ID_FILTER}`);
 }
@@ -902,8 +893,7 @@ export async function fetchCards(params = {}) {
 
     if (Array.isArray(rarity) && rarity.length) cq = cq.in("rarity", rarity);
     if (Array.isArray(set_id) && set_id.length) {
-      const clauses = setIdOrNameClauses(set_id);
-      if (clauses.length) cq = cq.or(clauses.join(","));
+      cq = applyExploreSetIdFilter(cq, set_id);
     }
 
     if (Array.isArray(element) && element.length) {
@@ -1051,8 +1041,7 @@ export async function fetchCards(params = {}) {
 
   if (Array.isArray(rarity) && rarity.length) query = query.in("rarity", rarity);
   if (Array.isArray(set_id) && set_id.length) {
-    const clauses = setIdOrNameClauses(set_id);
-    if (clauses.length) query = query.or(clauses.join(","));
+    query = applyExploreSetIdFilter(query, set_id);
   }
 
   if (Array.isArray(element) && element.length) {

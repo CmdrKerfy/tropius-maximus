@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { groupExploreSetsBySource } from "../mergeExploreFilterOptions.js";
+import {
+  groupExploreSetsBySource,
+} from "../mergeExploreFilterOptions.js";
+import {
+  applyExploreSetIdFilter,
+  normalizeExploreSetIds,
+} from "../exploreSetFilter.js";
 
 test("groups live set rows into the Explore source buckets", () => {
   const grouped = groupExploreSetsBySource([
@@ -26,4 +32,44 @@ test("ignores malformed rows and uses the id as a missing name", () => {
   ]);
 
   assert.deepEqual(grouped.pocket, [{ id: "B2", name: "B2", series: "tcgp" }]);
+});
+
+test("normalizes one TCG set ID for indexed filtering", () => {
+  assert.deepEqual(normalizeExploreSetIds(["me55"]), ["me55"]);
+});
+
+test("preserves a case-sensitive Pocket set ID", () => {
+  assert.deepEqual(normalizeExploreSetIds(["B2a"]), ["B2a"]);
+});
+
+test("normalizes and deduplicates multiple selected set IDs", () => {
+  assert.deepEqual(
+    normalizeExploreSetIds([" me55 ", "B2a", "me55", "", null]),
+    ["me55", "B2a"]
+  );
+});
+
+test("leaves punctuation escaping to Supabase's typed in filter", () => {
+  const calls = [];
+  const query = {
+    in(column, values) {
+      calls.push({ column, values });
+      return this;
+    },
+  };
+
+  assert.equal(applyExploreSetIdFilter(query, ['set,one', 'set"two']), query);
+  assert.deepEqual(calls, [
+    { column: "set_id", values: ['set,one', 'set"two'] },
+  ]);
+});
+
+test("does not add a filter when no valid set IDs are selected", () => {
+  const query = {
+    in() {
+      assert.fail("empty set selections must not call query.in");
+    },
+  };
+
+  assert.equal(applyExploreSetIdFilter(query, ["", null, "  "]), query);
 });
