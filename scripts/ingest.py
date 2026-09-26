@@ -918,15 +918,6 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
     """
     conn = get_connection()
 
-    # Resume check
-    if not force:
-        result = conn.execute("SELECT COUNT(*) FROM pocket_cards").fetchone()
-        existing = result[0] if result else 0
-        if existing > 0:
-            print(f"Pocket cards: skipped (already have {existing} cards). Use --force to re-download.")
-            conn.close()
-            return existing, 0, 0
-
     print("Fetching Pocket cards from TCGdex...")
 
     # Get all sets in the tcgp series
@@ -936,7 +927,8 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
     sets_list = series_data.get("sets", [])
     print(f"  Found {len(sets_list)} Pocket sets")
 
-    conn.execute("DELETE FROM pocket_cards")
+    if force:
+        conn.execute("DELETE FROM pocket_cards")
     ingested = 0
     pocket_set_fetch_failures = 0
     pocket_card_fetch_failures = 0
@@ -956,9 +948,22 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
 
         serie_id = (set_data.get("serie") or {}).get("id") or ""
         cards_brief = set_data.get("cards", [])
+        existing_ids = {
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM pocket_cards WHERE set_id = ?", [set_id]
+            ).fetchall()
+        }
+        cards_to_fetch = [
+            card for card in cards_brief if force or card["id"] not in existing_ids
+        ]
+        if not cards_to_fetch:
+            print(f"complete ({len(cards_brief)} cards)")
+            continue
+
         set_ingested = 0
 
-        for card_brief in cards_brief:
+        for card_brief in cards_to_fetch:
             card_id = card_brief["id"]
 
             # Fetch full card data
@@ -1032,7 +1037,7 @@ def ingest_pocket_cards(force: bool = False) -> tuple[int, int, int]:
             time.sleep(0.05)
 
         ingested += set_ingested
-        print(f"{set_ingested} cards")
+        print(f"{set_ingested} new card(s)")
 
     conn.close()
     print(f"  Saved {ingested} Pocket cards.")
@@ -1090,15 +1095,6 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
     """
     conn = get_connection()
 
-    # Resume check
-    if not force:
-        result = conn.execute("SELECT COUNT(*) FROM japanese_cards").fetchone()
-        existing = result[0] if result else 0
-        if existing > 0:
-            print(f"Japanese cards: skipped (already have {existing} cards). Use --force to re-download.")
-            conn.close()
-            return existing, 0, 0
-
     print("Fetching Japanese cards from TCGdex...")
 
     resp = httpx.get(f"{TCGDEX_JA_BASE}/sets", timeout=REQUEST_TIMEOUT)
@@ -1107,7 +1103,8 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
     sets_list = data if isinstance(data, list) else data.get("sets", [])
     print(f"  Found {len(sets_list)} Japanese sets")
 
-    conn.execute("DELETE FROM japanese_cards")
+    if force:
+        conn.execute("DELETE FROM japanese_cards")
     ingested = 0
     japanese_set_fetch_failures = 0
     japanese_card_fetch_failures = 0
@@ -1126,9 +1123,22 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
 
         serie_id = (set_data.get("serie") or {}).get("id") or ""
         cards_brief = set_data.get("cards", [])
+        existing_ids = {
+            row[0]
+            for row in conn.execute(
+                "SELECT id FROM japanese_cards WHERE set_id = ?", [set_id]
+            ).fetchall()
+        }
+        cards_to_fetch = [
+            card for card in cards_brief if force or card["id"] not in existing_ids
+        ]
+        if not cards_to_fetch:
+            print(f"complete ({len(cards_brief)} cards)")
+            continue
+
         set_ingested = 0
 
-        for card_brief in cards_brief:
+        for card_brief in cards_to_fetch:
             card_id = card_brief["id"]
 
             try:
@@ -1190,7 +1200,7 @@ def ingest_japanese_cards(force: bool = False) -> tuple[int, int, int]:
             time.sleep(0.05)
 
         ingested += set_ingested
-        print(f"{set_ingested} cards")
+        print(f"{set_ingested} new card(s)")
 
     conn.close()
     print(f"  Saved {ingested} Japanese cards.")

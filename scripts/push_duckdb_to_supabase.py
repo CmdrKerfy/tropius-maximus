@@ -156,6 +156,28 @@ def batch_upsert(sb, table: str, rows: list) -> int:
     return total
 
 
+def refresh_post_push_data(sb) -> tuple[bool, bool]:
+    """Refresh derived Explore data and planner statistics after upserts."""
+    filters_refreshed = False
+    stats_refreshed = False
+    try:
+        # postgrest-py 0.x requires params even for a zero-argument function.
+        sb.rpc("refresh_explore_filter_options", {}).execute()
+        print("  explore_filter_options: refreshed")
+        filters_refreshed = True
+    except Exception as exc:
+        print(f"  explore_filter_options: refresh failed ({exc}) — view will be stale until next refresh")
+
+    try:
+        sb.rpc("analyze_cards_and_annotations", {}).execute()
+        print("  analyze: cards + annotations statistics refreshed")
+        stats_refreshed = True
+    except Exception as exc:
+        print(f"  analyze: failed ({exc}) — statistics may be stale until next ANALYZE")
+
+    return filters_refreshed, stats_refreshed
+
+
 def fetch_dicts(conn: duckdb.DuckDBPyConnection, sql: str) -> list[dict]:
     cur = conn.execute(sql)
     names = [c[0] for c in cur.description]
@@ -477,21 +499,9 @@ def main() -> None:
     finally:
         conn.close()
 
-    # Refresh the Explore filter options materialized view (migration 054).
+    # Refresh the Explore filter options materialized view and planner stats.
     if not DRY_RUN and sb:
-        try:
-            sb.rpc("refresh_explore_filter_options").execute()
-            print("  explore_filter_options: refreshed")
-        except Exception as exc:
-            print(f"  explore_filter_options: refresh failed ({exc}) — view will be stale until next refresh")
-
-    # Refresh planner statistics so planned counts and query plans are accurate (migration 055).
-    if not DRY_RUN and sb:
-        try:
-            sb.rpc("analyze_cards_and_annotations").execute()
-            print("  analyze: cards + annotations statistics refreshed")
-        except Exception as exc:
-            print(f"  analyze: failed ({exc}) — statistics may be stale until next ANALYZE")
+        refresh_post_push_data(sb)
 
     print("Done.")
 

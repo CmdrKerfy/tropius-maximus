@@ -170,5 +170,33 @@ class BatchUpsertTests(unittest.TestCase):
         self.assertEqual(client.attempted_sizes, [])
 
 
+class PostPushMaintenanceTests(unittest.TestCase):
+    def test_zero_argument_rpcs_receive_empty_params(self):
+        class Request:
+            def execute(self):
+                return None
+
+        class Client:
+            def __init__(self):
+                self.calls = []
+
+            def rpc(self, function_name, params):
+                self.calls.append((function_name, params))
+                return Request()
+
+        client = Client()
+        with patch("builtins.print"):
+            result = push.refresh_post_push_data(client)
+
+        self.assertEqual(result, (True, True))
+        self.assertEqual(
+            client.calls,
+            [
+                ("refresh_explore_filter_options", {}),
+                ("analyze_cards_and_annotations", {}),
+            ],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

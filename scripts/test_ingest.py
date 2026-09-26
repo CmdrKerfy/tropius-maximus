@@ -172,6 +172,117 @@ def _network_forbidden(*_args, **_kwargs):
     raise AssertionError("network access attempted during offline ingest test")
 
 
+class _JsonResponse:
+    def __init__(self, data):
+        self._data = data
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._data
+
+
+def _tcgdex_card(card_id):
+    return {
+        "id": card_id,
+        "name": card_id,
+        "localId": "001",
+        "image": "https://assets.example.test/card",
+    }
+
+
+class IncrementalTcgdexIngestTests(unittest.TestCase):
+    def test_pocket_downloads_only_cards_missing_from_each_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "pocket.duckdb")
+            card_requests = []
+
+            def get(url, **_kwargs):
+                if url.endswith("/series/tcgp"):
+                    return _JsonResponse({"sets": [{"id": "complete"}, {"id": "new"}]})
+                if url.endswith("/sets/complete"):
+                    return _JsonResponse({"serie": {"id": "tcgp"}, "cards": [{"id": "complete-1"}]})
+                if url.endswith("/sets/new"):
+                    return _JsonResponse({"serie": {"id": "tcgp"}, "cards": [{"id": "new-1"}]})
+                if "/cards/" in url:
+                    card_id = url.rsplit("/", 1)[-1]
+                    card_requests.append(card_id)
+                    return _JsonResponse(_tcgdex_card(card_id))
+                raise AssertionError(f"unexpected URL: {url}")
+
+            with patch.object(ingest, "DB_PATH", db_path):
+                ingest.initialize_database()
+                conn = duckdb.connect(db_path)
+                try:
+                    conn.execute(
+                        "INSERT INTO pocket_cards (id, set_id) VALUES (?, ?)",
+                        ["complete-1", "complete"],
+                    )
+                finally:
+                    conn.close()
+
+                with patch.object(ingest.httpx, "get", side_effect=get), \
+                        patch.object(ingest.time, "sleep", return_value=None):
+                    result = ingest.ingest_pocket_cards()
+
+                conn = duckdb.connect(db_path, read_only=True)
+                try:
+                    count = conn.execute("SELECT COUNT(*) FROM pocket_cards").fetchone()[0]
+                finally:
+                    conn.close()
+
+            self.assertEqual(result, (1, 0, 0))
+            self.assertEqual(card_requests, ["new-1"])
+            self.assertEqual(count, 2)
+
+    def test_japanese_resumes_an_incomplete_set_at_card_level(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "japanese.duckdb")
+            card_requests = []
+
+            def get(url, **_kwargs):
+                if url.endswith("/sets"):
+                    return _JsonResponse([{"id": "jp-set"}])
+                if url.endswith("/sets/jp-set"):
+                    return _JsonResponse(
+                        {
+                            "serie": {"id": "JP"},
+                            "cards": [{"id": "jp-1"}, {"id": "jp-2"}],
+                        }
+                    )
+                if "/cards/" in url:
+                    card_id = url.rsplit("/", 1)[-1]
+                    card_requests.append(card_id)
+                    return _JsonResponse(_tcgdex_card(card_id))
+                raise AssertionError(f"unexpected URL: {url}")
+
+            with patch.object(ingest, "DB_PATH", db_path):
+                ingest.initialize_database()
+                conn = duckdb.connect(db_path)
+                try:
+                    conn.execute(
+                        "INSERT INTO japanese_cards (id, set_id) VALUES (?, ?)",
+                        ["jp-1", "jp-set"],
+                    )
+                finally:
+                    conn.close()
+
+                with patch.object(ingest.httpx, "get", side_effect=get), \
+                        patch.object(ingest.time, "sleep", return_value=None):
+                    result = ingest.ingest_japanese_cards()
+
+                conn = duckdb.connect(db_path, read_only=True)
+                try:
+                    count = conn.execute("SELECT COUNT(*) FROM japanese_cards").fetchone()[0]
+                finally:
+                    conn.close()
+
+            self.assertEqual(result, (1, 0, 0))
+            self.assertEqual(card_requests, ["jp-2"])
+            self.assertEqual(count, 2)
+
+
 class ClearFailedCliTests(unittest.TestCase):
     def test_cli_clear_failed_on_nonexistent_path_runs_offline(self):
         with tempfile.TemporaryDirectory() as tmp:
