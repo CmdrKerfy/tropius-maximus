@@ -49,6 +49,27 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 1B tcgdex Japanese twin slice; `main` sync re-staged
+
+- Preflight: model Claude Opus 5.5; token feasibility ample; scope full.
+- Branch: `v2/supabase-migration` at `ee01e4b` (pushed with owner approval). Plan: remediation plan 1B "tcgdex Japanese twin slice".
+- Completed: `push_japanese_cards` now skips TCGdex Japanese rows whose PTCG-db twin is published (or staged under `--include-ptcgdb`); owner-approved guarded delete of 8,451 unannotated twins (tcgdex Japanese 12,781 → 4,330), then filter-view refresh + ANALYZE. `main` sync re-staged from `ee01e4b` (8 files, +2,734/−142) in the scratchpad worktree; not committed.
+- Validation: push tests 37 OK (7 new), ingest 14 OK, parity pass (in v2 and in the `main` worktree); `npm run check:quick` exit 0; production SQL confirmed expected skip count 8,451, zero references to the deleted rows, post-delete counts.
+- Migrations touched: none.
+- Open risks: materialized-view refresh timeout headroom; 107 empty TCGdex Japanese `sets` rows (hidden from Explore); twin match relies on the shared ID rule in `ingest.py` and the push script.
+- Next action: owner explicitly authorizes the `main` commit + push of the staged sync.
+
+### 2026-09-26 (local) - Phase 0B.3 validated by Actions run; `main` sync staged
+
+- Preflight: model Claude Opus 5.5; token feasibility ample; scope full.
+- Branch: `v2/supabase-migration` at `7c59a25`, pushed with owner approval (`ff5a374..7c59a25`). Plan: `docs/plans/system-performance-ingest-reliability-remediation.md` (0B.3 "Validation run").
+- Completed: owner-approved dispatch of run `36273193023` — success in 8m27s (tests 30/14/parity; cache restore+save; ingest 58 s success; push 7m11s; PTCG-db skipped 0 staged; MV refresh succeeded on attempt 3/3 after two `57014`; ANALYZE 18.4 s; failure-only steps skipped). Prepared ingest-only `main` sync as staged, uncommitted changes in a scratchpad worktree on `origin/main` `2e5543a` (8 files, +2,538/−142; tests pass there).
+- Findings: 8,451 unannotated tcgdex Japanese rows duplicate `ptcgdb` cards (re-created by the 2026-09-26 recovery runs; `push_japanese_cards` has no cross-source check); `main` currently publishes no Japanese cards, so the sync would make the weekly schedule republish them. MV refresh has almost no timeout headroom.
+- Validation: run logs; read-only SQL counts against production; tests in the `main` worktree.
+- Migrations touched: none. No production rows deleted; `main` untouched.
+- Open risks: see findings; step-summary panel only visible in the signed-in UI.
+- Next action: owner decides order of the tcgdex-twin publish fix (1B slice) vs. the `main` sync (recommended: fix first, include in sync).
+
 ### 2026-09-26 (local) - Phase 0B.3 review: APPROVED
 
 - Preflight: model Claude Opus 5.5; token feasibility likely; scope full (review only).

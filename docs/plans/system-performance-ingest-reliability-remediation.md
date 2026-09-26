@@ -391,7 +391,23 @@ Findings:
   2. Python stdout is block-buffered when piped to `tee`: live logs lag, stdout/stderr interleave out of order in artifacts, and unflushed output is lost on a step-timeout kill. Applied: `PYTHONUNBUFFERED: "1"` in the job `env`.
 - Watch on the first real run (not defects): a timed-out ingest step should show outcome `failure` and still save the cache; if ingest ends near 300 min and push is slow, the 350-min job cap could cancel the push before the view refresh (upserts are idempotent; `failure()` steps do not run on cancellation).
 
-**Proposed `main` sync (not executed; needs explicit owner approval):** one commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
+**Validation run (2026-09-26, owner-approved push + dispatch):** `954a5bd`/`7c59a25` pushed (`ff5a374..7c59a25`); v2 `workflow_dispatch` run [`36273193023`](https://github.com/CmdrKerfy/tropius-maximus/actions/runs/36273193023) — **success**, 8 min 27 s total.
+
+- Token permissions: `Contents: read`, `Metadata: read`. Bash shell ran with `-e -o pipefail`; `PYTHONUNBUFFERED=1` set.
+- Tests: push 30 OK, ingest 14 OK, jpn_card_key parity passed.
+- Cache: restored `duckdb-Linux-36228427545-1`, saved `duckdb-Linux-36273193023-1`.
+- Ingest: 58 s, outcome success, no resume pass needed (TCG 176 sets complete, 0 new; Pocket 15 sets, 0 new; Japanese 184 sets, 0 new).
+- Publish gate: push ran (ingest success); "Report incomplete", redaction, and log upload correctly skipped (no failure → no artifact to inspect).
+- Push: 7 min 11 s. Rows: sets TCG 176 / Pocket 15 / Japanese 184; `pokemon_metadata` 1,025; cards pokemontcg.io 20,670 / tcgdex Pocket 2,480 / tcgdex Japanese 12,781; PTCG-db "skipped 0 staged row(s)".
+- Maintenance: `refresh_explore_filter_options` **failed twice with `57014` after ~69 s each**, succeeded on attempt 3/3 in 19.4 s; `ANALYZE` 18.4 s (attempt 1). The retry worked, but with zero retry headroom left — see risk below.
+- Step summary panel: not retrievable via API/unauthenticated HTML; log output confirms the same data the summary is built from (code path unit-tested). Owner may eyeball the run page's summary panel.
+
+**New findings from the run (not fixed; owner decisions):**
+
+1. **tcgdex Japanese duplicates are live in production.** 8,451 `tcgdex`/`japanese` rows have a `ptcgdb` twin (`ptcgdb-<lower(set_id)>-<number without leading zeros>`; 98% same name). All were created 2026-09-26 07:15–08:14 UTC by recovery runs `36215951396`/`36228427545`, undoing the May dedup. Cause: `push_japanese_cards` upserts every tcgdex Japanese row with no cross-source check. None are annotated (0 annotations on any tcgdex Japanese card). `main`'s current scripts publish no Japanese cards, so **syncing to `main` would make the weekly schedule republish these twins** (no new rows while they exist, but any cleanup would be undone every Monday). Belongs to 1B. **Resolved 2026-09-26** — see 1B "tcgdex Japanese twin slice".
+2. **Materialized-view refresh is near its timeout** after a full upsert (2 of 3 attempts hit `57014`). Next run could exhaust retries. Belongs to 0B.2 follow-up / Phase 5 (for example, run ANALYZE before refresh, a longer `statement_timeout` for the refresh RPC, or `REFRESH ... CONCURRENTLY`).
+
+**Proposed `main` sync (not executed; needs explicit owner approval):** prepared 2026-09-26 as staged (uncommitted) changes in a temporary worktree on `origin/main` `2e5543a` (scratchpad `main-sync/`, full patch `main-sync.patch`, 8 files, +2,538/−142); tests pass in that tree (30/14/parity); `requirements-ci.txt` already identical. **Re-staged 2026-09-26 from v2 `ee01e4b`** (includes the 1B twin fix): 8 files, +2,734/−142, staged files identical to `ee01e4b`, tests 37/14/parity pass in the `main` tree. One commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
 
 #### 0B.4 Hotfix Workbench move RPC (pulled forward from 2A)
 
@@ -493,11 +509,18 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 
 - [ ] Disable automatic PTCG-db ingest/push during ordinary runs.
 - [ ] Do not create PTCG-db staging tables unless the explicit source flag is enabled.
-- [ ] Use a canonical Japanese key and documented source preference before publishing any future PTCG-db data.
+- [ ] Use a canonical Japanese key and documented source preference before publishing any future PTCG-db data. (Partial: source preference PTCG-db > TCGdex Japanese is now enforced at publish time — see slice below.)
 - [ ] Protect manual cards and cross-origin IDs with server-side conflict logic:
   - update only when existing origin matches incoming origin,
   - report collisions,
   - never silently convert manual cards to API cards.
+
+**tcgdex Japanese twin slice (2026-09-26, owner-approved, done):**
+
+- Cause: `push_japanese_cards` upserted every TCGdex Japanese row; the May dedup was undone by the 2026-09-26 recovery runs (8,451 twins re-created 07:15–08:14 UTC).
+- Fix `ee01e4b` (pushed): before publishing TCGdex Japanese rows, read published PTCG-db IDs from Supabase (keyset-paged, 1,000/page) plus staged IDs under `--include-ptcgdb`; skip any row whose twin ID `ptcgdb-<lower(set_id)>-<normalized number>` (same rule as `ingest.py`) matches. Skipped count is logged and appears in the step summary as "tcgdex Japanese skipped (PTCG-db twin)". Dry run cannot check twins (no client) and says so. 7 new tests (push suite 37 OK); `npm run check:quick` exit 0.
+- Production cleanup (owner-approved): verified 0 annotations / edit_history / batch_selections / workbench_queues references; the only FK to `cards` is annotations. Guarded `DO` block deleted exactly 8,451 unannotated `tcgdex` twins (aborts on any other count). After: tcgdex Japanese 4,330, ptcgdb 19,705, Pocket 2,480 (unchanged). Ran `refresh_explore_filter_options()` and `analyze_cards_and_annotations()`. 107 TCGdex Japanese `sets` rows now have no cards; they are not shown in Explore because the view builds Japanese set options only from sets with cards. No backup table (rows are reproducible API data).
+- Expected on the next push: "tcgdex Japanese skipped (PTCG-db twin)" ≈ 8,451, tcgdex Japanese published ≈ 4,330.
 
 ### 1C. Add robust retries and atomic boundaries
 
@@ -848,4 +871,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.3 v2-side hardening (`954a5bd`) is approved in review (see 0B.3 "Review"). Both review hardening fixes are applied. Next single step: owner decides (a) whether to validate the new workflow with a v2 `workflow_dispatch` first (writes to production Supabase; needs approval) and (b) whether to authorize the ingest-only sync to `main` exactly as listed under "Proposed `main` sync". Then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.3 is validated (run `36273193023`), and the 1B tcgdex-twin slice is done: fix `ee01e4b` pushed, 8,451 production twins deleted. The ingest-only `main` sync is re-staged from `ee01e4b` (uncommitted) in a scratchpad worktree on `origin/main` `2e5543a`; patch `main-sync.patch`. Next single step: owner explicitly authorizes committing and pushing that sync to `main` (then remove the worktree). After that: add timeout headroom for the materialized-view refresh (2/3 attempts hit `57014` in the validation run), then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced); non-TCG Japanese collectibles (Carddass/Topsun/etc.) parked as a separate idea pending owner scope decision. Do not run `supabase db push` (remote history tracks only 001–029). Do not commit/push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
