@@ -49,6 +49,11 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - 0B.3 ingest-only `main` sync landed
+
+- Owner explicitly authorized; committed the staged worktree as `ef0d0d6` on `main` (`2e5543a..ef0d0d6`; 8 files identical to v2 `ee01e4b`), pushed; v2 docs `77dbfa5` pushed; scratchpad worktree removed. Push to `main` triggers a v1 Pages rebuild (ingest steps there run only on schedule/dispatch).
+- Next action: diagnose `explore_filter_options` refresh timeout headroom; watch the 2026-09-28 scheduled runs (Pages 06:00 UTC, Supabase ingest 07:30 UTC, cold cache on `main`).
+
 ### 2026-09-26 (local) - Phase 1B tcgdex Japanese twin slice; `main` sync re-staged
 
 - Preflight: model Claude Opus 5.5; token feasibility ample; scope full.

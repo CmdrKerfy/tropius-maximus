@@ -334,8 +334,8 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 - [x] Disable ordinary automatic PTCG-db publication or require an explicit opt-in so cached staging rows cannot recreate duplicates.
 - [x] Protect the v1 Pages consumer from unintended Japanese ingest work (for example, pass `--skip-japanese` if the shared script's default includes Japanese while its exporter does not).
 - [x] Do not sync `package.json`/`package-lock.json` merely to run Python tests; invoke focused Python tests directly in the ingest workflow.
-- [ ] Ask the owner for explicit authorization before changing `main`.
-- [ ] Sync only the approved ingest unit; do not merge the v2 frontend.
+- [x] Ask the owner for explicit authorization before changing `main`. (Authorized 2026-09-26.)
+- [x] Sync only the approved ingest unit; do not merge the v2 frontend. (`main` `2e5543a..ef0d0d6`, 8 files from v2 `ee01e4b`.)
 
 **Re-diff result (2026-09-26, v2 `ff5a374` vs remote `main` `2e5543a`; local `main` `d189743` is stale):**
 
@@ -871,4 +871,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.3 is validated (run `36273193023`), and the 1B tcgdex-twin slice is done: fix `ee01e4b` pushed, 8,451 production twins deleted. The ingest-only `main` sync is re-staged from `ee01e4b` (uncommitted) in a scratchpad worktree on `origin/main` `2e5543a`; patch `main-sync.patch`. Next single step: owner explicitly authorizes committing and pushing that sync to `main` (then remove the worktree). After that: add timeout headroom for the materialized-view refresh (2/3 attempts hit `57014` in the validation run), then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced); non-TCG Japanese collectibles (Carddass/Topsun/etc.) parked as a separate idea pending owner scope decision. Do not run `supabase db push` (remote history tracks only 001–029). Do not commit/push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.3 is complete: validated (run `36273193023`) and synced to `main` as `ef0d0d6` (owner-authorized; worktree removed). The 1B tcgdex-twin slice is done (`ee01e4b`; 8,451 production twins deleted). Next single step: diagnose and add timeout headroom for the `explore_filter_options` refresh (2/3 attempts hit `57014` after ~69 s in the validation run; refresh is already CONCURRENTLY) — propose the smallest change and ask before any migration/apply. Then 0C. Watch Monday 2026-09-28: v1 Pages 06:00 UTC (`--skip-japanese`) and the first scheduled `main` Supabase ingest 07:30 UTC (no cached progress on `main`; ~3.5 h expected; resumable; summary should show ≈8,451 tcgdex Japanese twins skipped). Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced); non-TCG Japanese collectibles parked pending owner scope decision. Do not run `supabase db push` (remote history tracks only 001–029). Do not commit/push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
