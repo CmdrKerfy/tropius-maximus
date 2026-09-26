@@ -46,6 +46,41 @@ function uniqSorted(arr) {
 }
 
 /**
+ * Build source-specific set lists directly from the small `sets` table.
+ * This keeps the Set dropdown current even if the heavier aggregate filter
+ * view has not finished refreshing after an ingest.
+ */
+export function groupExploreSetsBySource(rows) {
+  const buckets = { tcg: [], pocket: [], custom: [], japanese: [] };
+  for (const row of rows || []) {
+    if (!row || row.id == null || String(row.id).trim() === "") continue;
+    const set = {
+      id: String(row.id),
+      name: row.name != null && String(row.name).trim() !== "" ? String(row.name) : String(row.id),
+      series: row.series != null ? String(row.series) : "",
+    };
+    const origin = String(row.origin || "").toLowerCase();
+    const series = set.series.toLowerCase();
+
+    if (origin === "manual") {
+      buckets.custom.push(set);
+      buckets.tcg.push(set);
+    } else if (origin === "pokemontcg.io") {
+      buckets.tcg.push(set);
+    } else if (origin === "tcgdex" && series === "tcgp") {
+      buckets.pocket.push(set);
+    } else if (origin === "tcgdex" || origin === "ptcgdb") {
+      buckets.japanese.push(set);
+    }
+  }
+
+  for (const key of Object.keys(buckets)) {
+    buckets[key] = mergeSetsById([buckets[key]]);
+  }
+  return buckets;
+}
+
+/**
  * @param {Record<string, unknown>} tcg - fetchFilterOptions("TCG")
  * @param {Record<string, unknown>} pocket - fetchFilterOptions("Pocket")
  * @param {Record<string, unknown>} custom - fetchFilterOptions("Custom")

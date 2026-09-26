@@ -15,7 +15,10 @@ import {
 } from "./annotationBridge.js";
 import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
-import { mergeExploreFilterOptions } from "../../lib/mergeExploreFilterOptions.js";
+import {
+  groupExploreSetsBySource,
+  mergeExploreFilterOptions,
+} from "../../lib/mergeExploreFilterOptions.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
 import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
 
@@ -1784,6 +1787,27 @@ export async function fetchExploreFilterOptions() {
         bySource.custom || {},
         bySource.japanese || {}
       );
+      // Set metadata is small and changes with every ingest. Read it directly
+      // so a slow/stale aggregate view cannot hide newly added sets.
+      const { data: liveSetRows, error: liveSetsError } = await sb
+        .from("sets")
+        .select("id, name, series, origin");
+      if (liveSetsError) {
+        console.warn(
+          "live Explore set options read failed:",
+          liveSetsError.message || liveSetsError,
+          "— using materialized-view set options"
+        );
+      } else if (liveSetRows) {
+        const setsBySource = groupExploreSetsBySource(liveSetRows);
+        merged.setsBySource = setsBySource;
+        merged.sets = mergeExploreFilterOptions(
+          { sets: setsBySource.tcg },
+          { sets: setsBySource.pocket },
+          { sets: setsBySource.custom },
+          { sets: setsBySource.japanese }
+        ).sets;
+      }
       // mergeExploreFilterOptions does not return actions/poses from the non-TCG
       // sources; add them back from the static annotation options if missing.
       if ((!merged.actions || merged.actions.length === 0) && annOpts.ACTIONS_OPTIONS) {
