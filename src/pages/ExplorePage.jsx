@@ -278,7 +278,12 @@ export default function ExplorePage() {
   const pendingSyncCardIdsRef = useRef([]); // mirror of pendingSyncCardIds for use inside callbacks
   const [workflowHtmlUrl, setWorkflowHtmlUrl] = useState(null);
 
-  const { data: filterOptions } = useQuery({
+  const {
+    data: filterOptions,
+    error: filterOptionsError,
+    refetch: refetchFilterOptions,
+    isFetching: filterOptionsFetching,
+  } = useQuery({
     queryKey: ["filterOptions", "explore"],
     queryFn: fetchExploreFilterOptions,
     staleTime: FILTER_OPTIONS_STALE_MS,
@@ -1496,6 +1501,30 @@ export default function ExplorePage() {
           searchQuery={searchQuery}
           onResetAll={resetExploreFilters}
         />
+
+        {filterOptionsError && !filterOptions && (
+          <div
+            role="alert"
+            className="mt-2 bg-red-50 border border-red-200 text-red-800 rounded px-3 py-2 flex items-center justify-between flex-wrap gap-2"
+          >
+            <span className="text-sm">
+              {filterOptionsError.message || "Explore filter options could not be loaded."}
+            </span>
+            <button
+              type="button"
+              onClick={() => refetchFilterOptions()}
+              disabled={filterOptionsFetching}
+              className="text-sm font-medium underline text-red-700 hover:text-red-900 disabled:opacity-60"
+            >
+              {filterOptionsFetching ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        )}
+        {filterOptions?.facetsStatus?.available === false && (
+          <p role="status" className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            {filterOptions.facetsStatus.message}
+          </p>
+        )}
 
         {USE_SUPABASE_APP && !sqlCards && !showSqlConsole && (
           <div className="relative z-20 mb-7 mt-1">

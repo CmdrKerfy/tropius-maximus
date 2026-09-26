@@ -49,6 +49,114 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.2 implemented (uncommitted; migrations created, not applied)
+
+- Preflight sent and accepted:
+  - Model accepted: yes (Claude Opus 5.5, `claude-opus-5-5`)
+  - Token-feasibility declared: likely
+  - Scope selected: full 0B.2
+- Branch: `v2/supabase-migration` at pushed `bff91cc`; nothing committed, pushed, deployed, or dispatched; `main` untouched.
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md` (0B.2 checklist + "0B.2 results")
+- Completed:
+  - Timeout budget migration (`service_role` statement/lock timeout 60 s + `NOTIFY pgrst, 'reload config'`); docs cited. **Flag:** 60 s instead of the preferred 120 s because Supabase documents a 60 s max for Client API queries.
+  - CONCURRENTLY refresh migration (SECURITY DEFINER, `search_path = ''`, ACL unchanged).
+  - View facets migration: Specialty (card subtypes), Action/Pose (annotations) in the `tcg` row + `facets_version: 1`; recreated view grants SELECT to authenticated/service_role only.
+  - Push script: bounded retry/backoff (3 attempts, 5 s/15 s); refresh exhaustion fatal with `::error`; ANALYZE exhaustion nonfatal with structured `::warning`.
+  - Explore filter options: view → automatic split-RPC fallback → explicit error with Retry; facets degrade alone (static lists + amber notice); live sets overlay on both paths; no client-paged 5,000-row path; capped form-option helpers now throw instead of truncating.
+- Validation run:
+  - `npm run check:quick` (pass, exit 0); Python push tests 19 passed; new Node tests 16 passed.
+  - Migrations: `pglast` parse-only OK; full new view query `PREPARE`d against live schema OK; not applied.
+  - Read-only authenticated timings: split RPCs TCG 704 ms, Pocket 609 ms, Custom 24 ms, Japanese 1,662 ms; standalone facet RPC 6.3 s cold / 2.5 s warm (rejected); facet CTEs add ~5.1 s to refresh.
+- Migrations touched (all **created, not applied**; apply in this order with owner approval):
+  1. `supabase/migrations/20260926092111_service_role_maintenance_timeout.sql`
+  2. `supabase/migrations/20260926092113_refresh_explore_filter_options_concurrently.sql`
+  3. `supabase/migrations/20260926092115_explore_filter_options_annotation_facets.sql`
+- Open risks or assumptions:
+  - **Until migration 1 is applied, any v2 ingest run will go red at the refresh step. This is expected, not a regression.**
+  - Post-migration durations are estimates (~17 s refresh) until the timed service-key RPC check runs.
+  - Stale `VITE_USE_FILTER_OPTIONS_RPC` / client-paged references remain in `CLAUDE.md` and several `docs/plans/*` files (left untouched to keep the diff scoped and preserve pending edits).
+  - New migrations use CLI timestamp names; existing ones use `NNN_`. Check remote migration history format before `db push`.
+  - Owner QA: Pocket badge on Japanese cards fixed in the working tree (`src/lib/cardSource.js`, separate commit from 0B.2); mobile zoomed-out load not reproduced — needs details. Owner chose to keep the 60 s timeout.
+- Next action (single first step):
+  - Owner reviews the uncommitted 0B.2 diff (including 60 s vs 120 s); on approval, commit, then apply migrations 1→2→3 and run the timed refresh/ANALYZE RPC verification.
+
+---
+
+### 2026-09-26 (local) - Independent plan review; corrections applied to remediation plan
+
+- Preflight sent and accepted:
+  - Model: Claude Opus 5.5 (owner-requested review)
+  - Token-feasibility declared: likely
+  - Scope selected: review + documentation corrections only
+- Branch: `v2/supabase-migration` at `bff91cc`; `main` untouched. No code, migration, or deploy changes.
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md` (new section "Plan review 2026-09-26")
+- Completed:
+  - Checked plan claims against code and the live Supabase DB (read-only `pg_roles`, `pg_attribute`, `pg_proc` queries).
+  - **Found the root cause of the `57014` failures:** `service_role` has no `rolconfig`, so PostgREST RPCs inherit `authenticator`'s `statement_timeout=8s` / `lock_timeout=8s`. The MV refresh takes ~12 s, so the planned "retry then fail" would make every weekly run red without refreshing. 0B.2 now fixes the timeout budget first (preferred: `ALTER ROLE service_role SET statement_timeout`), then adds retries and a CONCURRENTLY refresh.
+  - **Found a production bug:** live `workbench_queues.card_ids` is `jsonb`, but deployed `move_workbench_cards` uses `text[]` with no conversion, so moves should error. Pulled forward from Phase 2A to new slice 0B.4.
+  - 0B.2 now requires an explicit source for Specialty/Action/Pose (neither the MV nor the split RPCs supply them).
+  - Fixed stale text: 0B.1 acceptance is reflected everywhere; the Phase 5 `set_name` OR removal is marked done (`bff91cc`). Phases 5–6 are marked optional pending owner confirmation.
+- Validation run:
+  - Documentation-only; no code validation run.
+- Migrations touched:
+  - None (0B.2 timeout and 0B.4 move-RPC migrations are specified, not written).
+- Open risks or assumptions:
+  - It is not yet verified that PostgREST applies an `ALTER ROLE service_role SET statement_timeout` to impersonated requests; confirm in the docs and by a timed RPC call after applying.
+  - The Workbench move failure is inferred from the deployed types and function body; reproduce it in the app before fixing.
+  - Other pre-existing modified/untracked files remain untouched.
+- Next action (single first step):
+  - Ask the owner whether to do 0B.4 (Workbench move hotfix) before or after 0B.2; then start with that slice's first reproduce/verify step. Applying any production migration requires explicit owner approval.
+
+---
+
+### 2026-09-26 01:47 (local) - Phase 0 plan reconciliation after manual ingest recovery
+
+- Preflight sent and accepted:
+  - Model accepted: yes (`GPT-5.6 Sol`, accepted earlier in this session)
+  - Token-feasibility declared: likely
+  - Scope selected: documentation reconciliation only
+- Branch: `v2/supabase-migration` at pushed commit `bff91cc`; `main` untouched.
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md`
+- Completed:
+  - Reconciled the plan with pushed commits `79267ef`, `4493d76`, and `597532d`.
+  - Recorded the successful manual publication and the swallowed `57014` failures from run `36228427545`; latest run output reported 12,781 TCGdex Japanese rows.
+  - Split Phase 0B into: trustworthy Site Checks/indexed set queries, post-push/filter-option correctness, and a recalculated owner-approved default-branch sync.
+  - Recorded partial Phase 1 progress for incremental TCGdex reconciliation, bounded resume behavior, and run-specific progress caches.
+  - Promoted the set-query timeout and incomplete Specialty/Action/Pose/fallback behavior into Phase 0B because they block Phase 0C authenticated Explore acceptance.
+  - Reconciled concurrently completed commit `bff91cc`: set-ID-only grid/count filtering and Python-enabled Site Checks are pushed; GitHub Site Checks run `36230895162` passed.
+  - Expanded `docs/plans/p1-cutover-and-operations.md` §6 with a deferred owner-only merge gate that preserves Vercel routing, Supabase URL/auth redirects, and intentional GitHub Pages behavior.
+  - Added distinct Phase 1E for Pocket source replacement/hardening after verifying TCGdex exposes 15 sets through `B2a` while `pokemon-tcg-pocket-database` 2.10.0 lists 23, including eight newer/missing sets.
+  - Added canonical-ID/foreign-key guardrails, promo set mapping, fixture adapter, dry-run reconciliation, optional Storage/image rights gate, production integrity checks, and scheduled source-freshness monitoring.
+  - Owner completed signed-in Phase 0B.1 QA: `me55`, `B2a`, and combined Source=All filtering load cards/counts without query errors. Phase 0B.1 is accepted.
+- Validation run:
+  - Documentation-only update; no code validation run in this slice.
+  - Verified latest remote branch state and GitHub run logs.
+- Migrations touched:
+  - None.
+- Open risks or assumptions:
+  - Other pre-existing modified/untracked files remain unrelated and untouched.
+  - Automated hosted access remains blocked here by Vercel Deployment Protection (403) plus application email authentication; the owner supplied the signed-in QA result.
+  - Most `B2a` images remain missing despite successful set queries. This is Phase 1E data-quality work, not a Phase 0B.1 query failure. Source replacement is not authorized, and image mirroring requires a separate artwork-rights/Storage-policy owner decision.
+  - Materialized-view refresh still stays green after exhausted `57014`; Specialty/Action/Pose and capped fallback fixes are not implemented.
+  - No `main` authorization has been given.
+- Next action (single first step):
+  - Start only Phase 0B.2 post-push maintenance/filter-option work and stop for review afterward; do not begin Phase 1E or touch `main`.
+
+---
+
+### 2026-09-25 20:55 (local) - Phase 0A approved and committed
+
+- Branch: `v2/supabase-migration`
+- Commit: `6869e2d` — "Phase 0A: harden ingest empty-checkout init and cover adaptive batching" (not pushed; `main` untouched).
+- Contents: `package.json`, `scripts/ingest.py`, `scripts/test_ingest.py`, `scripts/test_push_duckdb_to_supabase.py`, `docs/plans/system-performance-ingest-reliability-remediation.md`, and the Phase 0A/audit entries in this log. Unrelated working-tree changes left unstaged.
+- Plan status: Phase 0A completed and owner-approved; Phase 0B not started.
+- Open risks or assumptions:
+  - This entry is uncommitted (a commit cannot record its own hash); include it with the next commit.
+- Next action (single first step):
+  - When the owner authorizes Phase 0B, run the ingest-unit diff against `main` listed in the plan's Exact next action.
+
+---
+
 ### 2026-09-25 20:45 (local) - Phase 0A review follow-ups
 
 - Branch: `v2/supabase-migration`
@@ -138,6 +246,47 @@ If token feasibility is **unlikely**, the agent must propose:
   - After current performance work, review Workbench annotation-pane navigation UX and decide whether to replace horizontal scrolling chips with a compact section selector.
 
 ---
+
+### 2026-05-13 — tcgdex/ptcgdb dedup + bug fixes (React #31, Keep set & source)
+
+- Preflight sent and accepted: n/a (continued from prior session)
+- Branch: `v2/supabase-migration`
+- Plan doc: n/a (ad-hoc investigation + fixes)
+- Scope in this slice:
+  - Investigate "SV4a-005 appears twice" report → surfaced 3,605 real cross-source duplicates (tcgdex ↔ ptcgdb) plus 5,657 false positives (manual cards with bad metadata).
+  - Dedup: deleted 3,605 tcgdex copies where ptcgdb counterpart existed (ptcgdb has better rarity coverage: 100% vs 73.3%). Annotations migrated before deletion. 16,100 unique ptcgdb cards preserved.
+  - Fix React error #31 in CardDetail More Info tab: `String()` wrappers on `atk.damage`, weakness/resistance `type`/`value`.
+  - Fix "Keep set & source" toggle: restore `setIdVal` directly in snapshot restore; useEffect auto-derivation was skipped for source="TCG".
+- Completed:
+  - Dedup SQL run successfully in Supabase (transaction with annotation migration + DELETE).
+  - Bug fixes committed (2ee1b81) and pushed to `v2/supabase-migration`.
+  - CLAUDE.md updated with all work.
+- Validation run: zero remaining tcgdex/ptcgdb overlaps confirmed via SQL.
+- Migrations touched: none (manual SQL, no migration file)
+- Open risks or assumptions:
+  - `japanese_cards_ptcgdb` table absent from current DuckDB — ptcgdb cards won't re-push, so duplicates won't recur. If ptcgdb ingest is re-enabled, fix the push script to use consistent ID formats or add a dedup step.
+  - Manual `pokumon-*` cards have garbage `set_id`/`number` metadata from v1 migration; these aren't duplicates but pollute the `set_id + number` grouping. Consider a cleanup migration to normalize these fields.
+  - React #31 fix addresses known object-valued API fields; other raw_data fields could surface similar issues — watch for future reports.
+- Next action (single first step):
+  - If duplicates reappear after a Japanese card ingest: check whether `japanese_cards_ptcgdb` table was re-created in DuckDB and normalize ID formats in the push script.
+
+---
+
+- Preflight sent and accepted: n/a (documentation request)
+- Branch: `v2/supabase-migration` (context applies to v2)
+- Plan doc: `docs/plans/supabase-perf-hosting-alternatives-notes.md` (new)
+- Scope in this slice:
+  - Capture codebase audit findings (Explore `fetchCards`, exact counts, debounced count, prefetch, artist two-step, filter MV path, RLS 057, no Realtime data channels).
+  - Capture recommendation order: upgrade tier first; then evidence-led refactor (counts/prefetch/artist); alternative Postgres only for strategic reasons; Appwrite/PocketBase as replatform not hosting swap.
+- Completed:
+  - Added `docs/plans/supabase-perf-hosting-alternatives-notes.md`.
+  - Linked from `CLAUDE.md` under V2 Stack (performance and hosting reference).
+- Validation run: n/a (markdown only)
+- Migrations touched: none
+- Open risks or assumptions:
+  - Findings are static; re-validate with Supabase metrics when acting on them.
+- Next action (single first step):
+  - When revisiting speed: open `docs/plans/supabase-perf-hosting-alternatives-notes.md` § “Next action when revisiting” and profile dominant cost (count vs fetch vs join) before changing code or plan.
 
 ### 2026-05-09 — Materialized view for Explore filter options (054)
 

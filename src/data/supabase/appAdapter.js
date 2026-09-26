@@ -16,9 +16,9 @@ import {
 import { normalizeCardNumberForStorage } from "../../lib/manualCardId.js";
 import * as annOpts from "../../lib/annotationOptions.js";
 import {
-  groupExploreSetsBySource,
-  mergeExploreFilterOptions,
-} from "../../lib/mergeExploreFilterOptions.js";
+  loadExploreFilterOptions,
+  mergeSortedUniqueStrings,
+} from "../../lib/exploreFilterOptionsSource.js";
 import { applyExploreSetIdFilter } from "../../lib/exploreSetFilter.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
 import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
@@ -92,16 +92,18 @@ function parseJsonbStringArray(val) {
   return [];
 }
 
-function mergeSortedUniqueStrings(existing, additions) {
-  const base = Array.isArray(existing) ? existing : [];
-  const canon = new Map();
-  for (const raw of [...base, ...additions]) {
-    if (raw == null || String(raw).trim() === "") continue;
-    const s = String(raw).trim();
-    const low = s.toLowerCase();
-    if (!canon.has(low)) canon.set(low, s);
-  }
-  return [...canon.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+/**
+ * Client-side paged scans stop here (~67k cards live). Reaching the cap means
+ * the result would be partial, so the helpers below throw instead of
+ * returning it as if it were complete.
+ */
+const MAX_FALLBACK_SCAN_ROWS = 5000;
+
+function partialScanError(what) {
+  return new Error(
+    `${what}: client-side scan reached ${MAX_FALLBACK_SCAN_ROWS} rows; ` +
+      "refusing to return a partial option list (server-side options are required)."
+  );
 }
 
 /** PostgREST/jsonb arrays from `get_explore_filter_options_db` RPC. */
@@ -241,16 +243,6 @@ function buildCustomFilterOptionsFromRpc(custom) {
   };
 }
 
-async function fetchExploreFilterOptionsClientPaged() {
-  const [tcg, pocket, custom, japanese] = await Promise.all([
-    fetchFilterOptions("TCG"),
-    fetchFilterOptions("Pocket"),
-    fetchFilterOptions("Custom"),
-    fetchFilterOptions("TCG (JPN)"),
-  ]);
-  return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
-}
-
 /** DB JSONB array column → camelCase key on fetchFormOptions() result. */
 const ANN_JSONB_ARRAY_TO_FORM = {
   art_style: "artStyle",
@@ -316,16 +308,15 @@ async function mergeAnnotationUsageIntoOptions(out) {
   for (const c of allCols) setsByCol[c] = new Set();
 
   const pageSize = 1000;
-  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
-    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     const { data, error } = await sb
       .from("annotations")
       .select(selectList)
       .range(from, from + pageSize - 1);
     if (error) throw error;
     if (!data?.length) break;
+    if (from >= MAX_FALLBACK_SCAN_ROWS) throw partialScanError("annotation form options");
 
     for (const row of data) {
       for (const col of jsonbCols) {
@@ -455,10 +446,8 @@ async function distinctColumn(column, originFilter, originDetailFilter, originDe
   const sb = await sbReady();
   const values = new Set();
   const pageSize = 1000;
-  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
-    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     let q = sb.from("cards").select(column).range(from, from + pageSize - 1);
     if (Array.isArray(originFilter)) q = q.in("origin", originFilter);
     else if (originFilter) q = q.eq("origin", originFilter);
@@ -467,6 +456,7 @@ async function distinctColumn(column, originFilter, originDetailFilter, originDe
     const { data, error } = await q;
     if (error) throw error;
     if (!data?.length) break;
+    if (from >= MAX_FALLBACK_SCAN_ROWS) throw partialScanError(`distinct cards.${column}`);
     for (const row of data) {
       const v = row[column];
       if (v != null && v !== "") values.add(v);
@@ -482,16 +472,15 @@ async function distinctAnnotationColumn(column) {
   const sb = await sbReady();
   const values = new Set();
   const pageSize = 1000;
-  const MAX_FALLBACK_SCAN_ROWS = 5000;
   let from = 0;
   for (;;) {
-    if (from >= MAX_FALLBACK_SCAN_ROWS) break;
     const { data, error } = await sb
       .from("annotations")
       .select(column)
       .range(from, from + pageSize - 1);
     if (error) throw error;
     if (!data?.length) break;
+    if (from >= MAX_FALLBACK_SCAN_ROWS) throw partialScanError(`distinct annotations.${column}`);
     for (const row of data) {
       const v = row[column];
       if (v != null && v !== "") values.add(v);
@@ -1756,105 +1745,46 @@ export async function fetchFilterOptions(source = "TCG") {
   };
 }
 
-/** Explore: one merged option list so changing Source does not hide/show filter dropdowns. */
+/** Explore: one merged option list so changing Source does not hide/show filter dropdowns.
+ *  Materialized view → split RPCs → explicit ExploreFilterOptionsError (see exploreFilterOptionsSource.js). */
 export async function fetchExploreFilterOptions() {
   const sb = await sbReady();
-
-  // 1. Materialized view (migration 054) — fast path, <50ms.
-  //    Refreshed after ingest; empty until first refresh.
-  try {
-    const { data: mvRows, error: mvError } = await sb
-      .from("explore_filter_options")
-      .select("source, options");
-    if (mvError) throw mvError;
-    if (mvRows && mvRows.length > 0) {
-      const bySource = {};
-      for (const row of mvRows) bySource[row.source] = row.options || {};
-      const merged = mergeExploreFilterOptions(
-        bySource.tcg || {},
-        bySource.pocket || {},
-        bySource.custom || {},
-        bySource.japanese || {}
-      );
-      // Set metadata is small and changes with every ingest. Read it directly
-      // so a slow/stale aggregate view cannot hide newly added sets.
-      const { data: liveSetRows, error: liveSetsError } = await sb
-        .from("sets")
-        .select("id, name, series, origin");
-      if (liveSetsError) {
-        console.warn(
-          "live Explore set options read failed:",
-          liveSetsError.message || liveSetsError,
-          "— using materialized-view set options"
-        );
-      } else if (liveSetRows) {
-        const setsBySource = groupExploreSetsBySource(liveSetRows);
-        merged.setsBySource = setsBySource;
-        merged.sets = mergeExploreFilterOptions(
-          { sets: setsBySource.tcg },
-          { sets: setsBySource.pocket },
-          { sets: setsBySource.custom },
-          { sets: setsBySource.japanese }
-        ).sets;
-      }
-      // mergeExploreFilterOptions does not return actions/poses from the non-TCG
-      // sources; add them back from the static annotation options if missing.
-      if ((!merged.actions || merged.actions.length === 0) && annOpts.ACTIONS_OPTIONS) {
-        merged.actions = [...annOpts.ACTIONS_OPTIONS];
-      }
-      if ((!merged.poses || merged.poses.length === 0) && annOpts.POSE_OPTIONS) {
-        merged.poses = [...annOpts.POSE_OPTIONS];
-      }
-      return merged;
-    }
-  } catch (e) {
-    console.warn(
-      "explore_filter_options materialized view read failed:",
-      e?.message || e,
-      "— using client-paged filter options"
-    );
-  }
-
-  // 2. Split-RPC path (053) — opt-in: VITE_USE_FILTER_OPTIONS_RPC=true.
-  if (import.meta.env.VITE_USE_FILTER_OPTIONS_RPC === "true") {
-    const [tcgR, pocketR, customR, japaneseR] = await Promise.all([
-      sb.rpc("get_tcg_filter_options_db"),
-      sb.rpc("get_pocket_filter_options_db"),
-      sb.rpc("get_custom_filter_options_db"),
-      sb.rpc("get_japanese_filter_options_db"),
-    ]);
-    const results = [
-      { name: "tcg", res: tcgR, build: buildTcgFilterOptionsFromRpc },
-      { name: "pocket", res: pocketR, build: buildPocketFilterOptionsFromRpc },
-      { name: "custom", res: customR, build: buildCustomFilterOptionsFromRpc },
-      { name: "japanese", res: japaneseR, build: buildJapaneseFilterOptionsFromRpc },
-    ];
-    const failures = results.filter((r) => r.res.error);
-    if (failures.length === 0) {
-      try {
-        const tcg = buildTcgFilterOptionsFromRpc(tcgR.data);
-        const pocket = buildPocketFilterOptionsFromRpc(pocketR.data);
-        const custom = buildCustomFilterOptionsFromRpc(customR.data);
-        const japanese = buildJapaneseFilterOptionsFromRpc(japaneseR.data);
-        return mergeExploreFilterOptions(tcg, pocket, custom, japanese);
-      } catch (e) {
-        console.warn(
-          "split filter-options RPC parse:",
-          e?.message || e,
-          "— using client-paged filter options"
-        );
-      }
-    } else {
-      console.warn(
-        "split filter-options RPC failures:",
-        failures.map((r) => `${r.name}: ${r.res.error.message || r.res.error}`).join(", "),
-        "— using client-paged filter options"
-      );
-    }
-  }
-
-  // 3. Client-paged fallback — last resort.
-  return fetchExploreFilterOptionsClientPaged();
+  return loadExploreFilterOptions({
+    // 054/055 (+ 0B.2 facets) — single <50 ms read.
+    readMaterializedView: async () => {
+      const { data, error } = await sb.from("explore_filter_options").select("source, options");
+      if (error) throw error;
+      return data;
+    },
+    // 053 — automatic fallback; every bucket must succeed (a missing function is a failure).
+    readSplitRpcs: async () => {
+      const buckets = [
+        ["tcg", "get_tcg_filter_options_db", buildTcgFilterOptionsFromRpc],
+        ["pocket", "get_pocket_filter_options_db", buildPocketFilterOptionsFromRpc],
+        ["custom", "get_custom_filter_options_db", buildCustomFilterOptionsFromRpc],
+        ["japanese", "get_japanese_filter_options_db", buildJapaneseFilterOptionsFromRpc],
+      ];
+      const results = await Promise.all(buckets.map(([, fn]) => sb.rpc(fn)));
+      const failures = [];
+      const built = {};
+      buckets.forEach(([name, , build], i) => {
+        const { data, error } = results[i];
+        if (error) failures.push(`${name}: ${error.message || error}`);
+        else if (data == null || typeof data !== "object" || Array.isArray(data)) failures.push(`${name}: no data`);
+        else built[name] = build(data);
+      });
+      if (failures.length) throw new Error(failures.join("; "));
+      return built;
+    },
+    readLiveSets: async () => {
+      const { data, error } = await sb.from("sets").select("id, name, series, origin");
+      if (error) throw error;
+      return data;
+    },
+    staticActions: annOpts.ACTIONS_OPTIONS,
+    staticPoses: annOpts.POSE_OPTIONS,
+    warn: (...args) => console.warn(...args),
+  });
 }
 
 async function fetchFormOptionsClientPaged() {

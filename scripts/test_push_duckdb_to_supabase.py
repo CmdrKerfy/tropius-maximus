@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Focused tests for adaptive Supabase ingest batching."""
+"""Focused tests for adaptive Supabase ingest batching and post-push maintenance."""
 
+import json
 import unittest
 from unittest.mock import patch
 
 import push_duckdb_to_supabase as push
+from postgrest.exceptions import APIError
 
 
 class _FakeRequest:
@@ -196,6 +198,129 @@ class PostPushMaintenanceTests(unittest.TestCase):
                 ("analyze_cards_and_annotations", {}),
             ],
         )
+
+
+class _ScriptedRpcClient:
+    """RPC client whose calls fail per a script of exceptions, then succeed."""
+
+    def __init__(self, failures=None):
+        # function name -> list of exceptions to raise on successive calls
+        self.failures = {name: list(errs) for name, errs in (failures or {}).items()}
+        self.calls = []
+
+    def rpc(self, function_name, params):
+        self.calls.append((function_name, params))
+        client = self
+
+        class Request:
+            def execute(self_inner):
+                pending = client.failures.get(function_name)
+                if pending:
+                    raise pending.pop(0)
+                return None
+
+        return Request()
+
+
+def _timeout():
+    return APIError(
+        {"code": "57014", "message": "canceling statement due to statement timeout"}
+    )
+
+
+class MaintenanceRetryTests(unittest.TestCase):
+    def _run(self, client):
+        printed = []
+        with patch.object(push.time, "sleep") as sleep, \
+                patch("builtins.print", side_effect=lambda *a, **k: printed.append(" ".join(map(str, a)))):
+            try:
+                result = push.refresh_post_push_data(client)
+            except Exception as exc:  # noqa: BLE001 - surfaced to the test
+                return exc, sleep, printed
+        return result, sleep, printed
+
+    def _count(self, client, name):
+        return sum(1 for fn, _ in client.calls if fn == name)
+
+    def test_immediate_success_makes_one_call_each_and_does_not_sleep(self):
+        client = _ScriptedRpcClient()
+        result, sleep, _ = self._run(client)
+        self.assertEqual(result, (True, True))
+        self.assertEqual(self._count(client, "refresh_explore_filter_options"), 1)
+        self.assertEqual(self._count(client, "analyze_cards_and_annotations"), 1)
+        sleep.assert_not_called()
+
+    def test_transient_refresh_failure_then_success(self):
+        client = _ScriptedRpcClient(
+            {"refresh_explore_filter_options": [_timeout(), ConnectionResetError("reset by peer")]}
+        )
+        result, sleep, printed = self._run(client)
+        self.assertEqual(result, (True, True))
+        self.assertEqual(self._count(client, "refresh_explore_filter_options"), 3)
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], list(push.MAINTENANCE_BACKOFF_SECONDS))
+        self.assertTrue(any("attempts: 3" in line for line in printed))
+
+    def test_gateway_5xx_is_retried(self):
+        gateway = APIError(
+            {"code": 504, "message": "JSON could not be generated", "details": "<html>"}
+        )
+        client = _ScriptedRpcClient({"refresh_explore_filter_options": [gateway]})
+        result, _, _ = self._run(client)
+        self.assertEqual(result, (True, True))
+        self.assertEqual(self._count(client, "refresh_explore_filter_options"), 2)
+
+    def test_exhausted_refresh_is_fatal_and_skips_analyze(self):
+        client = _ScriptedRpcClient(
+            {"refresh_explore_filter_options": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+        )
+        exc, sleep, printed = self._run(client)
+        self.assertIsInstance(exc, push.MaintenanceRpcError)
+        self.assertEqual(exc.attempts, push.MAINTENANCE_MAX_ATTEMPTS)
+        self.assertIn("57014", exc.reason)
+        self.assertEqual(self._count(client, "refresh_explore_filter_options"), push.MAINTENANCE_MAX_ATTEMPTS)
+        self.assertEqual(self._count(client, "analyze_cards_and_annotations"), 0)
+        self.assertEqual(sleep.call_count, push.MAINTENANCE_MAX_ATTEMPTS - 1)
+        self.assertTrue(any(line.startswith("::error") for line in printed))
+
+    def test_non_transient_refresh_error_fails_immediately(self):
+        denied = APIError({"code": "42501", "message": "permission denied for materialized view"})
+        client = _ScriptedRpcClient({"refresh_explore_filter_options": [denied]})
+        exc, sleep, _ = self._run(client)
+        self.assertIsInstance(exc, push.MaintenanceRpcError)
+        self.assertEqual(exc.attempts, 1)
+        self.assertIn("non-retryable", exc.reason)
+        self.assertEqual(self._count(client, "refresh_explore_filter_options"), 1)
+        sleep.assert_not_called()
+
+    def test_exhausted_analyze_is_nonfatal_and_reported(self):
+        client = _ScriptedRpcClient(
+            {"analyze_cards_and_annotations": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+        )
+        result, _, printed = self._run(client)
+        self.assertEqual(result, (True, False))
+        self.assertEqual(self._count(client, "analyze_cards_and_annotations"), push.MAINTENANCE_MAX_ATTEMPTS)
+        warnings = [line for line in printed if line.startswith("::warning")]
+        self.assertEqual(len(warnings), 1)
+        payload = json.loads(warnings[0].split("::", 2)[2])
+        self.assertEqual(payload["step"], "analyze_cards_and_annotations")
+        self.assertEqual(payload["status"], "failed_nonfatal")
+        self.assertEqual(payload["attempts"], push.MAINTENANCE_MAX_ATTEMPTS)
+        self.assertIn("57014", payload["final_reason"])
+
+    def test_zero_argument_rpcs_still_receive_empty_params_on_retry(self):
+        client = _ScriptedRpcClient({"analyze_cards_and_annotations": [_timeout()]})
+        self._run(client)
+        self.assertTrue(all(params == {} for _, params in client.calls))
+
+    def test_reported_reason_never_contains_the_service_key(self):
+        secret = "eyJhbGciOiJIUzI1NiJ9.service.secret"
+        with patch.dict("os.environ", {"SUPABASE_SERVICE_KEY": secret}):
+            client = _ScriptedRpcClient(
+                {"refresh_explore_filter_options": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+            )
+            exc, _, printed = self._run(client)
+        self.assertNotIn(secret, exc.reason)
+        self.assertFalse(any(secret in line for line in printed))
 
 
 if __name__ == "__main__":

@@ -156,26 +156,149 @@ def batch_upsert(sb, table: str, rows: list) -> int:
     return total
 
 
+# Post-push maintenance RPCs. These need the service_role timeout budget from
+# migration 20260926092111; without it PostgREST applies authenticator's 8 s
+# limit and the ~12+ s view refresh fails deterministically with 57014.
+MAINTENANCE_MAX_ATTEMPTS = 3
+MAINTENANCE_BACKOFF_SECONDS = (5, 15)
+# Postgres SQLSTATEs (and PostgREST connection codes) worth retrying:
+# statement/lock timeouts, connection failures, server restarts.
+TRANSIENT_SQLSTATE_PREFIXES = ("08", "57P0")
+TRANSIENT_CODES = {"57014", "55P03", "PGRST000", "PGRST001", "PGRST002", "PGRST003"}
+TRANSIENT_MESSAGE_MARKERS = (
+    "statement timeout",
+    "lock timeout",
+    "connection reset",
+    "connection refused",
+    "server disconnected",
+    "remote end closed",
+)
+
+
+class MaintenanceRpcError(RuntimeError):
+    """A post-push maintenance RPC failed after all allowed attempts."""
+
+    def __init__(self, function_name: str, attempts: int, reason: str):
+        super().__init__(f"{function_name} failed after {attempts} attempt(s): {reason}")
+        self.function_name = function_name
+        self.attempts = attempts
+        self.reason = reason
+
+
+def _error_code(exc: BaseException) -> str:
+    code = getattr(exc, "code", None)
+    return "" if code is None else str(code).strip()
+
+
+def describe_maintenance_error(exc: BaseException) -> str:
+    """Short, secret-free reason: exception type, code, and a truncated message.
+
+    The service key only travels in request headers, which are never included.
+    """
+    message = getattr(exc, "message", None) or str(exc)
+    message = " ".join(str(message).split())[:200]
+    code = _error_code(exc)
+    prefix = f"{type(exc).__name__}"
+    if code:
+        prefix += f" {code}"
+    return f"{prefix}: {message}" if message else prefix
+
+
+def is_transient_maintenance_error(exc: BaseException) -> bool:
+    """True for timeouts, dropped connections, and 5xx responses."""
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return True
+    try:
+        import httpx
+
+        if isinstance(exc, httpx.TransportError):
+            return True
+    except ImportError:  # pragma: no cover - httpx ships with postgrest
+        pass
+
+    code = _error_code(exc)
+    if code in TRANSIENT_CODES or code.startswith(TRANSIENT_SQLSTATE_PREFIXES):
+        return True
+    # Non-JSON gateway responses surface the HTTP status as the code.
+    if code.isdigit() and 500 <= int(code) <= 599:
+        return True
+    message = str(getattr(exc, "message", None) or exc).lower()
+    return any(marker in message for marker in TRANSIENT_MESSAGE_MARKERS)
+
+
+def call_maintenance_rpc(sb, function_name: str) -> tuple[int, float]:
+    """Call a zero-argument maintenance RPC with bounded retry/backoff.
+
+    Returns (attempts, seconds for the successful call). Raises
+    MaintenanceRpcError immediately for non-transient errors, or after
+    MAINTENANCE_MAX_ATTEMPTS transient failures.
+    """
+    for attempt in range(1, MAINTENANCE_MAX_ATTEMPTS + 1):
+        started = time.monotonic()
+        try:
+            # postgrest-py 0.x requires params even for a zero-argument function.
+            sb.rpc(function_name, {}).execute()
+            return attempt, time.monotonic() - started
+        except Exception as exc:
+            reason = describe_maintenance_error(exc)
+            elapsed = time.monotonic() - started
+            if not is_transient_maintenance_error(exc):
+                raise MaintenanceRpcError(function_name, attempt, f"non-retryable: {reason}") from exc
+            if attempt >= MAINTENANCE_MAX_ATTEMPTS:
+                raise MaintenanceRpcError(function_name, attempt, reason) from exc
+            delay = MAINTENANCE_BACKOFF_SECONDS[
+                min(attempt - 1, len(MAINTENANCE_BACKOFF_SECONDS) - 1)
+            ]
+            print(
+                f"  {function_name}: attempt {attempt}/{MAINTENANCE_MAX_ATTEMPTS} failed after "
+                f"{elapsed:.1f}s ({reason}); retrying in {delay}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
 def refresh_post_push_data(sb) -> tuple[bool, bool]:
-    """Refresh derived Explore data and planner statistics after upserts."""
-    filters_refreshed = False
+    """Refresh derived Explore data and planner statistics after upserts.
+
+    A failed view refresh is fatal (raises MaintenanceRpcError) so a stale
+    filter view cannot produce a green ingest run. A failed ANALYZE stays
+    nonfatal but is reported as a GitHub Actions warning with structured
+    details.
+    """
+    try:
+        attempts, seconds = call_maintenance_rpc(sb, "refresh_explore_filter_options")
+    except MaintenanceRpcError as exc:
+        details = json.dumps(
+            {
+                "step": exc.function_name,
+                "status": "failed",
+                "attempts": exc.attempts,
+                "final_reason": exc.reason,
+            }
+        )
+        print(f"::error title=Explore filter refresh failed::{details}", flush=True)
+        raise
+    print(f"  explore_filter_options: refreshed in {seconds:.1f}s (attempts: {attempts})")
+
     stats_refreshed = False
     try:
-        # postgrest-py 0.x requires params even for a zero-argument function.
-        sb.rpc("refresh_explore_filter_options", {}).execute()
-        print("  explore_filter_options: refreshed")
-        filters_refreshed = True
-    except Exception as exc:
-        print(f"  explore_filter_options: refresh failed ({exc}) — view will be stale until next refresh")
-
-    try:
-        sb.rpc("analyze_cards_and_annotations", {}).execute()
-        print("  analyze: cards + annotations statistics refreshed")
+        attempts, seconds = call_maintenance_rpc(sb, "analyze_cards_and_annotations")
+        print(f"  analyze: cards + annotations statistics refreshed in {seconds:.1f}s (attempts: {attempts})")
         stats_refreshed = True
-    except Exception as exc:
-        print(f"  analyze: failed ({exc}) — statistics may be stale until next ANALYZE")
+    except MaintenanceRpcError as exc:
+        details = json.dumps(
+            {
+                "step": exc.function_name,
+                "status": "failed_nonfatal",
+                "attempts": exc.attempts,
+                "final_reason": exc.reason,
+            }
+        )
+        print(f"::warning title=ANALYZE failed (nonfatal)::{details}", flush=True)
+        print("  analyze: FAILED — planner statistics may be stale until the next ANALYZE")
 
-    return filters_refreshed, stats_refreshed
+    return True, stats_refreshed
 
 
 def fetch_dicts(conn: duckdb.DuckDBPyConnection, sql: str) -> list[dict]:
