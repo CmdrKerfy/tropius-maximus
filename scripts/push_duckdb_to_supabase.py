@@ -3,8 +3,8 @@
 Push API-sourced rows from the ingest DuckDB file into Supabase.
 
 Reads the same database as ``scripts/ingest.py`` (default: ``public/data/pokemon.duckdb``).
-Upserts ``sets``, ``cards`` (origins ``pokemontcg.io`` and ``tcgdex`` only), and
-``pokemon_metadata``. Rows with ``is_custom`` in DuckDB are skipped. Does not touch
+Upserts ``sets``, ``cards`` (origins ``pokemontcg.io`` and ``tcgdex``; ``ptcgdb`` only with
+``--include-ptcgdb``), and ``pokemon_metadata``. Rows with ``is_custom`` in DuckDB are skipped. Does not touch
 ``origin = manual`` cards in Postgres unless their IDs collide with API IDs (same as a
 normal upsert by primary key).
 
@@ -17,7 +17,11 @@ Environment (same as ``migrate_data.py``):
 
 Usage::
 
-  python scripts/push_duckdb_to_supabase.py [--dry-run] [--duckdb PATH]
+  python scripts/push_duckdb_to_supabase.py [--dry-run] [--duckdb PATH] [--include-ptcgdb]
+
+PTCG-database Japanese cards (``japanese_cards_ptcgdb``) are skipped unless
+``--include-ptcgdb`` is passed, so cached staging rows cannot silently recreate
+cross-source duplicates on a scheduled run.
 
 Optional: run after ``python scripts/ingest.py`` or use ``ingest.py --push-supabase``.
 """
@@ -47,6 +51,7 @@ DEFAULT_DUCKDB = SCRIPT_DIR.parent / "public" / "data" / "pokemon.duckdb"
 BATCH_SIZE = 100
 MIN_BATCH_SIZE = 10
 DRY_RUN = "--dry-run" in sys.argv
+INCLUDE_PTCGDB = "--include-ptcgdb" in sys.argv
 import time
 
 
@@ -258,17 +263,21 @@ def call_maintenance_rpc(sb, function_name: str) -> tuple[int, float]:
     raise AssertionError("unreachable")  # pragma: no cover
 
 
-def refresh_post_push_data(sb) -> tuple[bool, bool]:
+def refresh_post_push_data(sb, report: dict | None = None) -> tuple[bool, bool]:
     """Refresh derived Explore data and planner statistics after upserts.
 
     A failed view refresh is fatal (raises MaintenanceRpcError) so a stale
     filter view cannot produce a green ingest run. A failed ANALYZE stays
     nonfatal but is reported as a GitHub Actions warning with structured
-    details.
+    details. When ``report`` is given, each step's outcome is recorded in it
+    under the RPC name for the step summary.
     """
+    if report is None:
+        report = {}
     try:
         attempts, seconds = call_maintenance_rpc(sb, "refresh_explore_filter_options")
     except MaintenanceRpcError as exc:
+        report[exc.function_name] = {"status": "failed", "attempts": exc.attempts, "reason": exc.reason}
         details = json.dumps(
             {
                 "step": exc.function_name,
@@ -279,14 +288,17 @@ def refresh_post_push_data(sb) -> tuple[bool, bool]:
         )
         print(f"::error title=Explore filter refresh failed::{details}", flush=True)
         raise
+    report["refresh_explore_filter_options"] = {"status": "ok", "attempts": attempts, "seconds": seconds}
     print(f"  explore_filter_options: refreshed in {seconds:.1f}s (attempts: {attempts})")
 
     stats_refreshed = False
     try:
         attempts, seconds = call_maintenance_rpc(sb, "analyze_cards_and_annotations")
         print(f"  analyze: cards + annotations statistics refreshed in {seconds:.1f}s (attempts: {attempts})")
+        report["analyze_cards_and_annotations"] = {"status": "ok", "attempts": attempts, "seconds": seconds}
         stats_refreshed = True
     except MaintenanceRpcError as exc:
+        report[exc.function_name] = {"status": "failed (nonfatal)", "attempts": exc.attempts, "reason": exc.reason}
         details = json.dumps(
             {
                 "step": exc.function_name,
@@ -544,6 +556,83 @@ def push_japanese_cards_ptcgdb(conn, sb, now_iso: str) -> int:
     return batch_upsert(sb, "cards", rows_out)
 
 
+def count_staged_ptcgdb_rows(conn) -> int:
+    """Publishable rows in ``japanese_cards_ptcgdb`` (0 if the table is absent)."""
+    tables = {
+        row[0]
+        for row in conn.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+        ).fetchall()
+    }
+    if "japanese_cards_ptcgdb" not in tables:
+        return 0
+    return conn.execute(
+        "SELECT COUNT(*) FROM japanese_cards_ptcgdb WHERE COALESCE(is_custom, FALSE) = FALSE"
+    ).fetchone()[0]
+
+
+def push_ptcgdb_if_requested(conn, sb, now_iso: str, include: bool) -> dict:
+    """Publish PTCG-db Japanese sets/cards only when explicitly requested.
+
+    Returns {"staged", "included", "sets", "cards"} for logging and the step summary.
+    """
+    staged = count_staged_ptcgdb_rows(conn)
+    result = {"staged": staged, "included": include, "sets": 0, "cards": 0}
+    if not include:
+        print(f"  cards (PTCG-db Japanese): skipped {staged} staged row(s); pass --include-ptcgdb to publish")
+        return result
+    if staged:
+        result["sets"] = push_ptcgdb_sets(conn, sb)
+        if result["sets"]:
+            print(f"  sets (PTCG-db): {result['sets']} rows")
+        result["cards"] = push_japanese_cards_ptcgdb(conn, sb, now_iso)
+    print(f"  cards (PTCG-db Japanese): {result['cards']} rows")
+    return result
+
+
+def format_push_summary(
+    counts: dict[str, int], ptcgdb: dict | None, publish_seconds: float | None, maintenance: dict
+) -> str:
+    """Markdown for $GITHUB_STEP_SUMMARY. Never includes URLs or keys."""
+    lines = ["### Push DuckDB → Supabase", ""]
+    if DRY_RUN:
+        lines += ["- Mode: **dry run** (no writes)"]
+    if publish_seconds is None:
+        lines += ["- Publication: **did not finish**"]
+    else:
+        lines += [f"- Publication duration: {publish_seconds / 60:.1f} min"]
+    if ptcgdb is not None:
+        if ptcgdb["included"]:
+            lines += [f"- PTCG-db: published ({ptcgdb['staged']:,} staged row(s))"]
+        else:
+            lines += [f"- PTCG-db: skipped {ptcgdb['staged']:,} staged row(s) (opt-in: `--include-ptcgdb`)"]
+    lines += ["", "| Published | Rows |", "|---|---:|"]
+    lines += [f"| {label} | {n:,} |" for label, n in counts.items()]
+    lines += ["", "| Maintenance RPC | Result | Attempts | Duration |", "|---|---|---:|---:|"]
+    for name in ("refresh_explore_filter_options", "analyze_cards_and_annotations"):
+        step = maintenance.get(name)
+        if step is None:
+            lines += [f"| `{name}` | not run | | |"]
+            continue
+        duration = f"{step['seconds']:.1f} s" if "seconds" in step else ""
+        reason = " ".join(str(step.get("reason") or "").split()).replace("|", "\\|")
+        result = step["status"] + (f": {reason}" if reason else "")
+        lines += [f"| `{name}` | {result} | {step['attempts']} | {duration} |"]
+    return "\n".join(lines) + "\n\n"
+
+
+def write_step_summary(markdown: str) -> None:
+    """Append to the GitHub Actions step summary when running in CI; never fatal."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(markdown)
+    except OSError as exc:
+        print(f"  (could not write step summary: {exc})", file=sys.stderr)
+
+
 def push_japanese_sets(conn, sb) -> int:
     rows = []
     for s in fetch_dicts(conn, "SELECT * FROM japanese_sets"):
@@ -590,43 +679,57 @@ def main() -> None:
     if DRY_RUN:
         print("=== DRY RUN — no writes to Supabase ===")
 
-    conn = duckdb.connect(str(duck_path), read_only=True)
+    counts: dict[str, int] = {}
+    ptcgdb = None
+    publish_seconds = None
+    maintenance: dict = {}
+    started = time.monotonic()
     try:
-        n_tcg_sets, n_pocket_sets = push_sets(conn, sb)
-        print(f"  sets (TCG): {n_tcg_sets} rows")
-        print(f"  sets (Pocket): {n_pocket_sets} rows")
+        conn = duckdb.connect(str(duck_path), read_only=True)
+        try:
+            ptcgdb = _publish_all(conn, sb, now_iso, counts)
+        finally:
+            conn.close()
+        publish_seconds = time.monotonic() - started
 
-        n_japanese_sets = push_japanese_sets(conn, sb)
-        print(f"  sets (Japanese): {n_japanese_sets} rows")
-
-        n_meta = push_pokemon_metadata(conn, sb)
-        print(f"  pokemon_metadata: {n_meta} rows")
-
-        n_tcg = push_tcg_cards(conn, sb, now_iso)
-        print(f"  cards (pokemontcg.io): {n_tcg} rows")
-
-        n_pocket = push_pocket_cards(conn, sb, now_iso)
-        print(f"  cards (tcgdex Pocket): {n_pocket} rows")
-
-        n_japanese = push_japanese_cards(conn, sb, now_iso)
-        print(f"  cards (tcgdex Japanese): {n_japanese} rows")
-
-        # PTCG-database Japanese cards (optional table — skip if not present)
-        tables = {row[0] for row in conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='main'").fetchall()}
-        if "japanese_cards_ptcgdb" in tables:
-            n_jp_ptcgdb_sets = push_ptcgdb_sets(conn, sb)
-            if n_jp_ptcgdb_sets:
-                print(f"  sets (PTCG-db): {n_jp_ptcgdb_sets} rows")
-            n_jp_ptcgdb = push_japanese_cards_ptcgdb(conn, sb, now_iso)
-            print(f"  cards (PTCG-db Japanese): {n_jp_ptcgdb} rows")
+        # Refresh the Explore filter options materialized view and planner stats.
+        if not DRY_RUN and sb:
+            refresh_post_push_data(sb, maintenance)
     finally:
-        conn.close()
-
-    # Refresh the Explore filter options materialized view and planner stats.
-    if not DRY_RUN and sb:
-        refresh_post_push_data(sb)
+        write_step_summary(format_push_summary(counts, ptcgdb, publish_seconds, maintenance))
 
     print("Done.")
+
+
+def _publish_all(conn, sb, now_iso: str, counts: dict[str, int]) -> dict:
+    """Upsert every source, filling ``counts`` as each step finishes.
+
+    Returns the PTCG-db result from push_ptcgdb_if_requested.
+    """
+    counts["sets (TCG)"], counts["sets (Pocket)"] = push_sets(conn, sb)
+    print(f"  sets (TCG): {counts['sets (TCG)']} rows")
+    print(f"  sets (Pocket): {counts['sets (Pocket)']} rows")
+
+    counts["sets (Japanese)"] = push_japanese_sets(conn, sb)
+    print(f"  sets (Japanese): {counts['sets (Japanese)']} rows")
+
+    counts["pokemon_metadata"] = push_pokemon_metadata(conn, sb)
+    print(f"  pokemon_metadata: {counts['pokemon_metadata']} rows")
+
+    counts["cards (pokemontcg.io)"] = push_tcg_cards(conn, sb, now_iso)
+    print(f"  cards (pokemontcg.io): {counts['cards (pokemontcg.io)']} rows")
+
+    counts["cards (tcgdex Pocket)"] = push_pocket_cards(conn, sb, now_iso)
+    print(f"  cards (tcgdex Pocket): {counts['cards (tcgdex Pocket)']} rows")
+
+    counts["cards (tcgdex Japanese)"] = push_japanese_cards(conn, sb, now_iso)
+    print(f"  cards (tcgdex Japanese): {counts['cards (tcgdex Japanese)']} rows")
+
+    ptcgdb = push_ptcgdb_if_requested(conn, sb, now_iso, INCLUDE_PTCGDB)
+    if ptcgdb["included"]:
+        counts["sets (PTCG-db)"] = ptcgdb["sets"]
+        counts["cards (PTCG-db Japanese)"] = ptcgdb["cards"]
+    return ptcgdb
 
 
 if __name__ == "__main__":

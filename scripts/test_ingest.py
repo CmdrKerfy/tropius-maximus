@@ -318,5 +318,48 @@ class ClearFailedCliTests(unittest.TestCase):
             self.assertTrue({"failed_sets", "tcg_cards", "sets"} <= tables)
 
 
+class StepSummaryTests(unittest.TestCase):
+    def test_cli_writes_counts_and_outcome_to_step_summary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = str(Path(tmp) / "summary.duckdb")
+            summary_path = Path(tmp) / "summary.md"
+            argv = [
+                "ingest.py",
+                "--skip-pokemon",
+                "--skip-tcg",
+                "--skip-pocket",
+                "--skip-japanese",
+            ]
+            with patch.object(ingest, "DB_PATH", db_path), \
+                    patch.object(sys, "argv", argv), \
+                    patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(summary_path)}), \
+                    patch.object(ingest.httpx, "get", _network_forbidden), \
+                    redirect_stdout(io.StringIO()):
+                ingest.main()
+
+            text = summary_path.read_text()
+        self.assertIn("Result: **complete**", text)
+        self.assertIn("| `tcg_cards` | 0 |", text)
+        self.assertIn("| `japanese_cards_ptcgdb` | 0 |", text)
+        self.assertNotIn("Failure counter", text)
+
+    def test_summary_reports_partial_failures(self):
+        stats = ingest.IngestFailureSummary(pocket_card_fetch_failures=2)
+        text = ingest.format_ingest_summary(stats, {"pocket_cards": 2349}, 125.0)
+        self.assertIn("Result: **partial API failures**", text)
+        self.assertIn("Duration: 2.1 min", text)
+        self.assertIn("| `pocket_cards` | 2,349 |", text)
+        self.assertIn("| `pocket_card_fetch_failures` | 2 |", text)
+
+    def test_counts_skip_tables_that_do_not_exist(self):
+        conn = duckdb.connect(":memory:")
+        try:
+            conn.execute("CREATE TABLE tcg_cards (id VARCHAR)")
+            conn.execute("INSERT INTO tcg_cards VALUES ('a'), ('b')")
+            self.assertEqual(ingest.source_row_counts(conn), {"tcg_cards": 2})
+        finally:
+            conn.close()
+
+
 if __name__ == "__main__":
     unittest.main()

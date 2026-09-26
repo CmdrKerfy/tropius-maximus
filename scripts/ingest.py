@@ -75,6 +75,68 @@ class IngestFailureSummary:
         ) > 0
 
 
+# DuckDB tables reported in the CI step summary, in display order.
+SUMMARY_TABLES = (
+    "sets",
+    "tcg_cards",
+    "pokemon_metadata",
+    "pocket_sets",
+    "pocket_cards",
+    "japanese_sets",
+    "japanese_cards",
+    "japanese_cards_ptcgdb",
+)
+
+
+def source_row_counts(conn: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    """Row counts for SUMMARY_TABLES that exist in the database."""
+    existing = {
+        row[0]
+        for row in conn.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+        ).fetchall()
+    }
+    return {
+        table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        for table in SUMMARY_TABLES
+        if table in existing
+    }
+
+
+def format_ingest_summary(
+    stats: IngestFailureSummary, counts: dict[str, int], seconds: float
+) -> str:
+    """Markdown for $GITHUB_STEP_SUMMARY: outcome, duration, row counts, failures."""
+    outcome = "partial API failures" if stats.has_partial_failures() else "complete"
+    lines = [
+        "### Ingest",
+        "",
+        f"- Result: **{outcome}**",
+        f"- Duration: {seconds / 60:.1f} min",
+        "",
+        "| DuckDB table | Rows |",
+        "|---|---:|",
+    ]
+    lines += [f"| `{table}` | {n:,} |" for table, n in counts.items()]
+    failures = {k: v for k, v in vars(stats).items() if v}
+    if failures:
+        lines += ["", "| Failure counter | Count |", "|---|---:|"]
+        lines += [f"| `{k}` | {v} |" for k, v in failures.items()]
+    return "\n".join(lines) + "\n\n"
+
+
+def write_step_summary(markdown: str) -> None:
+    """Append to the GitHub Actions step summary when running in CI; never fatal."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(markdown)
+    except OSError as exc:
+        print(f"  (could not write step summary: {exc})", file=sys.stderr)
+
+
 # ── Configuration ────────────────────────────────────────────────────────
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1660,6 +1722,7 @@ def main():
     if args.clear_failed:
         deleted = clear_failed_sets()
         print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
+    started = time.monotonic()
     summary = run_ingestion(
         set_id=args.set_id,
         skip_pokemon=args.skip_pokemon,
@@ -1672,6 +1735,15 @@ def main():
         japanese_ptcgdb_all=args.japanese_ptcgdb_all,
         force=args.force,
     )
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        conn = get_connection()
+        try:
+            counts = source_row_counts(conn)
+        finally:
+            conn.close()
+        write_step_summary(
+            format_ingest_summary(summary, counts, time.monotonic() - started)
+        )
 
     if args.fail_on_partial and summary.has_partial_failures():
         print(

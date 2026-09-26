@@ -49,6 +49,34 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.3 v2-side hardening (awaiting review)
+
+- Preflight sent and accepted:
+  - Model accepted: yes (Claude Opus 5.5)
+  - Token-feasibility declared: likely
+  - Scope selected: scoped (v2-side 0B.3 only; no `main` changes)
+- Branch: `v2/supabase-migration`; the three 0B.4 commits were pushed at the owner's request (`955aaa3..ff5a374`).
+- Plan doc: `docs/plans/system-performance-ingest-reliability-remediation.md` (0B.3 section has the re-diff table, findings, implementation, validation, and proposed `main` sync).
+- Owner decisions: (A) v1 Pages ingest gets `--skip-japanese` but **not** `--fail-on-partial`; (B) PTCG-db publication is opt-in via `push_duckdb_to_supabase.py --include-ptcgdb`, with no workflow input.
+- Completed:
+  - Re-diffed the ingest unit against remote `main` `2e5543a` (local `main` is stale). `jpn_card_key_utils.py` and all three tests are absent on `main`; `requirements-ci.txt` is identical.
+  - `ingest-supabase.yml`: read-only permissions, non-cancelling concurrency, job/step timeouts (350/300/45 min), pipefail + `tee` logs, jpn parity test, "Publication skipped" summary, secret-scrubbed log artifact on failure.
+  - `ingest.py` / `push_duckdb_to_supabase.py`: step summaries (row counts, durations, refresh/ANALYZE results); PTCG-db opt-in gate.
+  - `deploy-pages.yml`: `--clear-failed --skip-japanese`.
+- Validation run:
+  - `npm run check:quick` (pass); `test_ingest.py` 14 passed; `test_push_duckdb_to_supabase.py` 30 passed; `test_jpn_card_key.py` passed.
+  - Local `push_duckdb_to_supabase.py --dry-run` with `GITHUB_STEP_SUMMARY` set rendered the expected summary; no writes.
+  - Workflow YAML parses; pipefail/tee and redaction behavior simulated locally. Not yet exercised on GitHub Actions.
+- Migrations touched:
+  - None.
+- Open risks or assumptions:
+  - Workflow changes are unproven until a real Actions run; first `main` run starts without cached progress (~3.5 h observed).
+  - `main` is untouched; the sync needs explicit owner approval.
+- Next action (single first step):
+  - Owner reviews the 0B.3 commit and decides whether to validate via a v2 `workflow_dispatch` (writes production Supabase) and whether to authorize the ingest-only `main` sync.
+
+---
+
 ### 2026-09-26 (local) - Phase 0B.4 accepted
 
 - Continuation of the 0B.4 session (Claude Opus 5.5).

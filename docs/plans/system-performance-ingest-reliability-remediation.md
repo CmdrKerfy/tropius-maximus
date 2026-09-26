@@ -1,6 +1,6 @@
 # System performance, ingest, and reliability remediation
 
-**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`) and its migration **applied to production 2026-09-26**; **accepted** after the owner's post-apply check and signed-in move QA. Phase 0C has not started.
+**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`) and its migration **applied to production 2026-09-26**; **accepted** after the owner's post-apply check and signed-in move QA; pushed. 0B.3 v2-side hardening implemented 2026-09-26 and awaiting review; `main` sync not done. Phase 0C has not started.
 **Created:** 2026-09-25  
 **Last reconciled:** 2026-09-26 against pushed `v2/supabase-migration` commit `bff91cc`; plan review corrections applied 2026-09-26 (see "Plan review 2026-09-26")
 **Primary branch:** `v2/supabase-migration`  
@@ -316,7 +316,9 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 
 #### 0B.3 Harden and recalculate the default-branch sync
 
-- [ ] Re-diff the complete ingest unit from current v2 HEAD against the **actual remote** `main` (local `main` may be stale):
+**Status:** v2-side hardening implemented 2026-09-26 (Claude Opus 5.5); awaiting review. The `main` sync has **not** happened and needs explicit owner approval.
+
+- [x] Re-diff the complete ingest unit from current v2 HEAD against the **actual remote** `main` (local `main` may be stale):
   - `.github/workflows/ingest-supabase.yml`
   - `scripts/ingest.py`
   - `scripts/push_duckdb_to_supabase.py`
@@ -324,16 +326,61 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
   - `scripts/requirements-ci.txt`
   - focused ingest tests
   - package/check script only if required to run those tests
-- [ ] Preserve the resumable restore/save behavior from `79267ef` and incremental TCGdex behavior from `4493d76`.
-- [ ] Ensure the workflow uses `--clear-failed --fail-on-partial` and never publishes after an incomplete ingest.
-- [ ] Add explicit read-only permissions, concurrency, and a realistic timeout.
-- [ ] Add failure artifact/summary output without secrets.
-- [ ] Include source row counts, ingest duration, publication duration, materialized-view refresh result/duration, and `ANALYZE` result/duration in the step summary.
-- [ ] Disable ordinary automatic PTCG-db publication or require an explicit opt-in so cached staging rows cannot recreate duplicates.
-- [ ] Protect the v1 Pages consumer from unintended Japanese ingest work (for example, pass `--skip-japanese` if the shared script's default includes Japanese while its exporter does not).
-- [ ] Do not sync `package.json`/`package-lock.json` merely to run Python tests; invoke focused Python tests directly in the ingest workflow.
+- [x] Preserve the resumable restore/save behavior from `79267ef` and incremental TCGdex behavior from `4493d76`. (Cache restore/save steps and ingest code paths unchanged.)
+- [x] Ensure the workflow uses `--clear-failed --fail-on-partial` and never publishes after an incomplete ingest. (Push gated on `steps.ingest.outcome == 'success'`; the skip is now also written to the step summary.)
+- [x] Add explicit read-only permissions, concurrency, and a realistic timeout.
+- [x] Add failure artifact/summary output without secrets.
+- [x] Include source row counts, ingest duration, publication duration, materialized-view refresh result/duration, and `ANALYZE` result/duration in the step summary.
+- [x] Disable ordinary automatic PTCG-db publication or require an explicit opt-in so cached staging rows cannot recreate duplicates.
+- [x] Protect the v1 Pages consumer from unintended Japanese ingest work (for example, pass `--skip-japanese` if the shared script's default includes Japanese while its exporter does not).
+- [x] Do not sync `package.json`/`package-lock.json` merely to run Python tests; invoke focused Python tests directly in the ingest workflow.
 - [ ] Ask the owner for explicit authorization before changing `main`.
 - [ ] Sync only the approved ingest unit; do not merge the v2 frontend.
+
+**Re-diff result (2026-09-26, v2 `ff5a374` vs remote `main` `2e5543a`; local `main` `d189743` is stale):**
+
+| File | `main` | v2 | Notes |
+|---|---|---|---|
+| `.github/workflows/ingest-supabase.yml` | 52 lines | 91 (before 0B.3) | `main` has no tests, resume, `--clear-failed`/`--fail-on-partial`, or publish gate |
+| `scripts/ingest.py` | 886 | 1,699 | Additive DuckDB tables only (Japanese, PTCG-db); tables read by v1 `export_parquet.py` are unchanged |
+| `scripts/push_duckdb_to_supabase.py` | 285 | 633 | Includes 0B.2 maintenance retry/timing |
+| `scripts/jpn_card_key_utils.py` | absent | 37 | **Required** — v2 `ingest.py` imports it |
+| `scripts/requirements-ci.txt` | identical | identical | No sync needed |
+| `scripts/test_ingest.py`, `test_push_duckdb_to_supabase.py`, `test_jpn_card_key.py` | absent | present | Python-only; need just `requirements-ci.txt` |
+| `.github/workflows/deploy-pages.yml` | differs by one flag | | v2 had added `--fail-on-partial` to the v1 Pages ingest |
+
+Findings:
+
+- `main`'s 2026-09-21 scheduled ingest step took 1 s (effectively a no-op against its old cache) before the push failed with `57014`.
+- `main`'s `deploy-pages.yml` runs the same `scripts/ingest.py`, so syncing the script changes the v1 consumer. v2 ingests Japanese data by default; v1's exporter never reads it.
+- v2 `initialize_database()` always creates `japanese_cards_ptcgdb`, and the push script published that table whenever it existed — only an empty table prevented PTCG-db republication.
+- DuckDB caches are branch-scoped: `main` cannot restore the v2 `duckdb-Linux-*` caches, so the first run from `main` starts without progress. Evidence: v2 run `36215951396` (little cached progress) spent 3 h 25 min in ingest; run `36228427545` (warm) spent 11 min in ingest and 4 min 45 s in push.
+
+**Implementation (v2 only):**
+
+- `.github/workflows/ingest-supabase.yml`: `permissions: contents: read`; `concurrency` group `ingest-supabase` without cancel-in-progress; job `timeout-minutes: 350`, ingest step 300 (step-level so progress is still saved), push step 45; explicit `bash` shell (pipefail) with `tee` into `ingest-logs/`; runs `test_jpn_card_key.py`; the incomplete-ingest step writes "Publication skipped" to the step summary; on failure, secret values are scrubbed from the logs and uploaded as artifact `ingest-logs-<run>-<attempt>` (14-day retention, `actions/upload-artifact@v7`); `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`.
+- `scripts/ingest.py`: `source_row_counts`, `format_ingest_summary`, `write_step_summary`; `main()` appends outcome, duration, per-table DuckDB row counts, and nonzero failure counters to `$GITHUB_STEP_SUMMARY` when set (before the `--fail-on-partial` exit, so partial runs are summarized too).
+- `scripts/push_duckdb_to_supabase.py`: PTCG-db publication requires `--include-ptcgdb` (default off; logs the skipped staged-row count); `refresh_post_push_data(sb, report)` records status/attempts/duration/reason per maintenance RPC; `main()` writes published row counts, publication duration, PTCG-db decision, and maintenance results to the step summary in a `finally` (so failures are summarized). Summary never includes URLs or keys; reasons are flattened and `|`-escaped.
+- `.github/workflows/deploy-pages.yml` (v1 Pages; owner decision A): `--clear-failed --skip-japanese`, **no** `--fail-on-partial`, so the frozen v1 site keeps deploying through an upstream blip. v2's copy now matches what would go to `main`.
+
+**Validation:**
+
+- `python scripts/test_ingest.py` — 14 passed (3 new: CLI writes summary, partial-failure summary, missing tables skipped).
+- `python scripts/test_push_duckdb_to_supabase.py` — 30 passed (11 new: PTCG-db skipped by default / published on opt-in / custom rows excluded / missing table; flag defaults off; maintenance outcomes recorded incl. fatal refresh; summary contents; unfinished publication; no key/URL in summary; reason escaping; summary append).
+- `python scripts/test_jpn_card_key.py` — passed.
+- `python scripts/push_duckdb_to_supabase.py --dry-run` against the local DuckDB with `GITHUB_STEP_SUMMARY` set: correct counts, "skipped 0 staged row(s)", maintenance "not run"; no Supabase writes.
+- Simulated `bash -eo pipefail` loop confirms a failing script is detected through `tee`; redaction snippet replaces secret values and skips empty ones.
+- Both workflow files parse as YAML (`actionlint` not installed locally; first real validation is a GitHub run).
+- `npm run check:quick` — exit 0.
+
+**Remaining risks:**
+
+- The workflow changes are only exercised by a real Actions run. A v2 `workflow_dispatch` (owner approval required — it writes to production Supabase) would validate them before the `main` sync.
+- First scheduled run from `main` after the sync starts without cached progress (~3.5 h observed); within the 300-min step timeout, but a slow upstream could exceed it. It is resumable; a second run would finish the gaps.
+- The first `main` Pages run after the sync uses v2 `ingest.py` against the committed v1 `pokemon.duckdb` (additive tables only; empty Japanese tables will be created in it).
+- Loading new PTCG-db cards now requires running the push manually with `--include-ptcgdb`.
+
+**Proposed `main` sync (not executed; needs explicit owner approval):** one commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
 
 #### 0B.4 Hotfix Workbench move RPC (pulled forward from 2A)
 
@@ -790,4 +837,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.2 is applied. 0B.4 is accepted (2026-09-26; commits `3907b09`, `53dccf4`, and the acceptance commit are local until the owner asks to push). Next: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.3 v2-side hardening is implemented and awaiting owner review (see 0B.3). Next single step: owner reviews the 0B.3 commit, then decides (a) whether to validate the new workflow with a v2 `workflow_dispatch` first (writes to production Supabase; needs approval) and (b) whether to authorize the ingest-only sync to `main` exactly as listed under "Proposed `main` sync". Then 0C. Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

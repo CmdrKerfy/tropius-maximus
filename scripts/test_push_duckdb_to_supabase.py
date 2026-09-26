@@ -2,8 +2,12 @@
 """Focused tests for adaptive Supabase ingest batching and post-push maintenance."""
 
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
+import duckdb
 
 import push_duckdb_to_supabase as push
 from postgrest.exceptions import APIError
@@ -321,6 +325,149 @@ class MaintenanceRetryTests(unittest.TestCase):
             exc, _, printed = self._run(client)
         self.assertNotIn(secret, exc.reason)
         self.assertFalse(any(secret in line for line in printed))
+
+
+def _ptcgdb_db(tmp, rows):
+    """DuckDB file with a japanese_cards_ptcgdb table holding ``rows`` (id, set_id, is_custom)."""
+    db_path = str(Path(tmp) / "ptcgdb.duckdb")
+    conn = duckdb.connect(db_path)
+    try:
+        conn.execute(
+            "CREATE TABLE japanese_cards_ptcgdb ("
+            "id VARCHAR PRIMARY KEY, name VARCHAR, set_id VARCHAR, number VARCHAR, "
+            "types JSON, subtypes JSON, raw_data JSON, is_custom BOOLEAN DEFAULT FALSE)"
+        )
+        for card_id, set_id, is_custom in rows:
+            conn.execute(
+                "INSERT INTO japanese_cards_ptcgdb (id, name, set_id, number, is_custom) "
+                "VALUES (?, ?, ?, '1', ?)",
+                [card_id, card_id, set_id, is_custom],
+            )
+    finally:
+        conn.close()
+    return duckdb.connect(db_path, read_only=True)
+
+
+class PtcgdbOptInTests(unittest.TestCase):
+    def test_staged_rows_are_skipped_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _ptcgdb_db(tmp, [("ptcgdb-sv4a-1", "sv4a", False), ("ptcgdb-sv4a-2", "sv4a", False)])
+            client = _FakeClient(max_rows=1000)
+            try:
+                with patch("builtins.print"):
+                    result = push.push_ptcgdb_if_requested(conn, client, "now", include=False)
+            finally:
+                conn.close()
+
+        self.assertEqual(result, {"staged": 2, "included": False, "sets": 0, "cards": 0})
+        self.assertEqual(client.attempted_sizes, [])
+
+    def test_explicit_opt_in_publishes_sets_and_cards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _ptcgdb_db(tmp, [("ptcgdb-sv4a-1", "sv4a", False), ("custom-1", "sv4a", True)])
+            client = _FakeClient(max_rows=1000)
+            try:
+                with patch("builtins.print"):
+                    result = push.push_ptcgdb_if_requested(conn, client, "now", include=True)
+            finally:
+                conn.close()
+
+        self.assertEqual(result, {"staged": 1, "included": True, "sets": 1, "cards": 1})
+        self.assertEqual(client.pushed_ids, ["sv4a", "ptcgdb-sv4a-1"])
+
+    def test_missing_table_counts_zero_staged_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = duckdb.connect(str(Path(tmp) / "empty.duckdb"))
+            try:
+                self.assertEqual(push.count_staged_ptcgdb_rows(conn), 0)
+            finally:
+                conn.close()
+
+    def test_flag_defaults_off(self):
+        self.assertFalse(push.INCLUDE_PTCGDB)
+
+
+class StepSummaryTests(unittest.TestCase):
+    def test_maintenance_outcomes_are_recorded_for_the_summary(self):
+        client = _ScriptedRpcClient(
+            {"analyze_cards_and_annotations": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+        )
+        report = {}
+        with patch.object(push.time, "sleep"), patch("builtins.print"):
+            push.refresh_post_push_data(client, report)
+
+        self.assertEqual(report["refresh_explore_filter_options"]["status"], "ok")
+        self.assertEqual(report["refresh_explore_filter_options"]["attempts"], 1)
+        self.assertIn("seconds", report["refresh_explore_filter_options"])
+        self.assertEqual(report["analyze_cards_and_annotations"]["status"], "failed (nonfatal)")
+        self.assertIn("57014", report["analyze_cards_and_annotations"]["reason"])
+
+    def test_fatal_refresh_failure_is_recorded_before_raising(self):
+        client = _ScriptedRpcClient(
+            {"refresh_explore_filter_options": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+        )
+        report = {}
+        with patch.object(push.time, "sleep"), patch("builtins.print"):
+            with self.assertRaises(push.MaintenanceRpcError):
+                push.refresh_post_push_data(client, report)
+
+        self.assertEqual(report["refresh_explore_filter_options"]["status"], "failed")
+        self.assertNotIn("analyze_cards_and_annotations", report)
+
+    def test_summary_lists_counts_ptcgdb_skip_and_maintenance(self):
+        text = push.format_push_summary(
+            {"cards (pokemontcg.io)": 20670},
+            {"staged": 3, "included": False, "sets": 0, "cards": 0},
+            95.0,
+            {
+                "refresh_explore_filter_options": {"status": "ok", "attempts": 1, "seconds": 12.3},
+                "analyze_cards_and_annotations": {
+                    "status": "failed (nonfatal)", "attempts": 3, "reason": "57014: timeout",
+                },
+            },
+        )
+        self.assertIn("| cards (pokemontcg.io) | 20,670 |", text)
+        self.assertIn("skipped 3 staged row(s)", text)
+        self.assertIn("Publication duration: 1.6 min", text)
+        self.assertIn("| `refresh_explore_filter_options` | ok | 1 | 12.3 s |", text)
+        self.assertIn("failed (nonfatal): 57014: timeout | 3 |", text)
+
+    def test_reason_with_pipes_and_newlines_stays_in_one_table_cell(self):
+        text = push.format_push_summary(
+            {}, None, 1.0,
+            {"refresh_explore_filter_options": {"status": "failed", "attempts": 1, "reason": "a | b\nc"}},
+        )
+        self.assertIn("| failed: a \\| b c | 1 |", text)
+
+    def test_summary_marks_unfinished_publication_and_unrun_maintenance(self):
+        text = push.format_push_summary({}, None, None, {})
+        self.assertIn("Publication: **did not finish**", text)
+        self.assertIn("| `refresh_explore_filter_options` | not run |", text)
+
+    def test_summary_never_contains_the_service_key_or_url(self):
+        secret = "eyJhbGciOiJIUzI1NiJ9.service.secret"
+        url = "https://project-ref.supabase.co"
+        with patch.dict("os.environ", {"SUPABASE_SERVICE_KEY": secret, "SUPABASE_URL": url}):
+            client = _ScriptedRpcClient(
+                {"refresh_explore_filter_options": [_timeout() for _ in range(push.MAINTENANCE_MAX_ATTEMPTS)]}
+            )
+            report = {}
+            with patch.object(push.time, "sleep"), patch("builtins.print"):
+                with self.assertRaises(push.MaintenanceRpcError):
+                    push.refresh_post_push_data(client, report)
+            text = push.format_push_summary({"sets (TCG)": 1}, None, 1.0, report)
+        self.assertNotIn(secret, text)
+        self.assertNotIn(url, text)
+
+    def test_write_step_summary_appends_only_in_ci(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "summary.md"
+            with patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(path)}):
+                push.write_step_summary("one\n")
+                push.write_step_summary("two\n")
+            self.assertEqual(path.read_text(), "one\ntwo\n")
+        with patch.dict("os.environ", {}, clear=True):
+            push.write_step_summary("ignored")  # no env var: no-op, no error
 
 
 if __name__ == "__main__":
