@@ -49,6 +49,17 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.4 accepted
+
+- Continuation of the 0B.4 session (Claude Opus 5.5).
+- Owner post-apply check: `fixed = true`, `src_md5 = 799d5766b08055e15fd0e2fe63ffec13` (matches the committed function body), ACL unchanged. Owner moved cards between Workbench lists in the app on Vercel: passed.
+- Branch: `v2/supabase-migration`; 0B.4 commits are local, **not pushed** (push only when the owner asks). `main` untouched.
+- Open risks: concurrent moves untested (Phase 2A); `PUBLIC`/`anon` EXECUTE remains (Phase 2C). Remote migration history still tracks only `001`–`029`; never run `supabase db push`.
+- Next action (single first step):
+  - Owner decides whether to push the 0B.4 commits, then which slice is next (0B.3 needs explicit `main` authorization; otherwise 0C or 1E.1–1E.3).
+
+---
+
 ### 2026-09-26 (local) - Phase 0B.4 committed and applied
 
 - Preflight: continuation of the accepted 0B.4 session (Claude Opus 5.5); owner approved order-preserving dedupe, commit, and applying the migration.

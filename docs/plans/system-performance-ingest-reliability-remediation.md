@@ -1,6 +1,6 @@
 # System performance, ingest, and reliability remediation
 
-**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`, not pushed) and its migration **applied to production 2026-09-26** with owner approval; post-apply check and signed-in move QA pending. Phase 0C has not started.
+**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`) and its migration **applied to production 2026-09-26**; **accepted** after the owner's post-apply check and signed-in move QA. Phase 0C has not started.
 **Created:** 2026-09-25  
 **Last reconciled:** 2026-09-26 against pushed `v2/supabase-migration` commit `bff91cc`; plan review corrections applied 2026-09-26 (see "Plan review 2026-09-26")
 **Primary branch:** `v2/supabase-migration`  
@@ -226,7 +226,7 @@ These changes do **not** complete Phase 0: the default branch is still old, refr
 
 ### 0B. Stabilize v2 and prepare an ingest-only default-branch sync
 
-**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 is committed (`3907b09`) and applied; awaiting post-apply check and owner QA. 0B.3 is pending.
+**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 is accepted (2026-09-26). 0B.3 is pending.
 
 Implement and review the following as separate, focused commits. Do not combine ingest maintenance, frontend filters, and default-branch synchronization into one change.
 
@@ -339,7 +339,7 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 
 Independent of ingest work; may be done before or after 0B.2 at the owner's choice. Requires owner approval before applying the migration to production.
 
-**Status:** Implemented 2026-09-26 (Claude Opus 5.5). Owner approved (including order-preserving dedupe); committed as `3907b09` (not pushed) and **applied to production 2026-09-26** as SQL via `execute_sql` (returned without error; not in the migration history table). The agent's post-apply read-only check was blocked by a tool permission rule, so the check and a signed-in move are left to the owner.
+**Status:** Implemented 2026-09-26 (Claude Opus 5.5). Owner approved (including order-preserving dedupe); committed as `3907b09` (not pushed) and **applied to production 2026-09-26** as SQL via `execute_sql` (returned without error; not in the migration history table). The agent's post-apply read-only check was blocked by a tool permission rule; the owner ran it instead. **Accepted 2026-09-26.**
 
 - [x] Reproduce first: confirm in the app (or via a rollback-transaction probe as an authenticated user) that moving cards between Workbench lists currently errors. Record the error text.
 - [x] Create a new migration that replaces `move_workbench_cards` so it reads `card_ids` JSONB into `text[]` (for example via `jsonb_array_elements_text`) and writes back with `to_jsonb(...)`. Keep the existing signature `(bigint, bigint, text[], integer)` so the app call is unchanged.
@@ -347,7 +347,7 @@ Independent of ingest work; may be done before or after 0B.2 at the owner's choi
 - [x] Preserve existing owner/shared permission checks, capacity (`p_max_cards`), duplicate handling, and missing-source-card behavior.
 - [x] Test: owner move, shared-list move, duplicates, capacity overflow, and a card not present in the source list.
 - [x] Owner approval, then apply as SQL (not `supabase db push`).
-- [ ] Post-apply check (query below: expect `true`, a hash of `799d5766b08055e15fd0e2fe63ffec13` matching the committed file, ACL unchanged) and signed-in QA of a real move in production.
+- [x] Post-apply check (query below: expect `true`, a hash of `799d5766b08055e15fd0e2fe63ffec13` matching the committed file, ACL unchanged) and signed-in QA of a real move in production. Owner ran both 2026-09-26: `fixed = true`, `src_md5 = 799d5766b08055e15fd0e2fe63ffec13`, ACL `{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}` (unchanged); moving cards between Workbench lists in the app passed.
 
 **0B.4 results**
 
@@ -790,4 +790,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.2 is applied. 0B.4 is committed (`3907b09`, not pushed) and applied. Next: run the post-apply check in "0B.4 results" and do a signed-in move between two Workbench lists in the app; if both pass, mark 0B.4 accepted. Push `3907b09` only when the owner asks. Afterwards: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.2 is applied. 0B.4 is accepted (2026-09-26; commits `3907b09`, `53dccf4`, and the acceptance commit are local until the owner asks to push). Next: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
