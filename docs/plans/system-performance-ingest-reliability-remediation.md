@@ -1,6 +1,6 @@
 # System performance, ingest, and reliability remediation
 
-**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) migration written and tested in rolled-back transactions; **not applied**, awaiting owner review. Phase 0C has not started.
+**Status:** Active plan; manual v2 ingest recovery completed, but default-branch scheduling is not yet trustworthy. Phase 0B.1 accepted; 0B.2 committed and pushed (`6f36a0d`, badge fix `3bde76b`) and its three migrations **applied to production 2026-09-26**; confirmation via a real service-key ingest run is pending. 0B.4 (Workbench move hotfix) committed (`3907b09`, not pushed) and its migration **applied to production 2026-09-26** with owner approval; post-apply check and signed-in move QA pending. Phase 0C has not started.
 **Created:** 2026-09-25  
 **Last reconciled:** 2026-09-26 against pushed `v2/supabase-migration` commit `bff91cc`; plan review corrections applied 2026-09-26 (see "Plan review 2026-09-26")
 **Primary branch:** `v2/supabase-migration`  
@@ -226,7 +226,7 @@ These changes do **not** complete Phase 0: the default branch is still old, refr
 
 ### 0B. Stabilize v2 and prepare an ingest-only default-branch sync
 
-**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 migration is written and tested (rolled back), not applied; 0B.3 is pending.
+**Status:** In progress. 0B.1 (set-ID query + Site Checks, `bff91cc`) is accepted after signed-in production QA. 0B.2 is committed/pushed and its migrations are applied (awaiting confirmation from the next ingest run's logs). 0B.4 is committed (`3907b09`) and applied; awaiting post-apply check and owner QA. 0B.3 is pending.
 
 Implement and review the following as separate, focused commits. Do not combine ingest maintenance, frontend filters, and default-branch synchronization into one change.
 
@@ -339,14 +339,15 @@ Do the timeout fix first; retries alone cannot succeed against a deterministic 8
 
 Independent of ingest work; may be done before or after 0B.2 at the owner's choice. Requires owner approval before applying the migration to production.
 
-**Status:** Implemented 2026-09-26 (Claude Opus 5.5). Migration written and tested in rolled-back transactions against the live schema. **Not applied, not committed.** Awaiting owner review.
+**Status:** Implemented 2026-09-26 (Claude Opus 5.5). Owner approved (including order-preserving dedupe); committed as `3907b09` (not pushed) and **applied to production 2026-09-26** as SQL via `execute_sql` (returned without error; not in the migration history table). The agent's post-apply read-only check was blocked by a tool permission rule, so the check and a signed-in move are left to the owner.
 
 - [x] Reproduce first: confirm in the app (or via a rollback-transaction probe as an authenticated user) that moving cards between Workbench lists currently errors. Record the error text.
 - [x] Create a new migration that replaces `move_workbench_cards` so it reads `card_ids` JSONB into `text[]` (for example via `jsonb_array_elements_text`) and writes back with `to_jsonb(...)`. Keep the existing signature `(bigint, bigint, text[], integer)` so the app call is unchanged.
 - [x] Lock both queue rows in deterministic ID order (`ORDER BY id FOR UPDATE`) to reduce deadlock risk.
 - [x] Preserve existing owner/shared permission checks, capacity (`p_max_cards`), duplicate handling, and missing-source-card behavior.
 - [x] Test: owner move, shared-list move, duplicates, capacity overflow, and a card not present in the source list.
-- [ ] Owner approval, then apply as SQL (not `supabase db push`), then signed-in QA of a real move in production.
+- [x] Owner approval, then apply as SQL (not `supabase db push`).
+- [ ] Post-apply check (query below: expect `true`, a hash of `799d5766b08055e15fd0e2fe63ffec13` matching the committed file, ACL unchanged) and signed-in QA of a real move in production.
 
 **0B.4 results**
 
@@ -355,7 +356,7 @@ Independent of ingest work; may be done before or after 0B.2 at the owner's choi
 - **Migration:** `supabase/migrations/20260926210118_workbench_move_cards_jsonb.sql` (created with `supabase migration new`). `CREATE OR REPLACE`, same signature and return columns, still `SECURITY INVOKER` + `search_path = public` (RLS provides owner/shared visibility; the `trg_enforce_workbench_list_owner_controls` trigger still limits non-owners to content fields). The existing ACL is kept (`PUBLIC`/`anon` execute remain; anonymous calls are rejected by the sign-in check; revocation is Phase 2C).
   - Reads with `jsonb_array_elements_text`, writes with `to_jsonb(text[])` (empty → `[]`). A non-array `card_ids` raises an explicit error instead of silently becoming empty.
   - Locks both rows with one `PERFORM ... WHERE id IN (src, tgt) ORDER BY id FOR UPDATE` before reading either.
-  - **Intentional behavior change (recommended; owner to confirm at review — reverting is a one-line change per list):** duplicates are removed while preserving list order (first occurrence wins, via `WITH ORDINALITY`). 038's `SELECT DISTINCT` gave no order guarantee, which could reshuffle lists and move `current_index` to a different card.
+  - **Intentional behavior change (owner-approved 2026-09-26):** duplicates are removed while preserving list order (first occurrence wins, via `WITH ORDINALITY`). 038's `SELECT DISTINCT` gave no order guarantee, which could reshuffle lists and move `current_index` to a different card.
   - Unchanged: trimming and blank removal; cards already in the target count as `skipped_existing` and leave the source; overflow counts as `skipped_capacity` and stays in the source; requested cards not in the source are ignored and not counted; `current_index` clamped to the new lengths; same error messages.
 - **Tests (2026-09-26, one transaction that applied the new function, created temporary lists, and ended in a forced exception so everything rolled back):** as `authenticated` with the real owner and a real second user's JWT claims.
 
@@ -373,7 +374,7 @@ Independent of ingest work; may be done before or after 0B.2 at the owner's choi
 
   Post-rollback check: the deployed function source hash (`ceb03317…`) and ACL are unchanged; no test rows remain; the three real lists (ids 2, 6, 7) have unchanged lengths, indexes, and `updated_at`.
 - **Not tested here:** concurrent moves (Phase 2A); the PostgREST/app path (confirm with signed-in QA after applying). The tested SQL matched the migration file except for two comment lines.
-- **Apply (after owner approval):** run the migration file's SQL once in the SQL editor or via `execute_sql` (like 030–057 and 0B.2; it will not be in the migration history table). Then verify: `SELECT position('jsonb_array_elements_text' in prosrc) > 0, proacl FROM pg_proc WHERE proname = 'move_workbench_cards';` and move a card between two Workbench lists in the app.
+- **Apply (after owner approval):** run the migration file's SQL once in the SQL editor or via `execute_sql` (like 030–057 and 0B.2; it will not be in the migration history table). Then verify: `SELECT position('jsonb_array_elements_text' in prosrc) > 0 AS fixed, md5(prosrc) AS src_md5, proacl FROM pg_proc WHERE proname = 'move_workbench_cards';` (expected `fixed = true`, `src_md5 = 799d5766b08055e15fd0e2fe63ffec13`, ACL `{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}`) and move a card between two Workbench lists in the app.
 
 Acceptance:
 
@@ -789,4 +790,4 @@ Acceptance:
 
 ## Exact next action
 
-0B.2 is applied. 0B.4's migration (`supabase/migrations/20260926210118_workbench_move_cards_jsonb.sql`) is written and tested in rolled-back transactions. Next: owner reviews it; on approval, commit it, apply its SQL once (never `supabase db push`), run the post-apply check in "0B.4 results", and do a signed-in move in the app. Afterwards: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+0B.2 is applied. 0B.4 is committed (`3907b09`, not pushed) and applied. Next: run the post-apply check in "0B.4 results" and do a signed-in move between two Workbench lists in the app; if both pass, mark 0B.4 accepted. Push `3907b09` only when the owner asks. Afterwards: 0B.3 (ingest-only sync to `main`, needs explicit owner approval), then 0C, then Phase 1E (1E.1–1E.3 are no-write and may start alongside 0B.3/0C). When the next v2 ingest runs, confirm its log shows the refresh and ANALYZE succeeding with durations. Shelved: mobile zoomed-out load (not reproduced). Do not run `supabase db push` (remote history tracks only 001–029). Do not change `main`, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

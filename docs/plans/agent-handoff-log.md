@@ -49,6 +49,24 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Phase 0B.4 committed and applied
+
+- Preflight: continuation of the accepted 0B.4 session (Claude Opus 5.5); owner approved order-preserving dedupe, commit, and applying the migration.
+- Branch: `v2/supabase-migration` — `3907b09` committed locally, **not pushed**; `main` untouched.
+- Migration applied to production as SQL via `execute_sql` (no error returned; untracked in migration history like 030–057):
+  - `supabase/migrations/20260926210118_workbench_move_cards_jsonb.sql`
+- Validation:
+  - Pre-apply rolled-back tests passed (see the previous entry and the plan's "0B.4 results").
+  - Post-apply read-only check **not run by the agent** (blocked by a tool permission rule). Expected: `fixed = true`, `src_md5 = 799d5766b08055e15fd0e2fe63ffec13` (hash of the committed function body), ACL unchanged.
+- Open risks:
+  - Deployment is unconfirmed until the post-apply check and a signed-in app move pass.
+  - Concurrent moves untested (Phase 2A); `PUBLIC`/`anon` EXECUTE remains (Phase 2C).
+  - Owner screenshots `tests/IMG_6879.jpg`, `tests/IMG_6880.jpg` remain untracked; do not commit.
+- Next action (single first step):
+  - Owner runs the post-apply check query and moves a card between two Workbench lists in the app; then mark 0B.4 accepted and decide whether to push `3907b09`.
+
+---
+
 ### 2026-09-26 (local) - Phase 0B.4 Workbench move hotfix (migration written and tested; not applied, not committed)
 
 - Preflight sent and accepted:
