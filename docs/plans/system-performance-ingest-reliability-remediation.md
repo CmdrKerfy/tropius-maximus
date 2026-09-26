@@ -405,7 +405,29 @@ Findings:
 **New findings from the run (not fixed; owner decisions):**
 
 1. **tcgdex Japanese duplicates are live in production.** 8,451 `tcgdex`/`japanese` rows have a `ptcgdb` twin (`ptcgdb-<lower(set_id)>-<number without leading zeros>`; 98% same name). All were created 2026-09-26 07:15–08:14 UTC by recovery runs `36215951396`/`36228427545`, undoing the May dedup. Cause: `push_japanese_cards` upserts every tcgdex Japanese row with no cross-source check. None are annotated (0 annotations on any tcgdex Japanese card). `main`'s current scripts publish no Japanese cards, so **syncing to `main` would make the weekly schedule republish these twins** (no new rows while they exist, but any cleanup would be undone every Monday). Belongs to 1B. **Resolved 2026-09-26** — see 1B "tcgdex Japanese twin slice".
-2. **Materialized-view refresh is near its timeout** after a full upsert (2 of 3 attempts hit `57014`). Next run could exhaust retries. Belongs to 0B.2 follow-up / Phase 5 (for example, run ANALYZE before refresh, a longer `statement_timeout` for the refresh RPC, or `REFRESH ... CONCURRENTLY`).
+2. **Materialized-view refresh is near its timeout** after a full upsert (2 of 3 attempts hit `57014`). Next run could exhaust retries. Belongs to 0B.2 follow-up / Phase 5 (for example, run ANALYZE before refresh, a longer `statement_timeout` for the refresh RPC, or `REFRESH ... CONCURRENTLY`). **Diagnosed 2026-09-26; script-only fix in the working tree** — see "Refresh timeout headroom" below.
+
+**Refresh timeout headroom (2026-09-26, Claude Opus 5.5; uncommitted, v2 working tree only):**
+
+- **What sets the limit:** the `service_role` role setting `statement_timeout=60s` (migration `…092111`; `pg_roles` confirms `statement_timeout=60s,lock_timeout=60s`). The Postgres log shows server-side cancels at 21:37:02 and 21:38:21.2; the client's 69 s includes about 9 s of PostgREST/HTTP overhead. The function has only `search_path=""` in `proconfig`.
+- **Why it was slow: an I/O stall right after the upsert, not the query plan.** Postgres logs for 21:30–21:45 UTC:
+  - A checkpoint ran 21:33:51 → 21:38:21, writing 20,511 buffers (71.5% of `shared_buffers`) of pages rewritten by the upsert.
+  - While it ran, an unrelated trivial `count(*) … GROUP BY` seq scan of `cards` (from an MCP session) took **56.8 s**. That query has no plan to go wrong, so the whole database was I/O-bound.
+  - Attempt 2 was cancelled at 21:38:21.2, right as the checkpoint completed. Attempt 3 started at about 21:38:39 and ran in **16.5 s** server-side.
+  - The first scan of each rewritten page sets hint bits, and with `data_checksums=on` that writes full-page images to the WAL. That adds write I/O on top of the checkpoint.
+  - The same day's heavy recovery runs probably also drained the daily disk-I/O burst budget (not verifiable via SQL).
+- **Root cause of the burst:** the push rewrites every API row even when nothing changed. The run had 0 new cards and about 36k rows upserted; `cards.n_tup_upd` is 108k. This belongs to Phase 1A (see the new 1A item).
+- **Rejected options, with evidence:**
+  - *Function-level `SET statement_timeout`:* tested read-only with a temp function (`SET LOCAL statement_timeout='2s'`; function `SET statement_timeout='10s'`; `pg_sleep(4)`; rolled back). It was cancelled at 2 s: Postgres arms the timer when the top-level statement starts, so a function setting cannot extend it. Supabase also caps Client API queries at 60 s, so raising `service_role` further is not a lever either.
+  - *ANALYZE before refresh:* stale statistics are not the problem, because the upsert does not change the data distribution and the slow query was a plain seq scan. ANALYZE would hit the same I/O stall and spend its own budget. It is not worth reordering.
+  - *CONCURRENTLY:* already in place (`…092113`).
+- **Fix (script-only, no migration, nothing applied):** in `scripts/push_duckdb_to_supabase.py`, maintenance retries go from 3 attempts with backoff `(5, 15)` to 5 attempts with backoff `(15, 30, 60, 120)` s.
+  - The last attempt starts at least 465 s after the first (4 × 60 s timeouts + 225 s of waits), beyond one checkpoint cycle (`checkpoint_timeout` 300 s).
+  - Worst case is about 9.5 min, well inside the 45-min push step.
+  - It applies to both RPCs; ANALYZE stays nonfatal.
+  - A new test, `test_retry_window_outlasts_post_upsert_io_window`, pins the invariant; the transient-then-success test now compares a backoff prefix.
+- **Validation:** `test_push_duckdb_to_supabase.py` 38 OK; `test_ingest.py` 14 OK; parity passed; `npm run check:quick` exit 0.
+- **Not yet on `main`:** the scheduled 2026-09-28 07:30 UTC run executes `main`'s script (3 attempts). Its full upsert after a cold-cache ingest could exhaust retries and go red, which is the correct failure mode, with a stale view. Syncing `push_duckdb_to_supabase.py` plus its test to `main` needs owner approval.
 
 **Proposed `main` sync (not executed; needs explicit owner approval):** prepared 2026-09-26 as staged (uncommitted) changes in a temporary worktree on `origin/main` `2e5543a` (scratchpad `main-sync/`, full patch `main-sync.patch`, 8 files, +2,538/−142); tests pass in that tree (30/14/parity); `requirements-ci.txt` already identical. **Re-staged 2026-09-26 from v2 `ee01e4b`** (includes the 1B twin fix): 8 files, +2,734/−142, staged files identical to `ee01e4b`, tests 37/14/parity pass in the `main` tree. One commit on a temporary worktree based on `origin/main`, containing only `ingest-supabase.yml`, `deploy-pages.yml` (the one-flag change), `scripts/ingest.py`, `scripts/push_duckdb_to_supabase.py`, `scripts/jpn_card_key_utils.py`, and the three `scripts/test_*.py` files. No frontend, `package*.json`, or `site-checks.yml`.
 
@@ -464,6 +486,19 @@ Acceptance:
 
 ### 0C. Recover production freshness
 
+**Pre-run baseline (2026-09-26, read-only, after the 1B twin cleanup):**
+- Cards by origin:
+  - pokemontcg.io: 20,656 (the run published 20,670; 14-row gap not yet explained)
+  - tcgdex Pocket: 2,480
+  - tcgdex Japanese: 4,330
+  - ptcgdb Japanese: 19,705
+  - manual: 12,041 total
+- Newest `last_seen_in_api`: 2026-09-26 21:32:06 UTC for all three API origins. It is the run start time stamped on every row, so it is not a truthful observation time (1A). ptcgdb was last seen 2026-05-09, because its publishing is now opt-in.
+- Japanese tcgdex rows with a ptcgdb twin: 0.
+- `explore_filter_options`: 4 source rows, with set-option counts tcg 259, japanese 389, pocket 15, custom 81.
+
+**Proposed 0C run:** use the scheduled `main` run on 2026-09-28 07:30 UTC as the 0C run instead of a manual dispatch, after the refresh-retry fix is synced to `main` (owner approval). Expect a cold cache (about 3.5 h), about 8,451 tcgdex Japanese rows skipped as twins, and about 4,330 published.
+
 - [ ] Run `workflow_dispatch` from the corrected default branch.
 - [ ] Confirm ingest, publication, materialized-view refresh, and planner-statistics refresh all succeed.
 - [ ] Treat materialized-view refresh failure as fatal; `ANALYZE` may remain nonfatal only after retry and explicit reporting.
@@ -500,6 +535,7 @@ Partial progress: `4493d76` replaced whole-source Pocket/Japanese skipping with 
 - [ ] Add an `ingest_run_id` and source-level run manifest.
 - [ ] Track when each row was actually observed upstream.
 - [ ] Update `last_seen_in_api` only for rows fetched in the current successful source run.
+- [ ] Skip rewriting unchanged rows on publish. Every push currently rewrites every API row (about 36k per run), which causes the post-upsert I/O stall behind the refresh `57014`s (0B.3 "Refresh timeout headroom"). Compare a content hash, or use a conditional upsert RPC with `IS DISTINCT FROM`, and bump the observation timestamp separately.
 - [x] Replace whole-source “table nonempty” skipping for Pocket/Japanese with missing-card-ID reconciliation. (`4493d76`; correction/full-refresh policy remains below.)
 - [ ] Count only non-custom cards when deciding whether an English set is complete.
 - [ ] Define periodic full-refresh cadence for corrections to prices, rarity, names, and images.
@@ -871,4 +907,13 @@ Acceptance:
 
 ## Exact next action
 
-0B.3 is complete: validated (run `36273193023`) and synced to `main` as `ef0d0d6` (owner-authorized; worktree removed). The 1B tcgdex-twin slice is done (`ee01e4b`; 8,451 production twins deleted). Next single step: diagnose and add timeout headroom for the `explore_filter_options` refresh (2/3 attempts hit `57014` after ~69 s in the validation run; refresh is already CONCURRENTLY) — propose the smallest change and ask before any migration/apply. Then 0C. Watch Monday 2026-09-28: v1 Pages 06:00 UTC (`--skip-japanese`) and the first scheduled `main` Supabase ingest 07:30 UTC (no cached progress on `main`; ~3.5 h expected; resumable; summary should show ≈8,451 tcgdex Japanese twins skipped). Phase 1E.1–1E.3 (no-write) may start in parallel. Shelved: mobile zoomed-out load (not reproduced); non-TCG Japanese collectibles parked pending owner scope decision. Do not run `supabase db push` (remote history tracks only 001–029). Do not commit/push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.
+The refresh-timeout headroom is diagnosed and fixed script-only in the v2 working tree (uncommitted): `push_duckdb_to_supabase.py` now makes 5 maintenance attempts with `(15, 30, 60, 120)` s backoff; see 0B.3 "Refresh timeout headroom". The cause is an I/O stall after the full upsert, not the query plan; function-level timeouts and ANALYZE-first were ruled out with evidence. There is no migration. The 0C pre-run baseline is recorded.
+
+Next single step: with owner approval,
+1. commit the fix plus these docs on v2 and push;
+2. sync `scripts/push_duckdb_to_supabase.py` and `scripts/test_push_duckdb_to_supabase.py` to `main` before 2026-09-28 07:30 UTC;
+3. let that scheduled run serve as the 0C run, then complete the 0C verification against the baseline.
+
+If the owner declines the `main` sync, the Monday run may go red at refresh (a correct failure with a stale view); rerun the refresh manually and treat 0C as pending.
+
+Also watch the v1 Pages run at 06:00 UTC (`--skip-japanese`). Phase 1E.1–1E.3 (no-write) may start in parallel. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

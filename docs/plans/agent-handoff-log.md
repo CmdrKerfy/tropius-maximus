@@ -49,6 +49,23 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Refresh timeout headroom diagnosed; script-only fix (uncommitted)
+
+- Preflight: model Claude Opus 5.5; token feasibility ample; scope full. HEAD `b252f80`; remote `main` `ef0d0d6` (the sync landed on top of `2e5543a`).
+- Diagnosis:
+  - The limit is `service_role` `statement_timeout=60s`; the server cancelled at 60 s, and the client's 69 s adds HTTP overhead.
+  - Postgres logs show a checkpoint flushing the upsert's rewritten pages from 21:33:51 to 21:38:21. Meanwhile a trivial `cards` seq scan took 56.8 s, so the whole database was I/O-bound. Once the checkpoint ended, the refresh took 16.5 s.
+  - A function-level `SET statement_timeout` was tested and cannot extend the caller's timer. ANALYZE-first was rejected because the plan is not the issue.
+  - Root cause: every push rewrites about 36k unchanged rows. Added as a Phase 1A item.
+- Completed:
+  - `scripts/push_duckdb_to_supabase.py`: maintenance retries now 5 attempts with `(15, 30, 60, 120)` s backoff, so retries outlast one 300 s checkpoint cycle; worst case about 9.5 min.
+  - Test updated plus a new retry-window invariant test.
+  - Plan: 0B.3 "Refresh timeout headroom", 1A item, 0C pre-run baseline, "Exact next action".
+- Validation: push tests 38 OK, ingest 14 OK, parity passed, `npm run check:quick` exit 0. Read-only production SQL and logs; the temp-function probe was rolled back.
+- Migrations touched: none. Nothing committed, pushed, applied, or dispatched.
+- Open risks: `main`'s 2026-09-28 07:30 UTC scheduled run still uses 3 attempts with `(5, 15)` backoff and may exhaust retries after a cold-cache full upsert. The 14-row gap (pokemontcg.io 20,656 in the database vs 20,670 published) is unexplained.
+- Next action: owner approves (a) the v2 commit and push, and (b) syncing the two push-script files to `main` before Monday, so the scheduled run serves as 0C.
+
 ### 2026-09-26 (local) - 0B.3 ingest-only `main` sync landed
 
 - Owner explicitly authorized; committed the staged worktree as `ef0d0d6` on `main` (`2e5543a..ef0d0d6`; 8 files identical to v2 `ee01e4b`), pushed; v2 docs `77dbfa5` pushed; scratchpad worktree removed. Push to `main` triggers a v1 Pages rebuild (ingest steps there run only on schedule/dispatch).

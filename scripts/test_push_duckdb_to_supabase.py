@@ -261,8 +261,20 @@ class MaintenanceRetryTests(unittest.TestCase):
         result, sleep, printed = self._run(client)
         self.assertEqual(result, (True, True))
         self.assertEqual(self._count(client, "refresh_explore_filter_options"), 3)
-        self.assertEqual([c.args[0] for c in sleep.call_args_list], list(push.MAINTENANCE_BACKOFF_SECONDS))
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], list(push.MAINTENANCE_BACKOFF_SECONDS[:2]))
         self.assertTrue(any("attempts: 3" in line for line in printed))
+
+    def test_retry_window_outlasts_post_upsert_io_window(self):
+        # Attempts that all time out plus the waits between them must span one
+        # checkpoint cycle, so a later attempt runs after the post-upsert flush.
+        waits = [
+            push.MAINTENANCE_BACKOFF_SECONDS[min(i, len(push.MAINTENANCE_BACKOFF_SECONDS) - 1)]
+            for i in range(push.MAINTENANCE_MAX_ATTEMPTS - 1)
+        ]
+        last_attempt_starts = (
+            (push.MAINTENANCE_MAX_ATTEMPTS - 1) * push.MAINTENANCE_STATEMENT_TIMEOUT_SECONDS + sum(waits)
+        )
+        self.assertGreater(last_attempt_starts, push.POST_UPSERT_IO_WINDOW_SECONDS)
 
     def test_gateway_5xx_is_retried(self):
         gateway = APIError(

@@ -170,8 +170,16 @@ def batch_upsert(sb, table: str, rows: list) -> int:
 # Post-push maintenance RPCs. These need the service_role timeout budget from
 # migration 20260926092111; without it PostgREST applies authenticator's 8 s
 # limit and the ~12+ s view refresh fails deterministically with 57014.
-MAINTENANCE_MAX_ATTEMPTS = 3
-MAINTENANCE_BACKOFF_SECONDS = (5, 15)
+# Right after a full upsert the database is I/O-bound for a few minutes (the
+# checkpoint flushes the rewritten pages, and the first scan of each rewritten
+# page sets hint bits, which with data checksums writes full-page images): in run
+# 36273193023 two refresh attempts hit the 60 s limit while that checkpoint ran,
+# and the next attempt took 16.5 s. The retry window must outlast one
+# checkpoint cycle (checkpoint_timeout 300 s), not just a network blip.
+MAINTENANCE_MAX_ATTEMPTS = 5
+MAINTENANCE_BACKOFF_SECONDS = (15, 30, 60, 120)
+MAINTENANCE_STATEMENT_TIMEOUT_SECONDS = 60  # service_role statement_timeout
+POST_UPSERT_IO_WINDOW_SECONDS = 300  # checkpoint_timeout on the project
 # Postgres SQLSTATEs (and PostgREST connection codes) worth retrying:
 # statement/lock timeouts, connection failures, server restarts.
 TRANSIENT_SQLSTATE_PREFIXES = ("08", "57P0")
