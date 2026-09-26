@@ -516,6 +516,14 @@ Backout:
 - Stop the workflow before publication if validation fails.
 - Do not delete cards automatically. Preserve the existing “mark stale, do not delete” policy.
 
+**0C result (verified 2026-09-26 23:35 UTC, read-only):** run `36274892062` on `main` `ab2e3b6` succeeded 23:28:54 UTC (ingest 22:01–23:24 with one resume pass, no permanently failed sets; push 23:24–23:28).
+- Published: pokemontcg.io 20,670; Pocket 2,480; tcgdex Japanese 4,330 with 8,451 skipped as PTCG-db twins; PTCG-db 0 (opt-in).
+- `explore_filter_options` refreshed in 42.0 s (1 attempt); ANALYZE 21.8 s (1 attempt). No Postgres log pull needed.
+- Supabase: pokemontcg.io 20,656 (same 14-row gap as the baseline), Pocket 2,480, tcgdex Japanese 4,330, ptcgdb 19,705, manual 12,041. Newest `last_seen_in_api` 23:24:37 UTC for the three published origins.
+- Japanese tcgdex rows with a ptcgdb twin (by ID rule): 0. Filter view: 4 rows, sets tcg 259, japanese 389, pocket 15, custom 81 (unchanged).
+- `api_hash` still all NULL (old script). Japanese rows in `neo1`–`neo4`: 323 (the old script wrote them back; step 2 repair still needed).
+- Authenticated Explore query: see Phase 5 "Search RLS fix" (index-backed, ms-level).
+
 Phase gate:
 
 - [ ] Owner/reviewer confirms a green run and trustworthy freshness evidence.
@@ -994,6 +1002,18 @@ Capture authenticated browser timing, PostgREST timing, and `EXPLAIN (ANALYZE, B
 - [ ] Remove unused CJK RPC/index only after usage and CJK plan evidence.
 - [ ] Remove duplicate/unused indexes only after `pg_stat_user_indexes` observation.
 
+### Search RLS fix (done 2026-09-26, owner-approved)
+
+Owner report: searching "Raichu" and its page 2 took seconds. Measured (`SET ROLE authenticated` + JWT claims, EXPLAIN ANALYZE): 4.6–5.6 s per page, Seq Scan over ~59k rows.
+
+- Cause: RLS quals run before non-LEAKPROOF user quals. `ILIKE` is not leakproof, so the per-row policy check (`auth.role()` + `is_anonymous`) blocked `idx_cards_name_trgm`. The scan also parsed the JWT on every row (~3.4 s of the total). Wrapping in `(select auth.jwt())` still blocked the index (tested on a temp copy).
+- Fix: migration `20260926232500_cards_select_policy_index_friendly.sql`: `ALTER POLICY "authenticated read cards" … TO authenticated USING (true)`. The owner confirmed the Anonymous provider is off, and then ran it in the SQL editor. Verified: roles `{authenticated}`, qual `true`.
+- After: Raichu page 1 0.33 s cold, page 2 8 ms; Pikachu (922 matches) 1.0 s cold, 12 ms warm. Plan: Bitmap Index Scan on `idx_cards_name_trgm`.
+- Still guarded: annotations, sets, pokemon_metadata, and cards writes keep the non-anonymous check.
+- Open: 2 anonymous users remain in `auth.users`. If their refresh tokens still work, they can read cards. Deleting them needs separate owner approval.
+- Rollback: the cards section of 057.
+- Same commit: Explore count label shows "60+ cards found · counting…" instead of "~61" while the exact count loads (lookahead fetches carry no count).
+
 Phase gate:
 
 - [ ] Every performance migration includes before/after authenticated plans and rollback criteria.
@@ -1056,11 +1076,13 @@ Done 2026-09-26 while run `36274892062` ingests (v2 working tree, uncommitted):
 - Then 4C (`vercel.json` immutable `/assets/*`, `no-cache` HTML) and 3D (sort options, short-search message and stuck skeleton, Card Detail arrows, dialog semantics and focus, eager first grid row): v2 `06f3927`, pushed and deployed to Vercel Production. See the 4C and 3D sections. Owner: a quick signed-in check of Explore sort, a 2-letter search, and Card Detail.
 - Open: the local Playwright runner hangs (even `--list`); diagnose before relying on `npm run check`.
 
+Done 2026-09-26 23:35 UTC:
+- Run `36274892062` succeeded. 0C verification passed: see "0C result" in 0C.
+- Search RLS fix applied by the owner, and the Explore count label fixed. See Phase 5 "Search RLS fix".
+- Committed and pushed to v2 with the plan and handoff updates.
+
 Next steps, each needing owner approval (plain-English summary with each ask):
-1. When run `36274892062` finishes, do the 0C verification against the "Pre-run baseline":
-   - Run log: ingest outcome, published counts, twin skips (~8,451), refresh attempts and duration, ANALYZE. If the refresh needed 3+ attempts, pull the Postgres logs for that window.
-   - Read-only SQL: counts by origin (expect pokemontcg.io 20,656), 0 Japanese twins, 4 filter-view rows, an authenticated Explore query.
-   - `api_hash` stays all NULL.
+1. (Done: 0C verification.) Optional: owner re-tests Raichu search and page 2 on Vercel and confirms the "counting…" label. Decide whether to delete the 2 anonymous `auth.users` rows.
 2. Run the guarded Neo repair (1B "Production repair" SQL), only while no push is running. The auto-mode classifier blocks production SQL writes, so the owner may need to run it in the SQL editor; afterwards verify 0 Japanese cards in `neo1`–`neo4` and the 4 set rows owned by `pokemontcg.io`.
 3. Dispatch a warm `main` ingest (new script) and verify:
    - no collisions reported;

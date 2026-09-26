@@ -430,6 +430,11 @@ export default function ExplorePage() {
     ? `Type at least ${MIN_SEARCH_LENGTH} characters to search.`
     : searchActive && totalIsEstimated
     ? `Showing ${loadedThroughCurrentPage.toLocaleString()}${hasPotentialNextPage ? "+" : ""} match${loadedThroughCurrentPage !== 1 || hasPotentialNextPage ? "es" : ""}`
+    : USE_SUPABASE_APP && totalIsEstimated && hasPotentialNextPage
+    ? // Lookahead fetches carry no count, so the estimate is just loaded + 1
+      // (e.g. "~61") until the debounced exact count arrives. Annotation
+      // filters skip the exact count, so there is nothing to wait for.
+      `${loadedThroughCurrentPage.toLocaleString()}+ cards found${annotationFiltersActive ? "" : " · counting…"}`
     : `${totalIsEstimated ? "~" : ""}${total.toLocaleString()} card${total !== 1 ? "s" : ""} found`;
 
   useEffect(() => {

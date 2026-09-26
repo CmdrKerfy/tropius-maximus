@@ -49,6 +49,27 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Search RLS fix live; 0C run verified
+
+- Scope:
+  - owner reported slow "Raichu" search and page 2;
+  - owner reported a "~61 cards found" flash;
+  - 0C run finished.
+- Completed:
+  - Cause: the `cards` SELECT policy's per-row anonymous check blocked the trigram index, because ILIKE is not leakproof. Search seq-scanned ~59k rows: 4.6–5.6 s per page.
+  - Owner confirmed the Anonymous provider is off, then ran `ALTER POLICY "authenticated read cards" ON public.cards TO authenticated USING (true)`. Recorded as `20260926232500_cards_select_policy_index_friendly.sql`.
+  - Now index-backed: Raichu page 2 8 ms; Pikachu 12 ms warm.
+  - `ExplorePage.jsx` count label: "60+ cards found · counting…" instead of "~61".
+  - 0C: run succeeded, and every check matched the baseline (see plan 0C "0C result"). Refresh and ANALYZE took 1 attempt each. `api_hash` is still NULL. 323 Japanese rows are back in `neo1`–`neo4`.
+- Validation:
+  - `npm run check:quick` exit 0;
+  - authenticated EXPLAIN ANALYZE before and after (plan Phase 5).
+- Migrations touched:
+  - `20260926232500_cards_select_policy_index_friendly.sql`: applied by the owner in the SQL editor.
+  - 2C/2E: still not applied.
+- Open risks: 2 anonymous `auth.users` rows could still read cards if their refresh tokens work. Deleting them needs owner approval.
+- Next action: ask the owner to approve step 2 in "Exact next action" (guarded Neo repair SQL), after a quick Vercel re-test of search.
+
 ### 2026-09-26 (local) - 4C caching + 3D Explore/Card Detail UX shipped to v2 (0C run still ingesting)
 
 - Scope: the owner picked 4C, then 3D, while run `36274892062` ingests. `abab818` (2C/2E) was pushed first.

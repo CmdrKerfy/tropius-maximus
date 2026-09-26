@@ -1,0 +1,45 @@
+-- ============================================================
+-- Cards SELECT policy: let the name trigram index work under RLS
+-- ============================================================
+-- Measured 2026-09-26 (read-only EXPLAIN ANALYZE, SET ROLE authenticated
+-- with JWT claims): Explore search for "Raichu" (All sources, keyset page)
+-- took 4.6-5.6 s. Plan: Seq Scan on cards, 59k rows removed by filter.
+--
+-- Cause: RLS policy quals run before any user qual that is not LEAKPROOF.
+-- ILIKE (texticlike) is not leakproof, so while the policy has a per-row
+-- qual Postgres cannot use idx_cards_name_trgm and instead scans the whole
+-- 130 MB heap, parsing request.jwt.claims on every row. Wrapping the checks
+-- in (select auth.jwt()) makes them InitPlans but still blocks the index
+-- (tested on a temp copy: still Seq Scan).
+--
+-- Fix (owner-approved, the fallback named in 057): drop the per-row qual
+-- and restrict by role instead. TO authenticated is resolved at plan time,
+-- so no security qual remains and the trigram index is usable. Same query
+-- with the index: ~164 ms on the real table (page-2 shape), ~1 ms on a
+-- narrow copy.
+--
+-- Trade-off: this removes 019's anonymous-session gate for reading cards
+-- only. Prerequisite: Auth -> Providers -> Anonymous is OFF, so no new
+-- anonymous JWTs can be issued. Cards are catalog data; annotations, sets,
+-- pokemon_metadata and all cards write policies keep the non-anonymous
+-- check. anon (signed-out) still gets nothing: the policy targets
+-- authenticated only.
+--
+-- Rollback: the ALTER POLICY in 057's cards section (TO public + inline
+-- non-anonymous USING).
+--
+-- Check after applying:
+--   select roles, qual from pg_policies
+--    where tablename = 'cards' and policyname = 'authenticated read cards';
+--   -- expect roles {authenticated}, qual true
+--   begin; set local role authenticated;
+--   select set_config('request.jwt.claims',
+--     '{"role":"authenticated","is_anonymous":false}', true);
+--   explain analyze select id from cards where name ilike '%Raichu%'
+--     order by name, id limit 61;
+--   rollback;
+--   -- expect Bitmap Index Scan on idx_cards_name_trgm
+
+ALTER POLICY "authenticated read cards" ON public.cards
+  TO authenticated
+  USING (true);
