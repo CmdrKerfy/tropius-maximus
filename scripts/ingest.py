@@ -426,6 +426,18 @@ def initialize_database() -> None:
     conn.close()
 
 
+def clear_failed_sets() -> int:
+    """Clear the TCG failure skip list, including on a fresh/older database."""
+    initialize_database()
+    conn = get_connection()
+    try:
+        deleted = conn.execute("SELECT COUNT(*) FROM failed_sets").fetchone()[0]
+        conn.execute("DELETE FROM failed_sets")
+        return deleted
+    finally:
+        conn.close()
+
+
 # ── Set ingestion ────────────────────────────────────────────────────────
 
 def ingest_sets() -> dict:
@@ -1596,9 +1608,7 @@ def main():
         print(f"Normalized {n} supertype variant(s) to 'Pokémon'.")
         return
     if args.clear_failed:
-        conn = get_connection()
-        deleted = conn.execute("DELETE FROM failed_sets").rowcount
-        conn.close()
+        deleted = clear_failed_sets()
         print(f"Cleared {deleted} permanently-failed set(s) from the skip list.")
     summary = run_ingestion(
         set_id=args.set_id,
