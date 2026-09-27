@@ -55,7 +55,8 @@ If token feasibility is **unlikely**, the agent must propose:
 - Root cause: `CustomCardForm` derived Set IDs from initials; `ensureManualSetRow` ignores an existing set row (23505), so the cards joined PTCG-db's `bd`/`sd`.
 - Working tree: `src/lib/customSetId.js` + test (8), `fetchSetDirectory` (adapter, paged; `db.js` returns [] for DuckDB), form derives via `resolveCustomSetId` and shows `SetIdNote` under Set Name (Set ID, existing/new, amber warning when another set owns it); migration `supabase/migrations/20260927212613_manual_bulbasaur_squirtle_deck_sets.sql` (not applied).
 - Validation: `npm run check:quick` exit 0; Playwright smoke 2/2; migration on throwaway Postgres 18.2: 8+5 moved, second run 0, mismatch case aborts.
-- Next action: owner approves commit + push v2 (deploy the form first), then applying the SQL; verify 8/5 on the new sets, `bd` 10 / `sd` 127 ptcgdb only, filter shows "Bulbasaur Deck"/"Squirtle Deck"; owner tries Add Card with Set Name "Bulbasaur Deck" (should show `custom-bulbasaur-deck · existing custom set`, no need to save).
+- **Done 2026-09-27 (owner-approved):** form fix deployed as v2 `78e679a` (Vercel success; live `CustomCardForm` chunk has the Set ID note); SQL applied via the Supabase MCP tool (~21:35 UTC; not in migration history). Verified: `custom-bulbasaur-deck` 8, `custom-squirtle-deck` 5 (13 annotations kept), `bd` 10 / `sd` 127 ptcgdb only; filter lists "Bulbasaur Deck"/"Squirtle Deck" under TCG and Custom, `bd`/`sd` only under JPN; 0 "Japanese …" series sets left in the TCG list.
+- Next action: owner tries Add Card with Set Name "Bulbasaur Deck" (expect `custom-bulbasaur-deck · existing custom set`; no need to save) and "Charmander Deck" (expect `custom-charmander-deck · new set`). Then the 2026-09-28 scheduled-run review (after 07:30 UTC).
 
 ### 2026-09-27 (local) - Japanese set names: proper fix step 2 (code + SQL, not applied)
 
