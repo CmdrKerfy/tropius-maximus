@@ -1,0 +1,46 @@
+-- ============================================================
+-- Cards: name-order index for Japanese cards (Explore Source = TCG (JPN))
+-- ============================================================
+-- Owner report 2026-09-27 06:32 UTC: Source = TCG (JPN) + Has Image = Yes
+-- failed with "canceling statement due to statement timeout" (57014; page
+-- 8.7 s, count 11.4 s in the API logs).
+--
+-- Page query (read-only EXPLAIN ANALYZE, postgres, cached):
+--   TCG (JPN) sorted by name walks idx_cards_name from the start and filters
+--   out every English card before reaching Japanese names. Without Has Image
+--   it discards ~6.4k rows (0.9 s); with Has Image = Yes it also discards the
+--   Japanese cards without images that sort first, ~18.9k rows (6.7 s alone,
+--   past 8 s next to the count and the prefetch).
+-- With an index over Japanese cards only, the first page reads 259 rows and
+-- a page at offset 2000 reads ~2.9k (measured by row position 2026-09-27).
+-- The Explore JPN filter `or=(and(origin.eq.tcgdex,origin_detail.eq.japanese),
+-- and(origin.eq.ptcgdb,origin_detail.eq.japanese))` implies the predicate
+-- (the planner factors out origin_detail = 'japanese').
+--
+-- The count timed out separately (4.2 s alone: Yes needs image columns from
+-- the heap); the app now counts Yes as total - No, both index-backed
+-- (53 ms + 153 ms), so this migration does not cover it.
+--
+-- Applied 2026-09-27 (owner-approved) as SQL via the Supabase MCP tool; not in
+-- the migration history table. Post-apply: index 1272 kB; the JPN + Has Image
+-- = Yes first page uses it, 168 ms (was 6.7 s), 198 rows filtered out.
+--
+-- Not CONCURRENTLY: ~24k matching rows; the build takes seconds and only
+-- blocks writes to cards.
+--
+-- Rollback: drop index if exists public.idx_cards_japanese_name;
+--
+-- Check after applying:
+--   select indexdef from pg_indexes where indexname = 'idx_cards_japanese_name';
+--   explain analyze select c.id from public.cards c
+--    where ((c.origin = 'tcgdex' and c.origin_detail = 'japanese')
+--        or (c.origin = 'ptcgdb' and c.origin_detail = 'japanese'))
+--      and c.set_id <> 'neo1' and c.set_id <> 'neo2' and c.set_id <> 'neo3' and c.set_id <> 'neo4'
+--      and (c.image_small is not null or c.image_large is not null
+--           or public.card_has_image_override(c))
+--    order by c.name asc nulls last limit 61;
+--   -- expect Index Scan using idx_cards_japanese_name, well under 1 s
+
+create index if not exists idx_cards_japanese_name
+  on public.cards (name, id)
+  where origin_detail = 'japanese';
