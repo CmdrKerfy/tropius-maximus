@@ -260,7 +260,8 @@ export default function FilterPanel({
     isActive(filters.environment) ||
     isActive(filters.actions) ||
     isActive(filters.pose) ||
-    isActive(filters.jumbo_card);
+    isActive(filters.jumbo_card) ||
+    isActive(filters.has_image);
 
   const setNameById = {};
   for (const { sets } of setGroups) {
@@ -369,6 +370,13 @@ export default function FilterPanel({
       onRemove: () => onChange({ jumbo_card: "" }),
     });
   }
+  if (filters.has_image === "true" || filters.has_image === "false") {
+    activeChips.push({
+      key: `has-image-${filters.has_image}`,
+      label: `Has Image: ${filters.has_image === "true" ? "Yes" : "No"}`,
+      onRemove: () => onChange({ has_image: "" }),
+    });
+  }
 
   const filtersActive = exploreFiltersAreActive(filters);
   const q = String(searchQuery || "").trim();
@@ -408,6 +416,7 @@ export default function FilterPanel({
       actions: [],
       pose: [],
       jumbo_card: "",
+      has_image: "",
       sort_by: isTCG ? "pokedex" : "name",
       sort_dir: "asc",
       source: "",
@@ -524,6 +533,21 @@ export default function FilterPanel({
               disabled={!isFilterOn("region")}
               disabledTitle={filterUnavailableTitle}
             />
+          </div>
+        )}
+
+        {supabaseBackend && (
+          <div className="flex flex-col min-w-0">
+            <label className="block text-xs font-medium text-gray-500 mb-1 shrink-0">Has Image</label>
+            <select
+              value={filters.has_image || ""}
+              onChange={(e) => onChange({ has_image: e.target.value })}
+              className={selectClass}
+            >
+              <option value="">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
           </div>
         )}
       </div>

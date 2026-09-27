@@ -706,6 +706,18 @@ function excludeHiddenJapaneseSets(query) {
   return query.or(`origin_detail.is.null,origin_detail.neq.japanese,${HIDDEN_JPN_SET_ID_FILTER}`);
 }
 
+/**
+ * Explore "Has Image" filter ("true" / "false"; anything else = no filter). Card-level only:
+ * no card gets its picture solely from `annotations.image_override` (checked 2026-09-27),
+ * and ingest writes image_small/image_large together. A stored URL is not checked for reachability.
+ */
+function applyHasImageFilter(query, hasImage) {
+  const v = String(hasImage || "").trim().toLowerCase();
+  if (v === "true") return query.or("image_small.not.is.null,image_large.not.is.null");
+  if (v === "false") return query.is("image_small", null).is("image_large", null);
+  return query;
+}
+
 /** Safe SQL-ish identifier fragment for PostgREST filter strings. */
 function isSafeAnnotationColumnName(v) {
   return /^[a-z_][a-z0-9_]*$/i.test(String(v || ""));
@@ -827,6 +839,7 @@ export async function fetchCards(params = {}) {
     actions = [],
     pose = [],
     jumbo_card = "",
+    has_image = "",
     card_id = "",
     annotation_field_key = "",
     annotation_field_value = "",
@@ -874,6 +887,7 @@ export async function fetchCards(params = {}) {
     }
 
     if (card_id) cq = cq.eq("id", String(card_id));
+    cq = applyHasImageFilter(cq, has_image);
 
     if (supertype) {
       const norm = supertype.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -1019,6 +1033,7 @@ export async function fetchCards(params = {}) {
     }
   }
   if (card_id) query = query.eq("id", String(card_id));
+  query = applyHasImageFilter(query, has_image);
 
   if (supertype) {
     const norm = supertype.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

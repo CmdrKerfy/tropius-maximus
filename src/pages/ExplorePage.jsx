@@ -705,6 +705,7 @@ export default function ExplorePage() {
           stage: [],
           card_id: "",
           jumbo_card: "",
+          has_image: "",
           weather: [],
           environment: [],
           actions: [],

@@ -20,6 +20,7 @@ export const DEFAULT_FILTERS = {
   stage: [],
   card_id: "",
   jumbo_card: "",
+  has_image: "",
   weather: [],
   environment: [],
   actions: [],
