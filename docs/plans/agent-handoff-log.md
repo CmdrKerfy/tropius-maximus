@@ -49,6 +49,14 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-27 (local) - Manual Bulbasaur/Squirtle Deck sets + Add Card Set ID guard
+
+- Owner decisions: move the 13 manual `bd`/`sd` cards to `custom-bulbasaur-deck` / `custom-squirtle-deck`; no series; keep `cd`/`td`; add a form guard.
+- Root cause: `CustomCardForm` derived Set IDs from initials; `ensureManualSetRow` ignores an existing set row (23505), so the cards joined PTCG-db's `bd`/`sd`.
+- Working tree: `src/lib/customSetId.js` + test (8), `fetchSetDirectory` (adapter, paged; `db.js` returns [] for DuckDB), form derives via `resolveCustomSetId` and shows `SetIdNote` under Set Name (Set ID, existing/new, amber warning when another set owns it); migration `supabase/migrations/20260927212613_manual_bulbasaur_squirtle_deck_sets.sql` (not applied).
+- Validation: `npm run check:quick` exit 0; Playwright smoke 2/2; migration on throwaway Postgres 18.2: 8+5 moved, second run 0, mismatch case aborts.
+- Next action: owner approves commit + push v2 (deploy the form first), then applying the SQL; verify 8/5 on the new sets, `bd` 10 / `sd` 127 ptcgdb only, filter shows "Bulbasaur Deck"/"Squirtle Deck"; owner tries Add Card with Set Name "Bulbasaur Deck" (should show `custom-bulbasaur-deck · existing custom set`, no need to save).
+
 ### 2026-09-27 (local) - Japanese set names: proper fix step 2 (code + SQL, not applied)
 
 - Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `50fa646` = origin/v2; remote `main` `81ff841`. 2026-09-28 scheduled runs not yet due (checked 07:17 UTC 2026-09-27), so their review is still pending.

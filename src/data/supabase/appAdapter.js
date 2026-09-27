@@ -1915,6 +1915,23 @@ async function fetchFormOptionsClientPaged() {
   return out;
 }
 
+/** Every set's id, name and origin (Add Card form: reuse custom sets, avoid taken Set IDs). */
+export async function fetchSetDirectory() {
+  const sb = await sbReady();
+  const pageSize = 1000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await sb
+      .from("sets")
+      .select("id, name, origin")
+      .order("id")
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) return rows;
+  }
+}
+
 export async function fetchFormOptions() {
   const sb = await sbReady();
   const { data, error } = await sb.rpc("get_form_options_db");

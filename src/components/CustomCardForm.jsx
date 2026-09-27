@@ -13,6 +13,8 @@ import {
   addPocketCard,
   fetchFormOptions,
   FORM_OPTIONS_QUERY_KEY,
+  fetchSetDirectory,
+  SET_DIRECTORY_QUERY_KEY,
   useSupabaseBackend,
   generateManualCardId,
   normalizeCardNumberForStorage,
@@ -22,6 +24,7 @@ import ComboBox from "./ComboBox";
 import MultiComboBox from "./MultiComboBox";
 import { toastError, toastSuccess, toastWarning } from "../lib/toast.js";
 import { humanizeError } from "../lib/humanizeError.js";
+import { resolveCustomSetId, setIdConflict, setOriginLabel } from "../lib/customSetId.js";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import {
   SOURCE_OPTIONS, CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
@@ -92,6 +95,25 @@ const VIDEO_GAME_OPTIONS = [
   "Sword/Shield", "Brilliant Diamond/Shining Pearl",
   "Legends Arceus", "Scarlet/Violet", "Other",
 ];
+
+/** Under Set Name: which Set ID the card will use, and a warning when another set owns it. */
+function SetIdNote({ setId, conflict, existing }) {
+  if (!setId) return null;
+  if (conflict) {
+    return (
+      <p className="mt-1 text-xs text-amber-700" role="status">
+        Set ID <code className="font-mono">{setId}</code> already belongs to “{conflict.name}” (
+        {setOriginLabel(conflict.origin)}). This card will be listed under that set. Change the Set Name, or
+        use a Set ID that is not taken.
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 text-xs text-gray-500">
+      Set ID <code className="font-mono">{setId}</code> · {existing ? "existing custom set" : "new set"}
+    </p>
+  );
+}
 
 function CollapsibleSection({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -237,6 +259,12 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
     queryFn: fetchFormOptions,
     staleTime: 300_000,
   });
+  // Set IDs already in use (reuse custom sets by name; never derive another set's ID).
+  const { data: setDirectory = [] } = useQuery({
+    queryKey: SET_DIRECTORY_QUERY_KEY,
+    queryFn: fetchSetDirectory,
+    staleTime: 300_000,
+  });
 
   const [formMode, setFormMode] = useState(() => {
     try {
@@ -293,20 +321,23 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
     persistSessionAddLog([]);
   };
 
-  // Auto-generate Set ID from Set Name for TCG custom-only sources.
+  // Auto-generate Set ID from Set Name for TCG custom-only sources: an existing
+  // custom set with that name, else the acronym ("Test Set Name, Set 4" → "tsns4")
+  // unless another set owns it, else "custom-{slug}" (see lib/customSetId.js).
   // Stops auto-filling if the user manually edits the Set ID field.
   useEffect(() => {
     if (cardTable === 'pocket' || NON_CUSTOM_SOURCES.has(source) || setIdManual) return;
-    // Acronym: first letter of each word + any trailing digits (e.g. "Test Set Name, Set 4" → "tsns4")
-    const derived = setNameVal
-      .replace(/[^a-zA-Z0-9\s]/g, " ")
-      .trim()
-      .split(/\s+/)
-      .map((w) => (/^\d+$/.test(w) ? w : w[0]))
-      .join("")
-      .toLowerCase();
-    setSetIdVal(derived);
-  }, [setNameVal, source, setIdManual, cardTable]);
+    setSetIdVal(resolveCustomSetId(setNameVal, setDirectory).setId);
+  }, [setNameVal, source, setIdManual, cardTable, setDirectory]);
+
+  const setIdNote = useMemo(() => {
+    const autoDerived = !(NON_CUSTOM_SOURCES.has(source) || setIdManual);
+    return {
+      setId: String(setIdVal || "").trim(),
+      conflict: setIdConflict(setIdVal, setNameVal, setDirectory),
+      existing: autoDerived && resolveCustomSetId(setNameVal, setDirectory).existing,
+    };
+  }, [setIdVal, setNameVal, setDirectory, source, setIdManual]);
 
   useEffect(() => {
     if (isSupabase) return;
@@ -527,6 +558,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
       if (cardTable === "tcg") setSetIdManual(true);
     }
     queryClient.invalidateQueries({ queryKey: FORM_OPTIONS_QUERY_KEY });
+    queryClient.invalidateQueries({ queryKey: SET_DIRECTORY_QUERY_KEY });
     if (intent === "submit") {
       resetAllFields();
       const next = sessionAddCount + 1;
@@ -1417,6 +1449,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 Set Name <span className="text-red-500">*</span>
               </label>
               <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
+              <SetIdNote {...setIdNote} />
             </div>
             <div>
               <label className={labelClass}>
@@ -1516,6 +1549,7 @@ export default function CustomCardForm({ onCardAdded, onClose, onOpenPAT, onAddA
                 Set Name <span className="text-red-500">*</span>
               </label>
               <ComboBox value={setNameVal} onChange={setSetNameVal} options={opts.setName || []} placeholder="e.g., XY Japanese Promos" className={inputClass + " w-full"} />
+              <SetIdNote {...setIdNote} />
             </div>
             <div>
               <label className={labelClass}>

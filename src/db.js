@@ -92,6 +92,14 @@ export async function fetchFormOptions() {
 /** TanStack Query key for `fetchFormOptions` (Workbench, CardDetail, CustomCardForm). */
 export const FORM_OPTIONS_QUERY_KEY = ["formOptions"];
 
+/** Sets' id/name/origin for the Add Card form (Supabase only; the frozen DuckDB site gets none). */
+export async function fetchSetDirectory() {
+  return useSupabaseBackend() ? (await sb()).fetchSetDirectory() : [];
+}
+
+/** TanStack Query key for `fetchSetDirectory`. */
+export const SET_DIRECTORY_QUERY_KEY = ["setDirectory"];
+
 export async function fetchAnnotations(cardId) {
   return useSupabaseBackend()
     ? (await sb()).fetchAnnotations(cardId)
