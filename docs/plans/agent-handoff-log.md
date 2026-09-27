@@ -49,6 +49,18 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - 4D security slice; Card Detail closed; TCGCSV/Scrap research
+
+- Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `dedb7b5` = origin/v2; remote `main` `94da8f1`. 2026-09-28 scheduled runs not yet due (checked 02:41 UTC 2026-09-27).
+- Owner: Card Detail re-test passed; closed, with troubleshooting steps recorded under 4C "Stale-tab Card Detail fix" because it has recurred. Share-preview test result not reported (prompt placeholder left).
+- Completed:
+  - 4D security slice (working tree): `react-router-dom` ^7.18.4, `@supabase/supabase-js` ^2.117.2, lockfile-only `npm audit fix` (vite 7.3.6, rollup, postcss, …). `npm audit` 0 (was 3 high prod + 8 dev). Main chunk gzip 183.2 → 194.8 kB (supabase-js +7.9, router +0.7, tooling rest; measured in a temp worktree, removed).
+  - Read-only TCGCSV report (categories 3 and 85, all 679 groups) and a Pokémon Scrap design checklist: `docs/plans/card-adjacent-items-tcgcsv-and-scrap.md`. Read-only Supabase checks: no sealed items or Scrap cards in `cards` (8 "scrap" hits are all "Tool Scrapper"); Japan Exclusive manual precedent and image hosts recorded.
+- Validation: `npm run check` exit 0 twice (after the bump and after the audit fix; smoke 2/2).
+- Migrations touched: none. No production writes.
+- Open risks: bundle +11.6 kB gzip (optional revert of supabase-js to 2.101.1 saves ~8 kB; `ws` is fixed either way); React Router 7.14 → 7.18 is only exercised by local smoke until a hosted check.
+- Next action: owner approves commit + push of the 4D slice to v2 (Vercel deploy), then a hosted check (sign in, Explore page 2, Card Detail, share link). Owner decisions for TCGCSV (schema option, goal) and Scrap (set grouping, numbering, images) are listed in the new doc.
+
 ### 2026-09-26 (local) - Recently-added index; share preview fix (uncommitted)
 
 - Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `4acd961` = origin/v2; remote `main` `94da8f1`.
