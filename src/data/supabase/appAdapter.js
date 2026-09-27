@@ -707,14 +707,20 @@ function excludeHiddenJapaneseSets(query) {
 }
 
 /**
- * Explore "Has Image" filter ("true" / "false"; anything else = no filter). Card-level only:
- * no card gets its picture solely from `annotations.image_override` (checked 2026-09-27),
- * and ingest writes image_small/image_large together. A stored URL is not checked for reachability.
+ * Explore "Has Image" filter ("true" / "false"; anything else = no filter), matching what the
+ * grid shows: the card's own image or a non-blank `annotations.image_override`. The override
+ * check is the computed field `card_has_image_override` (migration
+ * 20260927040251_explore_has_image_filter.sql, which also indexes "No"). A stored URL is not
+ * checked for reachability.
  */
-function applyHasImageFilter(query, hasImage) {
+export function applyHasImageFilter(query, hasImage) {
   const v = String(hasImage || "").trim().toLowerCase();
-  if (v === "true") return query.or("image_small.not.is.null,image_large.not.is.null");
-  if (v === "false") return query.is("image_small", null).is("image_large", null);
+  if (v === "true") {
+    return query.or("image_small.not.is.null,image_large.not.is.null,card_has_image_override.is.true");
+  }
+  if (v === "false") {
+    return query.is("image_small", null).is("image_large", null).is("card_has_image_override", false);
+  }
   return query;
 }
 
