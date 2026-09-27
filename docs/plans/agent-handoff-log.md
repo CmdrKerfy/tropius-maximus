@@ -61,7 +61,8 @@ If token feasibility is **unlikely**, the agent must propose:
 - Migrations touched: `20260927015119_cards_created_at_sort_index.sql` (applied; file uncommitted).
 - Open risks: iMessage/WhatsApp cache previews per URL, so previously failed links may keep failing; manual cards whose only image is WebP still send WebP.
 - Owner accepted the index as fixed ("sluggish at times but overall more responsive"); logs show 0 errors, mostly 84–960 ms, cold first loads up to 8.9 s. Troubleshooting note is in the remediation plan.
-- Next action: owner approves commit + push of the migration file and share fix to `v2/supabase-migration`; after the Vercel deploy, owner shares a never-shared Pocket or Japanese card in iMessage and WhatsApp, and re-tests "Recently added" paging.
+- Owner-approved: committed and pushed as v2 `abc73be`; Vercel status success; live check `/share/card/P-A-054` (WhatsApp UA) → `og:image` `…/P-A/054/high.jpg`.
+- Next action: owner shares a never-shared Pocket or Japanese card in iMessage and WhatsApp, and re-tests "Recently added" paging.
 
 ### 2026-09-26 (local) - Stale-tab Card Detail fix
 
