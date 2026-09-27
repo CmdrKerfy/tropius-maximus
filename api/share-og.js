@@ -3,7 +3,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { absoluteUrl } from "../src/lib/absoluteUrl.js";
-import { resolveShareImageUrl } from "../src/lib/sharePreviewImage.js";
+import { shareOgImageCandidates } from "../src/lib/sharePreviewImage.js";
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -38,26 +38,38 @@ function timeoutSignal(ms) {
   return ctrl.signal;
 }
 
+/** Bounds scraper wait: each candidate check is capped, and at most this many are tried. */
+const MAX_OG_IMAGE_CHECKS = 3;
+
+/**
+ * Whether `url` serves an image a link preview can use. A 200 is not enough:
+ * e.g. tcgdex base paths return an HTML page.
+ * @returns {Promise<{ ok: boolean, contentType: string }>}
+ */
 async function checkImageReachable(url) {
+  const result = (res, checkLength) => {
+    const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!res.ok || !contentType.startsWith("image/")) return { ok: false, contentType };
+    const len = res.headers.get("content-length");
+    if (checkLength && len && parseInt(len, 10) > 5_000_000) return { ok: false, contentType };
+    return { ok: true, contentType };
+  };
   try {
-    let res = await fetch(url, { method: "HEAD", signal: timeoutSignal(3000) });
+    let res = await fetch(url, { method: "HEAD", signal: timeoutSignal(2500) });
     // Many CDNs reject HEAD requests — fall back to GET where appropriate.
     if (res.status === 405) {
       res = await fetch(url, {
         headers: { Range: "bytes=0-0" },
-        signal: timeoutSignal(3000),
+        signal: timeoutSignal(2500),
       });
     } else if (res.status === 403) {
       // CDNs that block HEAD (Cloudflare, Fastly, etc.) often allow GET.
-      res = await fetch(url, { signal: timeoutSignal(3000) });
-      if (res.ok) return true; // content-length check skipped for full GET
+      res = await fetch(url, { signal: timeoutSignal(2500) });
+      return result(res, false); // content-length check skipped for full GET
     }
-    if (!res.ok) return false;
-    const len = res.headers.get("content-length");
-    if (len && parseInt(len, 10) > 5_000_000) return false;
-    return true;
+    return result(res, true);
   } catch {
-    return false;
+    return { ok: false, contentType: "" };
   }
 }
 
@@ -143,23 +155,33 @@ export default async function handler(req, res) {
   const subtitle = [data.set_name, data.number ? `#${data.number}` : null].filter(Boolean).join(" · ");
   const desc = escapeHtml(subtitle || data.set_series || "Shared from Tropius Maximus");
   const mediaMetaImage = pickMediaMetaImage(data.media_meta);
-  const imgRaw = mediaMetaImage || resolveShareImageUrl(data);
-  const rawStr = imgRaw == null ? "" : String(imgRaw).trim();
-  // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
-  const canUseForOg =
-    rawStr && !rawStr.toLowerCase().startsWith("data:") && !rawStr.toLowerCase().startsWith("blob:");
-  let fromCard = canUseForOg ? absoluteUrl(rawStr, origin) : "";
-  if (fromCard) {
-    const httpsMirror = httpsMirrorForOgImage(fromCard);
-    const candidate = httpsMirror !== fromCard ? httpsMirror : fromCard;
-    const reachable = await checkImageReachable(candidate);
-    if (!reachable) {
-      console.warn("[share-og] image unreachable, falling back to placeholder", { cardId: data.id, url: candidate });
-      fromCard = "";
-    } else {
-      fromCard = candidate;
-    }
+  const candidates = [];
+  for (const raw of [mediaMetaImage, ...shareOgImageCandidates(data)]) {
+    const rawStr = raw == null ? "" : String(raw).trim();
+    // Chat previews must fetch a public URL; data/blob cannot be used as og:image.
+    if (!rawStr || /^(data|blob):/i.test(rawStr)) continue;
+    const abs = absoluteUrl(rawStr, origin);
+    const candidate = abs ? httpsMirrorForOgImage(abs) : "";
+    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
   }
+  // First image that answers with an image/* type; WebP only if nothing else works
+  // (WhatsApp/iMessage previews often skip it).
+  let fromCard = "";
+  let webpFallback = "";
+  for (const candidate of candidates.slice(0, MAX_OG_IMAGE_CHECKS)) {
+    const { ok, contentType } = await checkImageReachable(candidate);
+    if (!ok) {
+      console.warn("[share-og] og:image candidate rejected", { cardId: data.id, url: candidate, contentType });
+      continue;
+    }
+    if (contentType === "image/webp") {
+      webpFallback ||= candidate;
+      continue;
+    }
+    fromCard = candidate;
+    break;
+  }
+  fromCard ||= webpFallback;
   const ogImageRaw = fromCard || `${origin}${OG_PLACEHOLDER_PATH}`;
   const ogImage = ogImageRaw;
   const usePlaceholder = !fromCard;
@@ -177,9 +199,10 @@ export default async function handler(req, res) {
     ? `  <meta property="og:image:secure_url" content="${escapeHtml(httpsImage)}">\n`
     : "";
   const imgAlt = escapeHtml(data.name || "Pokémon card");
+  // Card image sizes vary by source, so declare dimensions only for the known placeholder.
   const ogImageDims = usePlaceholder
     ? `  <meta property="og:image:width" content="${OG_PLACEHOLDER_WIDTH}">\n  <meta property="og:image:height" content="${OG_PLACEHOLDER_HEIGHT}">\n`
-    : `  <meta property="og:image:width" content="734">\n  <meta property="og:image:height" content="1024">\n`;
+    : "";
   const imageSrcLink = `  <link rel="image_src" href="${escapeHtml(ogImage)}">\n`;
 
   // Redirect real browsers that land on the OG page (e.g. mobile in-app browsers

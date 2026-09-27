@@ -1,0 +1,36 @@
+-- ============================================================
+-- Cards: index for Explore "Recently added" sort
+-- ============================================================
+-- Measured 2026-09-26 (read-only EXPLAIN ANALYZE, SET ROLE authenticated
+-- with JWT claims): Explore with no filters (source All) sorted by
+-- "Recently added" sends
+--   order=created_at.desc.nullslast,id.desc.nullslast&offset=N&limit=61
+-- There is no index on created_at, so every page seq-scans all ~59k rows
+-- (130 MB heap) and top-N sorts them: 2.4-5.4 s in isolation. In production
+-- (API logs 2026-09-27 00:22-01:08 UTC) the page and its prefetch ran
+-- together at 6-11 s and several hit the 8 s statement timeout (HTTP 500).
+-- RLS is not involved (cards read policy is `true` for authenticated).
+--
+-- Fix (owner-approved 2026-09-26): a btree matching the sort exactly, so
+-- Postgres walks the index newest-first and stops after offset + limit
+-- matching rows. The source filters (origin / origin_detail / set_id) are
+-- checked on the fetched rows.
+--
+-- Not CONCURRENTLY: cards is small (~59k rows); the build takes seconds
+-- and only blocks writes to cards while it runs.
+--
+-- Rollback: drop index if exists public.idx_cards_created_at_id;
+--
+-- Check after applying:
+--   select indexdef from pg_indexes where indexname = 'idx_cards_created_at_id';
+--   begin; set local role authenticated;
+--   select set_config('request.jwt.claims',
+--     '{"role":"authenticated","is_anonymous":false}', true);
+--   explain analyze select id from cards
+--    where origin in ('pokemontcg.io','manual','tcgdex','ptcgdb')
+--    order by created_at desc nulls last, id desc offset 120 limit 61;
+--   -- expect Index Scan using idx_cards_created_at_id, no Sort, a few ms
+--   rollback;
+
+create index if not exists idx_cards_created_at_id
+  on public.cards (created_at desc nulls last, id desc);

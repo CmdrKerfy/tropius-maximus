@@ -49,6 +49,20 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Recently-added index; share preview fix (uncommitted)
+
+- Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `4acd961` = origin/v2; remote `main` `94da8f1`.
+- Scope: two new owner reports — slow paging with no filters + "Recently added", and missing share previews in iMessage/WhatsApp. The owner's Card Detail re-test result was not provided (placeholder left in the prompt).
+- Completed:
+  - Diagnosed read-only (details under "Exact next action" in the remediation plan): no `created_at` index → seq scan of ~59k rows per page, 6–11 s and HTTP 500s in production logs; tcgdex share images were an HTML base path or WebP.
+  - Owner-approved: `idx_cards_created_at_id` applied (migration `20260927015119_cards_created_at_sort_index.sql`, via SQL, not in history). Index exists (2.2 MB); agent's post-apply EXPLAIN blocked by a permission rule.
+  - Share preview fix in `src/lib/sharePreviewImage.js` + `api/share-og.js` + new test `src/lib/__tests__/sharePreviewImage.test.mjs` (`test:share-preview` added to `npm test`). Not committed.
+- Validation: `test:share-preview` 5 pass; local handler run on 12 real cards (live RPC); `npm run check:quick` exit 0.
+- Migrations touched: `20260927015119_cards_created_at_sort_index.sql` (applied; file uncommitted).
+- Open risks: iMessage/WhatsApp cache previews per URL, so previously failed links may keep failing; manual cards whose only image is WebP still send WebP.
+- Owner accepted the index as fixed ("sluggish at times but overall more responsive"); logs show 0 errors, mostly 84–960 ms, cold first loads up to 8.9 s. Troubleshooting note is in the remediation plan.
+- Next action: owner approves commit + push of the migration file and share fix to `v2/supabase-migration`; after the Vercel deploy, owner shares a never-shared Pocket or Japanese card in iMessage and WhatsApp, and re-tests "Recently added" paging.
+
 ### 2026-09-26 (local) - Stale-tab Card Detail fix
 
 - Scope: the owner's production check. Sort, short search and Neo filters passed. Card Detail showed "Something went wrong / error loading dynamically imported module: …/CardDetail-0w3cM7_z.js" in a tab opened before the latest deploy.
