@@ -59,7 +59,9 @@ If token feasibility is **unlikely**, the agent must propose:
 - Validation: `npm run check` exit 0 twice (after the bump and after the audit fix; smoke 2/2).
 - Migrations touched: none. No production writes.
 - Open risks: bundle +11.6 kB gzip (optional revert of supabase-js to 2.101.1 saves ~8 kB; `ws` is fixed either way); React Router 7.14 → 7.18 is only exercised by local smoke until a hosted check.
-- Next action: owner approves commit + push of the 4D slice to v2 (Vercel deploy), then a hosted check (sign in, Explore page 2, Card Detail, share link). Owner decisions for TCGCSV (schema option, goal) and Scrap (set grouping, numbering, images) are listed in the new doc.
+- Owner-approved: committed and pushed as v2 `e774ac5`; Vercel status success. Unauthenticated live check: home 200; `/share/card/P-A-054` (WhatsApp UA) `og:image` still `…/P-A/054/high.jpg`.
+- Owner report: Japanese Neo share cards show the wrong (English) card image. Diagnosed read-only: ingest's English-asset fallback; 355 TCGdex Japanese cards affected (details under "Exact next action", "Wrong images on Japanese cards"). Fix in the working tree (ingest + push guard + 4 tests; push 62 OK, ingest 17 OK). Not committed; needs owner OK for the v2 commit, the `main` sync (before the 2026-09-28 07:30 UTC run), and optionally an immediate Supabase image clear.
+- Next action: owner does a hosted check (sign in, Explore page 2, Card Detail, share link). Owner decisions for TCGCSV (schema option, goal) and Scrap (set grouping, numbering, images) are listed in the new doc.
 
 ### 2026-09-26 (local) - Recently-added index; share preview fix (uncommitted)
 

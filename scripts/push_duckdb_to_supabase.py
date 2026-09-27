@@ -655,6 +655,21 @@ def staged_ptcgdb_ids(conn) -> set[str]:
 
 
 JAPANESE_SET_ID_PREFIX = "ja-"
+TCGDEX_EN_ASSET_PREFIX = "https://assets.tcgdex.net/en/"
+
+
+def japanese_card_image(url: str | None) -> str | None:
+    """A TCGdex Japanese card's image URL, or None when it points at an English scan.
+
+    Older ingests fell back to ``assets.tcgdex.net/en/{serie}/{set}/{n}`` when the
+    Japanese scan was missing. Japanese and English sets that share an ID (``neo1``–
+    ``neo4``, ``SM6``–``SM12``) are numbered differently, so that URL showed another
+    card (``ja-neo4-034`` "Light Vaporeon" showed English Dark Flaaffy). DuckDB keeps
+    those stored URLs, so they are dropped here; the card shows the no-image fallback.
+    """
+    if not url or url.startswith(TCGDEX_EN_ASSET_PREFIX):
+        return None
+    return url
 
 
 def japanese_set_id_map(conn) -> dict[str, str]:
@@ -724,8 +739,8 @@ def push_japanese_cards(
                 "retreat_cost": coerce_int(c.get("retreat_cost")),
                 "weakness": c.get("weakness") or None,
                 "evolves_from": c.get("evolves_from") or None,
-                "image_small": c.get("image_url") or None,
-                "image_large": c.get("image_url") or None,
+                "image_small": japanese_card_image(c.get("image_url")),
+                "image_large": japanese_card_image(c.get("image_url")),
                 "raw_data": parse_json_col(c.get("raw_data"), {}) or {},
                 "origin": "tcgdex",
                 "origin_detail": "japanese",

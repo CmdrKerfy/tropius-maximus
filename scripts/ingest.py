@@ -224,8 +224,10 @@ def tcgdx_card_high_webp_url(card: dict, *, serie_id: str, set_id: str, japanese
     """
     Full card image URL for DuckDB image_url → Supabase image_small / image_large.
 
-    For **Japanese** (`japanese_locale=True`): prefer `ja/...` when it exists on the CDN; many
-    Sun & Moon JP rows 404 on `ja/...` while `en/.../high.webp` still serves the same scan.
+    For **Japanese** (`japanese_locale=True`): only the `ja/...` path. Never fall back to
+    `en/...`: Japanese and English sets that share an ID (`neo1`–`neo4`, `SM6`–`SM12`) are
+    numbered differently, so the English path shows a different card (2026-09-27: all 355
+    such rows were wrong, e.g. `neo4-034` Light Vaporeon → English Dark Flaaffy).
 
     For **Pocket** (`japanese_locale=False`): prefer EN assets; JA path is only a last resort.
     """
@@ -242,9 +244,7 @@ def tcgdx_card_high_webp_url(card: dict, *, serie_id: str, set_id: str, japanese
     if japanese_locale:
         if ja_u and _tcgdx_asset_head_ok(ja_u):
             return ja_u
-        if en_u and _tcgdx_asset_head_ok(en_u):
-            return en_u
-        return ""  # neither CDN path has this scan — app will show fallback
+        return ""  # no Japanese scan — app will show fallback
     if en_u and _tcgdx_asset_head_ok(en_u):
         return en_u
     if ja_u and _tcgdx_asset_head_ok(ja_u):
