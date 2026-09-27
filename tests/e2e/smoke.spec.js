@@ -23,7 +23,7 @@ test.describe("Smoke (local DuckDB, no Supabase)", () => {
   test("Batch page shows Supabase-only notice when not configured", async ({ page }) => {
     await page.goto("/batch");
     await waitForAppReady(page);
-    await expect(page.getByText(/Batch edit/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Batch edit/i })).toBeVisible();
     await expect(page.getByText(/Batch edit uses Supabase/i)).toBeVisible();
   });
 });

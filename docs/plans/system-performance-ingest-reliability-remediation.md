@@ -1086,7 +1086,8 @@ Done 2026-09-26 (owner-approved each):
 
 - Owner-approved `main` sync: `scripts/push_duckdb_to_supabase.py` + its test copied from v2 `b086039` (identical), tested in a temporary `main` worktree (push 61 OK, ingest 14 OK, parity passed), and pushed as `main` `94da8f1` (`e4bddef..94da8f1`). The Pages rebuild `36281141305` was triggered by the push.
 
-Next step, needing owner approval (plain-English summary with the ask):
-1. Bump `@playwright/test` to ^1.63 on v2 and install its Chromium; confirm `npx playwright test --list` and `npm run check`.
+- Owner-approved Playwright fix (v2): `@playwright/test` ^1.49.1 → ^1.63.0 (lockfile changes only `@playwright/test`, `playwright`, `playwright-core`, and drops a nested `fsevents`) and `npx playwright install chromium` (local cache). The runner's first real local run exposed a stale smoke assertion: `getByText(/Batch edit/i)` matched both the heading and the Supabase notice (strict-mode violation, fails on 1.49 too). Fixed with `getByRole("heading", { name: /Batch edit/i })`. `npm run check` exit 0 (2/2 smoke passed).
+
+Next action (owner's choice; no step is pending from this rollout): review the 2026-09-28 scheduled runs as below, then pick the next phase item (for example 1A run manifest, 2B/2D, or 4D dependency updates).
 
 Watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC). The Supabase run should report mostly "unchanged" cards and an `ensure_edit_history_partitions` row with `future_quarters` 8 (or 7 after 2026-10-01) and nothing created. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

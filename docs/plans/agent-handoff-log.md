@@ -59,12 +59,14 @@ If token feasibility is **unlikely**, the agent must propose:
   - Owner decision: the 2 anonymous `auth.users` rows are verified users and stay.
   - v2 `b086039` pushed.
   - Owner-approved `main` sync of the push script + its test (identical to v2 `b086039`; push 61 OK, ingest 14 OK, parity passed in a temporary `main` worktree): `main` `94da8f1`. Pages rebuild `36281141305` was triggered.
-  - Playwright hang diagnosed: `@playwright/test` 1.49.1 plus local Node 25.9.0 hangs on any `.mjs` config; 1.63.0 works. CI (Node 24) is unaffected. No repo change yet.
-- Validation: SQL checks above; isolated scratchpad repro for Playwright. No app code changed.
+  - Playwright hang diagnosed: `@playwright/test` 1.49.1 plus local Node 25.9.0 hangs on any `.mjs` config; 1.63.0 works. CI (Node 24) is unaffected.
+  - Owner-approved fix on v2: bumped to ^1.63.0 and installed Chromium. Fixed a stale smoke locator that the working runner exposed (`Batch edit` text matched 2 elements).
+  - `npm run check` exit 0 (2/2 smoke passed).
+- Validation: SQL checks above; isolated scratchpad repro for Playwright; `npm run check` exit 0. No app code changed.
 - Migrations touched: `20260926223550_…` and `20260926223742_…`, now applied.
 - Open risks:
   - The 2026-09-28 07:30 UTC run is the first "mostly unchanged" run; check its summary, including the new `ensure_edit_history_partitions` row.
-- Next action: ask the owner to approve bumping `@playwright/test` to ^1.63 on v2 and installing its Chromium (the step in "Exact next action").
+- Next action: after 2026-09-28 07:30 UTC, verify the scheduled Supabase run: mostly "unchanged"; the `ensure_edit_history_partitions` row reports nothing created. Then ask the owner which phase item to take next.
 
 ### 2026-09-26 (local) - Neo repair applied and verified
 
