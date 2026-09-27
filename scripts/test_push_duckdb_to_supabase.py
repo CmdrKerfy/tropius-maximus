@@ -399,6 +399,160 @@ class PtcgdbOptInTests(unittest.TestCase):
         self.assertFalse(push.INCLUDE_PTCGDB)
 
 
+def _capture_upserts(test_body):
+    """Run ``test_body()`` with batch_upsert recording (table, rows); returns the records."""
+    captured = []
+    original = push.batch_upsert
+    with patch.object(push, "batch_upsert", side_effect=lambda sb, t, rows: captured.append((t, rows)) or original(sb, t, rows)):
+        test_body()
+    return captured
+
+
+class PtcgdbSetNameTests(unittest.TestCase):
+    def test_reviewed_table_maps_every_code_to_an_owned_set(self):
+        names = push.load_ptcgdb_set_names()
+        self.assertEqual(len(names), 314)
+        published = {v["set_id"] for v in names.values()}
+        self.assertEqual(len(published), 312)
+        self.assertEqual(sum(1 for sid in published if sid.startswith("ja-")), 27)
+        self.assertEqual(
+            names["sv9"],
+            {"set_id": "ja-sv9", "name": "SV9: Battle Partners", "series": "Japanese Scarlet & Violet", "release_date": "2025-01-24"},
+        )
+        self.assertEqual(names["xy6"], names["xy6-b"])
+        self.assertEqual(names["xy7"]["set_id"], "xy7-b")
+        self.assertEqual(names["sv4a"]["set_id"], "sv4a")
+        self.assertTrue(all(v["name"] and v["series"].startswith("Japanese ") for v in names.values()))
+
+    def test_code_folded_into_a_set_no_code_owns_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "names.json"
+            path.write_text(json.dumps({"sets": [
+                {"code": "xy6", "set_id": "xy6-b", "name": "XY6: Emerald Break", "series": "Japanese XY", "release_date": None},
+            ]}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "xy6 maps to xy6-b"):
+                push.load_ptcgdb_set_names(path)
+
+    def test_sets_and_cards_publish_under_the_reviewed_set(self):
+        names = push.load_ptcgdb_set_names()
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _ptcgdb_db(tmp, [
+                ("ptcgdb-sv9-40", "sv9", False),
+                ("ptcgdb-xy6-80", "xy6", False),
+                ("ptcgdb-xy6-b-1", "xy6-b", False),
+                ("ptcgdb-zz9-1", "zz9", False),
+            ])
+            client = _FakeClient(max_rows=1000)
+            gate = push.PublishGate({}, {"sv9": "pokemontcg.io", "xy6": "pokemontcg.io"}, hashes=True)
+            try:
+                with patch("builtins.print"):
+                    captured = _capture_upserts(lambda: (
+                        push.push_ptcgdb_sets(conn, client, gate, names),
+                        push.push_japanese_cards_ptcgdb(conn, client, "now", gate, names),
+                    ))
+            finally:
+                conn.close()
+
+        sets_rows = {r["id"]: r for t, rows in captured if t == "sets" for r in rows}
+        cards_rows = {r["id"]: r for t, rows in captured if t == "cards" for r in rows}
+        self.assertEqual(sorted(sets_rows), ["ja-sv9", "xy6-b", "zz9"])
+        self.assertEqual(sets_rows["ja-sv9"]["name"], "SV9: Battle Partners")
+        self.assertEqual(sets_rows["ja-sv9"]["series"], "Japanese Scarlet & Violet")
+        self.assertEqual(sets_rows["ja-sv9"]["release_date"], "2025-01-24")
+        self.assertEqual(sets_rows["xy6-b"]["name"], names["xy6-b"]["name"])
+        self.assertEqual(sets_rows["zz9"], {"id": "zz9", "name": "ZZ9", "series": None, "release_date": None, "origin": "ptcgdb"})
+        self.assertEqual(
+            {k: (v["set_id"], v["set_name"]) for k, v in cards_rows.items()},
+            {
+                "ptcgdb-sv9-40": ("ja-sv9", "SV9: Battle Partners"),
+                "ptcgdb-xy6-80": ("xy6-b", names["xy6-b"]["name"]),
+                "ptcgdb-xy6-b-1": ("xy6-b", names["xy6-b"]["name"]),
+                "ptcgdb-zz9-1": ("zz9", None),
+            },
+        )
+        self.assertEqual(cards_rows["ptcgdb-sv9-40"]["set_series"], "Japanese Scarlet & Violet")
+        self.assertEqual(gate.collisions, {})  # English sv9/xy6 are never written
+
+    def test_unknown_codes_are_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _ptcgdb_db(tmp, [("ptcgdb-zz9-1", "zz9", False)])
+            try:
+                with patch("builtins.print") as printed:
+                    push.push_ptcgdb_sets(conn, _FakeClient(max_rows=1000), None, {})
+            finally:
+                conn.close()
+        self.assertIn("zz9", " ".join(str(c.args[0]) for c in printed.call_args_list if c.args))
+
+
+class PtcgdbSetNamesSqlTests(unittest.TestCase):
+    MIGRATION = "20260927072333_ptcgdb_japanese_set_names.sql"
+
+    def test_committed_migration_matches_the_name_table(self):
+        path = push.SCRIPT_DIR.parent / "supabase" / "migrations" / self.MIGRATION
+        if not path.is_file():
+            self.skipTest("migration not in this checkout (main carries the push script only)")
+        import hashlib
+
+        import generate_ptcgdb_set_names_sql as gen
+
+        expected = gen.build_sql(gen.load_entries(), hashlib.sha256(gen.NAMES_PATH.read_bytes()).hexdigest())
+        self.assertEqual(
+            path.read_text(encoding="utf-8"),
+            expected,
+            "regenerate: python scripts/generate_ptcgdb_set_names_sql.py supabase/migrations/" + self.MIGRATION,
+        )
+        self.assertIn("Move 3,545 ptcgdb cards", expected)
+        self.assertIn("Upsert 312 ptcgdb sets", expected)
+
+
+class PocketSetNameTests(unittest.TestCase):
+    def _db(self, tmp):
+        path = str(Path(tmp) / "pocket.duckdb")
+        conn = duckdb.connect(path)
+        try:
+            conn.execute("CREATE TABLE sets (id VARCHAR PRIMARY KEY, name VARCHAR, series VARCHAR)")
+            conn.execute(
+                "CREATE TABLE pocket_sets (id VARCHAR PRIMARY KEY, name VARCHAR, series VARCHAR, "
+                "release_date VARCHAR, card_count INTEGER, packs JSON, logo_url VARCHAR)"
+            )
+            conn.execute("INSERT INTO pocket_sets (id, name, series) VALUES ('A1', 'Genetic Apex', 'tcgp'), ('Z1', NULL, 'other')")
+            conn.execute(
+                "CREATE TABLE pocket_cards (id VARCHAR PRIMARY KEY, name VARCHAR, set_id VARCHAR, number INTEGER, "
+                "illustrator VARCHAR, raw_data JSON, is_custom BOOLEAN DEFAULT FALSE)"
+            )
+            conn.execute(
+                "INSERT INTO pocket_cards (id, name, set_id, number) VALUES "
+                "('A1-001', 'Bulbasaur', 'A1', 1), ('Z1-001', 'Mew', 'Z1', 1), ('X9-001', 'Eevee', 'X9', 1)"
+            )
+        finally:
+            conn.close()
+        return duckdb.connect(path, read_only=True)
+
+    def test_series_label_replaces_the_tcgdex_serie_id(self):
+        self.assertEqual(push.pocket_series("tcgp"), "Pokémon TCG Pocket")
+        self.assertEqual(push.pocket_series("other"), "other")
+        self.assertIsNone(push.pocket_series(""))
+
+    def test_sets_and_cards_carry_the_set_name_and_series(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = self._db(tmp)
+            client = _FakeClient(max_rows=1000)
+            try:
+                captured = _capture_upserts(lambda: (
+                    push.push_sets(conn, client),
+                    push.push_pocket_cards(conn, client, "now"),
+                ))
+            finally:
+                conn.close()
+
+        pocket_sets = {r["id"]: r for t, rows in captured if t == "sets" for r in rows if r["origin"] == "tcgdex"}
+        cards = {r["id"]: r for t, rows in captured if t == "cards" for r in rows}
+        self.assertEqual(pocket_sets["A1"]["series"], "Pokémon TCG Pocket")
+        self.assertEqual((cards["A1-001"]["set_name"], cards["A1-001"]["set_series"]), ("Genetic Apex", "Pokémon TCG Pocket"))
+        self.assertEqual((cards["Z1-001"]["set_name"], cards["Z1-001"]["set_series"]), ("Z1", "other"))
+        self.assertEqual((cards["X9-001"]["set_name"], cards["X9-001"]["set_series"]), (None, None))
+
+
 def _tcgdex_japanese_db(tmp, rows):
     """DuckDB file with japanese_cards holding ``rows`` (id, set_id, number, is_custom)."""
     db_path = str(Path(tmp) / "japanese.duckdb")

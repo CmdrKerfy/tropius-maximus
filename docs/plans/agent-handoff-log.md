@@ -49,6 +49,29 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-27 (local) - Japanese set names: proper fix step 2 (code + SQL, not applied)
+
+- Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `50fa646` = origin/v2; remote `main` `81ff841`. 2026-09-28 scheduled runs not yet due (checked 07:17 UTC 2026-09-27), so their review is still pending.
+- Completed (working tree, uncommitted): twin key strips `ja-` (JS + Python + parity vectors); push reads `scripts/data/japanese_set_names.json` for ptcgdb sets/cards; Pocket cards get `set_name`/`set_series`, Pocket series published as "Pokémon TCG Pocket"; `groupExploreSetsBySource` accepts both Pocket labels; generator `scripts/generate_ptcgdb_set_names_sql.py` and generated `supabase/migrations/20260927072333_ptcgdb_japanese_set_names.sql`. Details: `docs/plans/japanese-set-names.md` step 2.
+- Production read-only checks: 19,705 ptcgdb cards / 314 codes / 285 ptcgdb sets; only `ja-neo1..4` (tcgdex) exist among `ja-*`; Pocket series `tcgp`, 2,480 Pocket cards with NULL `set_name`; no triggers on `cards`; FK `cards.set_id → sets.id`; 0 ptcgdb annotations; ptcgdb `api_hash` all NULL; `lower(raw_data->>'set_name')` = `set_id` for all ptcgdb cards (undo key). English own-origin card counts (baseline for post-apply check): bwp 101, dp1 130, dp2 124, dp3 132, dp4 106, dp5 100, dpp 56, hsp 25, sm6 150, sm7 187, sm8 240, sm9 198, sm10 238, sm11 261, sm12 272, sma 94, smp 251, sv3 230, sv6 226, sv7 175, sv8 252, sv9 190, sv10 244, xy2 110, xy3 114, xy4 124, xy6 112, xy7 101, xyp 216.
+- Validation: `npm run check:quick` exit 0 (push 69, ingest 17, parity OK); SQL run twice on throwaway Postgres 18.2 (312/3,545/19,705 then 0/0) + 3 rollback cases.
+- Migrations touched: `20260927072333_ptcgdb_japanese_set_names.sql` (new, **not applied**).
+- Open risks: Pocket series change reaches production only after the v2 deploy (frontend must accept the label first) and a `main` sync; the drift test skips where the migration file is absent (`main`).
+- Next action: owner approves, one at a time: commit + push v2; apply the SQL; `main` sync of the push script + test + JSON. Then review the 2026-09-28 runs (after 07:30 UTC).
+
+### 2026-09-27 (local) - Japanese set names: name table + collision plan (read-only)
+
+- Preflight: model Claude Opus 5.5; tokens ample; full scope (research + table; no code/production change). HEAD `50fa646` = origin/v2; remote `main` `81ff841`. 2026-09-28 scheduled runs not yet due (checked 06:55 UTC 2026-09-27).
+- Owner: Card Detail quick check on `ptcgdb-sv9-40` passed (set codes show in Card Detail and the filter).
+- Completed (read-only Supabase + TCGCSV):
+  - `scripts/data/japanese_set_names.json` (new, uncommitted): 314 ptcgdb codes → published set ID, English name, Japanese name, series, release date, source, card count, note. Identified from `raw_data.sources[].name` (official product name). 291 codes / 19,204 cards equal a TCGCSV category 85 group name exactly; 23 codes / 501 cards `manual`. Review view: `docs/plans/japanese-set-names-table.md`.
+  - Findings: ptcgdb is not in the weekly push (one-time data change needed); short-code traps (`si`, `sc`, `so`, `clk`, `svA*`, `sma`, `hsp`, `xy`, `bw`); `xy6`/`xy7` are secret-rare splits of `xy6-b`/`xy7-b`; 0 ptcgdb annotations; 0 coexisting TCGdex/ptcgdb twins.
+  - Plan in `docs/plans/japanese-set-names.md` (Name table, Collisions, revised Proper fix).
+- Validation: none needed (no code changed). Builder script kept in the session scratchpad only (inputs were SQL exports); the JSON is the source of truth.
+- Migrations touched: none. No production writes.
+- Owner decisions (same session): names approved as drafted; series "Japanese <era>" (Pocket `tcgp` → "Pokémon TCG Pocket"); published name "{code}: {English name}"; `ja-` for 27 codes + fold `xy6`/`xy7` into `xy6-b`/`xy7-b`. The JSON was updated to these formats (`name`, `code_display`, `name_en`, `series`); table view regenerated. Japanese names are not shown yet (no column).
+- Next action: implement step 2 of "Proper fix" in `docs/plans/japanese-set-names.md` (twin key `ja-` strip + parity tests, push reads the JSON, Pocket set names, generated migration SQL), run tests, then ask before applying the SQL.
+
 ### 2026-09-26 (local) - 4D security slice; Card Detail closed; TCGCSV/Scrap research
 
 - Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `dedb7b5` = origin/v2; remote `main` `94da8f1`. 2026-09-28 scheduled runs not yet due (checked 02:41 UTC 2026-09-27).

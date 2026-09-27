@@ -30,6 +30,18 @@ TEST_VECTORS = [
     ("  173/SR  ", "173SR"),
 ]
 
+# Published "ja-" set IDs key like the unprefixed code.
+# Must match KEY_VECTORS in src/lib/__tests__/jpnCardKey.test.mjs exactly.
+KEY_VECTORS = [
+    ("ja-sv9", "040", "sv9:40"),
+    ("SV9", "040", "sv9:40"),
+    ("JA-SM6", "1", "sm6:1"),
+    ("ja-neo1", "001", "neo1:1"),
+    (" ja-xyp ", "XY-P", "xyp:XY-P"),
+    ("japan", "1", "japan:1"),
+    ("sv9-ja-", "1", "sv9-ja-:1"),
+]
+
 
 def test_normalize_jpn_number():
     failures = 0
@@ -61,6 +73,12 @@ def test_build_jpn_card_key():
     if result != "sm12a:1":
         print(f"FAIL: _build_jpn_card_key('SM12A', '1') = {result!r}, expected 'sm12a:1'")
         failures += 1
+
+    for set_id, number, expected in KEY_VECTORS:
+        result = _build_jpn_card_key(set_id, number)
+        if result != expected:
+            print(f"FAIL: _build_jpn_card_key({set_id!r}, {number!r}) = {result!r}, expected {expected!r}")
+            failures += 1
 
     return failures
 

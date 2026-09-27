@@ -45,6 +45,10 @@ function uniqSorted(arr) {
   return [...new Set((arr || []).filter((x) => x != null && String(x).trim() !== ""))].sort(localeSort);
 }
 
+// Pocket sets' `sets.series`: TCGdex's serie ID "tcgp" until the push publishes
+// the display label (both must work while production and the app roll over).
+const POCKET_SERIES = new Set(["tcgp", "pokémon tcg pocket"]);
+
 /**
  * Build source-specific set lists directly from the small `sets` table.
  * This keeps the Set dropdown current even if the heavier aggregate filter
@@ -67,7 +71,7 @@ export function groupExploreSetsBySource(rows) {
       buckets.tcg.push(set);
     } else if (origin === "pokemontcg.io") {
       buckets.tcg.push(set);
-    } else if (origin === "tcgdex" && series === "tcgp") {
+    } else if (origin === "tcgdex" && POCKET_SERIES.has(series)) {
       buckets.pocket.push(set);
     } else if (origin === "tcgdex" || origin === "ptcgdb") {
       buckets.japanese.push(set);

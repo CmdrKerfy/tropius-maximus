@@ -24,6 +24,17 @@ test("groups live set rows into the Explore source buckets", () => {
   assert.deepEqual(grouped.tcg.map((set) => set.id), ["custom-1", "me55"]);
 });
 
+test("puts Pocket sets with the published series label in the Pocket bucket", () => {
+  const grouped = groupExploreSetsBySource([
+    { id: "A1", name: "Genetic Apex", series: "Pokémon TCG Pocket", origin: "tcgdex" },
+    { id: "B2a", name: "Paldean Wonders", series: "tcgp", origin: "tcgdex" },
+    { id: "ja-sv9", name: "SV9: Battle Partners", series: "Japanese Scarlet & Violet", origin: "ptcgdb" },
+  ]);
+
+  assert.deepEqual(grouped.pocket.map((set) => set.id), ["A1", "B2a"]);
+  assert.deepEqual(grouped.japanese.map((set) => set.id), ["ja-sv9"]);
+});
+
 test("ignores malformed rows and uses the id as a missing name", () => {
   const grouped = groupExploreSetsBySource([
     null,

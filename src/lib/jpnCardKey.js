@@ -3,6 +3,10 @@
  *
  * buildJpnCardKey(setId, number) → lower(set_id) + ':' + normalizeJpnNumber(number)
  *
+ * A leading "ja-" is dropped from the set ID: Japanese sets whose code is also an
+ * English set ID are published as "ja-{code}" (ja-sv9, ja-neo1), and must still key
+ * like the other source's copy of the same card (SV9 + 040 → "sv9:40").
+ *
  * normalizeJpnNumber is the single source of truth for normalizing Japanese
  * card numbers (applied in both JS and Python; parity-tested in CI).
  */
@@ -31,5 +35,6 @@ export function normalizeJpnNumber(number) {
  */
 export function buildJpnCardKey(setId, number) {
   if (!setId) return null;
-  return `${String(setId).toLowerCase().trim()}:${normalizeJpnNumber(number)}`;
+  const set = String(setId).toLowerCase().trim().replace(/^ja-/, "");
+  return `${set}:${normalizeJpnNumber(number)}`;
 }

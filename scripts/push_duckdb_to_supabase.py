@@ -12,6 +12,9 @@ Cards whose content fingerprint (``cards.api_hash``) is unchanged are skipped, s
 without upstream changes writes almost nothing; ``last_seen_in_api`` is therefore only
 stamped on rows that were published. TCGdex Japanese sets whose upstream ID is also an
 English set ID (``neo1``–``neo4``) are published as ``ja-<id>`` (cards ``ja-<card id>``).
+PTCG-db set IDs, names and series come from ``scripts/data/japanese_set_names.json``
+(owner-reviewed); card IDs keep the upstream code (``ptcgdb-sv9-40`` lives in ``ja-sv9``).
+Pocket sets' series is published as "Pokémon TCG Pocket" (TCGdex serie ID ``tcgp``).
 
 Environment (same as ``migrate_data.py``):
 
@@ -504,6 +507,17 @@ def fetch_dicts(conn: duckdb.DuckDBPyConnection, sql: str) -> list[dict]:
     return [dict(zip(names, row)) for row in cur.fetchall()]
 
 
+POCKET_SERIES_ID = "tcgp"
+POCKET_SERIES_LABEL = "Pokémon TCG Pocket"
+
+
+def pocket_series(series: str | None) -> str | None:
+    """Published ``sets.series`` / ``cards.set_series`` for a Pocket set (TCGdex serie ID → label)."""
+    if series == POCKET_SERIES_ID:
+        return POCKET_SERIES_LABEL
+    return series or None
+
+
 def push_sets(conn, sb, gate: PublishGate | None = None) -> tuple[int, int]:
     gate = gate or PublishGate()
     tcg = fetch_dicts(conn, "SELECT * FROM sets")
@@ -531,7 +545,7 @@ def push_sets(conn, sb, gate: PublishGate | None = None) -> tuple[int, int]:
             {
                 "id": s["id"],
                 "name": s.get("name") or s["id"],
-                "series": s.get("series") or None,
+                "series": pocket_series(s.get("series")),
                 "release_date": clean_date(s.get("release_date")),
                 "card_count": coerce_int(s.get("card_count")),
                 "packs": parse_json_col(s.get("packs"), []) or [],
@@ -602,11 +616,18 @@ def push_pocket_cards(conn, sb, now_iso: str, gate: PublishGate | None = None) -
         SELECT * FROM pocket_cards
         WHERE COALESCE(is_custom, FALSE) = FALSE
     """
+    set_info = {
+        s["id"]: (s.get("name") or s["id"], pocket_series(s.get("series")))
+        for s in fetch_dicts(conn, "SELECT id, name, series FROM pocket_sets")
+        if s.get("id")
+    }
     rows_out = []
     for c in fetch_dicts(conn, sql):
         num = c.get("number")
         num_str = str(int(num)) if num is not None else None
         ill = c.get("illustrator") or None
+        sid = c.get("set_id") or None
+        set_name, set_series = set_info.get(sid, (None, None))
         rows_out.append(
             {
                 "id": c["id"],
@@ -615,7 +636,9 @@ def push_pocket_cards(conn, sb, now_iso: str, gate: PublishGate | None = None) -
                 "rarity": c.get("rarity") or None,
                 "artist": ill,
                 "illustrator": ill,
-                "set_id": c.get("set_id") or None,
+                "set_id": sid,
+                "set_name": set_name,
+                "set_series": set_series,
                 "number": num_str,
                 "element": c.get("element") or None,
                 "hp": str(c["hp"]) if c.get("hp") is not None else None,
@@ -751,28 +774,82 @@ def push_japanese_cards(
     return publish(sb, gate or PublishGate(), "cards", "cards (tcgdex Japanese)", rows_out), skipped
 
 
-def push_ptcgdb_sets(conn, sb, gate: PublishGate | None = None) -> int:
-    """Upsert sets referenced by PTCG-database Japanese cards."""
-    sql = "SELECT DISTINCT set_id FROM japanese_cards_ptcgdb WHERE is_custom IS NOT TRUE"
-    rows = []
+PTCGDB_SET_NAMES_PATH = SCRIPT_DIR / "data" / "japanese_set_names.json"
+
+
+def load_ptcgdb_set_names(path: Path = PTCGDB_SET_NAMES_PATH) -> dict[str, dict]:
+    """PTCG-db set code → its published set: ``set_id``, ``name``, ``series``, ``release_date``.
+
+    The JSON is the owner-reviewed name table. A code whose English-looking ID is
+    taken by an English set is published as ``ja-{code}``; a code folded into
+    another (``xy6`` → ``xy6-b``) takes that set's own row, so every code resolves
+    to the entry that owns its published ID.
+    """
+    entries = json.loads(Path(path).read_text(encoding="utf-8"))["sets"]
+    owners = {
+        e["set_id"]: e
+        for e in entries
+        if e["set_id"] in (e["code"], f"{JAPANESE_SET_ID_PREFIX}{e['code']}")
+    }
+    table = {}
+    for e in entries:
+        owner = owners.get(e["set_id"])
+        if owner is None:
+            raise ValueError(f"{Path(path).name}: {e['code']} maps to {e['set_id']}, which no code owns")
+        table[e["code"]] = {
+            "set_id": owner["set_id"],
+            "name": owner["name"],
+            "series": owner["series"],
+            "release_date": owner["release_date"],
+        }
+    return table
+
+
+def ptcgdb_published_set(code: str, names: dict[str, dict]) -> dict:
+    """The published set for a PTCG-db code; an unknown code keeps its ID with no name."""
+    return names.get(code) or {"set_id": code, "name": None, "series": None, "release_date": None}
+
+
+def push_ptcgdb_sets(conn, sb, gate: PublishGate | None = None, names: dict[str, dict] | None = None) -> int:
+    """Upsert sets referenced by PTCG-database Japanese cards, named from the reviewed table."""
+    names = load_ptcgdb_set_names() if names is None else names
+    sql = "SELECT DISTINCT set_id FROM japanese_cards_ptcgdb WHERE is_custom IS NOT TRUE ORDER BY set_id"
+    rows = {}
+    unknown = []
     for r in fetch_dicts(conn, sql):
-        sid = r.get("set_id")
-        if not sid:
+        code = r.get("set_id")
+        if not code:
             continue
-        rows.append(
-            {
-                "id": sid,
-                "name": sid.upper(),
-                "origin": "ptcgdb",
-            }
+        if code not in names:
+            unknown.append(code)
+        published = ptcgdb_published_set(code, names)
+        rows[published["set_id"]] = {
+            "id": published["set_id"],
+            "name": published["name"] or code.upper(),
+            "series": published["series"],
+            "release_date": clean_date(published["release_date"]),
+            "origin": "ptcgdb",
+        }
+    if unknown:
+        print(
+            f"::warning::PTCG-db set codes missing from {PTCGDB_SET_NAMES_PATH.name} "
+            f"(published unnamed under their own ID): {', '.join(unknown)}",
+            flush=True,
         )
     if rows:
-        return publish(sb, gate or PublishGate(), "sets", "sets (PTCG-db)", rows)
+        return publish(sb, gate or PublishGate(), "sets", "sets (PTCG-db)", list(rows.values()))
     return 0
 
 
-def push_japanese_cards_ptcgdb(conn, sb, now_iso: str, gate: PublishGate | None = None) -> int:
-    """Push PTCG-database Japanese cards (ptcgdb- prefix IDs) to Supabase."""
+def push_japanese_cards_ptcgdb(
+    conn, sb, now_iso: str, gate: PublishGate | None = None, names: dict[str, dict] | None = None
+) -> int:
+    """Push PTCG-database Japanese cards (ptcgdb- prefix IDs) to Supabase.
+
+    Card IDs keep the upstream code; ``set_id``/``set_name``/``set_series`` are the
+    published set's from the reviewed name table.
+    """
+    names = load_ptcgdb_set_names() if names is None else names
     sql = """
         SELECT * FROM japanese_cards_ptcgdb
         WHERE COALESCE(is_custom, FALSE) = FALSE
@@ -782,6 +859,8 @@ def push_japanese_cards_ptcgdb(conn, sb, now_iso: str, gate: PublishGate | None 
         hp_val = c.get("hp")
         types_val = parse_json_col(c.get("types"), []) or []
         subtypes_val = parse_json_col(c.get("subtypes"), []) or []
+        code = c.get("set_id") or None
+        published = ptcgdb_published_set(code, names) if code else {"set_id": None, "name": None, "series": None}
         rows_out.append(
             {
                 "id": c["id"],
@@ -790,7 +869,9 @@ def push_japanese_cards_ptcgdb(conn, sb, now_iso: str, gate: PublishGate | None 
                 "rarity": c.get("rarity") or None,
                 "artist": c.get("illustrator") or None,
                 "illustrator": c.get("illustrator") or None,
-                "set_id": c.get("set_id") or None,
+                "set_id": published["set_id"],
+                "set_name": published["name"],
+                "set_series": published["series"],
                 "number": str(c.get("number") or ""),
                 "element": c.get("element") or None,
                 "types": types_val if types_val else [],
@@ -838,10 +919,11 @@ def push_ptcgdb_if_requested(conn, sb, now_iso: str, include: bool, gate: Publis
         print(f"  cards (PTCG-db Japanese): skipped {staged} staged row(s); pass --include-ptcgdb to publish")
         return result
     if staged:
-        result["sets"] = push_ptcgdb_sets(conn, sb, gate)
+        names = load_ptcgdb_set_names()
+        result["sets"] = push_ptcgdb_sets(conn, sb, gate, names)
         if result["sets"]:
             print(f"  sets (PTCG-db): {result['sets']} rows")
-        result["cards"] = push_japanese_cards_ptcgdb(conn, sb, now_iso, gate)
+        result["cards"] = push_japanese_cards_ptcgdb(conn, sb, now_iso, gate, names)
     print(f"  cards (PTCG-db Japanese): {result['cards']} rows")
     return result
 

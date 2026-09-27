@@ -31,7 +31,13 @@ def _normalize_jpn_number(number: object) -> str:
 
 
 def _build_jpn_card_key(set_id: str, number: object) -> Optional[str]:
-    """Canonical dedupe key for a Japanese card: lower(set_id) + ':' + normalizeJpnNumber(number)."""
+    """Canonical dedupe key for a Japanese card: lower(set_id) + ':' + normalizeJpnNumber(number).
+
+    A leading "ja-" is dropped from the set ID: Japanese sets whose code is also an
+    English set ID are published as "ja-{code}" (ja-sv9, ja-neo1), and must still key
+    like the other source's copy of the same card (SV9 + 040 -> "sv9:40").
+    """
     if not set_id:
         return None
-    return f"{str(set_id).lower().strip()}:{_normalize_jpn_number(number)}"
+    set_key = re.sub(r"^ja-", "", str(set_id).lower().strip())
+    return f"{set_key}:{_normalize_jpn_number(number)}"

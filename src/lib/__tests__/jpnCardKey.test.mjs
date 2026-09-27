@@ -47,4 +47,20 @@ describe("buildJpnCardKey", () => {
   it("lowercases the set_id", () => {
     assert.equal(buildJpnCardKey("SM12A", "1"), "sm12a:1");
   });
+
+  // Must match scripts/test_jpn_card_key.py KEY_VECTORS exactly.
+  const KEY_VECTORS = [
+    ["ja-sv9", "040", "sv9:40"],
+    ["SV9", "040", "sv9:40"],
+    ["JA-SM6", "1", "sm6:1"],
+    ["ja-neo1", "001", "neo1:1"],
+    [" ja-xyp ", "XY-P", "xyp:XY-P"],
+    ["japan", "1", "japan:1"],
+    ["sv9-ja-", "1", "sv9-ja-:1"],
+  ];
+  for (const [setId, number, expected] of KEY_VECTORS) {
+    it(`keys ${JSON.stringify(setId)} + ${JSON.stringify(number)} as ${JSON.stringify(expected)}`, () => {
+      assert.equal(buildJpnCardKey(setId, number), expected);
+    });
+  }
 });
