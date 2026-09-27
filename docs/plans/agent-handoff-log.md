@@ -57,7 +57,10 @@ If token feasibility is **unlikely**, the agent must propose:
 - Validation: `npm run check:quick` exit 0 (push 69, ingest 17, parity OK); SQL run twice on throwaway Postgres 18.2 (312/3,545/19,705 then 0/0) + 3 rollback cases.
 - Migrations touched: `20260927072333_ptcgdb_japanese_set_names.sql` (new, **not applied**).
 - Open risks: Pocket series change reaches production only after the v2 deploy (frontend must accept the label first) and a `main` sync; the drift test skips where the migration file is absent (`main`).
-- Next action: owner approves, one at a time: commit + push v2; apply the SQL; `main` sync of the push script + test + JSON. Then review the 2026-09-28 runs (after 07:30 UTC).
+- Owner-approved: committed + pushed as v2 `6cef3cf` (Vercel success; home 200; live `mergeExploreFilterOptions` chunk accepts both Pocket labels).
+- Owner-approved: SQL applied via the Supabase MCP tool (~07:45 UTC; not in migration history). Verified: 0 NULL names, 0 on other-origin sets, 27 `ja-*`, set-row md5 matches the JSON, English baseline counts unchanged, `ptcgdb-sv9-40` correct, JPN filter 391 sets. Found (not changed): 13 manual `bd`/`sd` "Bulbasaur/Squirtle Deck" cards share ptcgdb set IDs; 2 duplicate-looking manual `xyp` pairs.
+- Owner-approved `main` sync: `3c76d39` (`81ff841..3c76d39`; 3 files from `6cef3cf`), tested in a temporary `main` worktree (push 69 OK, 1 skipped by design; ingest OK; parity OK; dry run on local DuckDB OK). Pages run `36349781875` success.
+- Next action: after 2026-09-28 07:30 UTC, review the scheduled runs read-only: no collisions; refresh/ANALYZE OK; `ensure_edit_history_partitions` created nothing; ~355 changed TCGdex Japanese + ~2,480 changed Pocket cards; 0 TCGdex Japanese images on `assets.tcgdex.net/en/`; Pocket sets' series "Pokémon TCG Pocket" and 0 Pocket cards with NULL `set_name`; Pages 06:00 UTC run OK. Owner: visual check of Card Detail `ptcgdb-sv9-40` and the TCG (JPN) Set filter; decide on the 13 manual `bd`/`sd` cards.
 
 ### 2026-09-27 (local) - Japanese set names: name table + collision plan (read-only)
 
