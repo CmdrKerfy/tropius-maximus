@@ -41,6 +41,7 @@ import { fixDisplayText, sanitizeCardRawDataForDisplay } from "../lib/fixUtf8Moj
 import { formatEvolutionLineLabel, normalizeEvolutionLineOptions } from "../lib/evolutionLineFormat.js";
 import { shouldRefreshFormOptionsForAnnotationKey } from "../lib/formOptionsRefreshKeys.js";
 import { isArrowKeyConsumer } from "../lib/keyboardTargets.js";
+import { cardSetLabel, cardSetLine } from "../lib/cardSetLabel.js";
 import { trapTabKey, useDialogFocus } from "../lib/dialogFocus.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
@@ -485,6 +486,7 @@ export default function CardDetail({
       (archiveActiveForHeader ? formatPokumonListValue(raw?.artist) : "") ||
       ""
   ).trim();
+  const headerSet = cardSetLabel({ setName: ann.set_name || card?.set_name, setId: card?.set_id });
   const typeChipsForHeader =
     types.length > 0
       ? types
@@ -1727,15 +1729,16 @@ export default function CardDetail({
                       </span>
                     )
                   ))}
-                  {(ann.set_name || card.set_name) && !isEditMode && onFilterClick && (
+                  {headerSet.label && !isEditMode && onFilterClick && (
                     <button
                       onClick={() => {
                         const setId = String(card.set_id || "").trim();
                         if (setId) onFilterClick("set_id", setId);
                       }}
+                      title={headerSet.named ? undefined : "Set name not recorded yet; showing the set code"}
                       className="px-2 py-0.5 rounded text-xs font-normal border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
                     >
-                      {ann.set_name || card.set_name}
+                      {headerSet.label}
                     </button>
                   )}
                   {headerArtistChip && !isEditMode && onFilterClick && (
@@ -1934,7 +1937,12 @@ export default function CardDetail({
                   <div className="mt-4 space-y-4 overflow-y-auto flex-1 pr-1">
                     {/* Set and card number */}
                     <div className="text-sm text-gray-500">
-                      {ann.set_name || card.set_name} ({card.set_series}) · #{card.number}
+                      {cardSetLine({
+                        setName: ann.set_name || card.set_name,
+                        setId: card.set_id,
+                        series: card.set_series,
+                        number: card.number,
+                      })}
                       {card.pokedex_numbers?.length > 0 && (
                         <> · Pokedex: {card.pokedex_numbers.join(", ")}</>
                       )}
