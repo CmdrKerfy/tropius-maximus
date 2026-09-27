@@ -318,6 +318,27 @@ class ClearFailedCliTests(unittest.TestCase):
             self.assertTrue({"failed_sets", "tcg_cards", "sets"} <= tables)
 
 
+class TcgdexImageUrlTests(unittest.TestCase):
+    def _url(self, available, japanese_locale):
+        card = {"localId": "034", "image": None}
+        with patch.object(ingest, "_tcgdx_asset_head_ok", side_effect=lambda u: u in available):
+            return ingest.tcgdx_card_high_webp_url(
+                card, serie_id="neo", set_id="neo4", japanese_locale=japanese_locale
+            )
+
+    def test_japanese_card_never_falls_back_to_english_scan(self):
+        en = "https://assets.tcgdex.net/en/neo/neo4/34/high.webp"
+        self.assertEqual(self._url({en}, japanese_locale=True), "")
+
+    def test_japanese_card_uses_japanese_scan(self):
+        ja = "https://assets.tcgdex.net/ja/neo/neo4/034/high.webp"
+        self.assertEqual(self._url({ja}, japanese_locale=True), ja)
+
+    def test_pocket_card_still_prefers_english_scan(self):
+        en = "https://assets.tcgdex.net/en/neo/neo4/34/high.webp"
+        self.assertEqual(self._url({en}, japanese_locale=False), en)
+
+
 class StepSummaryTests(unittest.TestCase):
     def test_cli_writes_counts_and_outcome_to_step_summary(self):
         with tempfile.TemporaryDirectory() as tmp:

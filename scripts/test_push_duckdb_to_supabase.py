@@ -508,6 +508,33 @@ class TcgdexJapaneseTwinTests(unittest.TestCase):
             finally:
                 conn.close()
 
+    def test_english_asset_images_are_not_published_for_japanese_cards(self):
+        self.assertIsNone(push.japanese_card_image("https://assets.tcgdex.net/en/neo/neo4/34/high.webp"))
+        self.assertIsNone(push.japanese_card_image(None))
+        self.assertIsNone(push.japanese_card_image(""))
+        ja = "https://assets.tcgdex.net/ja/SV/SV4a/005/high.webp"
+        self.assertEqual(push.japanese_card_image(ja), ja)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = _tcgdex_japanese_db(tmp, [("neo4-034", "neo4", 34, False), ("SV4a-005", "SV4a", 5, False)])
+            conn.close()
+            rw = duckdb.connect(str(Path(tmp) / "japanese.duckdb"))
+            rw.execute("UPDATE japanese_cards SET image_url = ? WHERE id = 'neo4-034'",
+                       ["https://assets.tcgdex.net/en/neo/neo4/34/high.webp"])
+            rw.execute("UPDATE japanese_cards SET image_url = ? WHERE id = 'SV4a-005'", [ja])
+            rw.close()
+            conn = duckdb.connect(str(Path(tmp) / "japanese.duckdb"), read_only=True)
+            captured = []
+            try:
+                with patch.object(push, "batch_upsert", side_effect=lambda sb, t, rows: captured.extend(rows)):
+                    push.push_japanese_cards(conn, _FakeClient(max_rows=1000), "now")
+            finally:
+                conn.close()
+
+        images = {r["id"]: (r["image_small"], r["image_large"]) for r in captured}
+        self.assertEqual(images["neo4-034"], (None, None))
+        self.assertEqual(images["SV4a-005"], (ja, ja))
+
     def test_existing_rows_are_keyset_paged(self):
         ids = [f"card-{i:04d}" for i in range(5)]
         client = _PagedRowsClient({"cards": [{"id": i, "origin": "tcgdex"} for i in ids]})
