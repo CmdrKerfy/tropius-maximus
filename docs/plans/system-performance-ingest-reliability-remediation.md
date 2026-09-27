@@ -949,6 +949,20 @@ Phase gate:
 - `/` was `no-cache, no-store, must-revalidate`; SPA routes (e.g. `/explore`) used Vercel's default `public, max-age=0, must-revalidate`, which stays as is.
 - All `dist/assets` names are content-hashed, `public/` has no `assets/` folder, and `middleware.js` only matches `/share/card/*`.
 - **Verified after deploy (`06f3927`, Vercel deployment 6685476683):** `/assets/index-Bj7EgWFN.js` returns `public, max-age=31536000, immutable` and `/` returns `no-cache`. `/explore` and `/share/card/*` are unchanged (`public, max-age=0, must-revalidate`).
+- **Stale-tab Card Detail fix (2026-09-26, owner-reported during the production check):** a tab opened before a deploy failed to open Card Detail with "Something went wrong / error loading dynamically imported module: …/assets/CardDetail-0w3cM7_z.js". The old chunk 404s after each deploy (Vercel serves only the current deployment's assets). Refresh fixes it. Cause: `CardDetailErrorBoundary` (`ExplorePage.jsx`) caught the lazy-chunk failure first and never reached `ChunkErrorBoundary` (`App.jsx`), which auto-reloads.
+  - New `src/lib/chunkLoadError.js`:
+    - `isChunkLoadError` covers Chrome, Firefox and Safari messages, Vite CSS preload and `ChunkLoadError`. It no longer matches a bare "Failed to fetch", so a network error in render does not reload the page.
+    - `reloadForChunkError` reloads at most once per 30 s via sessionStorage `tm_chunk_reload_at`, and does not auto-reload if storage is unavailable. This stops the reload loops the old unconditional `App.jsx` reload could hit.
+  - Both boundaries use the helper. If Card Detail can't reload, it shows "A new version is available" with a "Refresh page" button (Close still works).
+  - Tests: `test:chunk-load-error` (5).
+  - DuckDB preview browser check with the chunk removed mid-session (7/7):
+    - one automatic reload;
+    - no loop, and the message shows when the chunk is still missing inside the guard window;
+    - Close works;
+    - Card Detail opens once the chunk is present;
+    - no page errors.
+  - `npm run check` exit 0.
+  - Note: tabs opened before this deploy still run the old boundary, so they need one manual refresh.
 - [ ] Use Vercel commit/deployment identifiers instead of timestamp fallback for release identity.
 - [ ] Record application SHA and compatible migration version.
 
@@ -1087,6 +1101,8 @@ Done 2026-09-26 (owner-approved each):
 - Owner-approved `main` sync: `scripts/push_duckdb_to_supabase.py` + its test copied from v2 `b086039` (identical), tested in a temporary `main` worktree (push 61 OK, ingest 14 OK, parity passed), and pushed as `main` `94da8f1` (`e4bddef..94da8f1`). The Pages rebuild `36281141305` was triggered by the push.
 
 - Owner-approved Playwright fix (v2): `@playwright/test` ^1.49.1 → ^1.63.0 (lockfile changes only `@playwright/test`, `playwright`, `playwright-core`, and drops a nested `fsevents`) and `npx playwright install chromium` (local cache). The runner's first real local run exposed a stale smoke assertion: `getByText(/Batch edit/i)` matched both the heading and the Supabase notice (strict-mode violation, fails on 1.49 too). Fixed with `getByRole("heading", { name: /Batch edit/i })`. `npm run check` exit 0 (2/2 smoke passed).
+
+- Owner production check 2026-09-26: sort, short search and the Neo filters passed. Card Detail failed in a tab opened before the latest deploy; fixed (see 4C "Stale-tab Card Detail fix"). Re-test Card Detail on production after the fix deploys.
 
 Next action (owner's choice; no step is pending from this rollout): review the 2026-09-28 scheduled runs as below, then pick the next phase item (for example 1A run manifest, 2B/2D, or 4D dependency updates).
 

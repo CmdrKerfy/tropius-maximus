@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import AuthCallbackPage from "./pages/AuthCallbackPage.jsx";
 import AuthResetPasswordPage from "./pages/AuthResetPasswordPage.jsx";
 import { isEmailAuthRequired } from "./lib/authInvite.js";
+import { isChunkLoadError, reloadForChunkError } from "./lib/chunkLoadError.js";
 
 // Route-level code splitting — each page is a separate chunk:
 const ExplorePage = lazy(() => import("./pages/ExplorePage.jsx"));
@@ -37,15 +38,7 @@ class ChunkErrorBoundary extends Component {
   }
   componentDidCatch(error) {
     // Auto-reload on chunk load failures (stale index.html after deploy).
-    const msg = String(error?.message ?? "");
-    if (
-      msg.includes("dynamically imported") ||
-      msg.includes("Failed to fetch") ||
-      msg.includes("module script") ||
-      msg.includes("Loading chunk")
-    ) {
-      window.location.reload();
-    }
+    if (isChunkLoadError(error)) reloadForChunkError();
   }
   render() {
     if (this.state.error) {

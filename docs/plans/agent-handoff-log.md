@@ -49,6 +49,18 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-26 (local) - Stale-tab Card Detail fix
+
+- Scope: the owner's production check. Sort, short search and Neo filters passed. Card Detail showed "Something went wrong / error loading dynamically imported module: …/CardDetail-0w3cM7_z.js" in a tab opened before the latest deploy.
+- Completed: shared `src/lib/chunkLoadError.js` (detect a stale chunk; reload at most once per 30 s through sessionStorage). Wired into `ChunkErrorBoundary` (`App.jsx`) and `CardDetailErrorBoundary` (`ExplorePage.jsx`). Card Detail now reloads onto the new build, or shows "A new version is available" with Refresh. Details are in plan 4C.
+- Validation:
+  - `test:chunk-load-error` 5 pass;
+  - DuckDB preview browser check, chunk removed mid-session: 7/7;
+  - `npm run check` exit 0.
+- Migrations touched: none.
+- Open risks: tabs opened before this deploy still need one manual refresh (they run the old code).
+- Next action: once the Vercel deploy finishes, the owner re-tests Card Detail on production (refresh first). Then, after 2026-09-28 07:30 UTC, verify the scheduled Supabase run.
+
 ### 2026-09-26 (local) - Step 3 warm ingest verified; 2C/2E applied
 
 - Preflight: model Claude Opus 5.5; tokens ample; full scope. HEAD `b086039`, remote `main` `e4bddef`.

@@ -54,6 +54,7 @@ import { exploreHasActiveConstraints } from "../lib/exploreFilterSummary.js";
 import { exploreGridRowDedupeKey, pickExploreGridDuplicateWinner } from "../lib/exploreGridDedupe.js";
 import Skeleton from "../components/ui/Skeleton.jsx";
 import { getSupabase } from "../lib/supabaseClient.js";
+import { isChunkLoadError, reloadForChunkError } from "../lib/chunkLoadError.js";
 
 const USE_SUPABASE_APP =
   import.meta.env.VITE_USE_SUPABASE === "true" &&
@@ -115,21 +116,37 @@ class CardDetailErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
+    // Stale tab after a deploy: the old CardDetail chunk is gone, so load the new build.
+    if (isChunkLoadError(error) && reloadForChunkError()) return;
     console.error("CardDetail error:", error, info?.componentStack);
   }
 
   render() {
     if (this.state.error) {
+      const staleBuild = isChunkLoadError(this.state.error);
       return (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              {staleBuild ? "A new version is available" : "Something went wrong"}
+            </h2>
             <p className="text-sm text-gray-600 mb-4 font-mono break-all">
               {this.state.error?.message ?? String(this.state.error)}
             </p>
+            {staleBuild && (
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                className="w-full mb-2"
+                onClick={() => window.location.reload()}
+              >
+                Refresh page
+              </Button>
+            )}
             <Button
               type="button"
-              variant="primary"
+              variant={staleBuild ? "secondary" : "primary"}
               size="lg"
               className="w-full"
               onClick={() => {
