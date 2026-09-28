@@ -27,6 +27,8 @@ export const DEFAULT_FILTERS = {
   pose: [],
   annotation_field_key: "",
   annotation_field_value: "",
+  raw_field_key: "",
+  raw_field_value: "",
   sort_by: "pokedex",
   sort_dir: "asc",
 };

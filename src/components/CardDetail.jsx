@@ -43,6 +43,7 @@ import { shouldRefreshFormOptionsForAnnotationKey } from "../lib/formOptionsRefr
 import { isArrowKeyConsumer } from "../lib/keyboardTargets.js";
 import { cardSetLabel, cardSetLine } from "../lib/cardSetLabel.js";
 import { trapTabKey, useDialogFocus } from "../lib/dialogFocus.js";
+import { POKUMON_ARCHIVE_FIELDS_BY_LABEL, pokumonArchiveValues } from "../lib/pokumonArchiveFilter.js";
 import {
   CARD_SUBCATEGORY_OPTIONS, HELD_ITEM_OPTIONS, POKEBALL_OPTIONS,
   EVOLUTION_ITEMS_OPTIONS, BERRIES_OPTIONS, HOLIDAY_THEME_OPTIONS,
@@ -867,6 +868,11 @@ export default function CardDetail({
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      const archiveKey = isPokumonArchiveCard(card) ? POKUMON_ARCHIVE_FIELDS_BY_LABEL[label] : undefined;
+      if (archiveKey) {
+        const values = pokumonArchiveValues(raw?.[archiveKey]);
+        return values.length ? { filterKey: `raw:${archiveKey}`, values } : null;
+      }
       switch (label) {
         case "Type":
           return { filterKey: "element", values: splitVals };
@@ -977,7 +983,7 @@ export default function CardDetail({
       const pieces =
         parsedPieces.length > 1
           ? parsedPieces
-          : target && target.values.length > 1
+          : target && (target.values.length > 1 || target.filterKey.startsWith("raw:"))
             ? target.values
             : [String(display)];
       return (

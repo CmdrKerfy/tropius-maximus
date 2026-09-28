@@ -8,6 +8,7 @@ import Button from "./ui/Button.jsx";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/Dialog.jsx";
 import { useMediaQuery } from "../lib/useMediaQuery.js";
 import { exploreFiltersAreActive } from "../lib/exploreFilterSummary.js";
+import { pokumonArchiveFilterLabel } from "../lib/pokumonArchiveFilter.js";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -261,7 +262,10 @@ export default function FilterPanel({
     isActive(filters.actions) ||
     isActive(filters.pose) ||
     isActive(filters.jumbo_card) ||
-    isActive(filters.has_image);
+    isActive(filters.has_image) ||
+    isActive(filters.card_id) ||
+    isActive(filters.annotation_field_value) ||
+    isActive(filters.raw_field_value);
 
   const setNameById = {};
   for (const { sets } of setGroups) {
@@ -377,6 +381,30 @@ export default function FilterPanel({
       onRemove: () => onChange({ has_image: "" }),
     });
   }
+  if (String(filters.card_id || "").trim()) {
+    activeChips.push({
+      key: `card-id-${filters.card_id}`,
+      label: `Card ID: ${filters.card_id}`,
+      onRemove: () => onChange({ card_id: "" }),
+    });
+  }
+  if (String(filters.annotation_field_key || "").trim() && String(filters.annotation_field_value || "").trim()) {
+    const fieldLabel = String(filters.annotation_field_key)
+      .replace(/_/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase());
+    activeChips.push({
+      key: `ann-${filters.annotation_field_key}-${filters.annotation_field_value}`,
+      label: `${fieldLabel}: ${filters.annotation_field_value}`,
+      onRemove: () => onChange({ annotation_field_key: "", annotation_field_value: "" }),
+    });
+  }
+  if (String(filters.raw_field_key || "").trim() && String(filters.raw_field_value || "").trim()) {
+    activeChips.push({
+      key: `raw-${filters.raw_field_key}-${filters.raw_field_value}`,
+      label: `${pokumonArchiveFilterLabel(filters.raw_field_key)}: ${filters.raw_field_value}`,
+      onRemove: () => onChange({ raw_field_key: "", raw_field_value: "" }),
+    });
+  }
 
   const filtersActive = exploreFiltersAreActive(filters);
   const q = String(searchQuery || "").trim();
@@ -417,6 +445,11 @@ export default function FilterPanel({
       pose: [],
       jumbo_card: "",
       has_image: "",
+      card_id: "",
+      annotation_field_key: "",
+      annotation_field_value: "",
+      raw_field_key: "",
+      raw_field_value: "",
       sort_by: isTCG ? "pokedex" : "name",
       sort_dir: "asc",
       source: "",

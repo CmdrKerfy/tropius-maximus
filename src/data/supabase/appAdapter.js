@@ -23,6 +23,7 @@ import { applyExploreSetIdFilter } from "../../lib/exploreSetFilter.js";
 import { isPocketOrigin } from "../../lib/cardSource.js";
 import { BATCH_EDIT_MAX_CARDS } from "../../lib/batchLimits.js";
 import { fixDisplayText } from "../../lib/fixUtf8Mojibake.js";
+import { applyPokumonArchiveFilter } from "../../lib/pokumonArchiveFilter.js";
 
 export { BATCH_EDIT_MAX_CARDS };
 
@@ -849,6 +850,8 @@ export async function fetchCards(params = {}) {
     card_id = "",
     annotation_field_key = "",
     annotation_field_value = "",
+    raw_field_key = "",
+    raw_field_value = "",
     source = "TCG",
     sort_by = "name",
     sort_dir = "asc",
@@ -894,6 +897,7 @@ export async function fetchCards(params = {}) {
       }
 
       if (card_id) cq = cq.eq("id", String(card_id));
+      cq = applyPokumonArchiveFilter(cq, raw_field_key, raw_field_value);
       cq = applyHasImageFilter(cq, hasImage);
 
       if (supertype) {
@@ -1053,6 +1057,7 @@ export async function fetchCards(params = {}) {
     }
   }
   if (card_id) query = query.eq("id", String(card_id));
+  query = applyPokumonArchiveFilter(query, raw_field_key, raw_field_value);
   query = applyHasImageFilter(query, has_image);
 
   if (supertype) {

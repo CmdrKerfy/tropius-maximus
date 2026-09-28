@@ -712,6 +712,8 @@ export default function ExplorePage() {
           pose: [],
           annotation_field_key: "",
           annotation_field_value: "",
+          raw_field_key: "",
+          raw_field_value: "",
           sort_by: "name",
           sort_dir: "asc",
         });
@@ -2128,6 +2130,18 @@ export default function ExplorePage() {
                     if (filterKey === "q") {
                       setSearchQuery(String(filterValue ?? ""));
                       setFilters({ ...DEFAULT_FILTERS });
+                      return;
+                    }
+                    if (String(filterKey).startsWith("raw:")) {
+                      const rawKey = String(filterKey).slice("raw:".length).trim();
+                      if (!rawKey) return;
+                      setSearchQuery("");
+                      setFilters({
+                        ...DEFAULT_FILTERS,
+                        source: "Promo",
+                        raw_field_key: rawKey,
+                        raw_field_value: String(filterValue ?? "").trim(),
+                      });
                       return;
                     }
                     if (String(filterKey).startsWith("annotation:")) {
