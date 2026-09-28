@@ -753,11 +753,24 @@ Create separate migrations for each subsection.
 
 ### 2B. Restrict card writes
 
-- [ ] Test current policies with real authenticated JWTs.
+- [x] Test current policies with real authenticated JWTs. (Rolled-back production baseline 2026-09-27; P1–P9 confirmed open.)
 - [ ] Revoke direct API-card mutations from ordinary authenticated users.
-- [ ] Decide with owner whether collaborators may edit all manual cards or only their own.
+- [x] Decide with owner whether collaborators may edit all manual cards or only their own. (Option A: all non-anonymous signed-in collaborators.)
 - [ ] Keep service-role ingest capability.
 - [ ] Verify public share remains unaffected.
+
+**Groundwork 2026-09-27 (nothing applied):** full inventory, design, owner decision, security review, tests and the rolled-back production baseline are in `docs/plans/phase-2b-2d-write-authz.md`.
+- Today any signed-in collaborator can PATCH, DELETE or INSERT any card, including the 47,185 API cards (a delete cascades the annotation), and rename any set.
+- Migration `supabase/migrations/20260927225104_restrict_card_writes.sql`:
+  - no direct card/set UPDATE;
+  - card INSERT only manual, credited to the caller;
+  - card DELETE only manual (via `can_manage_manual_card`);
+  - set INSERT only manual;
+  - the rename RPC becomes SECURITY DEFINER;
+  - anon loses write grants.
+- Local tests pass on a production-shaped fixture, including service_role ingest (`supabase/tests/run_write_authz_tests.sh`).
+- The production rollback-probe script (`supabase/tests/prod_rollback_probes_write_authz.sql`) ran once with owner approval: P1–P9 `ok`, P10 expected `P0001`; separate read-only verification confirmed no probe write persisted.
+- **Owner decision:** Option A, manual cards editable by all non-anonymous signed-in collaborators.
 
 ### 2C. Harden privileged functions
 
@@ -786,6 +799,17 @@ Create separate migrations for each subsection.
 - [ ] Verify `batch_run_id` belongs to the current user.
 - [ ] Reject decreasing or forged versions.
 - [ ] Preserve optimistic conflict detection.
+
+**Groundwork 2026-09-27 (nothing applied):** details in `docs/plans/phase-2b-2d-write-authz.md`.
+- Today `apply_annotation_with_history` copies `version`, `updated_by` and `updated_at` from the client row, and `p_batch_run_id` is only FK-checked.
+- Direct PostgREST writes can forge annotation audit values and history `edited_by`/`edited_at`/`batch_run_id`, and can delete annotations.
+- Migration `supabase/migrations/20260927225105_server_authoritative_audit.sql`:
+  - a BEFORE INSERT/UPDATE trigger on annotations for authenticated sessions (server `updated_by`/`updated_at`; version must be 1 on insert and old + 1 on update; `card_id` immutable);
+  - the RPC derives the audit fields, rejects forged or decreasing versions (22023, never P0001) and another user's batch run (42501), and keeps the `WHERE version = expected` P0001 conflict;
+  - the history INSERT policy requires the caller, `now()` and an own batch run;
+  - revokes unused annotation DELETE and history/batch UPDATE/DELETE.
+- No client change is needed. Tested with 2B in both orders.
+- Residual: history field/old/new values remain client-computed (separate slice).
 
 ### 2E. Automate edit-history partitions
 
@@ -1129,5 +1153,18 @@ Done 2026-09-26 (owner-approved each):
 - **Explore "Has Image" filter (owner request 2026-09-27):** deployed as v2 `7eafda2` (details in the handoff log). Optional partial index if "No" feels slow.
 
 Next action: 4D slice deployed as v2 `e774ac5` (Vercel success; home 200, share og:image unchanged). Owner does the hosted check (sign in, Explore page 2, open Card Detail, open a share link). Then review the 2026-09-28 scheduled runs as below (expect ~355 changed TCGdex Japanese cards from the image fix, and check `select count(*) from cards where origin='tcgdex' and origin_detail='japanese' and image_large like 'https://assets.tcgdex.net/en/%'` is 0), then pick the next phase item. Owner-picked next (2026-09-27): **Japanese/Pocket set names proper fix** — `docs/plans/japanese-set-names.md`. Quick display fallback done (v2 `50fa646`; owner verified set codes show in Card Detail and the filter). Name table drafted (`scripts/data/japanese_set_names.json`, view `docs/plans/japanese-set-names-table.md`; 291/314 codes exact TCGCSV names) with the collision plan (27 codes → `ja-*`, `xy6`/`xy7` folded into `xy6-b`/`xy7-b`, card IDs unchanged, twin key strips `ja-`). **Owner approved 2026-09-27** (names as drafted; series "Japanese <era>"; name "{code}: {English name}"; `ja-` for 27 + fold `xy6`/`xy7`; Pocket series → "Pokémon TCG Pocket"). Step 2 (code + tests + generated SQL `supabase/migrations/20260927072333_ptcgdb_japanese_set_names.sql`) done in the working tree 2026-09-27, `npm run check:quick` exit 0, SQL tested on throwaway Postgres (details in `docs/plans/japanese-set-names.md`). Done 2026-09-27 (owner-approved): (a) v2 `6cef3cf` deployed (Vercel success; live chunk accepts both Pocket labels); (b) SQL applied and verified (details in the plan doc; 13 manual `bd`/`sd` cards now show a ptcgdb set name in the filter: owner decision). (c) `main` sync `3c76d39` (`81ff841..3c76d39`: push script + test + JSON copied from `6cef3cf`; tested in a temporary `main` worktree: push 69 OK / 1 skipped by design, ingest OK, parity OK; dry run on local DuckDB: every Pocket card gets a set name; Pages run `36349781875` success). Manual `bd`/`sd` deck cards moved to their own custom sets and Add Card Set ID guard deployed (v2 `78e679a`; see `docs/plans/japanese-set-names.md`). **2026-09-28 run review adds:** Pocket sets' series = "Pokémon TCG Pocket" (15), 0 Pocket cards with NULL `set_name`, ~2,480 changed Pocket cards (plus ~355 TCGdex Japanese from the image fix). Original order: (a) commit + push v2 (Vercel deploy; the Pocket filter must accept the new series label before production changes it); (b) apply the SQL via the Supabase MCP tool, then verify (0 ptcgdb NULL `set_name`; no ptcgdb card on an English set; the 29 English sets' own counts unchanged, baseline in the handoff log; JPN filter shows "Japanese …" groups; Card Detail `ptcgdb-sv9-40` = "SV9: Battle Partners (Japanese Scarlet & Violet) · #040"); (c) `main` sync of `push_duckdb_to_supabase.py` + its test + `scripts/data/japanese_set_names.json` (the scheduled run then rewrites the 2,480 Pocket cards once with set names and relabels the Pocket series). Also: Has Image filter counts image overrides and TCG (JPN) + Yes timeout fixed (v2 `39db96d`, `e461809`; indexes `idx_cards_no_image`, `idx_cards_japanese_name`). Agent recommendation after that: **1E.1 read-only Pocket comparison** (8 missing sets; 159 Pocket cards have no image), then 2B/2D; 1A after the 2026-09-28 run confirms fingerprinting. Owner decisions still open: Japanese Neo names (leave / hide / map to English printing), TCGCSV and Scrap (`docs/plans/card-adjacent-items-tcgcsv-and-scrap.md`), supabase-js version (keep 2.117.2 or revert for ~8 kB).
+
+**2B/2D groundwork result (2026-09-27 ~22:45 UTC, before the scheduled run; read-only production queries only, nothing applied):** see `docs/plans/phase-2b-2d-write-authz.md`.
+- Reviewed SQL promoted with owner approval to `supabase/migrations/20260927225104_restrict_card_writes.sql` and `supabase/migrations/20260927225105_server_authoritative_audit.sql`; neither is applied.
+- Local tests: `supabase/tests/run_write_authz_tests.sh`, 132/132 pass. That is 44 JWT probes × (before; 2B → 2D; 2D → 2B).
+- Production probe script: `supabase/tests/prod_rollback_probes_write_authz.sql`, always rolled back. Pre-apply production baseline run once with owner approval on 2026-09-27: P1–P9 `ok`, P10 expected `P0001`; separate read-only verification confirmed no probe writes persisted.
+- Owner decision 2026-09-27: **A**, any signed-in collaborator may rename/delete any manual card.
+- Security review 2026-09-27: no high/critical blocker; the reviewed SQL is production-ready for the shared-collaborator authorization model. Two medium follow-ups remain: direct annotation PATCH can bypass history, and history field/old/new content remains client-computed. Details are in the phase plan.
+- Current approved step (in progress / interrupted): local suite already passed 132/132 against the timestamped migrations. Owner already approved a scoped commit + push of the 2B/2D migrations/tests/docs to `v2/supabase-migration`. That commit/push has **not** been done yet. Applying 2B and 2D to production remains separately approval-gated.
+
+**Next, in order:**
+1. After 2026-09-28 07:30 UTC, do the scheduled-run read-only verification described above.
+2. Start 1A only if fingerprinting is confirmed.
+3. The owner reviews the 1E.1 Pocket mapping (1E.2 only if approved) and the 2B/2D decisions.
 
 Watch the 2026-09-28 scheduled runs (Pages 06:00 UTC; Supabase 07:30 UTC). The Supabase run should report mostly "unchanged" cards and an `ensure_edit_history_partitions` row with `future_quarters` 8 (or 7 after 2026-10-01) and nothing created. Do not run `supabase db push`. Do not commit or push `main`, delete production rows, dispatch ingest, or begin Phase 1E production writes without explicit owner authorization.

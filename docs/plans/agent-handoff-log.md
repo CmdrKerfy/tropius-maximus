@@ -49,6 +49,40 @@ If token feasibility is **unlikely**, the agent must propose:
 
 ---
 
+### 2026-09-27 15:54 (local) - STOPPED mid-approved commit/push after 2B/2D prep
+
+- Preflight: GPT-5.6 Sol owner-accepted; HEAD still `8351f43` = `origin/v2/supabase-migration`; remote `main` `3c76d39`. Existing modified/untracked files preserved. Scheduled-run gate (after 2026-09-28 07:30 UTC) still pending.
+- Done this session: Option A approved; security review (no high/critical; two medium audit residuals); production pre-apply probes run once and fully rolled back (P1–P9 `ok`, P10 `P0001`); reviewed SQL promoted to migrations `20260927225104_restrict_card_writes.sql` + `20260927225105_server_authoritative_audit.sql`; draft copies removed; local authz suite 132/132 PASS.
+- Owner already approved: scoped commit + push to `v2/supabase-migration`. **Not done yet** — session stopped before git add/commit/push.
+- Scope to commit (only): the two new migrations; all of `supabase/tests/`; `docs/plans/phase-2b-2d-write-authz.md`; the 2B/2D-related updates in `docs/plans/system-performance-ingest-reliability-remediation.md` and `docs/plans/agent-handoff-log.md`. Do **not** commit `tests/IMG_*.jpg`, `reports/`, `research_notes/`, or unrelated dirty files (`.gitignore`, `CLAUDE.md`, Japanese/Pocket docs, `.agents/`, `.mcp.json`, etc.).
+- Next action: finish the already-approved scoped commit + push; then ask before applying 2B SQL to production. Do not apply 2D, dispatch ingest, merge to `main`, or run `supabase db push`.
+
+---
+
+### 2026-09-27 15:45 (local) - 2B/2D groundwork: inventory, drafts, local JWT tests (nothing applied)
+
+- Preflight: running on Claude Opus 5.5 (not GPT-5.6 Sol); the owner accepted it with "accept, full scope". Token feasibility likely. HEAD `8351f43` = `origin/v2/supabase-migration`; remote `main` `3c76d39`. Time gate 22:31 UTC was before 2026-09-28 07:30 UTC, so groundwork came first; the scheduled-run check is still due.
+- Branch: `v2/supabase-migration`. Plan docs: `docs/plans/phase-2b-2d-write-authz.md` (new), 2B/2D + "Exact next action" in `system-performance-ingest-reliability-remediation.md`.
+- Completed:
+  - Read-only production inventory (Supabase MCP `SELECT`s only) of the cards/sets/annotations/edit_history/batch_runs policies, grants, triggers and constraints, the write RPC bodies, auth helpers and roles, plus data counts. The app/API write-path trace is also in the plan doc.
+  - Findings:
+    - any collaborator can PATCH/DELETE/INSERT any card, including 47,185 API cards, and rename API sets;
+    - the annotation RPC trusts client `version`/`updated_by`/`updated_at` and any `batch_run_id`;
+    - direct PostgREST writes can forge history and delete annotations;
+    - anon/authenticated hold TRUNCATE (not reachable via PostgREST).
+  - Drafts (in `supabase/drafts/`, deliberately not in `migrations/`): `2b_restrict_card_writes.sql`, `2d_server_authoritative_audit.sql`, each with verify queries and rollback.
+  - Tests: fixture `supabase/tests/fixtures/prod_shape_write_authz.sql`, probes `write_authz_lib.sql` + `write_authz.test.sql`, runner `run_write_authz_tests.sh`, and production probe script `prod_rollback_probes_write_authz.sql` (always rolls back; validated on the fixture only).
+- Validation: `supabase/tests/run_write_authz_tests.sh` exit 0, 132/132 PASS (44 probes × before / 2B→2D / 2D→2B), throwaway Postgres 18 (production is 17.6). The production probe script run on the fixture before and after the drafts gave the expected results, with the fixture state unchanged afterwards. No app code changed, so `npm run check:quick` was not run.
+- Migrations touched: none applied. No production writes, no commits, no pushes.
+- Open risks:
+  - history field/old/new values stay client-computed;
+  - manual card deletes and the Data Health cleanup write no history;
+  - the fixture is hand-built, so the production rollback probes are the authoritative check.
+- Owner decisions: manual cards editable by any collaborator (A, drafted, recommended) / creator only (C; 11,815 manual cards have NULL `created_by`) / creator + admin (B). Also security review of both drafts.
+- Next action: after 2026-09-28 07:30 UTC, do the scheduled-run read-only verification in "Exact next action". Then, with owner approval, run `supabase/tests/prod_rollback_probes_write_authz.sql` once on production as the pre-apply baseline.
+
+---
+
 ### 2026-09-27 (local) - Manual Bulbasaur/Squirtle Deck sets + Add Card Set ID guard
 
 - Owner decisions: move the 13 manual `bd`/`sd` cards to `custom-bulbasaur-deck` / `custom-squirtle-deck`; no series; keep `cd`/`td`; add a form guard.
